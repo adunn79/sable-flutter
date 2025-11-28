@@ -43,3 +43,16 @@ app.*.map.json
 # Android Studio will place build artifacts here
 /android/app/libs/
 /android/key.properties
+
+# Environment variables and API keys
+.env
+.env.*
+!.env.example
+*.key
+secrets/
+
+# Flutter SDK (downloaded locally)
+flutter/
+flutter_macos.zip
+*.zip
+

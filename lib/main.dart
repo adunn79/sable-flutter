@@ -1,32 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'src/app.dart';
+import 'src/config/app_config.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AppConfig.initialize();
   runApp(const ProviderScope(child: SableApp()));
-}
-
-class SableApp extends ConsumerWidget {
-  const SableApp({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp(
-      title: 'Sable',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0EA5E9), // Brand Blue
-          brightness: Brightness.dark,
-          background: const Color(0xFF050505),
-        ),
-        useMaterial3: true,
-        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-      ),
-      home: const Scaffold(
-        body: Center(
-          child: Text('Sable: Initializing...'),
-        ),
-      ),
-    );
-  }
 }

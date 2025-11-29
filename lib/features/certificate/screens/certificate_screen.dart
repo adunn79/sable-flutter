@@ -116,9 +116,10 @@ class _CertificateScreenState extends State<CertificateScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: RepaintBoundary(
                     key: _certificateKey,
-                    child: Container(
-                      width: double.infinity,
+                    child: AspectRatio(
                       aspectRatio: 1.6, // Landscapeish
+                      child: Container(
+                        width: double.infinity,
                       decoration: BoxDecoration(
                         color: AurealColors.carbon,
                         borderRadius: BorderRadius.circular(16),
@@ -176,6 +177,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
                         ],
                       ),
                     ),
+                  ),
                   ),
                 ),
               ),

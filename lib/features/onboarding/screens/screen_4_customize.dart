@@ -361,6 +361,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                       value: _hairStyle,
                       items: [
                         'Platinum Bob',
+                        'Golden Blond',
                         'Jet Black Sleek',
                         'Chestnut Waves',
                         'Silver Pixie',

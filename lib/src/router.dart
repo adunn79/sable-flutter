@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'shared/app_shell.dart';
 import 'pages/placeholder_page.dart';
+import 'pages/chat/chat_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -15,7 +15,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/onboarding', builder: (context, state) => const PlaceholderPage(title: 'Onboarding')),
           GoRoute(path: '/welcome', builder: (context, state) => const PlaceholderPage(title: 'Welcome')),
-          GoRoute(path: '/chat', builder: (context, state) => const PlaceholderPage(title: 'Chat')),
+          GoRoute(path: '/chat', builder: (context, state) => const ChatPage()),
           GoRoute(path: '/today', builder: (context, state) => const PlaceholderPage(title: 'Today')),
           GoRoute(path: '/journal', builder: (context, state) => const PlaceholderPage(title: 'Journal')),
           GoRoute(path: '/memory', builder: (context, state) => const PlaceholderPage(title: 'Memory')),

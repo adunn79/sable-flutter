@@ -42,15 +42,17 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
               const SizedBox(height: 40),
 
               // Title
-              Text(
-                'THE PROTOCOL',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AurealColors.hyperGold,
-                  letterSpacing: 2,
-                ),
-              ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
+              Center(
+                child: Text(
+                  'THE PROTOCOL',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AurealColors.hyperGold,
+                    letterSpacing: 2,
+                  ),
+                ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
+              ),
 
               const SizedBox(height: 32),
 
@@ -170,7 +172,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                 isAcknowledged: _acknowledged,
               ).animate(delay: 400.ms).fadeIn(duration: 600.ms),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 80),
             ],
           ),
         ),

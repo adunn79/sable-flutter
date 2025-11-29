@@ -156,13 +156,26 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                 const SizedBox(height: 32),
 
                 // Location Field
-                Text(
-                  'Where was I born?',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AurealColors.ghost,
-                    letterSpacing: 1,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Where were you born?',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AurealColors.ghost,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: 'This helps the avatar know a little about you. You can skip this if you like.',
+                      child: Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AurealColors.plasmaCyan.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
                 ).animate(delay: 600.ms).fadeIn(duration: 400.ms),
 
                 const SizedBox(height: 8),
@@ -184,13 +197,26 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                 const SizedBox(height: 32),
 
                 // Date of Birth
-                Text(
-                  'When did you begin?',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AurealColors.ghost,
-                    letterSpacing: 1,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'When did you begin?',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AurealColors.ghost,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: 'What is your date of birth',
+                      child: Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AurealColors.plasmaCyan.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
                 ).animate(delay: 800.ms).fadeIn(duration: 400.ms),
 
                 const SizedBox(height: 8),

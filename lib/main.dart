@@ -6,6 +6,7 @@ import 'features/onboarding/onboarding_flow.dart';
 import 'features/onboarding/screens/access_denied_screen.dart';
 import 'src/config/app_config.dart';
 import 'src/app.dart' as legacy;
+import 'features/debug/debug_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +33,7 @@ class AurealApp extends StatelessWidget {
             ),
         '/home': (context) => const legacy.SableApp(), // Temporary - use existing chat app
         '/access-denied': (context) => const AccessDeniedScreen(),
+        '/debug': (context) => const DebugDashboard(),
       },
     );
   }

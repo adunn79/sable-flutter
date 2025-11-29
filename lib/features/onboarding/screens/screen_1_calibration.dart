@@ -20,34 +20,52 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _locationController = TextEditingController();
-  final _monthController = TextEditingController();
-  final _dayController = TextEditingController();
-  final _yearController = TextEditingController();
+  DateTime? _selectedDate;
   String? _genderIdentity;
 
   @override
   void dispose() {
     _nameController.dispose();
     _locationController.dispose();
-    _monthController.dispose();
-    _dayController.dispose();
-    _yearController.dispose();
     super.dispose();
   }
 
 
 
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AurealColors.plasmaCyan,
+              onPrimary: AurealColors.obsidian,
+              surface: AurealColors.carbon,
+              onSurface: AurealColors.stardust,
+            ),
+            dialogBackgroundColor: AurealColors.carbon,
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
   void _handleContinue() {
     if (_formKey.currentState?.validate() ?? false) {
-      // Validate date fields
-      final month = int.tryParse(_monthController.text);
-      final day = int.tryParse(_dayController.text);
-      final year = int.tryParse(_yearController.text);
-
-      if (month == null || day == null || year == null) {
+      if (_selectedDate == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Please enter a valid date of birth',
+            content: Text('Please select your date of birth',
                 style: GoogleFonts.inter()),
             backgroundColor: AurealColors.plasmaCyan,
           ),
@@ -55,38 +73,15 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
         return;
       }
 
-      try {
-        final dateOfBirth = DateTime(year, month, day);
-        
-        final profile = UserProfile(
-          name: _nameController.text.trim(),
-          dateOfBirth: dateOfBirth,
-          location: _locationController.text.trim(),
-          genderIdentity: _genderIdentity,
-        );
-
-        // Check age requirement
-        if (!profile.isOver17()) {
-          Navigator.of(context).pushReplacementNamed('/access-denied');
-          return;
-        }
-
-        widget.onComplete(profile);
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Invalid date. Please check your entry.',
-                style: GoogleFonts.inter()),
-            backgroundColor: AurealColors.plasmaCyan,
-          ),
-        );
-      }
-    }
-  }
+      final profile = UserProfile(
+        name: _nameController.text.trim(),
+        dateOfBirth: _selectedDate!,
+        location: _locationController.text.trim(),
+        genderIdentity: _genderIdentity,
+      );
 
       // Check age requirement
       if (!profile.isOver17()) {
-        // Navigate to access denied screen
         Navigator.of(context).pushReplacementNamed('/access-denied');
         return;
       }

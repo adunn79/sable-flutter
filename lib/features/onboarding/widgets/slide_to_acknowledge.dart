@@ -40,9 +40,18 @@ class _SlideToAcknowledgeState extends State<SlideToAcknowledge> {
         border: Border.all(
           color: _isCompleted
               ? AurealColors.hyperGold
-              : AurealColors.plasmaCyan.withOpacity(0.3),
+              : AurealColors.plasmaCyan,
           width: 2,
         ),
+        boxShadow: _isCompleted
+            ? []
+            : [
+                BoxShadow(
+                  color: AurealColors.plasmaCyan.withOpacity(0.5),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
       ),
       child: Stack(
         children: [

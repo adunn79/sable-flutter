@@ -20,50 +20,34 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _locationController = TextEditingController();
-  DateTime? _selectedDate;
+  final _monthController = TextEditingController();
+  final _dayController = TextEditingController();
+  final _yearController = TextEditingController();
   String? _genderIdentity;
 
   @override
   void dispose() {
     _nameController.dispose();
     _locationController.dispose();
+    _monthController.dispose();
+    _dayController.dispose();
+    _yearController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: DateTime(2000),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AurealColors.plasmaCyan,
-              onPrimary: AurealColors.obsidian,
-              surface: AurealColors.carbon,
-              onSurface: AurealColors.stardust,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
 
-    if (date != null) {
-      setState(() {
-        _selectedDate = date;
-      });
-    }
-  }
 
   void _handleContinue() {
     if (_formKey.currentState?.validate() ?? false) {
-      if (_selectedDate == null) {
+      // Validate date fields
+      final month = int.tryParse(_monthController.text);
+      final day = int.tryParse(_dayController.text);
+      final year = int.tryParse(_yearController.text);
+
+      if (month == null || day == null || year == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Please select your date of birth',
+            content: Text('Please enter a valid date of birth',
                 style: GoogleFonts.inter()),
             backgroundColor: AurealColors.plasmaCyan,
           ),
@@ -71,12 +55,34 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
         return;
       }
 
-      final profile = UserProfile(
-        name: _nameController.text.trim(),
-        dateOfBirth: _selectedDate!,
-        location: _locationController.text.trim(),
-        genderIdentity: _genderIdentity,
-      );
+      try {
+        final dateOfBirth = DateTime(year, month, day);
+        
+        final profile = UserProfile(
+          name: _nameController.text.trim(),
+          dateOfBirth: dateOfBirth,
+          location: _locationController.text.trim(),
+          genderIdentity: _genderIdentity,
+        );
+
+        // Check age requirement
+        if (!profile.isOver17()) {
+          Navigator.of(context).pushReplacementNamed('/access-denied');
+          return;
+        }
+
+        widget.onComplete(profile);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Invalid date. Please check your entry.',
+                style: GoogleFonts.inter()),
+            backgroundColor: AurealColors.plasmaCyan,
+          ),
+        );
+      }
+    }
+  }
 
       // Check age requirement
       if (!profile.isOver17()) {
@@ -167,8 +173,38 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Tooltip(
-                      message: 'This helps the avatar know a little about you. You can skip this if you like.',
+                    GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: AurealColors.carbon,
+                            title: Text(
+                              'About Location',
+                              style: GoogleFonts.spaceGrotesk(
+                                color: AurealColors.plasmaCyan,
+                              ),
+                            ),
+                            content: Text(
+                              'This helps the avatar know a little about you. You can skip this if you like.',
+                              style: GoogleFonts.inter(
+                                color: AurealColors.stardust,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text(
+                                  'Got it',
+                                  style: GoogleFonts.inter(
+                                    color: AurealColors.plasmaCyan,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                       child: Icon(
                         Icons.info_outline,
                         size: 16,
@@ -208,8 +244,38 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Tooltip(
-                      message: 'What is your date of birth',
+                    GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: AurealColors.carbon,
+                            title: Text(
+                              'Date of Birth',
+                              style: GoogleFonts.spaceGrotesk(
+                                color: AurealColors.plasmaCyan,
+                              ),
+                            ),
+                            content: Text(
+                              'What is your date of birth',
+                              style: GoogleFonts.inter(
+                                color: AurealColors.stardust,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text(
+                                  'Got it',
+                                  style: GoogleFonts.inter(
+                                    color: AurealColors.plasmaCyan,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                       child: Icon(
                         Icons.info_outline,
                         size: 16,

@@ -166,6 +166,37 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
 
               const SizedBox(height: 48),
 
+              // Scroll hint
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.arrow_downward,
+                      color: AurealColors.plasmaCyan,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Scroll down to continue',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AurealColors.plasmaCyan,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.arrow_downward,
+                      color: AurealColors.plasmaCyan,
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ).animate(delay: 600.ms).fadeIn(duration: 600.ms).then().shimmer(duration: 2000.ms, delay: 1000.ms),
+
+              const SizedBox(height: 24),
+
               // Slide to Acknowledge
               SlideToAcknowledge(
                 onAcknowledged: _handleAcknowledge,

@@ -10,6 +10,10 @@ import 'screens/screen_3_archetype.dart';
 import 'screens/screen_4_customize.dart';
 import 'screens/access_denied_screen.dart';
 
+import 'package:sable/features/certificate/models/certificate_data.dart';
+import 'package:sable/features/certificate/screens/certificate_screen.dart';
+import 'package:sable/features/certificate/services/genesis_service.dart';
+
 class OnboardingFlow extends StatefulWidget {
   final VoidCallback onComplete;
 
@@ -31,6 +35,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   String? _selectedArchetype;
   AvatarConfig? _avatarConfig;
   String? _avatarImageUrl;
+  CertificateData? _certificateData;
 
   @override
   void dispose() {
@@ -69,17 +74,34 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       _avatarImageUrl = imageUrl;
     });
 
+    // Generate Certificate Data
+    if (_userProfile != null) {
+      final genesisService = GenesisService();
+      final certificateData = genesisService.generateCertificate(
+        race: config.archetype, // Using archetype as race/base
+        gender: _userProfile!.genderIdentity ?? 'Unknown',
+      );
+      
+      setState(() {
+        _certificateData = certificateData;
+      });
+    }
+
     // Save onboarding completion
     final stateService = await OnboardingStateService.create();
     await stateService.completeOnboarding();
 
     // TODO: Save user profile, permissions, and avatar config to persistent storage
 
+    _nextPage();
+  }
+
+  void _handleCertificateComplete() {
     widget.onComplete();
   }
 
   void _nextPage() {
-    if (_currentPage < 4) {
+    if (_currentPage < 5) { // Increased to 5 for certificate screen
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -116,6 +138,11 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
               archetype: _selectedArchetype!,
               onComplete: _handleScreen4Complete,
             ),
+          if (_certificateData != null)
+             CertificateScreen(
+               data: _certificateData!,
+               onComplete: _handleCertificateComplete,
+             ),
         ],
       ),
     );

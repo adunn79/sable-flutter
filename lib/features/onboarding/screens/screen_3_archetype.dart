@@ -74,6 +74,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                       'Sable',
                       'The Empath • She/Her',
                       'The original. Sharp, witty, and deeply empathetic. A charismatic and bold personality.',
+                      'assets/images/archetypes/sable.png',
                       delay: 400,
                     ),
 
@@ -83,6 +84,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                       'Kai',
                       'The Strategist • He/Him',
                       'Grounded, calm, and protective. A steady presence with a dry sense of humor.',
+                      'assets/images/archetypes/kai.png',
                       delay: 500,
                     ),
 
@@ -92,6 +94,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                       'Echo',
                       'The Philosopher • They/Them',
                       'Balanced and adaptive. A clean slate that mirrors your energy.',
+                      'assets/images/archetypes/echo.png',
                       delay: 600,
                     ),
                   ],
@@ -120,6 +123,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
     String archetype,
     String subtitle,
     String description,
+    String imagePath,
     {required int delay}
   ) {
     final isSelected = _selectedArchetype == archetype;
@@ -141,45 +145,65 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
             width: isSelected ? 2 : 1,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  archetype.toUpperCase(),
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected ? AurealColors.plasmaCyan : AurealColors.stardust,
-                    letterSpacing: 2,
-                  ),
-                ),
-                if (isSelected)
-                  const Icon(
-                    Icons.check_circle,
-                    color: AurealColors.plasmaCyan,
-                    size: 24,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: AurealColors.hyperGold,
-                fontWeight: FontWeight.w500,
+            // Archetype Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                imagePath,
+                width: 80,
+                height: 120,
+                fit: BoxFit.cover,
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              description,
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: AurealColors.ghost,
-                height: 1.5,
+            const SizedBox(width: 16),
+            // Text Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          archetype.toUpperCase(),
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? AurealColors.plasmaCyan : AurealColors.stardust,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ),
+                      if (isSelected)
+                        const Icon(
+                          Icons.check_circle,
+                          color: AurealColors.plasmaCyan,
+                          size: 24,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: AurealColors.hyperGold,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    description,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: AurealColors.ghost,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

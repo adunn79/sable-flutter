@@ -8,7 +8,6 @@ import 'screens/screen_1.5_permissions.dart';
 import 'screens/screen_2_protocol.dart';
 import 'screens/screen_3_archetype.dart';
 import 'screens/screen_4_customize.dart';
-import 'screens/access_denied_screen.dart';
 
 import 'package:sable/features/certificate/models/certificate_data.dart';
 import 'package:sable/features/certificate/screens/certificate_screen.dart';

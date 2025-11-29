@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
@@ -33,31 +34,56 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
 
 
   Future<void> _selectDate() async {
-    final DateTime? picked = await showDatePicker(
+    // Default to 18 years ago if no date selected
+    final initialDate = _selectedDate ?? DateTime.now().subtract(const Duration(days: 365 * 18));
+    
+    await showModalBottomSheet(
       context: context,
-      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AurealColors.plasmaCyan,
-              onPrimary: AurealColors.obsidian,
-              surface: AurealColors.carbon,
-              onSurface: AurealColors.stardust,
-            ),
-            dialogBackgroundColor: AurealColors.carbon,
+      backgroundColor: AurealColors.carbon,
+      builder: (BuildContext builder) {
+        return Container(
+          height: 300,
+          color: AurealColors.carbon,
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  CupertinoButton(
+                    child: Text('Done', style: GoogleFonts.inter(color: AurealColors.plasmaCyan)),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              Expanded(
+                child: CupertinoTheme(
+                  data: const CupertinoThemeData(
+                    brightness: Brightness.dark,
+                    textTheme: CupertinoTextThemeData(
+                      dateTimePickerTextStyle: TextStyle(
+                        color: AurealColors.stardust,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.date,
+                    initialDateTime: initialDate,
+                    minimumDate: DateTime(1900),
+                    maximumDate: DateTime.now(),
+                    onDateTimeChanged: (DateTime newDate) {
+                      setState(() {
+                        _selectedDate = newDate;
+                      });
+                    },
+                  ),
+                ),
+              ),
+            ],
           ),
-          child: child!,
         );
       },
     );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
   }
 
   void _handleContinue() {
@@ -319,13 +345,56 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                 const SizedBox(height: 32),
 
                 // Gender (Optional)
-                Text(
-                  'How do you identify? (Optional)',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AurealColors.ghost,
-                    letterSpacing: 1,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'How do you identify? (Optional)',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AurealColors.ghost,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: AurealColors.carbon,
+                            title: Text(
+                              'Identity',
+                              style: GoogleFonts.spaceGrotesk(
+                                color: AurealColors.plasmaCyan,
+                              ),
+                            ),
+                            content: Text(
+                              'This helps the avatar address you correctly. It is completely optional.',
+                              style: GoogleFonts.inter(
+                                color: AurealColors.stardust,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text(
+                                  'Got it',
+                                  style: GoogleFonts.inter(
+                                    color: AurealColors.plasmaCyan,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      child: Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AurealColors.plasmaCyan.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
                 ).animate(delay: 1000.ms).fadeIn(duration: 400.ms),
 
                 const SizedBox(height: 8),

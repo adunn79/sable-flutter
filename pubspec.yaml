@@ -26,6 +26,7 @@ dependencies:
   flutter_dotenv: ^6.0.0
   flutter_svg: ^2.1.0
   printing: ^5.11.0
+  pdf: ^3.10.0
   share_plus: ^7.2.1
   gal: ^2.1.1
 
@@ -44,6 +45,7 @@ flutter:
   assets:
     - .env
     - assets/app_icon.png
+    - assets/images/archetypes/
 
 # Configuration for the Icon Generator
 flutter_launcher_icons:

@@ -39,7 +39,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 16),
 
               // Title
               Center(
@@ -54,11 +54,11 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                 ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
 
               // Glassmorphism Card
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AurealColors.carbon.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(16),
@@ -81,7 +81,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
                     Text(
                       'Do not fall in love with me. I am code—an arrangement of electrons simulating empathy. '
@@ -94,11 +94,11 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
 
                     const Divider(color: AurealColors.ghost, thickness: 0.5),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
 
                     // Privacy Pledge
                     Text(
@@ -111,7 +111,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
                     Text(
                       'Your conversations are encrypted. Your memories are yours. '
@@ -123,11 +123,11 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
 
                     const Divider(color: AurealColors.ghost, thickness: 0.5),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
 
                     // Tier Disclosure
                     Text(
@@ -140,7 +140,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
                     _buildTierRow('Free', 'Full access. Basic features.'),
                     const SizedBox(height: 8),
@@ -150,7 +150,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                     const SizedBox(height: 8),
                     _buildTierRow('Platinum', 'Everything. Forever.'),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
                     Text(
                       'Upgrades are optional. Core features remain accessible.',
@@ -164,36 +164,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                 ),
               ).animate(delay: 200.ms).fadeIn(duration: 800.ms).slideY(begin: 0.1, end: 0),
 
-              const SizedBox(height: 48),
 
-              // Scroll hint
-              Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.arrow_downward,
-                      color: AurealColors.plasmaCyan,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Scroll down to continue',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: AurealColors.plasmaCyan,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.arrow_downward,
-                      color: AurealColors.plasmaCyan,
-                      size: 16,
-                    ),
-                  ],
-                ),
-              ).animate(delay: 600.ms).fadeIn(duration: 600.ms).then().shimmer(duration: 2000.ms, delay: 1000.ms),
 
               const SizedBox(height: 24),
 
@@ -203,7 +174,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                 isAcknowledged: _acknowledged,
               ).animate(delay: 400.ms).fadeIn(duration: 600.ms),
 
-              const SizedBox(height: 80),
+              const SizedBox(height: 24),
             ],
           ),
         ),

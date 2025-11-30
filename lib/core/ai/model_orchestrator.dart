@@ -1,4 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'providers/anthropic_provider.dart';
+import 'providers/gemini_provider.dart';
+import 'providers/openai_provider.dart';
 
 part 'model_orchestrator.g.dart';
 
@@ -32,8 +35,18 @@ class ModelConfig {
 
 @Riverpod(keepAlive: true)
 class ModelOrchestrator extends _$ModelOrchestrator {
+  // AI Provider instances
+  late final AnthropicProvider _anthropicProvider;
+  late final GeminiProvider _geminiProvider;
+  late final OpenAiProvider _openAiProvider;
+
   @override
   ModelConfig build() {
+    // Initialize providers
+    _anthropicProvider = AnthropicProvider();
+    _geminiProvider = GeminiProvider();
+    _openAiProvider = OpenAiProvider();
+
     // In the future, load this from remote config or settings
     return const ModelConfig();
   }
@@ -50,17 +63,37 @@ class ModelOrchestrator extends _$ModelOrchestrator {
     }
   }
 
-  /// Simulates routing a request to the correct provider.
-  /// In a real implementation, this would call the specific AiProvider.
+  /// Routes a request to the correct AI provider based on task type.
   Future<String> routeRequest({
     required String prompt,
     required AiTaskType taskType,
     String? systemPrompt,
   }) async {
     final modelId = getModelForTask(taskType);
-    
-    // TODO: Integrate actual providers here.
-    // For now, we return a simulated response to verify routing logic.
-    return '[ROUTER] Routed task "$taskType" to model "$modelId".\nResponse: Simulated output for $prompt';
+
+    try {
+      switch (taskType) {
+        case AiTaskType.personality:
+          return await _anthropicProvider.generateResponse(
+            prompt: prompt,
+            systemPrompt: systemPrompt,
+            modelId: modelId,
+          );
+        case AiTaskType.agentic:
+          return await _geminiProvider.generateResponse(
+            prompt: prompt,
+            systemPrompt: systemPrompt,
+            modelId: modelId,
+          );
+        case AiTaskType.heavyLifting:
+          return await _openAiProvider.generateResponse(
+            prompt: prompt,
+            systemPrompt: systemPrompt,
+            modelId: modelId,
+          );
+      }
+    } catch (e) {
+      return '[ERROR] Failed to get response from ${taskType.name} provider: $e';
+    }
   }
 }

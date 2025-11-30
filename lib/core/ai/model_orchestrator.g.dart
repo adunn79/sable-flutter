@@ -6,7 +6,7 @@ part of 'model_orchestrator.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$modelOrchestratorHash() => r'768cb42db5096ddb923d7ca7e68781b4d02e25d2';
+String _$modelOrchestratorHash() => r'770331774b33e9d95de79344ecaed457df85e29f';
 
 /// See also [ModelOrchestrator].
 @ProviderFor(ModelOrchestrator)

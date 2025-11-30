@@ -67,7 +67,42 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                       ),
                     ).animate(delay: 200.ms).fadeIn(duration: 600.ms),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 8),
+
+                    // Note about customization
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AurealColors.plasmaCyan.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AurealColors.plasmaCyan.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: AurealColors.plasmaCyan,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'You can keep or change the appearance on the next screen.',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: AurealColors.plasmaCyan,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ).animate(delay: 300.ms).fadeIn(duration: 600.ms),
+
+                    const SizedBox(height: 32),
 
                     // Archetype Cards
                     _buildArchetypeCard(

@@ -38,7 +38,77 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       setState(() {
         _avatarUrl = _stateService?.avatarUrl;
       });
+      
+      // Send initial AI greeting if this is the first time entering chat
+      if (_messages.isEmpty && _stateService != null) {
+        await _sendInitialGreeting();
+      }
     }
+  }
+
+  Future<void> _sendInitialGreeting() async {
+    if (_stateService == null) return;
+    
+    final name = _stateService!.userName;
+    final location = _stateService!.userLocation;
+    final dob = _stateService!.userDob;
+    
+    if (name != null || location != null) {
+      setState(() {
+        _isTyping = true;
+      });
+      
+      try {
+        // Build personalized greeting prompt
+        String greetingPrompt = 'Generate a warm, personalized greeting for the user. ';
+        if (name != null) greetingPrompt += 'Their name is $name. ';
+        if (location != null) greetingPrompt += 'They are in $location. ';
+        if (dob != null) {
+          final zodiac = _getZodiacSign(dob);
+          greetingPrompt += 'Their zodiac sign is $zodiac. ';
+        }
+        greetingPrompt += 'Mention the current date (${DateTime.now().toString().split(' ')[0]}) and express excitement to get to know them better. Keep it natural, friendly, and conversational (2-3 sentences max).';
+        
+        final orchestrator = ref.read(modelOrchestratorProvider.notifier);
+        final greeting = await orchestrator.orchestratedRequest(
+          prompt: greetingPrompt,
+          userContext: 'This is your first message to the user.',
+        );
+        
+        if (mounted) {
+          setState(() {
+            _messages.add({'message': greeting, 'isUser': false});
+            _isTyping = false;
+          });
+          _scrollToBottom();
+        }
+      } catch (e) {
+        debugPrint('Error generating initial greeting: $e');
+        if (mounted) {
+          setState(() {
+            _isTyping = false;
+          });
+        }
+      }
+    }
+  }
+
+  String _getZodiacSign(DateTime date) {
+    final day = date.day;
+    final month = date.month;
+    
+    if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) return 'Aquarius';
+    if ((month == 2 && day >= 19) || (month == 3 && day <= 20)) return 'Pisces';
+    if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) return 'Aries';
+    if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) return 'Taurus';
+    if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) return 'Gemini';
+    if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) return 'Cancer';
+    if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) return 'Leo';
+    if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) return 'Virgo';
+    if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) return 'Libra';
+    if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) return 'Scorpio';
+    if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) return 'Sagittarius';
+    return 'Capricorn';
   }
 
   Future<void> _sendMessage() async {
@@ -54,18 +124,41 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
 
     try {
-      // Build user context string
+      // Build comprehensive user context string
       String? userContext;
       if (_stateService != null) {
         final name = _stateService!.userName;
         final dob = _stateService!.userDob;
         final location = _stateService!.userLocation;
+        final gender = _stateService!.userGender;
         
-        if (name != null) {
-          userContext = 'User Name: $name. ';
-          if (dob != null) userContext += 'Date of Birth: ${dob.toIso8601String().split('T')[0]}. ';
-          if (location != null) userContext += 'Location: $location. ';
+        // Debug logging
+        debugPrint('=== USER CONTEXT DEBUG ===');
+        debugPrint('Name: $name');
+        debugPrint('DOB: $dob');
+        debugPrint('Location: $location');
+        debugPrint('Gender: $gender');
+        debugPrint('=========================');
+        
+        if (name != null || location != null || dob != null) {
+          // Format context prominently
+          userContext = '\n\n[USER PROFILE]\n';
+          if (name != null) userContext += 'Name: $name\n';
+          if (dob != null) {
+            final age = DateTime.now().difference(dob).inDays ~/ 365;
+            userContext += 'Date of Birth: ${dob.toIso8601String().split('T')[0]} (Age: $age)\n';
+          }
+          if (location != null) userContext += 'Location: $location\n';
+          if (gender != null) userContext += 'Gender: $gender\n';
+          userContext += 'Current Date: ${DateTime.now().toIso8601String().split('T')[0]}\n';
+          userContext += '[END PROFILE]\n';
+          
+          debugPrint('Formatted context:\n$userContext');
+        } else {
+          debugPrint('WARNING: No user data found in OnboardingStateService!');
         }
+      } else {
+        debugPrint('ERROR: _stateService is null!');
       }
 
       // Use orchestrated routing - Gemini decides Claude vs GPT-4o

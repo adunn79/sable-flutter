@@ -78,7 +78,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       final genesisService = GenesisService();
       final certificateData = genesisService.generateCertificate(
         race: config.race,
-        gender: _userProfile!.genderIdentity ?? 'Unknown',
+        gender: config.gender,  // Use companion's gender, not user's
         age: config.apparentAge,
         origin: config.origin,
       );

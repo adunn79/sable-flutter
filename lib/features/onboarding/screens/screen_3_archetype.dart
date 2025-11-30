@@ -97,6 +97,16 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                       'assets/images/archetypes/echo.png',
                       delay: 600,
                     ),
+
+                    const SizedBox(height: 16),
+
+                    _buildArchetypeCard(
+                      'Custom',
+                      'Your Vision • Your Choice',
+                      'Start from scratch and build your ideal companion from the ground up.',
+                      null, // No image for custom
+                      delay: 700,
+                    ),
                   ],
                 ),
               ),
@@ -123,7 +133,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
     String archetype,
     String subtitle,
     String description,
-    String imagePath,
+    String? imagePath,
     {required int delay}
   ) {
     final isSelected = _selectedArchetype == archetype;
@@ -147,16 +157,38 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
         ),
         child: Row(
           children: [
-            // Archetype Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                imagePath,
+            // Archetype Image or Icon
+            if (imagePath != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  imagePath,
+                  width: 80,
+                  height: 120,
+                  fit: BoxFit.cover,
+                ),
+              )
+            else
+              Container(
                 width: 80,
                 height: 120,
-                fit: BoxFit.cover,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AurealColors.hyperGold.withOpacity(0.3),
+                      AurealColors.plasmaCyan.withOpacity(0.3),
+                    ],
+                  ),
+                ),
+                child: const Icon(
+                  Icons.add_circle_outline,
+                  color: AurealColors.stardust,
+                  size: 40,
+                ),
               ),
-            ),
             const SizedBox(width: 16),
             // Text Content
             Expanded(

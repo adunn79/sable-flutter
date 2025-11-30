@@ -35,6 +35,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
   bool _isGenerating = false;
   String? _generatedImageUrl;
+  bool? _showCustomization; // null = choice not made, true = customize, false = use as-is
 
   @override
   void initState() {
@@ -44,7 +45,36 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
   Future<void> _initServices() async {
     _stateService = await OnboardingStateService.create();
+    // Auto-show customization for "Custom" archetype
+    if (widget.archetype == 'Custom') {
+      _showCustomization = true;
+    }
     setState(() {});
+  }
+
+  void _handleUseAsIs() {
+    // Create default avatar config for the selected archetype
+    final config = AvatarConfig(
+      archetype: widget.archetype,
+      apparentAge: _apparentAge,
+      origin: _origin,
+      build: _build,
+      skinTone: _skinTone,
+      eyeColor: _eyeColor,
+      hairStyle: _hairStyle,
+      fashionAesthetic: _fashionAesthetic,
+      distinguishingMark: _distinguishingMark,
+    );
+    
+    // Use archetype image as default
+    final imageUrl = 'assets/images/archetypes/${widget.archetype.toLowerCase()}.png';
+    widget.onComplete(config, imageUrl);
+  }
+
+  void _handleCustomize() {
+    setState(() {
+      _showCustomization = true;
+    });
   }
 
   Future<void> _handleManifest() async {
@@ -205,6 +235,120 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
   @override
   Widget build(BuildContext context) {
+    // Show choice screen if user hasn't decided and archetype is not Custom
+    if (_showCustomization == null) {
+      return _buildChoiceScreen();
+    }
+    
+    // Show customization form
+    return _buildCustomizationScreen();
+  }
+
+  Widget _buildChoiceScreen() {
+    return Scaffold(
+      backgroundColor: AurealColors.obsidian,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                widget.archetype.toUpperCase(),
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: AurealColors.hyperGold,
+                  letterSpacing: 2,
+                ),
+              ).animate().fadeIn(duration: 600.ms),
+              
+              const SizedBox(height: 16),
+              
+              Text(
+                'How would you like to proceed?',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  color: AurealColors.ghost,
+                ),
+                textAlign: TextAlign.center,
+              ).animate(delay: 200.ms).fadeIn(duration: 600.ms),
+              
+              const SizedBox(height: 48),
+              
+              // Use Default Appearance Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _handleUseAsIs,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'USE ${widget.archetype.toUpperCase()} AS-IS',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Keep the default appearance',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AurealColors.ghost,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ).animate(delay: 400.ms).fadeIn(duration: 600.ms).slideY(begin: 0.1, end: 0),
+              
+              const SizedBox(height: 16),
+              
+              // Customize Appearance Button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _handleCustomize,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    side: const BorderSide(color: AurealColors.plasmaCyan),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'CUSTOMIZE APPEARANCE',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AurealColors.plasmaCyan,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Design your own look',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AurealColors.ghost,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ).animate(delay: 500.ms).fadeIn(duration: 600.ms).slideY(begin: 0.1, end: 0),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomizationScreen() {
     return Scaffold(
       backgroundColor: AurealColors.obsidian,
       body: SafeArea(
@@ -220,7 +364,9 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
                     // Title
                     Text(
-                      'CUSTOMIZE ${widget.archetype.toUpperCase()}',
+                      widget.archetype == 'Custom' 
+                          ? 'CREATE YOUR COMPANION'
+                          : 'CUSTOMIZE ${widget.archetype.toUpperCase()}',
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -258,27 +404,122 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
                     const SizedBox(height: 24),
 
-                    // Origin
                     _buildSectionLabel('Origin (Accent)'),
                     const SizedBox(height: 8),
-                    _buildDropdown(
-                      value: _origin,
-                      items: [
-                        'United States, California',
-                        'United States, New York',
-                        'United Kingdom, London',
-                        'France, Paris',
-                        'Japan, Tokyo',
-                        'Australia, Sydney',
-                        'Brazil, São Paulo',
-                        'India, Mumbai',
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _origin = value;
-                          });
-                        }
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        return Autocomplete<String>(
+                          initialValue: TextEditingValue(text: _origin),
+                          optionsBuilder: (TextEditingValue textEditingValue) {
+                            if (textEditingValue.text == '') {
+                              return const Iterable<String>.empty();
+                            }
+                            return [
+                              'United States, California',
+                              'United States, New York',
+                              'United States, Texas',
+                              'United States, Florida',
+                              'United Kingdom, London',
+                              'United Kingdom, Manchester',
+                              'France, Paris',
+                              'France, Lyon',
+                              'Germany, Berlin',
+                              'Germany, Munich',
+                              'Japan, Tokyo',
+                              'Japan, Osaka',
+                              'South Korea, Seoul',
+                              'China, Shanghai',
+                              'China, Beijing',
+                              'Australia, Sydney',
+                              'Australia, Melbourne',
+                              'Brazil, São Paulo',
+                              'Brazil, Rio de Janeiro',
+                              'India, Mumbai',
+                              'India, Delhi',
+                              'Russia, Moscow',
+                              'Canada, Toronto',
+                              'Canada, Vancouver',
+                              'Italy, Rome',
+                              'Italy, Milan',
+                              'Spain, Madrid',
+                              'Spain, Barcelona',
+                              'Mexico, Mexico City',
+                              'Argentina, Buenos Aires',
+                              'South Africa, Cape Town',
+                              'Egypt, Cairo',
+                              'Turkey, Istanbul',
+                              'UAE, Dubai',
+                              'Singapore',
+                              'Thailand, Bangkok',
+                              'Vietnam, Ho Chi Minh City',
+                              'Indonesia, Jakarta',
+                              'Nigeria, Lagos',
+                              'Kenya, Nairobi',
+                            ].where((String option) {
+                              return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                            });
+                          },
+                          onSelected: (String selection) {
+                            setState(() {
+                              _origin = selection;
+                            });
+                          },
+                          fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                            // Update state when text changes (for custom input)
+                            textEditingController.addListener(() {
+                              _origin = textEditingController.text;
+                            });
+                            
+                            return TextFormField(
+                              controller: textEditingController,
+                              focusNode: focusNode,
+                              style: GoogleFonts.inter(color: AurealColors.stardust),
+                              decoration: InputDecoration(
+                                hintText: 'Type a city or country...',
+                                hintStyle: GoogleFonts.inter(color: AurealColors.ghost),
+                                filled: true,
+                                fillColor: AurealColors.carbon,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                suffixIcon: const Icon(Icons.search, color: AurealColors.ghost),
+                              ),
+                            );
+                          },
+                          optionsViewBuilder: (context, onSelected, options) {
+                            return Align(
+                              alignment: Alignment.topLeft,
+                              child: Material(
+                                elevation: 4,
+                                color: AurealColors.carbon,
+                                borderRadius: BorderRadius.circular(8),
+                                child: SizedBox(
+                                  width: constraints.maxWidth,
+                                  height: 200,
+                                  child: ListView.builder(
+                                    padding: EdgeInsets.zero,
+                                    itemCount: options.length,
+                                    itemBuilder: (BuildContext context, int index) {
+                                      final String option = options.elementAt(index);
+                                      return ListTile(
+                                        title: Text(
+                                          option,
+                                          style: GoogleFonts.inter(color: AurealColors.stardust),
+                                        ),
+                                        onTap: () {
+                                          onSelected(option);
+                                        },
+                                        hoverColor: AurealColors.plasmaCyan.withOpacity(0.1),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
                       },
                     ),
 

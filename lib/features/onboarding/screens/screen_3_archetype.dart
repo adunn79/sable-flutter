@@ -107,6 +107,19 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                       null, // No image for custom
                       delay: 700,
                     ),
+
+
+                    const SizedBox(height: 24),
+
+                    Text(
+                      'Note: You will have the option to keep these looks or regenerate new ones.',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AurealColors.ghost,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
+                    ).animate(delay: 800.ms).fadeIn(duration: 600.ms),
                   ],
                 ),
               ),

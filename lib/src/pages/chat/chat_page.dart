@@ -70,7 +70,6 @@ class _ChatPageState extends State<ChatPage> {
         });
         _scrollToBottom();
       }
-      }
     } catch (e) {
       debugPrint('Chat Error: $e'); // Added debug print
       if (mounted) {

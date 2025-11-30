@@ -2,6 +2,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'providers/anthropic_provider.dart';
 import 'providers/gemini_provider.dart';
 import 'providers/openai_provider.dart';
+import 'providers/grok_provider.dart';
+import 'providers/deepseek_provider.dart';
 
 part 'model_orchestrator.g.dart';
 
@@ -18,6 +20,14 @@ enum AiTaskType {
   /// Heavy logic, reasoning, coding, data processing.
   /// Best Model: GPT-4o / o1
   heavyLifting,
+
+  /// Direct, unfiltered, realistic analysis.
+  /// Best Model: Grok
+  realist,
+
+  /// Technical tasks, code generation, debugging.
+  /// Best Model: DeepSeek
+  coding,
 }
 
 /// Configuration for model IDs.
@@ -25,11 +35,15 @@ class ModelConfig {
   final String personalityModelId;
   final String agenticModelId;
   final String heavyLiftingModelId;
+  final String realistModelId;
+  final String codingModelId;
 
   const ModelConfig({
     this.personalityModelId = 'claude-3-haiku-20240307',
     this.agenticModelId = 'gemini-2.0-flash',
     this.heavyLiftingModelId = 'gpt-4o',
+    this.realistModelId = 'grok-3',
+    this.codingModelId = 'deepseek-chat',
   });
 }
 
@@ -39,6 +53,8 @@ class ModelOrchestrator extends _$ModelOrchestrator {
   late final AnthropicProvider _anthropicProvider;
   late final GeminiProvider _geminiProvider;
   late final OpenAiProvider _openAiProvider;
+  late final GrokProvider _grokProvider;
+  late final DeepSeekProvider _deepseekProvider;
 
   @override
   ModelConfig build() {
@@ -46,6 +62,8 @@ class ModelOrchestrator extends _$ModelOrchestrator {
     _anthropicProvider = AnthropicProvider();
     _geminiProvider = GeminiProvider();
     _openAiProvider = OpenAiProvider();
+    _grokProvider = GrokProvider();
+    _deepseekProvider = DeepSeekProvider();
 
     // In the future, load this from remote config or settings
     return const ModelConfig();
@@ -60,6 +78,10 @@ class ModelOrchestrator extends _$ModelOrchestrator {
         return state.agenticModelId;
       case AiTaskType.heavyLifting:
         return state.heavyLiftingModelId;
+      case AiTaskType.realist:
+        return state.realistModelId;
+      case AiTaskType.coding:
+        return state.codingModelId;
     }
   }
 
@@ -87,6 +109,18 @@ class ModelOrchestrator extends _$ModelOrchestrator {
           );
         case AiTaskType.heavyLifting:
           return await _openAiProvider.generateResponse(
+            prompt: prompt,
+            systemPrompt: systemPrompt,
+            modelId: modelId,
+          );
+        case AiTaskType.realist:
+          return await _grokProvider.generateResponse(
+            prompt: prompt,
+            systemPrompt: systemPrompt,
+            modelId: modelId,
+          );
+        case AiTaskType.coding:
+          return await _deepseekProvider.generateResponse(
             prompt: prompt,
             systemPrompt: systemPrompt,
             modelId: modelId,

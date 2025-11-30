@@ -4,7 +4,7 @@ import 'package:sable/core/ai/model_orchestrator.dart';
 import 'package:sable/src/config/app_config.dart';
 
 /// Automated test for AI provider integration
-/// Tests all three providers: Anthropic (Claude), Google (Gemini), OpenAI (GPT)
+/// Tests all 5 providers: Anthropic (Claude), Google (Gemini), OpenAI (GPT), Grok (xAI), DeepSeek
 void main() {
   setUpAll(() async {
     // Initialize app config to load .env variables
@@ -71,6 +71,40 @@ void main() {
       expect(response, isNotEmpty);
       expect(response.startsWith('[ERROR]'), isFalse,
           reason: 'OpenAI API should not return an error');
+    }, timeout: const Timeout(Duration(seconds: 30)));
+
+    test('Grok (xAI) - Realist Provider', () async {
+      print('\n🧪 Testing Grok (xAI) API...');
+      
+      final orchestrator = container.read(modelOrchestratorProvider.notifier);
+      
+      final response = await orchestrator.routeRequest(
+        prompt: 'What is the meaning of life? Be direct and honest in one sentence.',
+        taskType: AiTaskType.realist,
+      );
+
+      print('✅ Grok Response: $response');
+      
+      expect(response, isNotEmpty);
+      expect(response.startsWith('[ERROR]'), isFalse,
+          reason: 'Grok API should not return an error');
+    }, timeout: const Timeout(Duration(seconds: 30)));
+
+    test('DeepSeek - Coding Provider', () async {
+      print('\n🧪 Testing DeepSeek AI API...');
+      
+      final orchestrator = container.read(modelOrchestratorProvider.notifier);
+      
+      final response = await orchestrator.routeRequest(
+        prompt: 'Write a Python function that adds two numbers. Just the code, no explanation.',
+        taskType: AiTaskType.coding,
+      );
+
+      print('✅ DeepSeek Response: $response');
+      
+      expect(response, isNotEmpty);
+      expect(response.startsWith('[ERROR]'), isFalse,
+          reason: 'DeepSeek API should not return an error');
     }, timeout: const Timeout(Duration(seconds: 30)));
   });
 }

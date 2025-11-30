@@ -3,13 +3,15 @@ import 'dart:convert';
 class UserProfile {
   final String name;
   final DateTime dateOfBirth;
-  final String location;
+  final String location; // Birth place
+  final String? currentLocation; // Current location
   final String? genderIdentity;
 
   UserProfile({
     required this.name,
     required this.dateOfBirth,
     required this.location,
+    this.currentLocation,
     this.genderIdentity,
   });
 

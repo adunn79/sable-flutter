@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
 import 'package:sable/core/identity/bond_engine.dart';
 import 'package:sable/features/settings/widgets/settings_tile.dart';
+import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -119,11 +120,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: 'Reset Bond Graph completely',
             icon: Icons.delete_forever,
             isDestructive: true,
-            onTap: () {
-              // TODO: Implement nuclear wipe
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Nuclear wipe initiated...')),
-              );
+            onTap: () async {
+              final service = await OnboardingStateService.create();
+              await service.clearOnboardingData();
+              
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Memory wiped. Please restart the app.')),
+                );
+                // Optional: Navigate back to splash or onboarding
+                // Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+              }
             },
           ),
 

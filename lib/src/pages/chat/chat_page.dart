@@ -69,7 +69,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     if (_stateService == null) return;
     
     final name = _stateService!.userName;
-    final location = _stateService!.userLocation;
+    final location = _stateService!.userCurrentLocation ?? _stateService!.userLocation;
     final dob = _stateService!.userDob;
     
     if (name != null || location != null) {
@@ -86,7 +86,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           final zodiac = _getZodiacSign(dob);
           greetingPrompt += 'Their zodiac sign is $zodiac. ';
         }
-        greetingPrompt += 'Mention the current date (${DateTime.now().toString().split(' ')[0]}) and express excitement to get to know them better. Keep it natural, friendly, and conversational (2-3 sentences max).';
+        greetingPrompt += 'Mention the current date (${DateTime.now().toString().split(' ')[0]}) and express excitement to get to know them better. Keep it extremely concise (1-2 short sentences max). Do not be wordy.';
         
         final orchestrator = ref.read(modelOrchestratorProvider.notifier);
         final greeting = await orchestrator.orchestratedRequest(
@@ -155,7 +155,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (_stateService != null) {
         final name = _stateService!.userName;
         final dob = _stateService!.userDob;
-        final location = _stateService!.userLocation;
+        final location = _stateService!.userCurrentLocation ?? _stateService!.userLocation;
         final gender = _stateService!.userGender;
         
         if (name != null || location != null || dob != null) {
@@ -184,7 +184,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             userContext += _emotionalService!.getEmotionalContext();
           }
           
-          // Add environmental context
+          // Add environmental context (weather-aware if location available)
           userContext += '\n[ENVIRONMENT]\n';
           userContext += await EnvironmentContext.getTimeContext(location: location);
           userContext += '\n[END ENVIRONMENT]\n';
@@ -222,7 +222,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         
         // Update emotional state based on interaction
         if (_emotionalService != null) {
-          final location = _stateService?.userLocation;
+          final location = _stateService?.userCurrentLocation ?? _stateService?.userLocation;
           final environmentMod = await EnvironmentContext.getMoodModifier(location: location);
           await _emotionalService!.updateMood(
             sentimentScore: sentiment.polarity,

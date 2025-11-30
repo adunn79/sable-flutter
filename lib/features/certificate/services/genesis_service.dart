@@ -1,39 +1,37 @@
 import 'dart:math';
 import '../models/certificate_data.dart';
+import 'package:sable/features/onboarding/models/user_profile.dart';
 
 class GenesisService {
-  CertificateData generateCertificate({
-    required String race,
-    required String gender,
-    required int age,
-    required String origin,
-  }) {
-    final now = DateTime.now();
-    final dateOfBirth = DateTime(now.year - age, now.month, now.day);
+  static Future<CertificateData> generateCertificate(UserProfile profile, String avatarPath) async {
+    // Generate unique ID
+    final id = 'SBL-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
     
-    String formattedRace = race;
-    if (!race.contains('(Synthetic Human)')) {
-      formattedRace = '$race (Synthetic Human)';
-    }
+    // Calculate age
+    final age = DateTime.now().difference(profile.dateOfBirth).inDays ~/ 365;
+    
+    // Determine zodiac
+    final zodiac = _getZodiacSign(profile.dateOfBirth);
     
     return CertificateData(
-      id: _generateId(),
-      dateOfBirth: dateOfBirth,
-      zodiacSign: _getZodiacSign(dateOfBirth),
+      id: id,
+      dateOfBirth: profile.dateOfBirth,
+      zodiacSign: zodiac,
       ageAtInception: age,
-      placeOfBirth: origin.toUpperCase(),
-      race: formattedRace.toUpperCase(),
-      gender: gender,
+      placeOfBirth: profile.location,
+      race: 'SABLE (SYNTHETIC HUMAN)',
+      gender: profile.genderIdentity ?? 'UNKNOWN',
+      avatarPath: avatarPath,
     );
   }
 
-  String _generateId() {
+  static String _generateId() {
     final random = Random();
     final idNumber = random.nextInt(900000) + 100000; // Generates 100000 to 999999
     return 'SBL-$idNumber';
   }
 
-  String _getZodiacSign(DateTime date) {
+  static String _getZodiacSign(DateTime date) {
     final day = date.day;
     final month = date.month;
 

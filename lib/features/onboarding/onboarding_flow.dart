@@ -75,12 +75,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
 
     // Generate Certificate Data
     if (_userProfile != null) {
-      final genesisService = GenesisService();
-      final certificateData = genesisService.generateCertificate(
-        race: config.race,
-        gender: config.gender,  // Use companion's gender, not user's
-        age: config.apparentAge,
-        origin: config.origin,
+      final certificateData = await GenesisService.generateCertificate(
+        _userProfile!,
+        imageUrl,
       );
       
       setState(() {
@@ -96,6 +93,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         name: _userProfile!.name,
         dob: _userProfile!.dateOfBirth,
         location: _userProfile!.location,
+        currentLocation: _userProfile!.currentLocation,
         gender: _userProfile!.genderIdentity,
       );
     }

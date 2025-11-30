@@ -63,7 +63,8 @@ class OnboardingStateService {
 
   static const String _keyUserName = 'user_name';
   static const String _keyUserDob = 'user_dob';
-  static const String _keyUserLocation = 'user_location';
+  static const String _keyUserLocation = 'user_location'; // Birth place
+  static const String _keyUserCurrentLocation = 'user_current_location'; // Current location
   static const String _keyUserGender = 'user_gender';
 
   /// Save user profile data
@@ -71,11 +72,15 @@ class OnboardingStateService {
     required String name,
     required DateTime dob,
     required String location,
+    String? currentLocation,
     String? gender,
   }) async {
     await _prefs.setString(_keyUserName, name);
     await _prefs.setString(_keyUserDob, dob.toIso8601String());
     await _prefs.setString(_keyUserLocation, location);
+    if (currentLocation != null) {
+      await _prefs.setString(_keyUserCurrentLocation, currentLocation);
+    }
     if (gender != null) {
       await _prefs.setString(_keyUserGender, gender);
     }
@@ -91,8 +96,11 @@ class OnboardingStateService {
     return DateTime.tryParse(dobStr);
   }
 
-  /// Get user location
+  /// Get user location (birth place)
   String? get userLocation => _prefs.getString(_keyUserLocation);
+
+  /// Get user current location
+  String? get userCurrentLocation => _prefs.getString(_keyUserCurrentLocation);
 
   /// Get user gender
   String? get userGender => _prefs.getString(_keyUserGender);
@@ -105,6 +113,7 @@ class OnboardingStateService {
     await _prefs.remove(_keyUserName);
     await _prefs.remove(_keyUserDob);
     await _prefs.remove(_keyUserLocation);
+    await _prefs.remove(_keyUserCurrentLocation);
     await _prefs.remove(_keyUserGender);
   }
 }

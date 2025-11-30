@@ -17,7 +17,10 @@ class CertificateData {
     required this.placeOfBirth,
     required this.race,
     required this.gender,
+    required this.avatarPath,
   });
+
+  final String avatarPath;
 
   String get formattedDob => DateFormat('MMMM d, yyyy').format(dateOfBirth);
 }

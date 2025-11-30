@@ -41,7 +41,7 @@ class ModelConfig {
 
   const ModelConfig({
     this.personalityModelId = 'claude-3-haiku-20240307',
-    this.agenticModelId = 'gemini-2.0-flash',
+    this.agenticModelId = 'gemini-1.5-pro',
     this.heavyLiftingModelId = 'gpt-4o',
     this.realistModelId = 'grok-3',
     this.codingModelId = 'deepseek-chat',
@@ -132,11 +132,13 @@ class ModelOrchestrator extends _$ModelOrchestrator {
     }
   }
 
+  GeminiProvider get geminiProvider => _geminiProvider;
+
   /// Orchestrated request using Gemini as meta-routing layer.
   /// 
   /// This method:
   /// 1. Sends user message to Gemini with orchestrator directive
-  /// 2. Gemini analyzes and decides: Claude (complex) or GPT-4o (fast)
+  /// 2. Gemini analyzes and decides: Claude (complex), GPT-4o (fast), or Web Search
   /// 3. Routes to selected model
   /// 4. Returns response (optional: sanitize with Gemini)
   Future<String> orchestratedRequest({
@@ -162,6 +164,7 @@ Options:
 - GPT4O: Fast facts, summaries, lists, simple queries
 - GROK: Unfiltered opinions, real-time news, "roast me", edgy humor
 - DEEPSEEK: Coding, technical debugging, math, logic puzzles
+- WEB_SEARCH: Queries requiring real-time info, news, weather, or current events
 
 Return ONLY the JSON, nothing else.
 ''';
@@ -208,6 +211,14 @@ STYLE: Friendly, warm, and conversational while being clear and efficient. Mirro
 STYLE: Direct but still warm and bonding. Match user's vibe. Use humor and real talk to connect authentically.'''.replaceFirst(r'${userContext}', userContext ?? '');
       
       switch (selectedModel) {
+        case 'WEB_SEARCH':
+          // Use Gemini with Grounding via REST API workaround
+          return await _geminiProvider.generateResponseWithGrounding(
+            prompt: 'Search the web and answer this query: $prompt',
+            systemPrompt: '${userContext ?? ""}You are Sable. Provide up-to-date information found from the web.',
+            modelId: state.agenticModelId,
+          );
+          
         case 'CLAUDE':
           return await _anthropicProvider.generateResponse(
             prompt: prompt,

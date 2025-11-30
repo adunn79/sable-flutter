@@ -29,7 +29,7 @@ dependencies:
   pdf: ^3.10.0
   share_plus: ^7.2.1
   gal: ^2.1.1
-  google_generative_ai: ^0.4.6
+  google_generative_ai: ^0.4.7
   dart_openai: ^5.1.0
 
 dev_dependencies:

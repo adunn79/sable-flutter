@@ -7,6 +7,10 @@ import 'package:sable/core/ai/model_orchestrator.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:sable/features/settings/screens/settings_screen.dart';
+import 'package:sable/core/emotion/emotional_state_service.dart';
+import 'package:sable/core/emotion/sentiment_analyzer.dart';
+import 'package:sable/core/emotion/environment_context.dart';
+import 'package:sable/core/emotion/conversation_memory_service.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});
@@ -18,8 +22,9 @@ class ChatPage extends ConsumerStatefulWidget {
 class _ChatPageState extends ConsumerState<ChatPage> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  // Removed direct instantiation: final ModelOrchestrator _orchestrator = ModelOrchestrator();
   OnboardingStateService? _stateService;
+  EmotionalStateService? _emotionalService;
+  ConversationMemoryService? _memoryService;
   
   bool _isTyping = false;
   String? _avatarUrl;
@@ -34,10 +39,24 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   Future<void> _initService() async {
     _stateService = await OnboardingStateService.create();
+    _emotionalService = await EmotionalStateService.create();
+    _memoryService = await ConversationMemoryService.create();
+    
     if (mounted) {
       setState(() {
         _avatarUrl = _stateService?.avatarUrl;
       });
+      
+      // Load message history from persistent storage
+      final storedMessages = _memoryService!.getAllMessages();
+      if (storedMessages.isNotEmpty) {
+        setState(() {
+          _messages.addAll(storedMessages.map((msg) => {
+            'message': msg.message,
+            'isUser': msg.isUser,
+          }));
+        });
+      }
       
       // Send initial AI greeting if this is the first time entering chat
       if (_messages.isEmpty && _stateService != null) {
@@ -115,12 +134,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
+    // Save user message to persistent memory
+    await _memoryService?.addMessage(message: text, isUser: true);
+    
     setState(() {
       _messages.add({'message': text, 'isUser': true});
       _isTyping = true;
       _controller.clear();
     });
     _scrollToBottom();
+
+    // Analyze sentiment of user message
+    final sentiment = SentimentAnalyzer.analyze(text);
+    debugPrint('Sentiment: ${sentiment.polarity}, Mistreatment: ${sentiment.isMistreatment}, Positive: ${sentiment.isPositive}');
 
 
     try {
@@ -154,19 +180,25 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           userContext += 'Current Date: ${DateTime.now().toIso8601String().split('T')[0]}\n';
           userContext += '[END PROFILE]\n';
           
-          // Add conversation history (last 5 messages) for context
-          if (_messages.length > 1) {
-            userContext += '\n[RECENT CONVERSATION]\n';
-            final recentMessages = _messages.skip((_messages.length - 5).clamp(0, _messages.length)).toList();
-            for (var msg in recentMessages) {
-              final speaker = msg['isUser'] as bool ? 'User' : 'You';
-              userContext += '$speaker: ${msg['message']}\n';
-            }
-            userContext += '[END CONVERSATION]\n';
+          // Add conversation history (last 20 messages) from persistent storage
+          if (_memoryService != null) {
+            userContext += '\n';
+            userContext += _memoryService!.getConversationContext(messageCount: 20);
           }
           
+          // Add emotional state context
+          if (_emotionalService != null) {
+            userContext += '\n';
+            userContext += _emotionalService!.getEmotionalContext();
+          }
+          
+          // Add environmental context
+          userContext += '\n[ENVIRONMENT]\n';
+          userContext += EnvironmentContext.getTimeContext();
+          userContext += '\n[END ENVIRONMENT]\n';
+          
           // Add companion's origin for accent/personality
-          userContext += '\n[YOUR IDENTITY]\nOrigin: ${_avatarUrl != null ? "Neo-Kyoto, Sector 7" : "Unknown"}\n'; // TODO: Load actual origin from avatar config
+          userContext += '\n[YOUR IDENTITY]\nOrigin: ${_avatarUrl != null ? "Neo-Kyoto, Sector 7" : "Unknown"}\n';
           
           debugPrint('Formatted context:\n$userContext');
         } else {
@@ -184,14 +216,34 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       );
 
       if (mounted) {
+        // Save AI response to persistent memory
+        await _memoryService?.addMessage(message: response, isUser: false);
+        
         setState(() {
           _messages.add({
             'message': response,
-            'isUser': false
+            'isUser': false,
           });
           _isTyping = false;
         });
         _scrollToBottom();
+        
+        // Update emotional state based on interaction
+        if (_emotionalService != null) {
+          final environmentMod = EnvironmentContext.getMoodModifier();
+          await _emotionalService!.updateMood(
+            sentimentScore: sentiment.polarity,
+            environmentalModifier: environmentMod,
+            isMistreatment: sentiment.isMistreatment,
+            isPositive: sentiment.isPositive,
+          );
+          
+          // Update energy based on time of day
+          final energyMod = EnvironmentContext.getEnergyModifier();
+          await _emotionalService!.updateEnergy(energyMod);
+          
+          debugPrint('Updated mood: ${_emotionalService!.mood}, relationship: ${_emotionalService!.userRelationship}');
+        }
       }
     } catch (e) {
       debugPrint('Chat Error: $e'); // Added debug print

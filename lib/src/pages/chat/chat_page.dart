@@ -70,11 +70,13 @@ class _ChatPageState extends State<ChatPage> {
         });
         _scrollToBottom();
       }
+      }
     } catch (e) {
+      debugPrint('Chat Error: $e'); // Added debug print
       if (mounted) {
         setState(() {
           _messages.add({
-            'message': "I'm having trouble connecting right now. Please try again.",
+            'message': "I'm having trouble connecting right now. Please try again. ($e)", // Show error for debugging
             'isUser': false
           });
           _isTyping = false;
@@ -139,8 +141,10 @@ class _ChatPageState extends State<ChatPage> {
 
           // 3. Content
           SafeArea(
+            top: false, // Disable top SafeArea to handle it manually with padding
             child: Column(
               children: [
+                const SizedBox(height: 60), // Added manual spacing for header
                 _buildHeader(),
                 const SizedBox(height: 16),
                 _buildFloatingChips(),

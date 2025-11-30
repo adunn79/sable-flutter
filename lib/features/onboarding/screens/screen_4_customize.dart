@@ -26,6 +26,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
   int _apparentAge = 25;
   String _origin = 'United States, California';
+  String _race = 'Sable (Synthetic Human)';
   String _build = 'Athletic';
   String _skinTone = 'Golden/Tan';
   String _eyeColor = 'Amber/Honey';
@@ -60,6 +61,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
       gender: _getGender(),
       apparentAge: _apparentAge,
       origin: _origin,
+      race: _race,
       build: _build,
       skinTone: _skinTone,
       eyeColor: _eyeColor,
@@ -96,6 +98,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
         gender: _getGender(),
         apparentAge: _apparentAge,
         origin: _origin,
+        race: _race,
         build: _build,
         skinTone: _skinTone,
         eyeColor: _eyeColor,
@@ -230,6 +233,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                 gender: _getGender(),
                 apparentAge: _apparentAge,
                 origin: _origin,
+                race: _race,
                 build: _build,
                 skinTone: _skinTone,
                 eyeColor: _eyeColor,
@@ -550,6 +554,34 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
                     const SizedBox(height: 24),
 
+                    // Race
+                    _buildSectionLabel('Race'),
+                    const SizedBox(height: 8),
+                    _buildDropdown(
+                      value: _race,
+                      items: [
+                        'Sable (Synthetic Human)',
+                        'Caucasian',
+                        'Asian',
+                        'Black/African Descent',
+                        'Latino/Hispanic',
+                        'Middle Eastern',
+                        'South Asian',
+                        'Pacific Islander',
+                        'Indigenous',
+                        'Mixed Heritage',
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _race = value;
+                          });
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+
                     // Build
                     _buildSectionLabel('Build'),
                     const SizedBox(height: 8),
@@ -653,6 +685,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                       items: [
                         'Executive (Suit)',
                         'Casual (Denim/Comfort)',
+                        'Evening Gown (Elegant/Alluring)',
                         'Minimalist (Basics)',
                         'Evening (Formal)',
                         'Technical (Sport/Gym)',

@@ -5,17 +5,24 @@ class GenesisService {
   CertificateData generateCertificate({
     required String race,
     required String gender,
+    required int age,
+    required String origin,
   }) {
     final now = DateTime.now();
-    final dateOfBirth = DateTime(now.year - 21, now.month, now.day);
+    final dateOfBirth = DateTime(now.year - age, now.month, now.day);
+    
+    String formattedRace = race;
+    if (!race.contains('(Synthetic Human)')) {
+      formattedRace = '$race (Synthetic Human)';
+    }
     
     return CertificateData(
       id: _generateId(),
       dateOfBirth: dateOfBirth,
       zodiacSign: _getZodiacSign(dateOfBirth),
-      ageAtInception: 21,
-      placeOfBirth: 'Neo-Kyoto, Sector 7',
-      race: '$race (Synthetic Human)',
+      ageAtInception: age,
+      placeOfBirth: origin.toUpperCase(),
+      race: formattedRace.toUpperCase(),
       gender: gender,
     );
   }

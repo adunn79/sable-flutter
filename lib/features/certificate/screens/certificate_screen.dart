@@ -105,7 +105,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: const Color(0xFF020617), // Slate 950
       body: SafeArea(
         child: Column(
           children: [
@@ -113,152 +113,182 @@ class _CertificateScreenState extends State<CertificateScreen> {
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: RepaintBoundary(
-                    key: _certificateKey,
-                    child: AspectRatio(
-                      aspectRatio: 1.4, // Slightly taller to fit content
-                      child: CustomPaint(
-                        painter: CircuitBorderPainter(),
-                        child: Container(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Stack(
-                            children: [
-                              // Background Watermark
-                              Center(
-                                child: Opacity(
-                                  opacity: 0.05,
-                                  child: Text(
-                                    'AUREAL',
-                                    style: GoogleFonts.spaceGrotesk(
-                                      fontSize: 80,
-                                      fontWeight: FontWeight.bold,
-                                      color: AurealColors.plasmaCyan,
-                                      letterSpacing: 10,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Calculate scale to fit content if needed
+                      final double scale = constraints.maxHeight < 600 ? 0.8 : 1.0;
+                      
+                      return Transform.scale(
+                        scale: scale,
+                        child: RepaintBoundary(
+                          key: _certificateKey,
+                          child: AspectRatio(
+                            aspectRatio: 1.2, // Slightly wider than before
+                            child: CustomPaint(
+                              painter: CircuitBorderPainter(),
+                              child: Container(
+                                padding: const EdgeInsets.all(40.0),
+                                child: Stack(
+                                  children: [
+                                    // Background Watermark
+                                    Center(
+                                      child: Opacity(
+                                        opacity: 0.03,
+                                        child: Text(
+                                          'AUREAL',
+                                          style: GoogleFonts.spaceGrotesk(
+                                            fontSize: 80,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF06B6D4), // Cyan 500
+                                            letterSpacing: 10,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    
+                                    // Main Content
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const SizedBox(height: 20),
+                                        // Top Header
+                                        Text(
+                                          'OFFICIAL DOCUMENT',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            color: const Color(0xFF94A3B8), // Slate 400
+                                            letterSpacing: 3,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        
+                                        // Main Title with Glow
+                                        Text(
+                                          'CERTIFICATE OF ORIGIN',
+                                          style: GoogleFonts.spaceGrotesk(
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF22D3EE), // Cyan 400
+                                            letterSpacing: 2,
+                                            shadows: [
+                                              Shadow(
+                                                color: const Color(0xFF06B6D4).withOpacity(0.6),
+                                                blurRadius: 20,
+                                              ),
+                                            ],
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        
+                                        const SizedBox(height: 4),
+                                        // Decorative underline
+                                        Container(
+                                          width: 120,
+                                          height: 2,
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                Colors.transparent,
+                                                const Color(0xFFF59E0B), // Amber 500
+                                                Colors.transparent,
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 32),
+                                        
+                                        // Identity Subtitle
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              'COMPANION IDENTITY: ',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 14,
+                                                color: const Color(0xFFF59E0B), // Amber 500
+                                                letterSpacing: 1,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            Text(
+                                              widget.data.race.split(' ').first.toUpperCase(), // e.g. SABLE
+                                              style: GoogleFonts.spaceGrotesk(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: const Color(0xFF22D3EE), // Cyan 400
+                                                letterSpacing: 1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          width: 200,
+                                          height: 1,
+                                          color: const Color(0xFF1E293B), // Slate 800
+                                        ),
+                                        const SizedBox(height: 24),
+                                        
+                                        // Data Fields (Centered)
+                                        _buildCenteredField('REF. ID', widget.data.id),
+                                        _buildCenteredField('DATE OF BIRTH', widget.data.formattedDob.toUpperCase()),
+                                        _buildCenteredField('AGE AT INCEPTION', '${widget.data.ageAtInception} YEARS'),
+                                        _buildCenteredField('ZODIAC SIGN', widget.data.zodiacSign.toUpperCase()),
+                                        _buildCenteredField('PLACE OF BIRTH', widget.data.placeOfBirth.toUpperCase()),
+                                        _buildCenteredField('RACE', widget.data.race.toUpperCase()),
+                                        _buildCenteredField('GENDER', widget.data.gender.toUpperCase()),
+                                        
+                                        const Spacer(),
+                                        
+                                        // Footer
+                                        Text(
+                                          'AUTHORITY: AUREAL SYSTEMS',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            color: const Color(0xFF22D3EE), // Cyan 400
+                                            letterSpacing: 2,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        
+                                        // Seal (Gold Icon)
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: const Color(0xFFF59E0B), width: 2), // Amber 500
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(0xFFF59E0B).withOpacity(0.2),
+                                                blurRadius: 15,
+                                                spreadRadius: 2,
+                                              ),
+                                            ],
+                                          ),
+                                          child: Text(
+                                            'A',
+                                            style: GoogleFonts.spaceGrotesk(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                              color: const Color(0xFFF59E0B), // Amber 500
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                              
-                              // Main Content
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const SizedBox(height: 16),
-                                  // Top Header
-                                  Text(
-                                    'OFFICIAL DOCUMENT',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      color: AurealColors.plasmaCyan.withOpacity(0.7),
-                                      letterSpacing: 3,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  
-                                  // Main Title with Glow
-                                  Text(
-                                    'CERTIFICATE OF ORIGIN',
-                                    style: GoogleFonts.spaceGrotesk(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: AurealColors.plasmaCyan,
-                                      letterSpacing: 2,
-                                      shadows: [
-                                        Shadow(
-                                          color: AurealColors.plasmaCyan.withOpacity(0.8),
-                                          blurRadius: 15,
-                                        ),
-                                      ],
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    width: 200,
-                                    height: 1,
-                                    color: AurealColors.hyperGold.withOpacity(0.5),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  
-                                  // Identity Subtitle
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        'COMPANION IDENTITY: ',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 14,
-                                          color: AurealColors.hyperGold,
-                                          letterSpacing: 1,
-                                        ),
-                                      ),
-                                      Text(
-                                        widget.data.race.split(' ').first.toUpperCase(), // e.g. SABLE
-                                        style: GoogleFonts.spaceGrotesk(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: AurealColors.plasmaCyan,
-                                          letterSpacing: 1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  
-                                  const Spacer(),
-                                  
-                                  // Data Fields (Centered)
-                                  _buildCenteredField('REF. ID', widget.data.id),
-                                  _buildCenteredField('DATE OF BIRTH', widget.data.formattedDob.toUpperCase()),
-                                  _buildCenteredField('AGE AT INCEPTION', '${widget.data.ageAtInception} YEARS'),
-                                  _buildCenteredField('ZODIAC SIGN', widget.data.zodiacSign.toUpperCase()),
-                                  _buildCenteredField('PLACE OF BIRTH', widget.data.placeOfBirth.toUpperCase()),
-                                  _buildCenteredField('RACE', widget.data.race.toUpperCase()),
-                                  _buildCenteredField('GENDER', widget.data.gender.toUpperCase()),
-                                  
-                                  const Spacer(),
-                                  
-                                  // Footer
-                                  Text(
-                                    'AUTHORITY: AUREAL SYSTEMS',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      color: AurealColors.plasmaCyan,
-                                      letterSpacing: 2,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  
-                                  // Seal (Gold Icon)
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: AurealColors.hyperGold, width: 2),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: AurealColors.hyperGold.withOpacity(0.2),
-                                          blurRadius: 10,
-                                          spreadRadius: 2,
-                                        ),
-                                      ],
-                                    ),
-                                    child: const Icon(
-                                      Icons.verified_user_outlined,
-                                      color: AurealColors.hyperGold,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                ],
-                              ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -283,6 +313,10 @@ class _CertificateScreenState extends State<CertificateScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: widget.onComplete,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF59E0B), // Amber 500
+                    foregroundColor: Colors.black,
+                  ),
                   child: const Text('ENTER AUREA'),
                 ),
               ),
@@ -304,17 +338,18 @@ class _CertificateScreenState extends State<CertificateScreen> {
           Text(
             '$label: ',
             style: GoogleFonts.inter(
-              color: AurealColors.hyperGold,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+              color: const Color(0xFF94A3B8), // Slate 400
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
               letterSpacing: 0.5,
             ),
           ),
+          const SizedBox(width: 8),
           Flexible(
             child: Text(
               value,
               style: GoogleFonts.spaceGrotesk(
-                color: AurealColors.stardust,
+                color: const Color(0xFFE2E8F0), // Slate 200
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1,
@@ -332,16 +367,16 @@ class _CertificateScreenState extends State<CertificateScreen> {
       children: [
         IconButton(
           onPressed: onTap,
-          icon: Icon(icon, color: AurealColors.plasmaCyan),
+          icon: Icon(icon, color: const Color(0xFF22D3EE)), // Cyan 400
           style: IconButton.styleFrom(
-            backgroundColor: AurealColors.carbon,
+            backgroundColor: const Color(0xFF1E293B), // Slate 800
             padding: const EdgeInsets.all(16),
           ),
         ),
         const SizedBox(height: 8),
         Text(
           label,
-          style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 12),
+          style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 12), // Slate 400
         ),
       ],
     );

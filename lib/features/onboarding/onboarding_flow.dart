@@ -77,8 +77,10 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     if (_userProfile != null) {
       final genesisService = GenesisService();
       final certificateData = genesisService.generateCertificate(
-        race: config.archetype, // Using archetype as race/base
+        race: config.race,
         gender: _userProfile!.genderIdentity ?? 'Unknown',
+        age: config.apparentAge,
+        origin: config.origin,
       );
       
       setState(() {

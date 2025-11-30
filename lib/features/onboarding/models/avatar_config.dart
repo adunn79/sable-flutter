@@ -5,6 +5,7 @@ class AvatarConfig {
   final String gender; // Female, Male, Non-binary
   final int apparentAge; // Min 18
   final String origin; // Country and region for accent
+  final String race; // Caucasian, Asian, Black, etc.
   final String build; // Petite, Athletic, Curvy, Lean/Tall
   final String skinTone; // Porcelain, Fair (Cool), etc.
   final String eyeColor; // Onyx Black, Steel Grey, etc.
@@ -17,6 +18,7 @@ class AvatarConfig {
     required this.gender,
     required this.apparentAge,
     required this.origin,
+    required this.race,
     required this.build,
     required this.skinTone,
     required this.eyeColor,
@@ -25,7 +27,6 @@ class AvatarConfig {
     required this.distinguishingMark,
   });
 
-  /// Generate fal.ai prompt from configuration
   /// Generate fal.ai prompt from configuration
   String toPrompt() {
     String markText = distinguishingMark == 'None (Flawless)' ? '' : ', $distinguishingMark';
@@ -38,7 +39,7 @@ class AvatarConfig {
       genderTerm = 'man';
     }
 
-    return "A hyper-realistic, cinematic portrait of a $apparentAge year old $genderTerm, $build build. "
+    return "A hyper-realistic, cinematic portrait of a $apparentAge year old $race $genderTerm, $build build. "
         "Appearance: $skinTone skin tone, $eyeColor eyes, $hairStyle hairstyle. "
         "Wearing $fashionAesthetic style clothing$markText. "
         "Style: Award-winning photography, 8k resolution, highly detailed, photorealistic, dramatic lighting, shot on 35mm lens. "
@@ -51,6 +52,7 @@ class AvatarConfig {
       'gender': gender,
       'apparentAge': apparentAge,
       'origin': origin,
+      'race': race,
       'build': build,
       'skinTone': skinTone,
       'eyeColor': eyeColor,
@@ -66,6 +68,7 @@ class AvatarConfig {
       gender: json['gender'] as String? ?? 'Female', // Default for backward compatibility
       apparentAge: json['apparentAge'] as int,
       origin: json['origin'] as String,
+      race: json['race'] as String? ?? 'Sable (Synthetic Human)', // Default
       build: json['build'] as String,
       skinTone: json['skinTone'] as String,
       eyeColor: json['eyeColor'] as String,
@@ -86,6 +89,7 @@ class AvatarConfig {
     String? gender,
     int? apparentAge,
     String? origin,
+    String? race,
     String? build,
     String? skinTone,
     String? eyeColor,
@@ -98,6 +102,7 @@ class AvatarConfig {
       gender: gender ?? this.gender,
       apparentAge: apparentAge ?? this.apparentAge,
       origin: origin ?? this.origin,
+      race: race ?? this.race,
       build: build ?? this.build,
       skinTone: skinTone ?? this.skinTone,
       eyeColor: eyeColor ?? this.eyeColor,

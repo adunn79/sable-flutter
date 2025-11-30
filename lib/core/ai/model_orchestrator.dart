@@ -27,8 +27,8 @@ class ModelConfig {
   final String heavyLiftingModelId;
 
   const ModelConfig({
-    this.personalityModelId = 'claude-3-5-sonnet-20240620',
-    this.agenticModelId = 'gemini-1.5-pro',
+    this.personalityModelId = 'claude-3-haiku-20240307',
+    this.agenticModelId = 'gemini-1.5-flash',
     this.heavyLiftingModelId = 'gpt-4o',
   });
 }

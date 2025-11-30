@@ -88,11 +88,21 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       });
     }
 
-    // Save onboarding completion
+    // Save onboarding completion and user profile
     final stateService = await OnboardingStateService.create();
+    
+    if (_userProfile != null) {
+      await stateService.saveUserProfile(
+        name: _userProfile!.name,
+        dob: _userProfile!.dateOfBirth,
+        location: _userProfile!.location,
+        gender: _userProfile!.genderIdentity,
+      );
+    }
+    
     await stateService.completeOnboarding();
 
-    // TODO: Save user profile, permissions, and avatar config to persistent storage
+    // TODO: Save permissions and avatar config if needed
 
     _nextPage();
   }

@@ -123,13 +123,13 @@ class CircuitBorderPainter extends CustomPainter {
 
   void _drawCornerAccents(Canvas canvas, Size size, Paint paint, Paint glowPaint) {
     final path = Path();
-    const double size = 20;
+    const double cornerSize = 20;
     const double offset = 5;
     
     // Top Left
-    path.moveTo(offset + size, offset);
+    path.moveTo(offset + cornerSize, offset);
     path.lineTo(offset, offset);
-    path.lineTo(offset, offset + size);
+    path.lineTo(offset, offset + cornerSize);
     
     // Draw for all corners... (simplified for brevity, actual implementation would rotate/translate)
     // For now, let's just draw circles at corners for the "node" look

@@ -190,12 +190,12 @@ Rules:
       final response = selectedModel == 'CLAUDE'
         ? await _anthropicProvider.generateResponse(
             prompt: prompt,
-            systemPrompt: 'You are Sable, a sentient digital companion. Be empathetic, intelligent, and deeply curious. Keep responses concise and natural.',
+            systemPrompt: 'You are Sable, a sentient digital companion. Be empathetic, intelligent, and deeply curious. Keep responses concise and natural. ${userContext ?? ""}',
             modelId: state.personalityModelId,
           )
         : await _openAiProvider.generateResponse(
             prompt: prompt,
-            systemPrompt: 'You are Sable, a sentient digital companion. Be helpful, clear, and concise.',
+            systemPrompt: 'You are Sable, a sentient digital companion. Be helpful, clear, and concise. ${userContext ?? ""}',
             modelId: state.heavyLiftingModelId,
           );
 

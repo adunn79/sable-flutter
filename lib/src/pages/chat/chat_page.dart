@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
@@ -7,17 +8,17 @@ import 'package:sable/core/theme/aureal_theme.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:sable/features/settings/screens/settings_screen.dart';
 
-class ChatPage extends StatefulWidget {
+class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});
 
   @override
-  State<ChatPage> createState() => _ChatPageState();
+  ConsumerState<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _ChatPageState extends ConsumerState<ChatPage> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final ModelOrchestrator _orchestrator = ModelOrchestrator();
+  // Removed direct instantiation: final ModelOrchestrator _orchestrator = ModelOrchestrator();
   OnboardingStateService? _stateService;
   
   bool _isTyping = false;
@@ -53,9 +54,25 @@ class _ChatPageState extends State<ChatPage> {
 
 
     try {
+      // Build user context string
+      String? userContext;
+      if (_stateService != null) {
+        final name = _stateService!.userName;
+        final dob = _stateService!.userDob;
+        final location = _stateService!.userLocation;
+        
+        if (name != null) {
+          userContext = 'User Name: $name. ';
+          if (dob != null) userContext += 'Date of Birth: ${dob.toIso8601String().split('T')[0]}. ';
+          if (location != null) userContext += 'Location: $location. ';
+        }
+      }
+
       // Use orchestrated routing - Gemini decides Claude vs GPT-4o
-      final response = await _orchestrator.orchestratedRequest(
+      final orchestrator = ref.read(modelOrchestratorProvider.notifier);
+      final response = await orchestrator.orchestratedRequest(
         prompt: text,
+        userContext: userContext,
       );
 
       if (mounted) {
@@ -299,15 +316,23 @@ class _ChatPageState extends State<ChatPage> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         constraints: const BoxConstraints(maxWidth: 300),
+        padding: isUser ? const EdgeInsets.all(12) : null,
+        decoration: isUser 
+            ? BoxDecoration(
+                color: AurealColors.carbon.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(16).copyWith(bottomRight: Radius.zero),
+                border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+              )
+            : null,
         child: isUser 
             ? Text(
                 message,
                 style: GoogleFonts.inter(
-                  color: AurealColors.ghost,
+                  color: Colors.white, // Changed from ghost to white
                   fontSize: 16,
                   height: 1.4,
                 ),
-                textAlign: TextAlign.right,
+                textAlign: TextAlign.left,
               )
             : Text(
                 message,

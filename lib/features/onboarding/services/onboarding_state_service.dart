@@ -61,10 +61,50 @@ class OnboardingStateService {
     await _prefs.setString(_keyAvatarUrl, url);
   }
 
+  static const String _keyUserName = 'user_name';
+  static const String _keyUserDob = 'user_dob';
+  static const String _keyUserLocation = 'user_location';
+  static const String _keyUserGender = 'user_gender';
+
+  /// Save user profile data
+  Future<void> saveUserProfile({
+    required String name,
+    required DateTime dob,
+    required String location,
+    String? gender,
+  }) async {
+    await _prefs.setString(_keyUserName, name);
+    await _prefs.setString(_keyUserDob, dob.toIso8601String());
+    await _prefs.setString(_keyUserLocation, location);
+    if (gender != null) {
+      await _prefs.setString(_keyUserGender, gender);
+    }
+  }
+
+  /// Get user name
+  String? get userName => _prefs.getString(_keyUserName);
+
+  /// Get user date of birth
+  DateTime? get userDob {
+    final dobStr = _prefs.getString(_keyUserDob);
+    if (dobStr == null) return null;
+    return DateTime.tryParse(dobStr);
+  }
+
+  /// Get user location
+  String? get userLocation => _prefs.getString(_keyUserLocation);
+
+  /// Get user gender
+  String? get userGender => _prefs.getString(_keyUserGender);
+
   /// Clear all onboarding data (for testing)
   Future<void> clearOnboardingData() async {
     await _prefs.remove(_keyOnboardingComplete);
     await _prefs.remove(_keyRemainingGenerations);
     await _prefs.remove(_keyAvatarUrl);
+    await _prefs.remove(_keyUserName);
+    await _prefs.remove(_keyUserDob);
+    await _prefs.remove(_keyUserLocation);
+    await _prefs.remove(_keyUserGender);
   }
 }

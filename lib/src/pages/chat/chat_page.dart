@@ -158,14 +158,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         final location = _stateService!.userLocation;
         final gender = _stateService!.userGender;
         
-        // Debug logging
-        debugPrint('=== USER CONTEXT DEBUG ===');
-        debugPrint('Name: $name');
-        debugPrint('DOB: $dob');
-        debugPrint('Location: $location');
-        debugPrint('Gender: $gender');
-        debugPrint('=========================');
-        
         if (name != null || location != null || dob != null) {
           // Format context prominently
           userContext = '\n\n[USER PROFILE]\n';
@@ -194,7 +186,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           
           // Add environmental context
           userContext += '\n[ENVIRONMENT]\n';
-          userContext += EnvironmentContext.getTimeContext();
+          userContext += await EnvironmentContext.getTimeContext(location: location);
           userContext += '\n[END ENVIRONMENT]\n';
           
           // Add companion's origin for accent/personality
@@ -230,7 +222,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         
         // Update emotional state based on interaction
         if (_emotionalService != null) {
-          final environmentMod = EnvironmentContext.getMoodModifier();
+          final location = _stateService?.userLocation;
+          final environmentMod = await EnvironmentContext.getMoodModifier(location: location);
           await _emotionalService!.updateMood(
             sentimentScore: sentiment.polarity,
             environmentalModifier: environmentMod,

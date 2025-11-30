@@ -1,9 +1,12 @@
+import 'package:sable/core/emotion/weather_service.dart';
+
 /// Environmental context provider for mood modifiers
-/// Considers time of day, season, and day of week
+/// Considers time of day, season, day of week, and weather
 class EnvironmentContext {
   /// Get environmental mood modifier based on current conditions
   /// Returns value from -20 to +20
-  static double getMoodModifier() {
+  /// Optionally includes weather if available
+  static Future<double> getMoodModifier({String? location}) async {
     final now = DateTime.now();
     
     double modifier = 0.0;
@@ -16,6 +19,12 @@ class EnvironmentContext {
     
     // Day of week modifier
     modifier += _getDayOfWeekModifier(now.weekday);
+    
+    // Weather modifier (if location provided)
+    if (location != null) {
+      final weather = await WeatherService.getWeather(location);
+      modifier += WeatherService.getWeatherMoodModifier(weather);
+    }
 
     return modifier.clamp(-20.0, 20.0);
   }
@@ -81,7 +90,7 @@ class EnvironmentContext {
   }
 
   /// Get descriptive text for current time context
-  static String getTimeContext() {
+  static Future<String> getTimeContext({String? location}) async {
     final now = DateTime.now();
     final hour = now.hour;
     
@@ -98,8 +107,18 @@ class EnvironmentContext {
 
     final season = _getSeasonName(now.month);
     final dayName = _getDayName(now.weekday);
+    
+    String context = 'It\'s $timeOfDay on a $dayName in $season.';
+    
+    // Add weather if available
+    if (location != null) {
+      final weather = await WeatherService.getWeather(location);
+      if (weather != null) {
+        context += ' ${WeatherService.getWeatherDescription(weather)}.';
+      }
+    }
 
-    return 'It\'s $timeOfDay on a $dayName in $season.';
+    return context;
   }
 
   static String _getSeasonName(int month) {

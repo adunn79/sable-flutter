@@ -1,87 +1,153 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
 
 class CircuitBorderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    
+    // 1. Background Gradient (Deep Blue/Black)
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final bgPaint = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.center,
+        radius: 1.2,
+        colors: [
+          const Color(0xFF0A1A2F), // Deep blue center
+          const Color(0xFF020609), // Black edges
+        ],
+      ).createShader(rect);
+    canvas.drawRect(rect, bgPaint);
+
+    // Paints
     final cyanPaint = Paint()
-      ..color = AurealColors.plasmaCyan
+      ..color = const Color(0xFF00F0FF)
       ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final cyanGlowPaint = Paint()
+      ..color = const Color(0xFF00F0FF).withOpacity(0.4)
+      ..strokeWidth = 4
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4)
+      ..style = PaintingStyle.stroke;
+
+    final darkCyanPaint = Paint()
+      ..color = const Color(0xFF005F66)
+      ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
     final goldPaint = Paint()
       ..color = AurealColors.hyperGold
-      ..strokeWidth = 1.5
+      ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
-    // Draw outer cyan border with corners
-    final outerRect = Rect.fromLTWH(0, 0, size.width, size.height);
+    // 2. Outer Frame (Complex)
     final outerPath = Path();
+    const double cornerSize = 40;
+    const double inset = 10;
     
-    // Top left corner
-    outerPath.moveTo(20, 0);
-    outerPath.lineTo(0, 0);
-    outerPath.lineTo(0, 20);
+    // Top Left
+    outerPath.moveTo(inset + cornerSize, inset);
+    outerPath.lineTo(inset, inset);
+    outerPath.lineTo(inset, inset + cornerSize);
     
-    // Top right corner
-    outerPath.moveTo(size.width - 20, 0);
-    outerPath.lineTo(size.width, 0);
-    outerPath.lineTo(size.width, 20);
+    // Top Right
+    outerPath.moveTo(size.width - inset - cornerSize, inset);
+    outerPath.lineTo(size.width - inset, inset);
+    outerPath.lineTo(size.width - inset, inset + cornerSize);
     
-    // Bottom right corner
-    outerPath.moveTo(size.width, size.height - 20);
-    outerPath.lineTo(size.width, size.height);
-    outerPath.lineTo(size.width - 20, size.height);
+    // Bottom Right
+    outerPath.moveTo(size.width - inset, size.height - inset - cornerSize);
+    outerPath.lineTo(size.width - inset, size.height - inset);
+    outerPath.lineTo(size.width - inset - cornerSize, size.height - inset);
     
-    // Bottom left corner
-    outerPath.moveTo(20, size.height);
-    outerPath.lineTo(0, size.height);
-    outerPath.lineTo(0, size.height - 20);
-    
+    // Bottom Left
+    outerPath.moveTo(inset + cornerSize, size.height - inset);
+    outerPath.lineTo(inset, size.height - inset);
+    outerPath.lineTo(inset, size.height - inset - cornerSize);
+
+    // Connectors (Straight lines with gaps)
+    // Top
+    canvas.drawLine(Offset(inset + cornerSize + 10, inset), Offset(size.width - inset - cornerSize - 10, inset), cyanPaint);
+    // Bottom
+    canvas.drawLine(Offset(inset + cornerSize + 10, size.height - inset), Offset(size.width - inset - cornerSize - 10, size.height - inset), cyanPaint);
+    // Left
+    canvas.drawLine(Offset(inset, inset + cornerSize + 10), Offset(inset, size.height - inset - cornerSize - 10), cyanPaint);
+    // Right
+    canvas.drawLine(Offset(size.width - inset, inset + cornerSize + 10), Offset(size.width - inset, size.height - inset - cornerSize - 10), cyanPaint);
+
+    // Draw Outer Glow and Path
+    canvas.drawPath(outerPath, cyanGlowPaint);
     canvas.drawPath(outerPath, cyanPaint);
+
+    // 3. Inner Frame (Continuous with chamfered corners)
+    const double innerInset = 25;
+    const double innerChamfer = 20;
     
-    // Draw inner gold border
-    final innerRect = Rect.fromLTWH(8, 8, size.width - 16, size.height - 16);
     final innerPath = Path();
+    innerPath.moveTo(innerInset + innerChamfer, innerInset);
+    innerPath.lineTo(size.width - innerInset - innerChamfer, innerInset);
+    innerPath.lineTo(size.width - innerInset, innerInset + innerChamfer);
+    innerPath.lineTo(size.width - innerInset, size.height - innerInset - innerChamfer);
+    innerPath.lineTo(size.width - innerInset - innerChamfer, size.height - innerInset);
+    innerPath.lineTo(innerInset + innerChamfer, size.height - innerInset);
+    innerPath.lineTo(innerInset, size.height - innerInset - innerChamfer);
+    innerPath.lineTo(innerInset, innerInset + innerChamfer);
+    innerPath.close();
+
+    canvas.drawPath(innerPath, darkCyanPaint);
     
-    // Top left corner
-    innerPath.moveTo(28, 8);
-    innerPath.lineTo(8, 8);
-    innerPath.lineTo(8, 28);
+    // 4. Circuit Traces (Decorative lines)
+    _drawCircuitTraces(canvas, size, cyanPaint, goldPaint);
     
-    // Top right corner
-    innerPath.moveTo(size.width - 28, 8);
-    innerPath.lineTo(size.width - 8, 8);
-    innerPath.lineTo(size.width - 8, 28);
+    // 5. Gold Accents
+    final goldPath = Path();
+    // Top center accent
+    goldPath.moveTo(size.width / 2 - 40, innerInset - 5);
+    goldPath.lineTo(size.width / 2 + 40, innerInset - 5);
+    goldPath.moveTo(size.width / 2 - 30, innerInset);
+    goldPath.lineTo(size.width / 2, innerInset + 10);
+    goldPath.lineTo(size.width / 2 + 30, innerInset);
     
-    // Bottom right corner
-    innerPath.moveTo(size.width - 8, size.height - 28);
-    innerPath.lineTo(size.width - 8, size.height - 8);
-    innerPath.lineTo(size.width - 28, size.height - 8);
+    // Bottom center accent
+    goldPath.moveTo(size.width / 2 - 40, size.height - innerInset + 5);
+    goldPath.lineTo(size.width / 2 + 40, size.height - innerInset + 5);
     
-    // Bottom left corner
-    innerPath.moveTo(28, size.height - 8);
-    innerPath.lineTo(8, size.height - 8);
-    innerPath.lineTo(8, size.height - 28);
+    canvas.drawPath(goldPath, goldPaint);
+  }
+
+  void _drawCircuitTraces(Canvas canvas, Size size, Paint cyanPaint, Paint goldPaint) {
+    final thinCyan = Paint()
+      ..color = const Color(0xFF00F0FF).withOpacity(0.5)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    // Top Left Traces
+    _drawTrace(canvas, Offset(40, 40), Offset(80, 40), thinCyan);
+    _drawTrace(canvas, Offset(40, 50), Offset(70, 50), thinCyan);
+    _drawTrace(canvas, Offset(50, 40), Offset(50, 70), thinCyan);
+
+    // Top Right Traces
+    _drawTrace(canvas, Offset(size.width - 40, 40), Offset(size.width - 80, 40), thinCyan);
+    _drawTrace(canvas, Offset(size.width - 40, 50), Offset(size.width - 70, 50), thinCyan);
+
+    // Bottom Left Traces
+    _drawTrace(canvas, Offset(40, size.height - 40), Offset(80, size.height - 40), thinCyan);
     
-    canvas.drawPath(innerPath, goldPaint);
+    // Bottom Right Traces
+    _drawTrace(canvas, Offset(size.width - 40, size.height - 40), Offset(size.width - 80, size.height - 40), thinCyan);
     
-    // Add some circuit-like connection points
-    final dotPaint = Paint()
-      ..color = AurealColors.hyperGold
-      ..style = PaintingStyle.fill;
-    
-    // Top corners
-    canvas.drawCircle(Offset(40, 12), 2, dotPaint);
-    canvas.drawCircle(Offset(size.width - 40, 12), 2, dotPaint);
-    
-    // Bottom corners
-    canvas.drawCircle(Offset(40, size.height - 12), 2, dotPaint);
-    canvas.drawCircle(Offset(size.width - 40, size.height - 12), 2, dotPaint);
-    
-    // Side connection points
-    canvas.drawCircle(Offset(12, size.height / 2), 2, dotPaint);
-    canvas.drawCircle(Offset(size.width - 12, size.height / 2), 2, dotPaint);
+    // Random nodes
+    final dotPaint = Paint()..color = AurealColors.plasmaCyan;
+    canvas.drawCircle(Offset(80, 40), 2, dotPaint);
+    canvas.drawCircle(Offset(size.width - 80, 40), 2, dotPaint);
+    canvas.drawCircle(Offset(80, size.height - 40), 2, dotPaint);
+    canvas.drawCircle(Offset(size.width - 80, size.height - 40), 2, dotPaint);
+  }
+
+  void _drawTrace(Canvas canvas, Offset start, Offset end, Paint paint) {
+    canvas.drawLine(start, end, paint);
   }
 
   @override

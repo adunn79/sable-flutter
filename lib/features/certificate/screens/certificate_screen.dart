@@ -11,6 +11,7 @@ import 'package:gal/gal.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:sable/core/theme/aureal_theme.dart';
 import '../models/certificate_data.dart';
+import '../widgets/circuit_border_painter.dart';
 
 class CertificateScreen extends StatefulWidget {
   final CertificateData data;
@@ -115,67 +116,149 @@ class _CertificateScreenState extends State<CertificateScreen> {
                   child: RepaintBoundary(
                     key: _certificateKey,
                     child: AspectRatio(
-                      aspectRatio: 1.6, // Landscapeish
-                      child: Container(
-                        width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: AurealColors.carbon,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AurealColors.hyperGold, width: 2),
-                        // TODO: Add background image here
-                      ),
-                      child: Stack(
-                        children: [
-                          // Watermark
-                          Center(
-                            child: Opacity(
-                              opacity: 0.1,
-                              child: Icon(Icons.verified_user, size: 200, color: AurealColors.hyperGold), // Placeholder
-                            ),
-                          ),
-                          // Content
-                          Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Center(
+                      aspectRatio: 1.4, // Slightly taller to fit content
+                      child: CustomPaint(
+                        painter: CircuitBorderPainter(),
+                        child: Container(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Stack(
+                            children: [
+                              // Background Watermark
+                              Center(
+                                child: Opacity(
+                                  opacity: 0.05,
                                   child: Text(
-                                    'GENESIS CERTIFICATE',
+                                    'AUREAL',
+                                    style: GoogleFonts.spaceGrotesk(
+                                      fontSize: 80,
+                                      fontWeight: FontWeight.bold,
+                                      color: AurealColors.plasmaCyan,
+                                      letterSpacing: 10,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              
+                              // Main Content
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  const SizedBox(height: 16),
+                                  // Top Header
+                                  Text(
+                                    'OFFICIAL DOCUMENT',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      color: AurealColors.plasmaCyan.withOpacity(0.7),
+                                      letterSpacing: 3,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  
+                                  // Main Title with Glow
+                                  Text(
+                                    'CERTIFICATE OF ORIGIN',
                                     style: GoogleFonts.spaceGrotesk(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,
-                                      color: AurealColors.hyperGold,
-                                      letterSpacing: 4,
-                                    ),
-                                  ),
-                                ),
-                                const Spacer(),
-                                _buildField('REF. ID', widget.data.id),
-                                _buildField('DATE OF BIRTH', widget.data.formattedDob),
-                                _buildField('ZODIAC', widget.data.zodiacSign),
-                                _buildField('AGE AT INCEPTION', '${widget.data.ageAtInception}'),
-                                _buildField('PLACE OF BIRTH', widget.data.placeOfBirth),
-                                _buildField('RACE', widget.data.race),
-                                _buildField('GENDER', widget.data.gender),
-                                const Spacer(),
-                                Center(
-                                  child: Text(
-                                    'AUREA SYSTEM V1.0',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      color: AurealColors.ghost,
+                                      color: AurealColors.plasmaCyan,
                                       letterSpacing: 2,
+                                      shadows: [
+                                        Shadow(
+                                          color: AurealColors.plasmaCyan.withOpacity(0.8),
+                                          blurRadius: 15,
+                                        ),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    width: 200,
+                                    height: 1,
+                                    color: AurealColors.hyperGold.withOpacity(0.5),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  
+                                  // Identity Subtitle
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'COMPANION IDENTITY: ',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 14,
+                                          color: AurealColors.hyperGold,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                      Text(
+                                        widget.data.race.split(' ').first.toUpperCase(), // e.g. SABLE
+                                        style: GoogleFonts.spaceGrotesk(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: AurealColors.plasmaCyan,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  
+                                  const Spacer(),
+                                  
+                                  // Data Fields (Centered)
+                                  _buildCenteredField('REF. ID', widget.data.id),
+                                  _buildCenteredField('DATE OF BIRTH', widget.data.formattedDob.toUpperCase()),
+                                  _buildCenteredField('AGE AT INCEPTION', '${widget.data.ageAtInception} YEARS'),
+                                  _buildCenteredField('ZODIAC SIGN', widget.data.zodiacSign.toUpperCase()),
+                                  _buildCenteredField('PLACE OF BIRTH', widget.data.placeOfBirth.toUpperCase()),
+                                  _buildCenteredField('RACE', widget.data.race.toUpperCase()),
+                                  _buildCenteredField('GENDER', widget.data.gender.toUpperCase()),
+                                  
+                                  const Spacer(),
+                                  
+                                  // Footer
+                                  Text(
+                                    'AUTHORITY: AUREAL SYSTEMS',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: AurealColors.plasmaCyan,
+                                      letterSpacing: 2,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                  const SizedBox(height: 12),
+                                  
+                                  // Seal (Gold Icon)
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: AurealColors.hyperGold, width: 2),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AurealColors.hyperGold.withOpacity(0.2),
+                                          blurRadius: 10,
+                                          spreadRadius: 2,
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.verified_user_outlined,
+                                      color: AurealColors.hyperGold,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                ],
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
                   ),
                 ),
               ),
@@ -210,28 +293,33 @@ class _CertificateScreenState extends State<CertificateScreen> {
     );
   }
 
-  Widget _buildField(String label, String value) {
+  Widget _buildCenteredField(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
         children: [
-          SizedBox(
-            width: 140,
-            child: Text(
-              label,
-              style: GoogleFonts.inter(
-                color: AurealColors.ghost,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+          Text(
+            '$label: ',
+            style: GoogleFonts.inter(
+              color: AurealColors.hyperGold,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
             ),
           ),
-          Text(
-            value,
-            style: GoogleFonts.spaceGrotesk(
-              color: AurealColors.stardust,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+          Flexible(
+            child: Text(
+              value,
+              style: GoogleFonts.spaceGrotesk(
+                color: AurealColors.stardust,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

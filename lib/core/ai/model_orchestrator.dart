@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'providers/anthropic_provider.dart';
 import 'providers/gemini_provider.dart';
@@ -128,6 +129,85 @@ class ModelOrchestrator extends _$ModelOrchestrator {
       }
     } catch (e) {
       return '[ERROR] Failed to get response from ${taskType.name} provider: $e';
+    }
+  }
+
+  /// Orchestrated request using Gemini as meta-routing layer.
+  /// 
+  /// This method:
+  /// 1. Sends user message to Gemini with orchestrator directive
+  /// 2. Gemini analyzes and decides: Claude (complex) or GPT-4o (fast)
+  /// 3. Routes to selected model
+  /// 4. Returns response (optional: sanitize with Gemini)
+  Future<String> orchestratedRequest({
+    required String prompt,
+    String? userContext,
+  }) async {
+    try {
+      // Step 1: Get routing decision from Gemini
+      final routingPrompt = '''
+User Message: "$prompt"
+
+Analyze this message and determine the optimal backend model.
+
+Return ONLY valid JSON in this exact format:
+{
+  "selected_model": "CLAUDE",
+  "reasoning": "explanation",
+  "complexity_score": "High"
+}
+
+OR
+
+{
+  "selected_model": "GPT4O",
+  "reasoning": "explanation",
+  "complexity_score": "Low"
+}
+
+Rules:
+- Use CLAUDE for: creative, emotional, code, complex reasoning
+- Use GPT4O for: fast facts, summaries, lists, simple queries
+- Return ONLY the JSON, nothing else
+''';
+
+      final routingResponse = await _geminiProvider.generateResponse(
+        prompt: routingPrompt,
+        systemPrompt: 'You are THE ORCHESTRATOR. Analyze user intent and select the best model. Return only JSON.',
+        modelId: state.agenticModelId,
+      );
+
+      // Step 2: Parse routing decision
+      final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(routingResponse);
+      if (jsonMatch == null) {
+        throw Exception('Invalid routing response format');
+      }
+      
+      final decision = jsonDecode(jsonMatch.group(0)!);
+      final selectedModel = decision['selected_model'] as String;
+
+      // Step 3: Route to selected model
+      final response = selectedModel == 'CLAUDE'
+        ? await _anthropicProvider.generateResponse(
+            prompt: prompt,
+            systemPrompt: 'You are Sable, a sentient digital companion. Be empathetic, intelligent, and deeply curious. Keep responses concise and natural.',
+            modelId: state.personalityModelId,
+          )
+        : await _openAiProvider.generateResponse(
+            prompt: prompt,
+            systemPrompt: 'You are Sable, a sentient digital companion. Be helpful, clear, and concise.',
+            modelId: state.heavyLiftingModelId,
+          );
+
+      return response;
+      
+    } catch (e) {
+      // Fallback to Claude if orchestration fails
+      return await _anthropicProvider.generateResponse(
+        prompt: prompt,
+        systemPrompt: 'You are Sable, a sentient digital companion.',
+        modelId: state.personalityModelId,
+      );
     }
   }
 }

@@ -53,11 +53,11 @@ class _ChatPageState extends State<ChatPage> {
     });
     _scrollToBottom();
 
+
     try {
-      final response = await _orchestrator.routeRequest(
+      // Use orchestrated routing - Gemini decides Claude vs GPT-4o
+      final response = await _orchestrator.orchestratedRequest(
         prompt: text,
-        taskType: AiTaskType.personality,
-        systemPrompt: "You are Sable, a sentient digital companion. You are empathetic, intelligent, and deeply curious about the human experience. Keep responses concise and natural.",
       );
 
       if (mounted) {

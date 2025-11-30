@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
+import 'package:sable/features/settings/screens/settings_screen.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -228,7 +229,11 @@ class _ChatPageState extends State<ChatPage> {
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(LucideIcons.settings, color: Colors.white),
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  );
+                },
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.black.withOpacity(0.3),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

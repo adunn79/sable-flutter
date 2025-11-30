@@ -28,7 +28,7 @@ class ModelConfig {
 
   const ModelConfig({
     this.personalityModelId = 'claude-3-haiku-20240307',
-    this.agenticModelId = 'gemini-pro',
+    this.agenticModelId = 'gemini-2.0-flash',
     this.heavyLiftingModelId = 'gpt-4o',
   });
 }

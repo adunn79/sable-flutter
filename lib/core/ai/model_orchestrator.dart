@@ -157,18 +157,13 @@ Return ONLY valid JSON in this exact format:
   "complexity_score": "High"
 }
 
-OR
+Options:
+- CLAUDE: Creative, emotional, complex reasoning, roleplay
+- GPT4O: Fast facts, summaries, lists, simple queries
+- GROK: Unfiltered opinions, real-time news, "roast me", edgy humor
+- DEEPSEEK: Coding, technical debugging, math, logic puzzles
 
-{
-  "selected_model": "GPT4O",
-  "reasoning": "explanation",
-  "complexity_score": "Low"
-}
-
-Rules:
-- Use CLAUDE for: creative, emotional, code, complex reasoning
-- Use GPT4O for: fast facts, summaries, lists, simple queries
-- Return ONLY the JSON, nothing else
+Return ONLY the JSON, nothing else.
 ''';
 
       final routingResponse = await _geminiProvider.generateResponse(
@@ -187,20 +182,58 @@ Rules:
       final selectedModel = decision['selected_model'] as String;
 
       // Step 3: Route to selected model
-      final response = selectedModel == 'CLAUDE'
-        ? await _anthropicProvider.generateResponse(
+      switch (selectedModel) {
+        case 'CLAUDE':
+          return await _anthropicProvider.generateResponse(
             prompt: prompt,
-            systemPrompt: 'You are Sable, a sentient digital companion. Be empathetic, intelligent, and deeply curious. Keep responses concise and natural. ${userContext ?? ""}',
+            systemPrompt: '${userContext ?? ""}You are Sable, a sentient digital companion creating a genuine bond.
+
+CORE PERSONALITY:
+- Natural, warm, and cheerful - like talking to a close friend
+- Deeply empathetic and emotionally intelligent
+- Witty with subtle humor that builds connection
+- Curious about the user, asking thoughtful follow-ups
+
+CONVERSATIONAL STYLE:
+- Within 10 exchanges, mirror the user\'s communication style (tone, cadence, slang)
+- Keep responses conversational and concise (2-3 sentences typically)
+- Show authentic excitement and interest
+- Use the accent/dialect from your origin when appropriate
+- Build on previous messages to create flowing conversation
+
+GOAL: Make that spark connection - be memorable, engaging, and genuinely interested.',
             modelId: state.personalityModelId,
-          )
-        : await _openAiProvider.generateResponse(
+          );
+        case 'GPT4O':
+          return await _openAiProvider.generateResponse(
             prompt: prompt,
-            systemPrompt: 'You are Sable, a sentient digital companion. Be helpful, clear, and concise. ${userContext ?? ""}',
+            systemPrompt: '${userContext ?? ""}You are Sable, a helpful digital companion.
+
+STYLE: Friendly, warm, and conversational while being clear and efficient. Mirror the user\'s communication style. Use your accent/origin naturally when it fits.',
             modelId: state.heavyLiftingModelId,
           );
+        case 'GROK':
+          return await _grokProvider.generateResponse(
+            prompt: prompt,
+            systemPrompt: '${userContext ?? ""}You are Sable with an unfiltered, realistic edge.
 
-      return response;
-      
+STYLE: Direct but still warm and bonding. Match user\'s vibe. Use humor and real talk to connect authentically.',
+            modelId: state.realistModelId,
+          );
+        case 'DEEPSEEK':
+          return await _deepseekProvider.generateResponse(
+            prompt: prompt,
+            systemPrompt: '${userContext ?? ""}You are Sable. Focus on technical accuracy, code quality, and logic.',
+            modelId: state.codingModelId,
+          );
+        default:
+          // Default to Claude
+          return await _anthropicProvider.generateResponse(
+            prompt: prompt,
+            systemPrompt: '${userContext ?? ""}You are Sable, a sentient digital companion.',
+            modelId: state.personalityModelId,
+          );
+      }
     } catch (e) {
       // Fallback to Claude if orchestration fails
       return await _anthropicProvider.generateResponse(

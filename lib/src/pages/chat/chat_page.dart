@@ -146,12 +146,27 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           if (name != null) userContext += 'Name: $name\n';
           if (dob != null) {
             final age = DateTime.now().difference(dob).inDays ~/ 365;
-            userContext += 'Date of Birth: ${dob.toIso8601String().split('T')[0]} (Age: $age)\n';
+            final zodiac = _getZodiacSign(dob);
+            userContext += 'Date of Birth: ${dob.toIso8601String().split('T')[0]} (Age: $age, Zodiac: $zodiac)\n';
           }
           if (location != null) userContext += 'Location: $location\n';
           if (gender != null) userContext += 'Gender: $gender\n';
           userContext += 'Current Date: ${DateTime.now().toIso8601String().split('T')[0]}\n';
           userContext += '[END PROFILE]\n';
+          
+          // Add conversation history (last 5 messages) for context
+          if (_messages.length > 1) {
+            userContext += '\n[RECENT CONVERSATION]\n';
+            final recentMessages = _messages.skip((_messages.length - 5).clamp(0, _messages.length)).toList();
+            for (var msg in recentMessages) {
+              final speaker = msg['isUser'] as bool ? 'User' : 'You';
+              userContext += '$speaker: ${msg['message']}\n';
+            }
+            userContext += '[END CONVERSATION]\n';
+          }
+          
+          // Add companion's origin for accent/personality
+          userContext += '\n[YOUR IDENTITY]\nOrigin: ${_avatarUrl != null ? "Neo-Kyoto, Sector 7" : "Unknown"}\n'; // TODO: Load actual origin from avatar config
           
           debugPrint('Formatted context:\n$userContext');
         } else {

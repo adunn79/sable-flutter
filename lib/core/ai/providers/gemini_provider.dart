@@ -1,12 +1,9 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 import '../ai_provider_interface.dart';
 
-/// Google Gemini provider using HTTP API (v1 stable).
+/// Google Gemini provider using official SDK (v1beta API).
 class GeminiProvider implements AiProviderInterface {
-  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1/models';
-
   @override
   String get id => 'google';
 
@@ -22,41 +19,22 @@ class GeminiProvider implements AiProviderInterface {
     }
 
     try {
-      final url = '$_baseUrl/$modelId:generateContent?key=$apiKey';
-      
-      final body = {
-        'contents': [
-          {
-            'parts': [
-              {'text': systemPrompt != null ? '$systemPrompt\n\n$prompt' : prompt}
-            ]
-          }
-        ],
-      };
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
+      final model = GenerativeModel(
+        model: modelId,
+        apiKey: apiKey,
+        systemInstruction: systemPrompt != null
+            ? Content.system(systemPrompt)
+            : null,
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final candidates = data['candidates'] as List?;
-        
-        if (candidates != null && candidates.isNotEmpty) {
-          final content = candidates[0]['content'];
-          final parts = content['parts'] as List?;
-          
-          if (parts != null && parts.isNotEmpty) {
-            return parts[0]['text'] as String;
-          }
-        }
-        
-        throw Exception('Unexpected response format from Gemini API');
-      } else {
-        throw Exception('Gemini API error: ${response.statusCode} - ${response.body}');
+      final content = [Content.text(prompt)];
+      final response = await model.generateContent(content);
+
+      if (response.text != null && response.text!.isNotEmpty) {
+        return response.text!;
       }
+
+      throw Exception('Empty response from Gemini API');
     } catch (e) {
       throw Exception('Failed to call Gemini API: $e');
     }

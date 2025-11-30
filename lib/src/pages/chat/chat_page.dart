@@ -22,10 +22,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _isTyping = false;
   String? _avatarUrl;
   
-  final List<Map<String, dynamic>> _messages = [
-    {'message': "I've analyzed the P&L, Andy. We're bleeding on labor costs.", 'isUser': false},
-    {'message': "I know. I'm fixing it.", 'isUser': true},
-  ];
+  final List<Map<String, dynamic>> _messages = [];
 
   @override
   void initState() {
@@ -145,8 +142,6 @@ class _ChatPageState extends State<ChatPage> {
               children: [
                 const SizedBox(height: 60), // Added manual spacing for header
                 _buildHeader(),
-                const SizedBox(height: 16),
-                _buildFloatingChips(),
                 Expanded(
                   child: ListView.builder(
                     controller: _scrollController,
@@ -173,6 +168,8 @@ class _ChatPageState extends State<ChatPage> {
                       ),
                     ),
                   ),
+                _buildFloatingChips(),
+                const SizedBox(height: 8),
                 _buildInputArea(),
               ],
             ),

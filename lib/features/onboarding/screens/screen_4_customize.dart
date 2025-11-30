@@ -54,8 +54,10 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
   void _handleUseAsIs() {
     // Create default avatar config for the selected archetype
+    // Create default avatar config for the selected archetype
     final config = AvatarConfig(
       archetype: widget.archetype,
+      gender: _getGender(),
       apparentAge: _apparentAge,
       origin: _origin,
       build: _build,
@@ -90,6 +92,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
     try {
       final config = AvatarConfig(
         archetype: widget.archetype,
+        gender: _getGender(),
         apparentAge: _apparentAge,
         origin: _origin,
         build: _build,
@@ -183,6 +186,23 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
     );
   }
 
+  String _getGender() {
+    switch (widget.archetype) {
+      case 'Sable':
+        return 'Female';
+      case 'Kai':
+        return 'Male';
+      case 'Echo':
+        return 'Non-binary';
+      case 'Custom':
+        // For custom, we default to Female for now as we don't have a selector yet
+        // Ideally we should add a gender selector for Custom archetype
+        return 'Female';
+      default:
+        return 'Female';
+    }
+  }
+
   void _showUpsellDialog() {
     showDialog(
       context: context,
@@ -205,6 +225,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
               Navigator.pop(context);
               final config = AvatarConfig(
                 archetype: widget.archetype,
+                gender: _getGender(),
                 apparentAge: _apparentAge,
                 origin: _origin,
                 build: _build,

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 class AvatarConfig {
   final String archetype; // Sable, Kai, or Echo
+  final String gender; // Female, Male, Non-binary
   final int apparentAge; // Min 18
   final String origin; // Country and region for accent
   final String build; // Petite, Athletic, Curvy, Lean/Tall
@@ -13,6 +14,7 @@ class AvatarConfig {
 
   AvatarConfig({
     required this.archetype,
+    required this.gender,
     required this.apparentAge,
     required this.origin,
     required this.build,
@@ -24,18 +26,29 @@ class AvatarConfig {
   });
 
   /// Generate fal.ai prompt from configuration
+  /// Generate fal.ai prompt from configuration
   String toPrompt() {
     String markText = distinguishingMark == 'None (Flawless)' ? '' : ', $distinguishingMark';
-    return "A high-quality, cinematic portrait of a $apparentAge year old $build build $archetype "
-        "with $skinTone skin tone, $eyeColor eyes, $hairStyle hairstyle. "
+    
+    // Determine gender term
+    String genderTerm = 'person';
+    if (gender.toLowerCase().contains('female') || gender.toLowerCase().contains('she')) {
+      genderTerm = 'woman';
+    } else if (gender.toLowerCase().contains('male') || gender.toLowerCase().contains('he')) {
+      genderTerm = 'man';
+    }
+
+    return "A hyper-realistic, cinematic portrait of a $apparentAge year old $genderTerm, $build build. "
+        "Appearance: $skinTone skin tone, $eyeColor eyes, $hairStyle hairstyle. "
         "Wearing $fashionAesthetic style clothing$markText. "
-        "Origin: $origin for accent. "
-        "Detailed skin texture, futuristic lighting, 8k resolution, unreal engine 5 render.";
+        "Style: Award-winning photography, 8k resolution, highly detailed, photorealistic, dramatic lighting, shot on 35mm lens. "
+        "NO anime, NO cartoon, NO illustration, NO 3d render, NO drawing.";
   }
 
   Map<String, dynamic> toJson() {
     return {
       'archetype': archetype,
+      'gender': gender,
       'apparentAge': apparentAge,
       'origin': origin,
       'build': build,
@@ -50,6 +63,7 @@ class AvatarConfig {
   factory AvatarConfig.fromJson(Map<String, dynamic> json) {
     return AvatarConfig(
       archetype: json['archetype'] as String,
+      gender: json['gender'] as String? ?? 'Female', // Default for backward compatibility
       apparentAge: json['apparentAge'] as int,
       origin: json['origin'] as String,
       build: json['build'] as String,
@@ -69,6 +83,7 @@ class AvatarConfig {
 
   AvatarConfig copyWith({
     String? archetype,
+    String? gender,
     int? apparentAge,
     String? origin,
     String? build,
@@ -80,6 +95,7 @@ class AvatarConfig {
   }) {
     return AvatarConfig(
       archetype: archetype ?? this.archetype,
+      gender: gender ?? this.gender,
       apparentAge: apparentAge ?? this.apparentAge,
       origin: origin ?? this.origin,
       build: build ?? this.build,

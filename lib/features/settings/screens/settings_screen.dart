@@ -39,6 +39,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       body: ListView(
         children: [
+          // Emergency Services (Prominent)
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              border: Border.all(color: Colors.red.withOpacity(0.5)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: SettingsTile(
+              title: 'Emergency Services',
+              subtitle: 'Get help immediately',
+              icon: Icons.emergency,
+              iconColor: Colors.red,
+              onTap: () {
+                // TODO: Implement emergency call/info
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Emergency protocols activated.')),
+                );
+              },
+            ),
+          ),
+
           _buildSectionHeader('ACCOUNT'),
           const SettingsTile(
             title: 'Profile',
@@ -56,6 +78,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'The Vault',
             subtitle: 'Zero-Knowledge Zone',
             icon: Icons.lock_outline,
+          ),
+          SettingsTile(
+            title: 'How we use your info',
+            subtitle: 'Data usage & protection policy',
+            icon: Icons.shield_outlined,
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AurealColors.carbon,
+                  title: Text('Data Privacy', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+                  content: Text(
+                    'Your data is encrypted locally. We do not sell your personal information. '
+                    'Conversations are processed for response generation only and are not stored permanently on our servers without your consent.',
+                    style: GoogleFonts.inter(color: AurealColors.stardust),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
           SettingsTile(
             title: 'Forget Last Interaction',
@@ -134,6 +181,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SnackBar(content: Text('Bond reset to Neutral.')),
               );
             },
+          ),
+
+          _buildSectionHeader('SUPPORT'),
+          const SettingsTile(
+            title: 'Contact Us',
+            subtitle: 'support@aureal.ai',
+            icon: Icons.mail_outline,
+          ),
+          const SettingsTile(
+            title: 'Help Center',
+            subtitle: 'FAQ & Guides',
+            icon: Icons.help_outline,
           ),
 
           _buildSectionHeader('ABOUT'),

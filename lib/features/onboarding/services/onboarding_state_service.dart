@@ -5,6 +5,8 @@ class OnboardingStateService {
   static const String _keyRemainingGenerations = 'remaining_generations';
   static const int _initialGenerations = 3;
 
+  static const String _keyAvatarUrl = 'avatar_url';
+
   final SharedPreferences _prefs;
 
   OnboardingStateService(this._prefs);
@@ -49,9 +51,20 @@ class OnboardingStateService {
     await _prefs.setInt(_keyRemainingGenerations, count);
   }
 
+  /// Get saved avatar URL
+  String? get avatarUrl {
+    return _prefs.getString(_keyAvatarUrl);
+  }
+
+  /// Save avatar URL
+  Future<void> saveAvatarUrl(String url) async {
+    await _prefs.setString(_keyAvatarUrl, url);
+  }
+
   /// Clear all onboarding data (for testing)
   Future<void> clearOnboardingData() async {
     await _prefs.remove(_keyOnboardingComplete);
     await _prefs.remove(_keyRemainingGenerations);
+    await _prefs.remove(_keyAvatarUrl);
   }
 }

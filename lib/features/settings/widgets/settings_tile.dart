@@ -9,6 +9,7 @@ class SettingsTile extends StatelessWidget {
   final VoidCallback? onTap;
   final Widget? trailing;
   final bool isDestructive;
+  final Color? iconColor;
 
   const SettingsTile({
     super.key,
@@ -18,6 +19,7 @@ class SettingsTile extends StatelessWidget {
     this.onTap,
     this.trailing,
     this.isDestructive = false,
+    this.iconColor,
   });
 
   @override
@@ -46,7 +48,7 @@ class SettingsTile extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: 20,
-                  color: isDestructive ? Colors.red : AurealColors.stardust,
+                  color: iconColor ?? (isDestructive ? Colors.red : AurealColors.stardust),
                 ),
               ),
               const SizedBox(width: 16),

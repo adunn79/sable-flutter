@@ -148,7 +148,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                     const SizedBox(height: 8),
                     _buildTierRow('Gold', 'Unlimited generations.'),
                     const SizedBox(height: 8),
-                    _buildTierRow('Platinum', 'Everything. Forever.'),
+                    _buildTierRow('Platinum', 'All features unlocked.'),
 
                     const SizedBox(height: 12),
 

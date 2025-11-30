@@ -21,7 +21,7 @@ class Screen4Customize extends StatefulWidget {
 }
 
 class _Screen4CustomizeState extends State<Screen4Customize> {
-  late OnboardingStateService _stateService;
+  OnboardingStateService? _stateService;
   final AvatarGenerationService _avatarService = AvatarGenerationService();
 
   int _apparentAge = 25;
@@ -48,7 +48,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   }
 
   Future<void> _handleManifest() async {
-    if (!_stateService.hasGenerationsRemaining) {
+    if (_stateService == null || !_stateService!.hasGenerationsRemaining) {
       _showUpsellDialog();
       return;
     }
@@ -71,7 +71,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
       );
 
       final imageUrl = await _avatarService.generateAvatarImage(config);
-      await _stateService.decrementGenerations();
+      await _stateService?.decrementGenerations();
 
       setState(() {
         _generatedImageUrl = imageUrl;
@@ -126,7 +126,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Generations remaining: ${_stateService.remainingGenerations}',
+              'Generations remaining: ${_stateService?.remainingGenerations ?? 3}',
               style: GoogleFonts.inter(color: AurealColors.ghost),
             ),
           ],
@@ -232,7 +232,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                     const SizedBox(height: 8),
 
                     Text(
-                      'Generations remaining: ${_stateService.remainingGenerations}/3',
+                      'Generations remaining: ${_stateService?.remainingGenerations ?? 3}/3',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         color: AurealColors.plasmaCyan,

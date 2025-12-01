@@ -267,22 +267,25 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       );
 
       if (mounted) {
+        // Sanitize the response ONCE for both display and speech
+        final sanitizedResponse = _sanitizeResponse(response);
+        
         // Save AI response to persistent memory
-        await _memoryService?.addMessage(message: response, isUser: false);
+        await _memoryService?.addMessage(message: sanitizedResponse, isUser: false);
         
         setState(() {
           _messages.add({
-            'message': _sanitizeResponse(response),
+            'message': sanitizedResponse,
             'isUser': false,
           });
           _isTyping = false;
         });
         _scrollToBottom();
         
-        // Auto-speak AI response if enabled
+        // Auto-speak AI response if enabled (using sanitized text)
         final autoSpeak = await _voiceService?.getAutoSpeakEnabled() ?? true;
         if (autoSpeak && _voiceService != null) {
-          await _voiceService!.speak(response);
+          await _voiceService!.speak(sanitizedResponse);
         }
         
         // Update emotional state based on interaction

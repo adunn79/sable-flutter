@@ -26,11 +26,28 @@ class VoiceService {
         onStatus: (status) => debugPrint('Speech status: $status'),
       );
       
-      // Initialize text-to-speech
+      // Initialize text-to-speech with enhanced settings
       await _tts.setLanguage('en-US');
-      await _tts.setSpeechRate(0.5); // Natural speaking rate
+      await _tts.setSpeechRate(0.52); // Slightly faster, more natural
       await _tts.setVolume(1.0);
-      await _tts.setPitch(1.0);
+      await _tts.setPitch(1.05); // Slightly higher pitch for warmth
+      
+      // iOS-specific settings for better quality
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        // Use enhanced quality voice on iOS
+        await _tts.setVoice({
+          'name': 'com.apple.voice.enhanced.en-US.Samantha', // Enhanced Samantha voice
+          'locale': 'en-US'
+        });
+        
+        // Set iOS shared instance (for better integration)
+        await _tts.setSharedInstance(true);
+        await _tts.setIosAudioCategory(
+          IosTextToSpeechAudioCategory.playback,
+          [IosTextToSpeechAudioCategoryOptions.mixWithOthers],
+          IosTextToSpeechAudioMode.voicePrompt,
+        );
+      }
       
       // Load saved voice preference
       await _loadVoicePreference();

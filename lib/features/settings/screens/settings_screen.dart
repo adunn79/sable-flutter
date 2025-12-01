@@ -137,15 +137,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             icon: Icons.delete_forever,
             isDestructive: true,
             onTap: () async {
-              final service = await OnboardingStateService.create();
-              await service.clearOnboardingData();
+              // Show confirmation dialog
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AurealColors.carbon,
+                  title: Text('Wipe All Data?', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+                  content: Text(
+                    'This will completely reset the app and return you to onboarding. All conversation history, profile data, and preferences will be lost.',
+                    style: GoogleFonts.inter(color: AurealColors.stardust),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      child: const Text('Wipe Everything'),
+                    ),
+                  ],
+                ),
+              );
               
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Memory wiped. Please restart the app.')),
-                );
-                // Optional: Navigate back to splash or onboarding
-                // Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+              if (confirm == true) {
+                // Clear all data
+                final service = await OnboardingStateService.create();
+                await service.clearOnboardingData();
+                
+                final memoryService = await ConversationMemoryService.create();
+                await memoryService.clearHistory();
+                
+                if (context.mounted) {
+                  // Navigate back to splash, which will redirect to onboarding
+                  Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                }
               }
             },
           ),

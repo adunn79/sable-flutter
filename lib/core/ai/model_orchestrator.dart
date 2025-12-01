@@ -331,6 +331,9 @@ RULES:
       
       // 4b. Intercept and rewrite refusals or AI disclaimers
       if (_needsSanitization(response)) {
+        debugPrint('⚠️ SANITIZATION TRIGGERED - Response contains forbidden AI language');
+        debugPrint('Original response: $response');
+        
         // REGENERATE with stronger prompt instead of generic fallback
         try {
           final regeneratedResponse = await _anthropicProvider.generateResponse(
@@ -338,9 +341,11 @@ RULES:
             systemPrompt: claudePrompt + '\n\nABSOLUTE CRITICAL: You just made a mistake by mentioning you\'re an AI. DO NOT DO THAT AGAIN. Respond naturally as Aureal.',
             modelId: state.personalityModelId,
           );
+          debugPrint('✅ Regenerated response: $regeneratedResponse');
           // Sanitize again and return
           return _sanitizeResponseText(regeneratedResponse);
         } catch (e) {
+          debugPrint('❌ Regeneration failed: $e');
           // If regeneration fails, return safe fallback
           return "Hey, let me think about that differently... what would you like to know?";
         }

@@ -6,6 +6,7 @@ import 'package:sable/core/identity/bond_engine.dart';
 import 'package:sable/features/settings/widgets/settings_tile.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:sable/core/emotion/conversation_memory_service.dart';
+import 'package:sable/core/voice/voice_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -17,6 +18,104 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _newsEnabled = true;
   bool _gpsEnabled = false;
+  
+  // Voice Settings
+  final VoiceService _voiceService = VoiceService();
+  final TextEditingController _apiKeyController = TextEditingController();
+  String _voiceEngine = 'system';
+  String? _selectedVoiceName;
+  List<Map<String, String>> _availableVoices = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    await _voiceService.initialize();
+    _voiceEngine = _voiceService.currentEngine;
+    
+    // Load API Key if exists (for display purposes, though usually hidden)
+    // In a real app, we might not want to populate the text field for security, 
+    // but for UX here we will leave it empty unless user wants to change it.
+    
+    await _loadVoices();
+  }
+
+  Future<void> _loadVoices() async {
+    final voices = await _voiceService.getAvailableVoices();
+    setState(() {
+      _availableVoices = voices;
+      _voiceEngine = _voiceService.currentEngine;
+    });
+    
+    // Get current voice name
+    // This is a bit tricky as we only store ID. We need to find the name.
+    // For now, we'll just show "Select Voice" or try to match ID.
+  }
+
+  void _showVoiceSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AurealColors.obsidian,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        height: 400,
+        child: Column(
+          children: [
+            Text(
+              'Select Voice (${_voiceEngine == 'eleven_labs' ? 'ElevenLabs' : 'System'})',
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _availableVoices.isEmpty
+                  ? Center(
+                      child: Text(
+                        _voiceEngine == 'eleven_labs' 
+                            ? 'No voices found.\nCheck API Key or internet.' 
+                            : 'No system voices found.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(color: Colors.white54),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _availableVoices.length,
+                      itemBuilder: (context, index) {
+                        final voice = _availableVoices[index];
+                        return ListTile(
+                          title: Text(
+                            voice['name'] ?? 'Unknown',
+                            style: GoogleFonts.inter(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            voice['locale'] ?? '',
+                            style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
+                          ),
+                          onTap: () async {
+                            await _voiceService.setVoice(voice['name']!); // Using name as ID for system, ID for ElevenLabs
+                            setState(() {
+                              _selectedVoiceName = voice['name'];
+                            });
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -176,6 +275,110 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               }
             },
           ),
+
+          _buildSectionHeader('VOICE & PERSONALITY'),
+          SettingsTile(
+            title: 'Voice Engine',
+            subtitle: _voiceEngine == 'eleven_labs' ? 'ElevenLabs (High Quality)' : 'System Default',
+            icon: Icons.record_voice_over,
+            onTap: () async {
+              // Toggle engine
+              final newEngine = _voiceEngine == 'system' ? 'eleven_labs' : 'system';
+              await _voiceService.setVoiceEngine(newEngine);
+              setState(() => _voiceEngine = newEngine);
+              _loadVoices(); // Reload voices for new engine
+            },
+            trailing: Switch(
+              value: _voiceEngine == 'eleven_labs',
+              activeColor: AurealColors.hyperGold,
+              onChanged: (val) async {
+                final newEngine = val ? 'eleven_labs' : 'system';
+                await _voiceService.setVoiceEngine(newEngine);
+                setState(() => _voiceEngine = newEngine);
+                _loadVoices();
+              },
+            ),
+          ),
+          
+          if (_voiceEngine == 'eleven_labs') ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: TextField(
+                controller: _apiKeyController,
+                style: GoogleFonts.inter(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: 'ElevenLabs API Key',
+                  labelStyle: GoogleFonts.inter(color: AurealColors.stardust),
+                  hintText: 'Enter your API key',
+                  hintStyle: GoogleFonts.inter(color: Colors.white24),
+                  filled: true,
+                  fillColor: AurealColors.carbon,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.save, color: AurealColors.plasmaCyan),
+                    onPressed: () async {
+                      await _voiceService.setElevenLabsApiKey(_apiKeyController.text);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('API Key saved!')),
+                      );
+                      _loadVoices();
+                    },
+                  ),
+                ),
+                obscureText: true,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+              child: Text(
+                'Get a key at elevenlabs.io. Free tier available.',
+                style: GoogleFonts.inter(color: Colors.white38, fontSize: 12),
+              ),
+            ),
+          ],
+
+          SettingsTile(
+            title: 'Voice Selection',
+            subtitle: _selectedVoiceName ?? 'Select a voice',
+            icon: Icons.graphic_eq,
+            onTap: () {
+              _showVoiceSelector();
+            },
+          ),
+          
+          if (_voiceEngine == 'eleven_labs')
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AurealColors.plasmaCyan.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'RECOMMENDED VOICES',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: AurealColors.plasmaCyan,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '• Bella: Soft, intense, warm (Female)\n• Josh: Deep, calm, reassuring (Male)\n\nTo add more: Go to Voice Library on ElevenLabs website, add to your lab, and they will appear here.',
+                      style: GoogleFonts.inter(color: AurealColors.stardust, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           _buildSectionHeader('REAL-WORLD AWARENESS'),
           SettingsTile(

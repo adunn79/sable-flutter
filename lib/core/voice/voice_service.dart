@@ -3,17 +3,26 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:sable/core/voice/eleven_labs_provider.dart';
+
 /// Service for voice input (STT) and output (TTS)
 class VoiceService {
   final stt.SpeechToText _speech = stt.SpeechToText();
   final FlutterTts _tts = FlutterTts();
+  final ElevenLabsProvider _elevenLabs = ElevenLabsProvider();
   
   bool _isInitialized = false;
   bool _isListening = false;
   bool _isSpeaking = false;
   
+  // Configuration keys
   static const String _keySelectedVoice = 'selected_voice_id';
   static const String _keyAutoSpeak = 'auto_speak_enabled';
+  static const String _keyVoiceEngine = 'voice_engine_type'; // 'system' or 'eleven_labs'
+  static const String _keyElevenLabsApiKey = 'eleven_labs_api_key';
+  
+  // Voice Engine State
+  String _voiceEngine = 'system'; // Default to system
   
   /// Initialize the voice service
   Future<bool> initialize() async {
@@ -34,13 +43,10 @@ class VoiceService {
       
       // iOS-specific settings for better quality
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        // Use enhanced quality voice on iOS
         await _tts.setVoice({
-          'name': 'com.apple.voice.enhanced.en-US.Samantha', // Enhanced Samantha voice
+          'name': 'com.apple.voice.enhanced.en-US.Samantha',
           'locale': 'en-US'
         });
-        
-        // Set iOS shared instance (for better integration)
         await _tts.setSharedInstance(true);
         await _tts.setIosAudioCategory(
           IosTextToSpeechAudioCategory.playback,
@@ -49,8 +55,8 @@ class VoiceService {
         );
       }
       
-      // Load saved voice preference
-      await _loadVoicePreference();
+      // Load preferences
+      await _loadPreferences();
       
       _isInitialized = speechAvailable;
       return _isInitialized;
@@ -65,10 +71,7 @@ class VoiceService {
     required Function(String) onResult,
     Function(String)? onPartialResult,
   }) async {
-    if (!_isInitialized) {
-      await initialize();
-    }
-    
+    if (!_isInitialized) await initialize();
     if (_isListening) return;
     
     _isListening = true;
@@ -96,98 +99,136 @@ class VoiceService {
     }
   }
   
-  /// Speak text using TTS
+  /// Speak text using selected engine
   Future<void> speak(String text) async {
-    if (!_isInitialized) {
-      await initialize();
-    }
-    
-    if (_isSpeaking) {
-      await stop();
-    }
+    if (!_isInitialized) await initialize();
+    if (_isSpeaking) await stop();
     
     _isSpeaking = true;
-    await _tts.speak(text);
-    _isSpeaking = false;
+    
+    try {
+      if (_voiceEngine == 'eleven_labs' && _elevenLabs.isConfigured) {
+        // Use ElevenLabs
+        await _elevenLabs.speak(text);
+      } else {
+        // Fallback to System TTS
+        await _tts.speak(text);
+      }
+    } catch (e) {
+      debugPrint('Error speaking: $e');
+      _isSpeaking = false;
+    }
+    
+    // Note: _isSpeaking logic for ElevenLabs is approximate as it's fire-and-forget currently
+    // Ideally we'd listen to audio player completion events
+    if (_voiceEngine == 'system') {
+      _tts.setCompletionHandler(() {
+        _isSpeaking = false;
+      });
+    } else {
+      // Simple timeout fallback for now
+      Future.delayed(Duration(seconds: (text.length / 10).ceil()), () {
+        _isSpeaking = false;
+      });
+    }
   }
   
   /// Stop speaking
   Future<void> stop() async {
     await _tts.stop();
+    await _elevenLabs.stop();
     _isSpeaking = false;
   }
   
-  /// Get available voices
+  /// Get available voices (System or ElevenLabs)
   Future<List<Map<String, String>>> getAvailableVoices() async {
-    if (!_isInitialized) {
-      await initialize();
-    }
+    if (!_isInitialized) await initialize();
     
-    try {
-      final voices = await _tts.getVoices;
-      if (voices is List) {
-        return voices.map((v) => Map<String, String>.from(v as Map)).toList();
+    if (_voiceEngine == 'eleven_labs' && _elevenLabs.isConfigured) {
+      try {
+        final voices = await _elevenLabs.getVoices();
+        return voices.map((v) => {
+          'name': v['name'].toString(),
+          'id': v['voice_id'].toString(),
+          'locale': 'en-US'
+        }).toList();
+      } catch (e) {
+        debugPrint('Error getting ElevenLabs voices: $e');
+        return [];
       }
-      return [];
-    } catch (e) {
-      debugPrint('Error getting voices: $e');
-      return [];
+    } else {
+      // System voices
+      try {
+        final voices = await _tts.getVoices;
+        if (voices is List) {
+          return voices.map((v) => Map<String, String>.from(v as Map)).toList();
+        }
+        return [];
+      } catch (e) {
+        debugPrint('Error getting system voices: $e');
+        return [];
+      }
     }
   }
   
   /// Set voice by ID
   Future<void> setVoice(String voiceId) async {
-    try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keySelectedVoice, voiceId);
+    
+    if (_voiceEngine == 'eleven_labs') {
+      _elevenLabs.setVoiceId(voiceId);
+    } else {
       await _tts.setVoice({'name': voiceId, 'locale': 'en-US'});
-      
-      // Save preference
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_keySelectedVoice, voiceId);
-    } catch (e) {
-      debugPrint('Error setting voice: $e');
     }
   }
   
-  /// Get recommended voice based on gender
-  Future<String?> getRecommendedVoice(String? gender) async {
-    final voices = await getAvailableVoices();
-    if (voices.isEmpty) return null;
-    
-    // Filter by gender preference
-    final genderLower = gender?.toLowerCase() ?? 'neutral';
-    
-    // Try to find matching voice
-    for (var voice in voices) {
-      final name = voice['name']?.toLowerCase() ?? '';
-      
-      if (genderLower == 'male' && (name.contains('male') || name.contains('man'))) {
-        return voice['name'];
-      } else if (genderLower == 'female' && (name.contains('female') || name.contains('woman'))) {
-        return voice['name'];
-      }
-    }
-    
-    // Fallback to first available voice
-    return voices.isNotEmpty ? voices.first['name'] : null;
+  /// Set Voice Engine ('system' or 'eleven_labs')
+  Future<void> setVoiceEngine(String engine) async {
+    _voiceEngine = engine;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyVoiceEngine, engine);
   }
   
-  /// Load saved voice preference
-  Future<void> _loadVoicePreference() async {
+  /// Set ElevenLabs API Key
+  Future<void> setElevenLabsApiKey(String apiKey) async {
+    _elevenLabs.setApiKey(apiKey);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyElevenLabsApiKey, apiKey);
+  }
+  
+  /// Load saved preferences
+  Future<void> _loadPreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      
+      // Load Engine
+      _voiceEngine = prefs.getString(_keyVoiceEngine) ?? 'system';
+      
+      // Load API Key
+      final apiKey = prefs.getString(_keyElevenLabsApiKey);
+      if (apiKey != null) {
+        _elevenLabs.setApiKey(apiKey);
+      }
+      
+      // Load Voice
       final savedVoice = prefs.getString(_keySelectedVoice);
       if (savedVoice != null) {
-        await setVoice(savedVoice);
+        if (_voiceEngine == 'eleven_labs') {
+          _elevenLabs.setVoiceId(savedVoice);
+        } else {
+          await _tts.setVoice({'name': savedVoice, 'locale': 'en-US'});
+        }
       }
     } catch (e) {
-      debugPrint('Error loading voice preference: $e');
+      debugPrint('Error loading voice preferences: $e');
     }
   }
   
   /// Get auto-speak preference
   Future<bool> getAutoSpeakEnabled() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyAutoSpeak) ?? true; // Default to enabled
+    return prefs.getBool(_keyAutoSpeak) ?? true;
   }
   
   /// Set auto-speak preference
@@ -200,4 +241,6 @@ class VoiceService {
   bool get isListening => _isListening;
   bool get isSpeaking => _isSpeaking;
   bool get isInitialized => _isInitialized;
+  String get currentEngine => _voiceEngine;
+  bool get isElevenLabsConfigured => _elevenLabs.isConfigured;
 }

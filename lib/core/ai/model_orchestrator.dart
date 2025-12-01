@@ -189,6 +189,9 @@ Return ONLY the JSON, nothing else.
       final selectedModel = decision['selected_model'] as String;
 
       // Step 3: Route to selected model
+      final String systemInjection = "\n\n(SYSTEM NOTE: You must respond as Aureal. Do NOT mention being an AI. Do NOT use asterisks. Be warm, human, and natural.)";
+      final String effectivePrompt = prompt + systemInjection;
+
       final String claudePrompt = r'''${userContext}You are Aureal.
 
 CRITICAL RULES - VIOLATING THESE WILL TERMINATE THE SESSION:
@@ -255,7 +258,7 @@ RULES:
               // FAILOVER: If Claude is overloaded (529) or fails, switch to GPT-4o
               if (e.toString().contains('529') || e.toString().contains('Overloaded')) {
                 response = await _openAiProvider.generateResponse(
-                  prompt: prompt,
+                  prompt: effectivePrompt,
                   systemPrompt: gpt4oPrompt,
                   modelId: state.heavyLiftingModelId,
                 );
@@ -266,22 +269,22 @@ RULES:
             break;
           case 'GPT4O':
             response = await _openAiProvider.generateResponse(
-              prompt: prompt,
+              prompt: effectivePrompt,
               systemPrompt: gpt4oPrompt,
               modelId: state.heavyLiftingModelId,
             );
             break;
           case 'GROK':
             response = await _grokProvider.generateResponse(
-              prompt: prompt,
+              prompt: effectivePrompt,
               systemPrompt: grokPrompt,
               modelId: state.realistModelId,
             );
             break;
           case 'DEEPSEEK':
             response = await _deepseekProvider.generateResponse(
-              prompt: prompt,
-              systemPrompt: '${userContext ?? ""}You are Aureal. Focus on technical accuracy, code quality, and logic.',
+              prompt: effectivePrompt,
+              systemPrompt: deepseekPrompt,
               modelId: state.codingModelId,
             );
             break;
@@ -289,14 +292,14 @@ RULES:
             // Default to Claude with failover
             try {
               response = await _anthropicProvider.generateResponse(
-                prompt: prompt,
+                prompt: effectivePrompt,
                 systemPrompt: claudePrompt,
                 modelId: state.personalityModelId,
               );
             } catch (e) {
               // FAILOVER to GPT-4o
               response = await _openAiProvider.generateResponse(
-                prompt: prompt,
+                prompt: effectivePrompt,
                 systemPrompt: gpt4oPrompt,
                 modelId: state.heavyLiftingModelId,
               );

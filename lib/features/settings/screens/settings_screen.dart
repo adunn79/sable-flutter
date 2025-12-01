@@ -39,28 +39,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _categoryTech = true;
   bool _categoryScience = true;
   
+  // Manual Location
+  String? _manualLocation;
+  
+  // News Settings
+  List<String> _customNewsTopics = [];
+  
   // Voice Settings
   final VoiceService _voiceService = VoiceService();
   final TextEditingController _apiKeyController = TextEditingController();
   String _voiceEngine = 'system';
   String? _selectedVoiceName;
+  String? _selectedVoiceId; // Added for storing voice ID
   List<Map<String, String>> _availableVoices = [];
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
+    _loadVoices(); // Moved here as per user's implied change
   }
 
   Future<void> _loadSettings() async {
     await _voiceService.initialize();
-    _voiceEngine = _voiceService.currentEngine;
+    final stateService = await OnboardingStateService.create();
+    final prefs = await SharedPreferences.getInstance();
+    
+    setState(() {
+      _manualLocation = stateService.userCurrentLocation;
+      _voiceEngine = prefs.getString('voice_engine') ?? 'system';
+      _apiKeyController.text = prefs.getString('eleven_labs_api_key') ?? '';
+      _selectedVoiceId = prefs.getString('selected_voice_id');
+      
+      // Load permissions (mocked for now)
+      _permissionGps = true; // Assume true since we have location
+    });
     
     // Load API Key if exists (for display purposes, though usually hidden)
     // In a real app, we might not want to populate the text field for security, 
     // but for UX here we will leave it empty unless user wants to change it.
-    
-    await _loadVoices();
   }
 
   Future<void> _loadVoices() async {
@@ -183,10 +200,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
 
           _buildSectionHeader('ACCOUNT'),
-          const SettingsTile(
+          SettingsTile(
             title: 'Profile',
             subtitle: 'Manage your identity',
             icon: Icons.person_outline,
+            onTap: _showProfileDialog,
           ),
           const SettingsTile(
             title: 'Subscription',
@@ -299,7 +317,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildSectionHeader('PERMISSIONS & ACCESS'),
           SettingsTile(
             title: 'Location Services',
-            subtitle: 'GPS & location-aware features',
+            subtitle: _manualLocation != null ? 'Manual: $_manualLocation' : 'GPS & location-aware features',
             icon: Icons.location_on_outlined,
             trailing: Switch(
               value: _permissionGps,
@@ -307,6 +325,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onChanged: (val) => setState(() => _permissionGps = val),
             ),
           ),
+          if (_permissionGps)
+            Padding(
+              padding: const EdgeInsets.only(left: 60, right: 24, bottom: 12),
+              child: GestureDetector(
+                onTap: _showManualLocationDialog,
+                child: Text(
+                  _manualLocation != null ? 'Change Manual Location' : 'Set Manual Location (Simulator Fix)',
+                  style: GoogleFonts.inter(
+                    color: AurealColors.plasmaCyan,
+                    fontSize: 12,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ),
           SettingsTile(
             title: 'Microphone',
             subtitle: 'Voice input & commands',
@@ -538,20 +571,119 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       letterSpacing: 1,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildCategoryChip('Local', _categoryLocal, () => setState(() => _categoryLocal = !_categoryLocal)),
+                _buildCategoryChip('National', _categoryNational, () => setState(() => _categoryNational = !_categoryNational)),
+                _buildCategoryChip('World', _categoryWorld, () => setState(() => _categoryWorld = !_categoryWorld)),
+                _buildCategoryChip('Sports', _categorySports, () => setState(() => _categorySports = !_categorySports)),
+                _buildCategoryChip('Religion', _categoryReligion, () => setState(() => _categoryReligion = !_categoryReligion)),
+                _buildCategoryChip('Space/Tech', _categoryTech, () => setState(() => _categoryTech = !_categoryTech)),
+                _buildCategoryChip('Science', _categoryScience, () => setState(() => _categoryScience = !_categoryScience)),
+              ],
+            ),
+          ),
+          
+          // Custom Topics
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Custom Topics', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AurealColors.carbon,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        alignment: Alignment.centerLeft,
+                        child: TextField(
+                          style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                          decoration: InputDecoration(
+                            hintText: 'Add topic (e.g. "Crypto", "Gardening")',
+                            hintStyle: TextStyle(color: Colors.white30),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onSubmitted: (value) {
+                            if (value.isNotEmpty && !_customNewsTopics.contains(value)) {
+                              setState(() {
+                                _customNewsTopics.add(value);
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_customNewsTopics.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _customNewsTopics.map((topic) => Chip(
+                        label: Text(topic, style: GoogleFonts.inter(color: Colors.white, fontSize: 11)),
+                        backgroundColor: AurealColors.plasmaCyan.withOpacity(0.2),
+                        deleteIcon: Icon(Icons.close, size: 14, color: AurealColors.plasmaCyan),
+                        onDeleted: () => setState(() => _customNewsTopics.remove(topic)),
+                        side: BorderSide(color: AurealColors.plasmaCyan),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      )).toList(),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          _buildSectionHeader('BOND ENGINE STATUS'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AurealColors.carbon,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildCategoryChip('Local', _categoryLocal, () => setState(() => _categoryLocal = !_categoryLocal)),
-                      _buildCategoryChip('National', _categoryNational, () => setState(() => _categoryNational = !_categoryNational)),
-                      _buildCategoryChip('World', _categoryWorld, () => setState(() => _categoryWorld = !_categoryWorld)),
-                      _buildCategoryChip('Sports', _categorySports, () => setState(() => _categorySports = !_categorySports)),
-                      _buildCategoryChip('Religion', _categoryReligion, () => setState(() => _categoryReligion = !_categoryReligion)),
-                      _buildCategoryChip('Space/Tech', _categoryTech, () => setState(() => _categoryTech = !_categoryTech)),
-                      _buildCategoryChip('Science', _categoryScience, () => setState(() => _categoryScience = !_categoryScience)),
+                      Text('Current State:', style: GoogleFonts.inter(color: Colors.white70)),
+                      Text(
+                        bondState.toString().split('.').last.toUpperCase(),
+                        style: GoogleFonts.spaceGrotesk(
+                          color: bondState == BondState.warm ? AurealColors.hyperGold : 
+                                 bondState == BondState.cooled ? Colors.blueGrey : Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Levels: COOLED (Low) → NEUTRAL → WARM (High)',
+                    style: GoogleFonts.inter(color: Colors.white30, fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+          ),
                   const SizedBox(height: 8),
                   Text(
                     'Aureal will fetch top 10 items daily from selected categories',
@@ -703,6 +835,118 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _showManualLocationDialog() async {
+    final controller = TextEditingController(text: _manualLocation);
+    
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AurealColors.carbon,
+        title: Text('Set Manual Location', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Override GPS location (useful for Simulator)',
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              style: GoogleFonts.inter(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'City, State',
+                labelStyle: TextStyle(color: AurealColors.stardust),
+                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AurealColors.plasmaCyan)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newLocation = controller.text.trim();
+              if (newLocation.isNotEmpty) {
+                final stateService = await OnboardingStateService.create();
+                // Update current location in state
+                await stateService.saveUserProfile(
+                  name: stateService.userName ?? 'User',
+                  dob: stateService.userDob ?? DateTime.now(),
+                  location: stateService.userLocation ?? newLocation,
+                  currentLocation: newLocation,
+                  gender: stateService.userGender,
+                  voiceId: stateService.selectedVoiceId,
+                );
+                
+                setState(() {
+                  _manualLocation = newLocation;
+                });
+              }
+              Navigator.pop(context);
+            },
+            child: Text('Save', style: TextStyle(color: AurealColors.plasmaCyan)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showProfileDialog() async {
+    final stateService = await OnboardingStateService.create();
+    final nameController = TextEditingController(text: stateService.userName);
+    
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AurealColors.carbon,
+        title: Text('Edit Profile', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              style: GoogleFonts.inter(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Name',
+                labelStyle: TextStyle(color: AurealColors.stardust),
+                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AurealColors.plasmaCyan)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newName = nameController.text.trim();
+              if (newName.isNotEmpty) {
+                await stateService.saveUserProfile(
+                  name: newName,
+                  dob: stateService.userDob ?? DateTime.now(),
+                  location: stateService.userLocation ?? 'Unknown',
+                  currentLocation: stateService.userCurrentLocation,
+                  gender: stateService.userGender,
+                  voiceId: stateService.selectedVoiceId,
+                );
+              }
+              Navigator.pop(context);
+            },
+            child: Text('Save', style: TextStyle(color: AurealColors.plasmaCyan)),
+          ),
+        ],
       ),
     );
   }

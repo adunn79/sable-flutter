@@ -75,11 +75,11 @@ class ElevenLabsProvider {
       
       request.body = jsonEncode({
         "text": text,
-        "model_id": "eleven_monolingual_v1", // Low latency model
+        "model_id": "eleven_turbo_v2_5", // Turbo v2.5 (Low latency, high quality - "v3")
         "voice_settings": {
           "stability": 0.5,
           "similarity_boost": 0.75,
-          "style": 0.5, // More expressive
+          "style": 0.0, // Turbo models don't support style as well, keep neutral
           "use_speaker_boost": true
         }
       });

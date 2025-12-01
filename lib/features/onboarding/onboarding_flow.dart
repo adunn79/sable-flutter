@@ -95,6 +95,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         location: _userProfile!.location,
         currentLocation: _userProfile!.currentLocation,
         gender: _userProfile!.genderIdentity,
+        voiceId: _userProfile!.selectedVoiceId,
       );
     }
     

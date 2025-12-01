@@ -5,6 +5,7 @@ import 'package:sable/core/theme/aureal_theme.dart';
 import 'package:sable/core/identity/bond_engine.dart';
 import 'package:sable/features/settings/widgets/settings_tile.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
+import 'package:sable/core/emotion/conversation_memory_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -113,6 +114,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Memory shredded.')),
               );
+            },
+          ),
+          SettingsTile(
+            title: 'Clear Chat History',
+            subtitle: 'Remove all conversation messages',
+            icon: Icons.chat_bubble_outline,
+            onTap: () async {
+              final memoryService = await ConversationMemoryService.create();
+              await memoryService.clearHistory();
+              
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Chat history cleared. Please restart chat.')),
+                );
+              }
             },
           ),
           SettingsTile(

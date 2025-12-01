@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/voice/voice_service.dart';
 import '../models/user_profile.dart';
 
 class Screen1Calibration extends StatefulWidget {
@@ -23,6 +24,45 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
   final _locationController = TextEditingController(); // Birth place
   DateTime? _selectedDate;
   String? _genderIdentity;
+  
+  final VoiceService _voiceService = VoiceService();
+  List<Map<String, String>> _availableVoices = [];
+  String? _selectedVoiceId;
+  bool _isLoadingVoices = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initVoiceService();
+  }
+
+  Future<void> _initVoiceService() async {
+    await _voiceService.initialize();
+    final voices = await _voiceService.getAvailableVoices();
+    
+    if (mounted) {
+      setState(() {
+        _availableVoices = voices;
+        _isLoadingVoices = false;
+      });
+    }
+  }
+
+  Future<void> _previewVoice(String voiceId) async {
+    await _voiceService.setVoice(voiceId);
+    await _voiceService.speak("Hello, I am excited to meet you.");
+  }
+
+  Future<void> _recommendVoice(String? gender) async {
+    if (gender == null) return;
+    
+    final recommended = await _voiceService.getRecommendedVoice(gender);
+    if (recommended != null && mounted) {
+      setState(() {
+        _selectedVoiceId = recommended;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -105,6 +145,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
         location: _locationController.text.trim(),
         currentLocation: null, // Will be set by GPS later
         genderIdentity: _genderIdentity,
+        selectedVoiceId: _selectedVoiceId,
       );
 
       // Check age requirement
@@ -417,9 +458,62 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                     setState(() {
                       _genderIdentity = value;
                     });
+                    _recommendVoice(value);
                   },
                   style: GoogleFonts.inter(color: AurealColors.stardust),
                 ).animate(delay: 1100.ms).fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
+                
+                const SizedBox(height: 32),
+
+                // Voice Selection
+                if (!_isLoadingVoices && _availableVoices.isNotEmpty) ...[
+                  Text(
+                    'Voice Preference',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AurealColors.ghost,
+                      letterSpacing: 1,
+                    ),
+                  ).animate(delay: 1150.ms).fadeIn(duration: 400.ms),
+                  
+                  const SizedBox(height: 8),
+                  
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedVoiceId,
+                          dropdownColor: AurealColors.carbon,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            hintText: 'Select a voice',
+                          ),
+                          items: _availableVoices.map((voice) {
+                            return DropdownMenuItem(
+                              value: voice['name'],
+                              child: Text(
+                                voice['name'] ?? 'Unknown',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedVoiceId = value;
+                            });
+                          },
+                          style: GoogleFonts.inter(color: AurealColors.stardust),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      if (_selectedVoiceId != null)
+                        IconButton(
+                          icon: const Icon(Icons.play_circle_outline, color: AurealColors.plasmaCyan),
+                          onPressed: () => _previewVoice(_selectedVoiceId!),
+                        ),
+                    ],
+                  ).animate(delay: 1200.ms).fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
+                ],
 
                 const SizedBox(height: 48),
 

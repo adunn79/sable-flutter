@@ -4,30 +4,57 @@ import 'package:sable/src/config/app_config.dart';
 
 /// Weather service using OpenWeatherMap API with Google location
 class WeatherService {
-  // Using OpenWeatherMap API (free tier)
-  // You can get an API key at: https://openweathermap.org/api
-  static const String _baseUrl = 'api.openweathermap.org';
+  // Using Open-Meteo API (free, no key required)
+  static const String _baseUrl = 'api.open-meteo.com';
   
   /// Get weather conditions for a location
   /// Returns a WeatherCondition or null if unable to fetch
   static Future<WeatherCondition?> getWeather(String location) async {
     try {
-      // Use OpenWeatherMap API
-      // Note: Using free tier which has 60 calls/minute limit
-      final apiKey = AppConfig.googleMapsApiKey; // Reusing Google API key
+      // First, we need coordinates for the location name
+      // We can use the LocationService's geocoding if we had it exposed, 
+      // but for now let's assume 'location' might be a city name.
+      // Open-Meteo requires lat/long.
       
-      if (apiKey == null || apiKey.isEmpty) {
-        return null;
-      }
-
-      // Call OpenWeatherMap current weather API
+      // Since we don't have a direct city-to-latlong here without another API call,
+      // and we want to be robust, let's rely on the fact that we usually get
+      // coordinates from the device GPS in LocationService.
+      
+      // However, this method takes a String location name.
+      // To fix this properly without adding more API keys, we should
+      // ideally pass lat/long to this service.
+      
+      // For now, let's try to geocode the city name using a free geocoding API
+      // or just fail gracefully if we can't.
+      
+      // BETTER APPROACH: Use the device's current position directly if available.
+      // But this method signature takes a String.
+      
+      // Let's use the Open-Meteo Geocoding API to get coords for the city name
+      final geoUrl = Uri.https(
+        'geocoding-api.open-meteo.com',
+        '/v1/search',
+        {'name': location, 'count': '1', 'language': 'en', 'format': 'json'},
+      );
+      
+      final geoResponse = await http.get(geoUrl);
+      if (geoResponse.statusCode != 200) return null;
+      
+      final geoData = jsonDecode(geoResponse.body);
+      if (geoData['results'] == null || (geoData['results'] as List).isEmpty) return null;
+      
+      final lat = geoData['results'][0]['latitude'];
+      final lon = geoData['results'][0]['longitude'];
+      
+      // Now fetch weather
       final url = Uri.https(
         _baseUrl,
-        '/data/2.5/weather',
+        '/v1/forecast',
         {
-          'q': location,
-          'appid': apiKey,
-          'units': 'imperial', // Fahrenheit
+          'latitude': '$lat',
+          'longitude': '$lon',
+          'current': 'temperature_2m,weather_code,relative_humidity_2m',
+          'temperature_unit': 'fahrenheit',
         },
       );
 
@@ -35,17 +62,17 @@ class WeatherService {
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final current = data['current'];
         
-        final weatherMain = data['weather'][0]['main'] as String;
-        final temp = (data['main']['temp'] as num).toDouble();
-        final humidity = data['main']['humidity'] as int;
-        final description = data['weather'][0]['description'] as String;
+        final temp = (current['temperature_2m'] as num).toDouble();
+        final humidity = (current['relative_humidity_2m'] as num).toInt();
+        final code = current['weather_code'] as int;
         
         return WeatherCondition(
-          condition: _mapWeatherType(weatherMain),
+          condition: _mapWmoCode(code),
           temperature: temp,
           humidity: humidity,
-          description: description,
+          description: _getWmoDescription(code),
         );
       }
       
@@ -53,6 +80,40 @@ class WeatherService {
     } catch (e) {
       return null;
     }
+  }
+
+  /// Map WMO Weather Code to WeatherType
+  static WeatherType _mapWmoCode(int code) {
+    if (code == 0) return WeatherType.clear;
+    if (code == 1 || code == 2 || code == 3) return WeatherType.partlyCloudy;
+    if (code == 45 || code == 48) return WeatherType.fog;
+    if (code >= 51 && code <= 55) return WeatherType.drizzle;
+    if (code >= 61 && code <= 65) return WeatherType.rainy;
+    if (code >= 71 && code <= 77) return WeatherType.snow;
+    if (code >= 80 && code <= 82) return WeatherType.rainy;
+    if (code >= 85 && code <= 86) return WeatherType.snow;
+    if (code >= 95 && code <= 99) return WeatherType.thunderstorm;
+    return WeatherType.unknown;
+  }
+
+  static String _getWmoDescription(int code) {
+    if (code == 0) return 'Clear sky';
+    if (code == 1) return 'Mainly clear';
+    if (code == 2) return 'Partly cloudy';
+    if (code == 3) return 'Overcast';
+    if (code == 45) return 'Fog';
+    if (code == 48) return 'Depositing rime fog';
+    if (code == 51) return 'Light drizzle';
+    if (code == 53) return 'Moderate drizzle';
+    if (code == 55) return 'Dense drizzle';
+    if (code == 61) return 'Slight rain';
+    if (code == 63) return 'Moderate rain';
+    if (code == 65) return 'Heavy rain';
+    if (code == 71) return 'Slight snow fall';
+    if (code == 73) return 'Moderate snow fall';
+    if (code == 75) return 'Heavy snow fall';
+    if (code == 95) return 'Thunderstorm';
+    return 'Unknown';
   }
   
   /// Map OpenWeatherMap condition to our WeatherType

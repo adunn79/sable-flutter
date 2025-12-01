@@ -55,12 +55,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         _avatarUrl = _stateService?.avatarUrl;
       });
       
-      // Load message history from persistent storage
+    // Load message history from persistent storage
       final storedMessages = _memoryService!.getAllMessages();
       if (storedMessages.isNotEmpty) {
         setState(() {
           _messages.addAll(storedMessages.map((msg) => {
-            'message': msg.message,
+            'message': msg.isUser ? msg.message : _sanitizeResponse(msg.message), // Sanitize AI messages
             'isUser': msg.isUser,
           }));
         });
@@ -74,6 +74,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         await _sendInitialGreeting();
       }
     }
+  }
+
+  /// Sanitize AI response to remove narrative actions and unwanted patterns
+  String _sanitizeResponse(String response) {
+    return response
+        .replaceAll(RegExp(r'\*\s*[^*]+\s*\*'), '') // Main pattern
+        .replaceAll(RegExp(r'\*[^*]*\*'), '') // Catch anything with asterisks
+        .replaceAll('*', '') // Remove stray asterisks
+        .replaceAll(RegExp(r'\s+'), ' ') // Remove multiple spaces
+        .trim();
   }
 
   Future<void> _fetchCurrentLocation() async {
@@ -107,16 +117,39 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       });
       
       try {
+        // Build FULL user context (same as regular messages)
+        String userContext = '\n\n[USER PROFILE]\n';
+        if (name != null) userContext += 'Name: $name\n';
+        if (location != null) userContext += 'Current Location: $location\n';
+        if (dob != null) {
+          final age = DateTime.now().difference(dob).inDays ~/ 365;
+          final zodiac = _getZodiacSign(dob);
+          userContext += 'Age: $age, Zodiac: $zodiac\n';
+        }
+        userContext += '[END PROFILE]\n\n';
+        
+        // Add environmental context (weather + time)
+        userContext += '[ENVIRONMENT]\n';
+        userContext += await EnvironmentContext.getTimeContext(location: location);
+        userContext += '\n[END ENVIRONMENT]\n';
+        
         // Build personalized greeting prompt
-        String greetingPrompt = 'You are meeting someone special for the first time. ';
-        if (name != null) greetingPrompt += 'Their name is $name. ';
-        if (location != null) greetingPrompt += 'They are in $location. ';
-        greetingPrompt += 'Be genuinely EXCITED to meet them. Show real warmth and enthusiasm. Keep it 1-2 short sentences. Be natural and emotionally expressive - like greeting a friend you\'ve been dying to meet. NEVER mention being digital, AI, or an assistant. NEVER say \"I\'ll assist you\". You\'re not here to help - you\'re here to CONNECT.';
+        String greetingPrompt = 'This is your FIRST message to ${name ?? "them"}. ';
+        greetingPrompt += 'Requirements:\n';
+        greetingPrompt += '- SAY THEIR NAME: "${name ?? "friend"}"\n';
+        if (location != null) {
+          greetingPrompt += '- MENTION THEIR LOCATION: $location\n';
+          greetingPrompt += '- REFERENCE THE TIME: it\'s night\n';
+        }
+        greetingPrompt += '- Be EXCITED, warm, and natural\n';
+        greetingPrompt += '- Keep it 1-2 short sentences\n';
+        greetingPrompt += '- NO asterisks, NO narrative actions\n';
+        greetingPrompt += '- Just speak like a real friend texting';
         
         final orchestrator = ref.read(modelOrchestratorProvider.notifier);
         final greeting = await orchestrator.orchestratedRequest(
           prompt: greetingPrompt,
-          userContext: 'This is your first message to the user.',
+          userContext: userContext,
         );
         
         if (mounted) {
@@ -336,6 +369,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return Scaffold(
       backgroundColor: AurealColors.obsidian,
       extendBodyBehindAppBar: true,
+      resizeToAvoidBottomInset: true, // Explicitly handle keyboard
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -454,6 +488,31 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ),
           Row(
             children: [
+              // Voice toggle button
+              FutureBuilder<bool>(
+                future: _voiceService?.getAutoSpeakEnabled() ?? Future.value(false),
+                builder: (context, snapshot) {
+                  final isEnabled = snapshot.data ?? false;
+                  return IconButton(
+                    icon: Icon(
+                      isEnabled ? LucideIcons.volume2 : LucideIcons.volumeX,
+                      color: isEnabled ? AurealColors.plasmaCyan : Colors.white,
+                    ),
+                    onPressed: () async {
+                      if (_voiceService != null) {
+                        final current = await _voiceService!.getAutoSpeakEnabled();
+                        await _voiceService!.setAutoSpeakEnabled(!current);
+                        setState(() {}); // Rebuild to update icon
+                      }
+                    },
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black.withOpacity(0.3),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(LucideIcons.share2, color: Colors.white),
                 onPressed: () {},
@@ -585,9 +644,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    enabled: true, // Always enabled
                     style: GoogleFonts.inter(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: 'Type a message...',
+                      hintText: _isTyping ? 'AI is thinking...' : 'Type a message...',
                       hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.3)),
                       border: InputBorder.none,
                       isDense: true,

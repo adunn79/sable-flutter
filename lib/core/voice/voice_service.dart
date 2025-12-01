@@ -157,11 +157,30 @@ class VoiceService {
         return [];
       }
     } else {
-      // System voices
+      // System voices - Filter out sound effects
       try {
         final voices = await _tts.getVoices;
         if (voices is List) {
-          return voices.map((v) => Map<String, String>.from(v as Map)).toList();
+          final allVoices = voices.map((v) => Map<String, String>.from(v as Map)).toList();
+          
+          // Filter: Keep only actual voices, exclude sound effects
+          final filteredVoices = allVoices.where((voice) {
+            final name = voice['name']?.toLowerCase() ?? '';
+            
+            // Exclude sound effects (Bells, Boing, Bubbles, etc.)
+            final soundEffects = ['bad news', 'good news', 'bells', 'boing', 'bubbles', 
+                                   'cellos', 'wobble', 'superstar', 'organ', 'trinoids', 
+                                   'zarvox', 'bahh', 'jester', 'fred'];
+            
+            if (soundEffects.any((effect) => name.contains(effect))) {
+              return false;
+            }
+            
+            // Keep voices (usually have locale like en-US, or recognizable human names)
+            return true;
+          }).toList();
+          
+          return filteredVoices;
         }
         return [];
       } catch (e) {

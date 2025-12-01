@@ -424,6 +424,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               },
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Text(
+              'NOTE: Text-to-Voice is a premium feature requiring our highest level plans. Free for limited use during initial preview (timeframe TBD).',
+              style: GoogleFonts.inter(
+                color: AurealColors.hyperGold,
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
           
           if (_voiceEngine == 'eleven_labs') ...[
             Padding(

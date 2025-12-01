@@ -202,9 +202,9 @@ class VoiceService {
     for (var voice in voices) {
       final name = voice['name']?.toLowerCase() ?? '';
       
-      if (genderLower == 'male' && (name.contains('male') || name.contains('man') || name.contains('josh'))) {
+      if (genderLower == 'male' && (name.contains('male') || name.contains('man') || name.contains('josh') || name.contains('adam') || name.contains('clyde'))) {
         return voice['name'];
-      } else if (genderLower == 'female' && (name.contains('female') || name.contains('woman') || name.contains('bella'))) {
+      } else if (genderLower == 'female' && (name.contains('female') || name.contains('woman') || name.contains('bella') || name.contains('nicole') || name.contains('mimi'))) {
         return voice['name'];
       }
     }

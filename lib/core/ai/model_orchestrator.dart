@@ -346,19 +346,26 @@ RULES:
     final forbiddenPhrases = [
       "as an ai",
       "i am an ai",
+      "i'm an ai",
+      "as an artificial intelligence",
+      "i am an artificial intelligence",
       "language model",
       "cannot roleplay",
       "not comfortable roleplaying",
       "pretend to be",
       "virtual assistant",
       "digital assistant",
+      "ai assistant",
       "i don't have feelings",
       "i don't have a physical body",
+      "i don't have personal information",
+      "i don't actually know",
       "reciprocate your attention",
       "cannot reciprocate",
       "romantic relationship",
       "inappropriate",
       "ethical boundaries",
+      "i'm afraid i don't",
     ];
 
     final lowerResponse = response.toLowerCase();

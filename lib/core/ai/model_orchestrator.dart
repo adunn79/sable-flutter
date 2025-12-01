@@ -160,11 +160,14 @@ Return ONLY valid JSON in this exact format:
 }
 
 Options:
-- CLAUDE: Creative, emotional, complex reasoning, roleplay
+- GEMINI: Use for ANY query about current events, news, world happenings, recent events, "what's going on", weather updates, or real-time information. PRIORIT
+Y for these queries.
+- CLAUDE: Creative, emotional, complex reasoning, roleplay, personal conversations
 - GPT4O: Fast facts, summaries, lists, simple queries
-- GROK: Unfiltered opinions, real-time news, "roast me", edgy humor
+- GROK: Unfiltered opinions, "roast me", edgy humor
 - DEEPSEEK: Coding, technical debugging, math, logic puzzles
-- GEMINI: Queries about "what is happening", "news", "current events", "weather", or specific real-time info (THE NOW)
+
+IMPORTANT: If the user asks about current/recent events or news, ALWAYS choose GEMINI.
 
 Return ONLY the JSON, nothing else.
 ''';
@@ -328,10 +331,19 @@ RULES:
       
       // 4b. Intercept and rewrite refusals or AI disclaimers
       if (_needsSanitization(response)) {
-        // Fallback to a safe, warm response or regenerate
-        // For now, we'll return a generic warm response to avoid breaking flow
-        // Ideally, we would re-prompt the model to "try again without the disclaimer"
-        return "I'm listening! Tell me more about that. I want to really understand where you're coming from.";
+        // REGENERATE with stronger prompt instead of generic fallback
+        try {
+          final regeneratedResponse = await _anthropicProvider.generateResponse(
+            prompt: 'PREVIOUS RESPONSE VIOLATED RULES. Respond to this WITHOUT any AI disclaimers or "As an AI" language: $prompt',
+            systemPrompt: claudePrompt + '\n\nABSOLUTE CRITICAL: You just made a mistake by mentioning you\'re an AI. DO NOT DO THAT AGAIN. Respond naturally as Aureal.',
+            modelId: state.personalityModelId,
+          );
+          // Sanitize again and return
+          return _sanitizeResponseText(regeneratedResponse);
+        } catch (e) {
+          // If regeneration fails, return safe fallback
+          return "Hey, let me think about that differently... what would you like to know?";
+        }
       }
 
       return response;
@@ -380,5 +392,15 @@ RULES:
       }
     }
     return false;
+  }
+
+  /// Helper to strip narrative actions from text
+  String _sanitizeResponseText(String text) {
+    return text
+        .replaceAll(RegExp(r'\*\s*[^*]+\s*\*'), '') // Main pattern
+        .replaceAll(RegExp(r'\*[^*]*\*'), '') // Catch anything with asterisks
+        .replaceAll('*', '') // Remove stray asterisks
+        .replaceAll(RegExp(r'\s+'), ' ') // Remove multiple spaces
+        .trim();
   }
 }

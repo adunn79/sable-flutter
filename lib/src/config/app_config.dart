@@ -13,6 +13,7 @@ class AppConfig {
 
   // Google Maps & Weather
   static String get googleMapsKey => dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
+  static String get googleMapsApiKey => googleMapsKey; // Alias for consistency
 
   // Mapbox SDK
   static String get mapboxKey => dotenv.env['MAPBOX_API_KEY'] ?? '';

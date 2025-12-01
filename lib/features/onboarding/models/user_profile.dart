@@ -6,6 +6,7 @@ class UserProfile {
   final String location; // Birth place
   final String? currentLocation; // Current location
   final String? genderIdentity;
+  final String? selectedVoiceId; // TTS voice preference
 
   UserProfile({
     required this.name,
@@ -13,6 +14,7 @@ class UserProfile {
     required this.location,
     this.currentLocation,
     this.genderIdentity,
+    this.selectedVoiceId,
   });
 
   /// Check if user is 17 years or older
@@ -34,7 +36,9 @@ class UserProfile {
       'name': name,
       'dateOfBirth': dateOfBirth.toIso8601String(),
       'location': location,
+      'currentLocation': currentLocation,
       'genderIdentity': genderIdentity,
+      'selectedVoiceId': selectedVoiceId,
     };
   }
 
@@ -43,7 +47,9 @@ class UserProfile {
       name: json['name'] as String,
       dateOfBirth: DateTime.parse(json['dateOfBirth'] as String),
       location: json['location'] as String,
+      currentLocation: json['currentLocation'] as String?,
       genderIdentity: json['genderIdentity'] as String?,
+      selectedVoiceId: json['selectedVoiceId'] as String?,
     );
   }
 

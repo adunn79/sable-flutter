@@ -12,16 +12,68 @@ class WeatherService {
   /// Returns a WeatherCondition or null if unable to fetch
   static Future<WeatherCondition?> getWeather(String location) async {
     try {
-      // For now, using a simplified approach with hardcoded location
-      // In production, you'd use geocoding with Google Maps API
+      // Use OpenWeatherMap API
+      // Note: Using free tier which has 60 calls/minute limit
+      final apiKey = AppConfig.googleMapsApiKey; // Reusing Google API key
       
-      // Check if we have an API key (would need to add to .env)
-      // For now, return null and we'll use time-based modifiers
-      // TODO: Add OPENWEATHER_API_KEY to .env file
+      if (apiKey == null || apiKey.isEmpty) {
+        return null;
+      }
+
+      // Call OpenWeatherMap current weather API
+      final url = Uri.https(
+        _baseUrl,
+        '/data/2.5/weather',
+        {
+          'q': location,
+          'appid': apiKey,
+          'units': 'imperial', // Fahrenheit
+        },
+      );
+
+      final response = await http.get(url);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        final weatherMain = data['weather'][0]['main'] as String;
+        final temp = (data['main']['temp'] as num).toDouble();
+        final humidity = data['main']['humidity'] as int;
+        final description = data['weather'][0]['description'] as String;
+        
+        return WeatherCondition(
+          condition: _mapWeatherType(weatherMain),
+          temperature: temp,
+          humidity: humidity,
+          description: description,
+        );
+      }
       
       return null;
     } catch (e) {
       return null;
+    }
+  }
+  
+  /// Map OpenWeatherMap condition to our WeatherType
+  static WeatherType _mapWeatherType(String condition) {
+    switch (condition.toLowerCase()) {
+      case 'clear':
+        return WeatherType.clear;
+      case 'clouds':
+        return WeatherType.cloudy;
+      case 'rain':
+      case 'drizzle':
+        return WeatherType.rainy;
+      case 'thunderstorm':
+        return WeatherType.thunderstorm;
+      case 'snow':
+        return WeatherType.snow;
+      case 'mist':
+      case 'fog':
+        return WeatherType.fog;
+      default:
+        return WeatherType.unknown;
     }
   }
   

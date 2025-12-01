@@ -6,6 +6,7 @@ class OnboardingStateService {
   static const int _initialGenerations = 3;
 
   static const String _keyAvatarUrl = 'avatar_url';
+  static const String _keySelectedVoiceId = 'selected_voice_id';
 
   final SharedPreferences _prefs;
 
@@ -74,6 +75,7 @@ class OnboardingStateService {
     required String location,
     String? currentLocation,
     String? gender,
+    String? voiceId,
   }) async {
     await _prefs.setString(_keyUserName, name);
     await _prefs.setString(_keyUserDob, dob.toIso8601String());
@@ -83,6 +85,9 @@ class OnboardingStateService {
     }
     if (gender != null) {
       await _prefs.setString(_keyUserGender, gender);
+    }
+    if (voiceId != null) {
+      await _prefs.setString(_keySelectedVoiceId, voiceId);
     }
   }
 
@@ -105,6 +110,9 @@ class OnboardingStateService {
   /// Get user gender
   String? get userGender => _prefs.getString(_keyUserGender);
 
+  /// Get selected voice ID
+  String? get selectedVoiceId => _prefs.getString(_keySelectedVoiceId);
+
   /// Clear all onboarding data (for testing)
   Future<void> clearOnboardingData() async {
     await _prefs.remove(_keyOnboardingComplete);
@@ -115,5 +123,6 @@ class OnboardingStateService {
     await _prefs.remove(_keyUserLocation);
     await _prefs.remove(_keyUserCurrentLocation);
     await _prefs.remove(_keyUserGender);
+    await _prefs.remove(_keySelectedVoiceId);
   }
 }

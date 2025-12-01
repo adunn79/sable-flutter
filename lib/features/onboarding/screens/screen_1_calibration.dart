@@ -21,7 +21,6 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _locationController = TextEditingController(); // Birth place
-  final _currentLocationController = TextEditingController(); // Current location
   DateTime? _selectedDate;
   String? _genderIdentity;
 
@@ -29,7 +28,6 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
   void dispose() {
     _nameController.dispose();
     _locationController.dispose();
-    _currentLocationController.dispose();
     super.dispose();
   }
 
@@ -105,9 +103,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
         name: _nameController.text.trim(),
         dateOfBirth: _selectedDate!,
         location: _locationController.text.trim(),
-        currentLocation: _currentLocationController.text.trim().isNotEmpty 
-            ? _currentLocationController.text.trim() 
-            : _locationController.text.trim(), // Fallback to birth place if empty
+        currentLocation: null, // Will be set by GPS later
         genderIdentity: _genderIdentity,
       );
 
@@ -255,71 +251,6 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                     return null;
                   },
                 ).animate(delay: 700.ms).fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
-
-                const SizedBox(height: 32),
-
-                // Current Location Field
-                Row(
-                  children: [
-                    Text(
-                      'Where are you now?',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: AurealColors.ghost,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            backgroundColor: AurealColors.carbon,
-                            title: Text(
-                              'Current Location',
-                              style: GoogleFonts.spaceGrotesk(
-                                color: AurealColors.plasmaCyan,
-                              ),
-                            ),
-                            content: Text(
-                              'This helps the avatar provide relevant context like weather and local events.',
-                              style: GoogleFonts.inter(
-                                color: AurealColors.stardust,
-                              ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text(
-                                  'Got it',
-                                  style: GoogleFonts.inter(
-                                    color: AurealColors.plasmaCyan,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AurealColors.plasmaCyan.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ).animate(delay: 750.ms).fadeIn(duration: 400.ms),
-
-                const SizedBox(height: 8),
-
-                TextFormField(
-                  controller: _currentLocationController,
-                  style: GoogleFonts.inter(color: AurealColors.stardust),
-                  decoration: const InputDecoration(
-                    hintText: 'City, Country (Optional)',
-                  ),
-                ).animate(delay: 800.ms).fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
 
                 const SizedBox(height: 32),
 

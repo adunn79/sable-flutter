@@ -10,7 +10,10 @@ import 'package:sable/features/settings/screens/settings_screen.dart';
 import 'package:sable/core/emotion/emotional_state_service.dart';
 import 'package:sable/core/emotion/sentiment_analyzer.dart';
 import 'package:sable/core/emotion/environment_context.dart';
+import 'package:sable/core/emotion/location_service.dart';
+import 'package:sable/src/config/app_config.dart';
 import 'package:sable/core/emotion/conversation_memory_service.dart';
+import 'package:sable/core/voice/voice_service.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});
@@ -24,9 +27,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   final ScrollController _scrollController = ScrollController();
   OnboardingStateService? _stateService;
   EmotionalStateService? _emotionalService;
+  String? _currentGpsLocation; // Real-time GPS location
   ConversationMemoryService? _memoryService;
+  VoiceService? _voiceService;
   
   bool _isTyping = false;
+  bool _isListening = false;
   String? _avatarUrl;
   
   final List<Map<String, dynamic>> _messages = [];
@@ -41,6 +47,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     _stateService = await OnboardingStateService.create();
     _emotionalService = await EmotionalStateService.create();
     _memoryService = await ConversationMemoryService.create();
+    _voiceService = VoiceService();
+    await _voiceService?.initialize();
     
     if (mounted) {
       setState(() {
@@ -58,6 +66,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         });
       }
       
+      // Fetch current GPS location
+      await _fetchCurrentLocation();
+      
       // Send initial AI greeting if this is the first time entering chat
       if (_messages.isEmpty && _stateService != null) {
         await _sendInitialGreeting();
@@ -65,11 +76,29 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
   }
 
+  Future<void> _fetchCurrentLocation() async {
+    try {
+      final apiKey = AppConfig.googleMapsApiKey;
+      if (apiKey.isNotEmpty) {
+        final locationName = await LocationService.getCurrentLocationName(apiKey);
+        if (locationName != null) {
+          setState(() {
+            _currentGpsLocation = locationName;
+          });
+          debugPrint('GPS Location: $locationName');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching GPS location: $e');
+    }
+  }
+
   Future<void> _sendInitialGreeting() async {
     if (_stateService == null) return;
     
     final name = _stateService!.userName;
-    final location = _stateService!.userCurrentLocation ?? _stateService!.userLocation;
+    // Prioritize GPS location, fallback to user-entered location
+    final location = _currentGpsLocation ?? _stateService!.userCurrentLocation ?? _stateService!.userLocation;
     final dob = _stateService!.userDob;
     
     if (name != null || location != null) {
@@ -79,14 +108,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       
       try {
         // Build personalized greeting prompt
-        String greetingPrompt = 'Generate a warm, personalized greeting for the user. ';
+        String greetingPrompt = 'You are meeting someone special for the first time. ';
         if (name != null) greetingPrompt += 'Their name is $name. ';
         if (location != null) greetingPrompt += 'They are in $location. ';
-        if (dob != null) {
-          final zodiac = _getZodiacSign(dob);
-          greetingPrompt += 'Their zodiac sign is $zodiac. ';
-        }
-        greetingPrompt += 'Mention the current date (${DateTime.now().toString().split(' ')[0]}) and express excitement to get to know them better. Keep it extremely concise (1-2 short sentences max). Do not be wordy.';
+        greetingPrompt += 'Be genuinely EXCITED to meet them. Show real warmth and enthusiasm. Keep it 1-2 short sentences. Be natural and emotionally expressive - like greeting a friend you\'ve been dying to meet. NEVER mention being digital, AI, or an assistant. NEVER say \"I\'ll assist you\". You\'re not here to help - you\'re here to CONNECT.';
         
         final orchestrator = ref.read(modelOrchestratorProvider.notifier);
         final greeting = await orchestrator.orchestratedRequest(
@@ -155,7 +180,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (_stateService != null) {
         final name = _stateService!.userName;
         final dob = _stateService!.userDob;
-        final location = _stateService!.userCurrentLocation ?? _stateService!.userLocation;
+        // Prioritize GPS location, fallback to user-entered location
+        final location = _currentGpsLocation ?? _stateService!.userCurrentLocation ?? _stateService!.userLocation;
         final gender = _stateService!.userGender;
         
         if (name != null || location != null || dob != null) {
@@ -220,6 +246,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         });
         _scrollToBottom();
         
+        // Auto-speak AI response if enabled
+        final autoSpeak = await _voiceService?.getAutoSpeakEnabled() ?? true;
+        if (autoSpeak && _voiceService != null) {
+          await _voiceService!.speak(response);
+        }
+        
         // Update emotional state based on interaction
         if (_emotionalService != null) {
           final location = _stateService?.userCurrentLocation ?? _stateService?.userLocation;
@@ -263,6 +295,40 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         );
       }
     });
+  }
+
+  /// Handle voice input
+  Future<void> _handleVoiceInput() async {
+    if (_voiceService == null) return;
+
+    if (_isListening) {
+      // Stop listening
+      await _voiceService!.stopListening();
+      setState(() {
+        _isListening = false;
+      });
+    } else {
+      // Start listening
+      setState(() {
+        _isListening = true;
+      });
+
+      await _voiceService!.startListening(
+        onResult: (text) {
+          setState(() {
+            _controller.text = text;
+            _isListening = false;
+          });
+          // Auto-send after voice input
+          _sendMessage();
+        },
+        onPartialResult: (text) {
+          setState(() {
+            _controller.text = text;
+          });
+        },
+      );
+    }
   }
 
   @override
@@ -530,6 +596,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                // Microphone button
+                GestureDetector(
+                  onTap: _handleVoiceInput,
+                  child: Icon(
+                    _isListening ? LucideIcons.micOff : LucideIcons.mic,
+                    color: _isListening ? AurealColors.plasmaCyan : Colors.white.withOpacity(0.6),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Send button
                 GestureDetector(
                   onTap: _sendMessage,
                   child: const Icon(LucideIcons.sparkles, color: AurealColors.plasmaCyan, size: 20),

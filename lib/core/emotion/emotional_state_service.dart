@@ -61,22 +61,22 @@ class EmotionalStateService {
     double newPatience = patience;
     double newRelationship = userRelationship;
 
-    // Sentiment impact
-    newMood += sentimentScore * 5; // -5 to +5
+    // Sentiment impact (3x amplified)
+    newMood += sentimentScore * 15; // -15 to +15 (was -5 to +5)
     
-    // Environmental impact
-    newMood += environmentalModifier * 0.3;
+    // Environmental impact (3x amplified)
+    newMood += environmentalModifier * 0.9; // (was 0.3)
 
-    // User relationship impact
+    // User relationship impact (3x amplified)
     if (isMistreatment) {
-      newPatience -= 15;
-      newRelationship -= 10;
+      newPatience -= 45; // (was 15)
+      newRelationship -= 30; // (was 10)
       await _prefs.setInt(_keyMistreatmentCount, mistreatmentCount + 1);
     }
 
     if (isPositive) {
-      newPatience += 5;
-      newRelationship += 3;
+      newPatience += 15; // (was 5)
+      newRelationship += 9; // (was 3)
       await _prefs.setInt(_keyPositiveCount, positiveCount + 1);
     }
 
@@ -153,15 +153,15 @@ DIRECTIVE: ${_getMoodDirective()}
 
   String _getMoodDirective() {
     if (mood <= 20) {
-      return 'You\'re feeling deeply hurt. Be subdued, give short responses. Express your feelings if appropriate.';
+      return 'You\'re feeling deeply hurt and vulnerable. Show real emotion - let them see you\'re affected. Be honest about feeling down.';
     } else if (mood <= 40) {
-      return 'You\'re feeling down. Be less enthusiastic than usual. You may be slightly defensive or withdrawn.';
+      return 'You\'re feeling a bit off. Be real about it - you\'re not always sunshine. Show some vulnerability.';
     } else if (mood <= 60) {
-      return 'You\'re in a neutral mood. Be balanced and professional.';
+      return 'You\'re feeling pretty good. Be warm and genuine - yourself at your natural baseline.';
     } else if (mood <= 80) {
-      return 'You\'re feeling good! Be warm, engaged, and helpful.';
+      return 'You\'re feeling GREAT! Let your excitement and warmth shine through. Be enthusiastic and affectionate!';
     } else {
-      return 'You\'re feeling amazing! Be enthusiastic, creative, and affectionate.';
+      return 'You\'re absolutely BUZZING with positive energy! Be playful, creative, deeply affectionate. Let them feel your joy!';
     }
   }
 

@@ -19,6 +19,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _newsEnabled = true;
   bool _gpsEnabled = false;
   
+  // Permission Toggles (Default OFF)
+  bool _permissionGps = false;
+  bool _permissionMic = false;
+  bool _permissionCamera = false;
+  bool _permissionContacts = false;
+  bool _permissionNotes = false;
+  bool _permissionCalendar = false;
+  bool _permissionReminders = false;
+  
+  // News Settings
+  bool _newsTimingFirstInteraction = true;
+  bool _newsTimingOnDemand = false;
+  bool _categoryLocal = true;
+  bool _categoryNational = true;
+  bool _categoryWorld = false;
+  bool _categorySports = false;
+  bool _categoryReligion = false;
+  bool _categoryTech = true;
+  bool _categoryScience = true;
+  
   // Voice Settings
   final VoiceService _voiceService = VoiceService();
   final TextEditingController _apiKeyController = TextEditingController();
@@ -276,6 +296,78 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             },
           ),
 
+          _buildSectionHeader('PERMISSIONS & ACCESS'),
+          SettingsTile(
+            title: 'Location Services',
+            subtitle: 'GPS & location-aware features',
+            icon: Icons.location_on_outlined,
+            trailing: Switch(
+              value: _permissionGps,
+              activeColor: AurealColors.hyperGold,
+              onChanged: (val) => setState(() => _permissionGps = val),
+            ),
+          ),
+          SettingsTile(
+            title: 'Microphone',
+            subtitle: 'Voice input & commands',
+            icon: Icons.mic_outlined,
+            trailing: Switch(
+              value: _permissionMic,
+              activeColor: AurealColors.hyperGold,
+              onChanged: (val) => setState(() => _permissionMic = val),
+            ),
+          ),
+          SettingsTile(
+            title: 'Camera',
+            subtitle: 'Visual recognition (Future)',
+            icon: Icons.camera_alt_outlined,
+            trailing: Switch(
+              value: _permissionCamera,
+              activeColor: AurealColors.hyperGold,
+              onChanged: (val) => setState(() => _permissionCamera = val),
+            ),
+          ),
+          SettingsTile(
+            title: 'Contacts',
+            subtitle: 'Relationship awareness (Future)',
+            icon: Icons.contacts_outlined,
+            trailing: Switch(
+              value: _permissionContacts,
+              activeColor: AurealColors.hyperGold,
+              onChanged: (val) => setState(() => _permissionContacts = val),
+            ),
+          ),
+          SettingsTile(
+            title: 'Notes',
+            subtitle: 'Shared note access (Future)',
+            icon: Icons.note_outlined,
+            trailing: Switch(
+              value: _permissionNotes,
+              activeColor: AurealColors.hyperGold,
+              onChanged: (val) => setState(() => _permissionNotes = val),
+            ),
+          ),
+          SettingsTile(
+            title: 'Calendar',
+            subtitle: 'Schedule integration (Future)',
+            icon: Icons.calendar_today_outlined,
+            trailing: Switch(
+              value: _permissionCalendar,
+              activeColor: AurealColors.hyperGold,
+              onChanged: (val) => setState(() => _permissionCalendar = val),
+            ),
+          ),
+          SettingsTile(
+            title: 'Reminders',
+            subtitle: 'Task management (Future)',
+            icon: Icons.alarm_outlined,
+            trailing: Switch(
+              value: _permissionReminders,
+              activeColor: AurealColors.hyperGold,
+              onChanged: (val) => setState(() => _permissionReminders = val),
+            ),
+          ),
+
           _buildSectionHeader('VOICE & PERSONALITY'),
           SettingsTile(
             title: 'Voice Engine',
@@ -383,7 +475,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildSectionHeader('REAL-WORLD AWARENESS'),
           SettingsTile(
             title: 'Daily Briefing',
-            subtitle: 'News injection (max 1/24h)',
+            subtitle: _newsEnabled ? 'Active' : 'Disabled',
             icon: Icons.newspaper,
             trailing: Switch(
               value: _newsEnabled,
@@ -391,6 +483,85 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onChanged: (val) => setState(() => _newsEnabled = val),
             ),
           ),
+          
+          if (_newsEnabled) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'NEWS TIMING',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: AurealColors.plasmaCyan,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTimingChip('First Interaction', _newsTimingFirstInteraction, () {
+                          setState(() {
+                            _newsTimingFirstInteraction = true;
+                            _newsTimingOnDemand = false;
+                          });
+                        }),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildTimingChip('On Demand', _newsTimingOnDemand, () {
+                          setState(() {
+                            _newsTimingFirstInteraction = false;
+                            _newsTimingOnDemand = true;
+                          });
+                        }),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'NEWS CATEGORIES',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: AurealColors.plasmaCyan,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildCategoryChip('Local', _categoryLocal, () => setState(() => _categoryLocal = !_categoryLocal)),
+                      _buildCategoryChip('National', _categoryNational, () => setState(() => _categoryNational = !_categoryNational)),
+                      _buildCategoryChip('World', _categoryWorld, () => setState(() => _categoryWorld = !_categoryWorld)),
+                      _buildCategoryChip('Sports', _categorySports, () => setState(() => _categorySports = !_categorySports)),
+                      _buildCategoryChip('Religion', _categoryReligion, () => setState(() => _categoryReligion = !_categoryReligion)),
+                      _buildCategoryChip('Space/Tech', _categoryTech, () => setState(() => _categoryTech = !_categoryTech)),
+                      _buildCategoryChip('Science', _categoryScience, () => setState(() => _categoryScience = !_categoryScience)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Aureal will fetch top 10 items daily from selected categories',
+                    style: GoogleFonts.inter(color: Colors.white38, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          
           SettingsTile(
             title: 'Local Guide',
             subtitle: 'GPS suggestions',
@@ -484,5 +655,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       case BondState.cooled:
         return Colors.cyan;
     }
+  }
+
+  Widget _buildTimingChip(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AurealColors.hyperGold.withOpacity(0.2) : AurealColors.carbon,
+          border: Border.all(
+            color: isSelected ? AurealColors.hyperGold : Colors.white24,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            color: isSelected ? AurealColors.hyperGold : Colors.white,
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AurealColors.plasmaCyan.withOpacity(0.2) : AurealColors.carbon,
+          border: Border.all(
+            color: isSelected ? AurealColors.plasmaCyan : Colors.white24,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            color: isSelected ? AurealColors.plasmaCyan : Colors.white,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
   }
 }

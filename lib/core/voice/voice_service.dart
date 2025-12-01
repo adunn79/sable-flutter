@@ -171,6 +171,29 @@ class VoiceService {
     }
   }
   
+  /// Get recommended voice based on gender
+  Future<String?> getRecommendedVoice(String? gender) async {
+    final voices = await getAvailableVoices();
+    if (voices.isEmpty) return null;
+    
+    // Filter by gender preference
+    final genderLower = gender?.toLowerCase() ?? 'neutral';
+    
+    // Try to find matching voice
+    for (var voice in voices) {
+      final name = voice['name']?.toLowerCase() ?? '';
+      
+      if (genderLower == 'male' && (name.contains('male') || name.contains('man') || name.contains('josh'))) {
+        return voice['name'];
+      } else if (genderLower == 'female' && (name.contains('female') || name.contains('woman') || name.contains('bella'))) {
+        return voice['name'];
+      }
+    }
+    
+    // Fallback to first available voice
+    return voices.isNotEmpty ? voices.first['name'] : null;
+  }
+  
   /// Set voice by ID
   Future<void> setVoice(String voiceId) async {
     final prefs = await SharedPreferences.getInstance();

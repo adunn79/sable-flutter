@@ -508,19 +508,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(LucideIcons.settings, color: Colors.white),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                  );
-                },
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withOpacity(0.3),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
             ],
           ),
         ],

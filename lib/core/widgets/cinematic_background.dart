@@ -84,7 +84,9 @@ class _CinematicBackgroundState extends State<CinematicBackground>
                     key: ValueKey(widget.imagePath), // Identifies image change
                     decoration: BoxDecoration(
                       image: DecorationImage(
-                        image: AssetImage(widget.imagePath),
+                        image: widget.imagePath.startsWith('http')
+                            ? NetworkImage(widget.imagePath) as ImageProvider
+                            : AssetImage(widget.imagePath),
                         fit: BoxFit.cover,
                       ),
                     ),

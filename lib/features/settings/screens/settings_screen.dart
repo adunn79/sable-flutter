@@ -10,6 +10,7 @@ import 'package:sable/core/voice/voice_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/emotion/emotional_state_service.dart';
+import 'package:sable/features/splash/splash_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -314,6 +315,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Chat history cleared. Please restart chat.')),
+                );
+              }
+            },
+          ),
+          SettingsTile(
+            title: 'Reset Onboarding',
+            subtitle: 'Return to onboarding (keeps data)',
+            icon: Icons.refresh,
+            onTap: () async {
+              final prefs = await SharedPreferences.getInstance();
+              
+              // Just clear onboarding flag
+              await prefs.setBool('onboarding_complete', false);
+              
+              if (context.mounted) {
+                // Force app restart by navigating to a blank screen, then back
+                // This triggers a rebuild which will check onboarding status
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const AurealSplashScreen()),
+                  (route) => false,
                 );
               }
             },

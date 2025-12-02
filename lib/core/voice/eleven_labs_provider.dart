@@ -19,6 +19,7 @@ class ElevenLabsProvider {
   String _currentVoiceId = 'EXAVITQu4vr4xnSDxMaL'; // Bella (Soft/Intense)
 
   bool get isConfigured => _apiKey != null && _apiKey!.isNotEmpty;
+  String get currentVoiceId => _currentVoiceId;
 
   void setApiKey(String key) {
     _apiKey = key;
@@ -121,5 +122,59 @@ class ElevenLabsProvider {
 
   Future<void> stop() async {
     await _audioPlayer.stop();
+  }
+
+  /// Stream text to speech with specific voice and API key (for previews)
+  Future<void> streamTextToSpeech({
+    required String text,
+    required String voiceId,
+    required String apiKey,
+  }) async {
+    try {
+      // Stop any current playback
+      await _audioPlayer.stop();
+
+      final url = Uri.parse('$_baseUrl/text-to-speech/$voiceId/stream');
+      
+      final request = http.Request('POST', url);
+      request.headers.addAll({
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg',
+      });
+      
+      request.body = jsonEncode({
+        "text": text,
+        "model_id": "eleven_turbo_v2_5",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "style": 0.0,
+          "use_speaker_boost": true
+        }
+      });
+
+      final response = await request.send();
+
+      if (response.statusCode == 200) {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/tts_preview.mp3');
+        
+        // Delete if exists
+        if (await file.exists()) {
+          await file.delete();
+        }
+        
+        final sink = file.openWrite();
+        await response.stream.pipe(sink);
+        await sink.close();
+
+        await _audioPlayer.play(DeviceFileSource(file.path));
+      } else {
+        debugPrint('Failed to stream preview: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error streaming preview: $e');
+    }
   }
 }

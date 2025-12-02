@@ -109,9 +109,11 @@ class VoiceService {
     try {
       if (_voiceEngine == 'eleven_labs' && _elevenLabs.isConfigured) {
         // Use ElevenLabs
+        debugPrint('🗣️ Speaking with ElevenLabs. Voice ID: ${_elevenLabs.currentVoiceId}');
         await _elevenLabs.speak(text);
       } else {
         // Fallback to System TTS
+        debugPrint('🗣️ Speaking with System TTS');
         await _tts.speak(text);
       }
     } catch (e) {
@@ -131,6 +133,46 @@ class VoiceService {
         _isSpeaking = false;
       });
     }
+  }
+  
+  /// Speak text with a specific voice (for previews)
+  Future<void> speakWithVoice(String text, {required String voiceId}) async {
+    if (!_isInitialized) await initialize();
+    if (_isSpeaking) await stop();
+    
+    _isSpeaking = true;
+    
+    try {
+      if (_voiceEngine == 'eleven_labs' && _elevenLabs.isConfigured) {
+        // Use ElevenLabs with specific voice
+        final apiKey = await _getElevenLabsApiKey();
+        if (apiKey != null) {
+          await _elevenLabs.streamTextToSpeech(
+            text: text,
+            voiceId: voiceId,
+            apiKey: apiKey,
+          );
+        }
+      } else {
+        // Use system TTS with specific voice
+        await _tts.setVoice({'name': voiceId, 'locale': 'en-US'});
+        await _tts.speak(text);
+      }
+    } catch (e) {
+      debugPrint('Error speaking with voice: $e');
+      _isSpeaking = false;
+    }
+    
+    // Reset speaking flag after estimated duration
+    Future.delayed(Duration(seconds: (text.length / 10).ceil()), () {
+      _isSpeaking = false;
+    });
+  }
+  
+  /// Get ElevenLabs API key from preferences
+  Future<String?> _getElevenLabsApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyElevenLabsApiKey);
   }
   
   /// Stop speaking
@@ -215,13 +257,16 @@ class VoiceService {
   
   /// Set voice by ID
   Future<void> setVoice(String voiceId) async {
+    debugPrint('🎙️ Setting voice to: $voiceId');
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keySelectedVoice, voiceId);
     
     if (_voiceEngine == 'eleven_labs') {
       _elevenLabs.setVoiceId(voiceId);
+      debugPrint('✅ ElevenLabs voice set to: $voiceId');
     } else {
       await _tts.setVoice({'name': voiceId, 'locale': 'en-US'});
+      debugPrint('✅ System voice set to: $voiceId');
     }
   }
   

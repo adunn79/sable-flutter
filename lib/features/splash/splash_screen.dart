@@ -28,11 +28,14 @@ class _AurealSplashScreenState extends State<AurealSplashScreen> {
     // Check onboarding status
     final stateService = await OnboardingStateService.create();
     final isComplete = stateService.isOnboardingComplete;
+    
+    debugPrint('Onboarding complete: $isComplete');
+    debugPrint('User name: ${stateService.userName}');
 
     if (!mounted) return;
 
-    if (isComplete) {
-      // Navigate to main app (placeholder for now)
+    if (isComplete && stateService.userName != null) {
+      // Navigate to main app only if onboarding is complete AND user data exists
       Navigator.of(context).pushReplacementNamed('/home');
     } else {
       // Navigate to onboarding

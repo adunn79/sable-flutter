@@ -9,13 +9,21 @@ import 'src/app.dart' as legacy;
 import 'features/debug/debug_dashboard.dart';
 import 'features/settings/screens/settings_screen.dart';
 
-import 'features/onboarding/services/onboarding_state_service.dart';
-
-import 'features/onboarding/services/onboarding_state_service.dart';
-
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await AppConfig.initialize();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    
+    // Global error handling
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      debugPrint('🔴 Flutter Error: ${details.exception}');
+      debugPrint('Stack trace: ${details.stack}');
+    };
+    
+    await AppConfig.initialize();
+  } catch (e, stackTrace) {
+    debugPrint('Initialization Error: $e\n$stackTrace');
+  }
   runApp(const ProviderScope(child: AurealApp()));
 }
 

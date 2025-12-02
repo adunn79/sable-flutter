@@ -115,6 +115,12 @@ class EmotionalStateService {
     await _prefs.setDouble(_keyEnergy, newEnergy);
   }
 
+  /// Set mood directly (for manual controls)
+  Future<void> setMood(double value) async {
+    final newMood = value.clamp(0.0, 100.0);
+    await _prefs.setDouble(_keyMood, newMood);
+  }
+
   /// Get mood category description
   String get moodCategory {
     if (mood <= 20) return 'Deeply Upset';

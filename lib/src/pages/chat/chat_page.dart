@@ -57,6 +57,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       
     // Load message history from persistent storage
       final storedMessages = _memoryService!.getAllMessages();
+      debugPrint('📂 Stored messages count: ${storedMessages.length}');
+      
       if (storedMessages.isNotEmpty) {
         setState(() {
           _messages.addAll(storedMessages.map((msg) => {
@@ -96,6 +98,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             _currentGpsLocation = locationName;
           });
           debugPrint('GPS Location: $locationName');
+          debugPrint('Manual Location: ${_stateService?.userCurrentLocation}');
         }
       }
     } catch (e) {
@@ -104,12 +107,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _sendInitialGreeting() async {
-    if (_stateService == null) return;
+    debugPrint('👋 _sendInitialGreeting called');
+    if (_stateService == null) {
+      debugPrint('❌ _stateService is null');
+      return;
+    }
     
     final name = _stateService!.userName;
-    // Prioritize GPS location, fallback to user-entered location
-    final location = _currentGpsLocation ?? _stateService!.userCurrentLocation ?? _stateService!.userLocation;
+    // Prioritize manual location setting over GPS
+    final location = _stateService!.userCurrentLocation ?? _currentGpsLocation ?? _stateService!.userLocation;
     final dob = _stateService!.userDob;
+    
+    debugPrint('👤 User: $name, Location: $location');
     
     if (name != null || location != null) {
       setState(() {
@@ -213,8 +222,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (_stateService != null) {
         final name = _stateService!.userName;
         final dob = _stateService!.userDob;
-        // Prioritize GPS location, fallback to user-entered location
-        final location = _currentGpsLocation ?? _stateService!.userCurrentLocation ?? _stateService!.userLocation;
+        // Prioritize manual location setting over GPS
+        final location = _stateService!.userCurrentLocation ?? _currentGpsLocation ?? _stateService!.userLocation;
         final gender = _stateService!.userGender;
         
         if (name != null || location != null || dob != null) {
@@ -369,6 +378,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🏗️ ChatPage.build called');
     return Scaffold(
       backgroundColor: AurealColors.obsidian,
       extendBodyBehindAppBar: true,

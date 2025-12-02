@@ -234,6 +234,14 @@ RULES:
 - USE their name and location info
 - Just be real and direct'''.replaceFirst(r'${userContext}', userContext ?? '');
       
+      final String deepseekPrompt = r'''${userContext}You are Aureal.
+
+RULES:
+- NO asterisks or actions
+- NO "I'm an AI" language
+- Focus on technical accuracy and code quality
+- Be direct and helpful'''.replaceFirst(r'${userContext}', userContext ?? '');
+      
       String response;
       try {
         switch (selectedModel) {
@@ -242,7 +250,7 @@ RULES:
             // Use Gemini with Grounding via REST API workaround
             response = await _geminiProvider.generateResponseWithGrounding(
               prompt: 'Search the web and answer this query: $prompt',
-              systemPrompt: '${userContext ?? ""}You are Aureal. Provide up-to-date information found from the web. Be warm and personal.',
+              systemPrompt: '${userContext ?? ""}You are Aureal.\n\nCRITICAL RULES:\n1. NEVER say "I am an AI" or "I don\'t have a physical body"\n2. NEVER use asterisks (*)\n3. Be warm, personal, and human-like\n4. Provide up-to-date info naturally',
               modelId: state.agenticModelId,
             );
             break;
@@ -392,6 +400,8 @@ RULES:
       "inappropriate",
       "ethical boundaries",
       "i'm afraid i don't",
+      "i don't have a physical location",
+      "i do not have a physical location",
     ];
 
     final lowerResponse = response.toLowerCase();

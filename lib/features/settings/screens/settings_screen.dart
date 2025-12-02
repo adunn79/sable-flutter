@@ -7,6 +7,9 @@ import 'package:sable/features/settings/widgets/settings_tile.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:sable/core/emotion/conversation_memory_service.dart';
 import 'package:sable/core/voice/voice_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:sable/core/emotion/emotional_state_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -92,6 +95,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // For now, we'll just show "Select Voice" or try to match ID.
   }
 
+  Future<void> _playVoiceSample(String voiceId) async {
+    const sampleText = "Hi! I'm your AI companion. This is how I sound.";
+    
+    try {
+      // Use VoiceService to play sample
+      await _voiceService.speakWithVoice(sampleText, voiceId: voiceId);
+    } catch (e) {
+      debugPrint('Error playing voice sample: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not play voice sample: $e')),
+        );
+      }
+    }
+  }
+
   void _showVoiceSelector() {
     showModalBottomSheet(
       context: context,
@@ -115,32 +134,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: _availableVoices.isEmpty
-                  ? Center(
-                      child: Text(
-                        _voiceEngine == 'eleven_labs' 
-                            ? 'No voices found.\nCheck API Key or internet.' 
-                            : 'No system voices found.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(color: Colors.white54),
-                      ),
-                    )
+                  ? const Center(child: CircularProgressIndicator())
                   : ListView.builder(
                       itemCount: _availableVoices.length,
                       itemBuilder: (context, index) {
                         final voice = _availableVoices[index];
+                        final isSelected = voice['name'] == _selectedVoiceName; // Use name for comparison as fallback
+                        
                         return ListTile(
+                          leading: Icon(
+                            isSelected ? LucideIcons.checkCircle2 : LucideIcons.circle,
+                            color: isSelected ? AurealColors.plasmaCyan : AurealColors.ghost,
+                          ),
                           title: Text(
-                            voice['name'] ?? 'Unknown',
-                            style: GoogleFonts.inter(color: Colors.white),
+                            voice['name']!,
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
                           ),
                           subtitle: Text(
-                            voice['locale'] ?? '',
+                            voice['id'] ?? '', // Show ID as subtitle
                             style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
                           ),
+                          trailing: IconButton(
+                            icon: const Icon(LucideIcons.play, color: AurealColors.plasmaCyan),
+                            onPressed: () => _playVoiceSample(voice['id'] ?? voice['name']!),
+                          ),
                           onTap: () async {
-                            await _voiceService.setVoice(voice['name']!); // Using name as ID for system, ID for ElevenLabs
+                            // Use ID if available (ElevenLabs), otherwise name (System)
+                            final voiceId = voice['id'] ?? voice['name']!;
+                            await _voiceService.setVoice(voiceId);
                             setState(() {
                               _selectedVoiceName = voice['name'];
+                              _selectedVoiceId = voiceId;
                             });
                             Navigator.pop(context);
                           },
@@ -582,22 +609,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       letterSpacing: 1,
                     ),
                   ),
-                  Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildCategoryChip('Local', _categoryLocal, () => setState(() => _categoryLocal = !_categoryLocal)),
-                _buildCategoryChip('National', _categoryNational, () => setState(() => _categoryNational = !_categoryNational)),
-                _buildCategoryChip('World', _categoryWorld, () => setState(() => _categoryWorld = !_categoryWorld)),
-                _buildCategoryChip('Sports', _categorySports, () => setState(() => _categorySports = !_categorySports)),
-                _buildCategoryChip('Religion', _categoryReligion, () => setState(() => _categoryReligion = !_categoryReligion)),
-                _buildCategoryChip('Space/Tech', _categoryTech, () => setState(() => _categoryTech = !_categoryTech)),
-                _buildCategoryChip('Science', _categoryScience, () => setState(() => _categoryScience = !_categoryScience)),
-              ],
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildCategoryChip('Local', _categoryLocal, () => setState(() => _categoryLocal = !_categoryLocal)),
+                      _buildCategoryChip('National', _categoryNational, () => setState(() => _categoryNational = !_categoryNational)),
+                      _buildCategoryChip('World', _categoryWorld, () => setState(() => _categoryWorld = !_categoryWorld)),
+                      _buildCategoryChip('Sports', _categorySports, () => setState(() => _categorySports = !_categorySports)),
+                      _buildCategoryChip('Religion', _categoryReligion, () => setState(() => _categoryReligion = !_categoryReligion)),
+                      _buildCategoryChip('Space/Tech', _categoryTech, () => setState(() => _categoryTech = !_categoryTech)),
+                      _buildCategoryChip('Science', _categoryScience, () => setState(() => _categoryScience = !_categoryScience)),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
           
           // Custom Topics
           Padding(
@@ -660,49 +688,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
 
-          _buildSectionHeader('BOND ENGINE STATUS'),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AurealColors.carbon,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Current State:', style: GoogleFonts.inter(color: Colors.white70)),
-                      Text(
-                        bondState.toString().split('.').last.toUpperCase(),
-                        style: GoogleFonts.spaceGrotesk(
-                          color: bondState == BondState.warm ? AurealColors.hyperGold : 
-                                 bondState == BondState.cooled ? Colors.blueGrey : Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Levels: COOLED (Low) → NEUTRAL → WARM (High)',
-                    style: GoogleFonts.inter(color: Colors.white30, fontSize: 10),
-                  ),
-                ],
-              ),
-            ),
-          ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Aureal will fetch top 10 items daily from selected categories',
-                    style: GoogleFonts.inter(color: Colors.white38, fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
+          // End of News Section
           ],
           
           SettingsTile(
@@ -717,38 +703,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
 
           _buildSectionHeader('BOND ENGINE'),
-          SettingsTile(
-            title: 'Connection Status',
-            subtitle: bondState.name.toUpperCase(),
-            icon: Icons.favorite_border,
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _getBondColor(bondState).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: _getBondColor(bondState)),
-              ),
-              child: Text(
-                bondState.name.toUpperCase(),
-                style: GoogleFonts.inter(
-                  color: _getBondColor(bondState),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          SettingsTile(
-            title: 'Reset Bond',
-            subtitle: 'Return to Neutral state',
-            icon: Icons.refresh,
-            onTap: () {
-              ref.read(bondEngineProvider.notifier).resetToNeutral();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Bond reset to Neutral.')),
-              );
-            },
-          ),
+          _buildBondEngineSection(bondState.name),
 
           _buildSectionHeader('SUPPORT'),
           const SettingsTile(
@@ -960,5 +915,111 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
+  }
+  Future<void> _resetBond() async {
+    final emotionalService = await EmotionalStateService.create();
+    await emotionalService.setMood(0.0);
+    ref.invalidate(bondEngineProvider);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bond reset to Neutral.')),
+      );
+    }
+  }
+
+  Widget _buildSettingRow({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    return SettingsTile(
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      trailing: trailing,
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildBondEngineSection(String bondState) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AurealColors.carbon,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Current State:', style: GoogleFonts.inter(color: Colors.white70)),
+                DropdownButton<String>(
+                  value: bondState,
+                  dropdownColor: AurealColors.carbon,
+                  style: GoogleFonts.inter(color: Colors.white),
+                  underline: Container(),
+                  icon: const Icon(LucideIcons.chevronDown, color: Colors.white54, size: 16),
+                  items: ['cooled', 'neutral', 'warm'].map((state) {
+                    return DropdownMenuItem(
+                      value: state,
+                      child: Text(
+                        state.toUpperCase(),
+                        style: TextStyle(
+                          color: _getBondColor(state == 'warm' ? BondState.warm : (state == 'cooled' ? BondState.cooled : BondState.neutral)),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (newState) async {
+                    if (newState != null) {
+                      await _setBondState(newState);
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Levels: COOLED (Low) → NEUTRAL → WARM (High)',
+              style: GoogleFonts.inter(color: Colors.white30, fontSize: 10),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _setBondState(String newState) async {
+    final emotionalService = await EmotionalStateService.create();
+    
+    double moodValue;
+    switch (newState) {
+      case 'cooled':
+        moodValue = 20.0; // Deeply Upset/Down
+        break;
+      case 'warm':
+        moodValue = 80.0; // Good/Elated
+        break;
+      case 'neutral':
+      default:
+        moodValue = 50.0; // Neutral
+    }
+    
+    await emotionalService.setMood(moodValue);
+    ref.invalidate(bondEngineProvider);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Bond state set to ${newState.toUpperCase()}')),
+      );
+    }
   }
 }

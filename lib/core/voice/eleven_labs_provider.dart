@@ -43,7 +43,13 @@ class ElevenLabsProvider {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data['voices']);
+        final voices = List<Map<String, dynamic>>.from(data['voices']);
+        
+        if (voices.isNotEmpty) {
+          debugPrint('🔍 RAW VOICE DATA SAMPLE: ${jsonEncode(voices.first)}');
+        }
+        
+        return voices;
       } else {
         throw Exception('Failed to load voices: ${response.body}');
       }

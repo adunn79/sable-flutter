@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:sable/core/ai/model_orchestrator.dart';
+import 'package:sable_flutter/core/ai/model_orchestrator.dart';
+import 'package:sable_flutter/core/widgets/cinematic_background.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:sable/features/settings/screens/settings_screen.dart';
@@ -387,36 +388,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         fit: StackFit.expand,
         children: [
           // 1. Background Image
-          if (_avatarUrl != null && _avatarUrl!.startsWith('http'))
-            Image.network(
-              _avatarUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _buildDefaultBackground(),
-            )
-          else if (_avatarUrl != null && _avatarUrl!.startsWith('assets'))
-            Image.asset(
-              _avatarUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _buildDefaultBackground(),
-            )
-          else
-            _buildDefaultBackground(),
-
-          // 2. Gradient Overlay (for readability)
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.3),
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.6),
-                  Colors.black.withOpacity(0.9),
-                ],
-                stops: const [0.0, 0.3, 0.7, 1.0],
-              ),
-            ),
+          // 1. CINEMATIC BACKGROUND (Breathing + Parallax)
+          CinematicBackground(
+            imagePath: _avatarUrl ?? 'assets/images/archetypes/sable.png',
           ),
 
           // 3. Content

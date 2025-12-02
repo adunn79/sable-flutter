@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'shared/app_shell.dart';
 import 'pages/placeholder_page.dart';
 import 'pages/chat/chat_page.dart';
+import 'package:sable/features/settings/screens/settings_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -28,7 +29,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/avatars', builder: (context, state) => const PlaceholderPage(title: 'Avatars')),
           GoRoute(path: '/timers', builder: (context, state) => const PlaceholderPage(title: 'Timers')),
           GoRoute(path: '/calendar', builder: (context, state) => const PlaceholderPage(title: 'Calendar')),
-          GoRoute(path: '/settings', builder: (context, state) => const PlaceholderPage(title: 'Settings')),
+          GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
         ],
       ),
     ],

@@ -24,6 +24,10 @@ class AppConfig {
   // Pinecone
   static String get pineconeKey => dotenv.env['PINECONE_API_KEY'] ?? '';
 
+  // ElevenLabs (Voice)
+  static String get elevenLabsKey => dotenv.env['ELEVEN_LABS_API_KEY'] ?? '';
+
+
   /// Initialize the environment configuration
   static Future<void> initialize() async {
     await dotenv.load(fileName: '.env');

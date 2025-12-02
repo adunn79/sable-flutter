@@ -8,6 +8,7 @@ import 'src/config/app_config.dart';
 import 'src/app.dart' as legacy;
 import 'features/debug/debug_dashboard.dart';
 import 'features/settings/screens/settings_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   try {
@@ -21,6 +22,14 @@ void main() async {
     };
     
     await AppConfig.initialize();
+    
+    // Save ElevenLabs API key to SharedPreferences for VoiceService
+    if (AppConfig.elevenLabsKey.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('eleven_labs_api_key', AppConfig.elevenLabsKey);
+      await prefs.setString('voice_engine_type', 'eleven_labs');
+      debugPrint('✅ ElevenLabs API key loaded from .env and saved to preferences');
+    }
   } catch (e, stackTrace) {
     debugPrint('Initialization Error: $e\n$stackTrace');
   }

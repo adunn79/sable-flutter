@@ -22,7 +22,7 @@ class VoiceService {
   static const String _keyElevenLabsApiKey = 'eleven_labs_api_key';
   
   // Voice Engine State
-  String _voiceEngine = 'system'; // Default to system
+  String _voiceEngine = 'eleven_labs'; // Default to ElevenLabs
   
   /// Initialize the voice service
   Future<bool> initialize() async {
@@ -182,6 +182,22 @@ class VoiceService {
     _isSpeaking = false;
   }
   
+  /// Get curated list of high-quality voices (2M, 2F, 2N)
+  /// ONLY returns ElevenLabs voices - no system voice fallback
+  Future<List<Map<String, String>>> getCuratedVoices() async {
+    if (!_isInitialized) await initialize();
+    
+    // The 6 ElevenLabs Personas - Standard Quality (Lower Bitrate)
+    return [
+      {'name': 'Josh (Male)', 'id': 'TxGEqnHWrfWFTfGW9XjX', 'category': 'Male'},
+      {'name': 'Antoni (Male)', 'id': 'ErXwobaYiN019PkySvjV', 'category': 'Male'},
+      {'name': 'Rachel (Female)', 'id': '21m00Tcm4TlvDq8ikWAM', 'category': 'Female'},
+      {'name': 'Bella (Female)', 'id': 'EXAVITQu4vr4xnSDxMaL', 'category': 'Female'},
+      {'name': 'Adam (Neutral)', 'id': 'pNInz6obpgDQGcFmaJgB', 'category': 'Neutral'},
+      {'name': 'Mimi (Neutral)', 'id': 'zrHiDhphv9ZnVXBqCLjz', 'category': 'Neutral'},
+    ];
+  }
+
   /// Get available voices (System or ElevenLabs)
   Future<List<Map<String, String>>> getAvailableVoices() async {
     if (!_isInitialized) await initialize();
@@ -289,13 +305,27 @@ class VoiceService {
     try {
       final prefs = await SharedPreferences.getInstance();
       
-      // Load Engine
-      _voiceEngine = prefs.getString(_keyVoiceEngine) ?? 'system';
+      // Load Engine - FORCE to eleven_labs (override any old 'system' preference)
+      final savedEngine = prefs.getString(_keyVoiceEngine);
+      debugPrint('🎙️ Saved engine preference: $savedEngine');
+      
+      if (savedEngine == 'system') {
+        debugPrint('⚠️ Overriding old "system" preference to "eleven_labs"');
+        _voiceEngine = 'eleven_labs';
+        await prefs.setString(_keyVoiceEngine, 'eleven_labs');
+      } else {
+        _voiceEngine = savedEngine ?? 'eleven_labs';
+      }
+      
+      debugPrint('✅ Current engine set to: $_voiceEngine');
       
       // Load API Key
       final apiKey = prefs.getString(_keyElevenLabsApiKey);
       if (apiKey != null) {
         _elevenLabs.setApiKey(apiKey);
+        debugPrint('✅ ElevenLabs API key loaded');
+      } else {
+        debugPrint('⚠️ No ElevenLabs API key found in preferences');
       }
       
       // Load Voice

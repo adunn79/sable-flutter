@@ -51,7 +51,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // Voice Settings
   final VoiceService _voiceService = VoiceService();
   final TextEditingController _apiKeyController = TextEditingController();
-  String _voiceEngine = 'system';
+  String _voiceEngine = 'eleven_labs';
   String? _selectedVoiceName;
   String? _selectedVoiceId; // Added for storing voice ID
   List<Map<String, String>> _availableVoices = [];
@@ -70,7 +70,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     
     setState(() {
       _manualLocation = stateService.userCurrentLocation;
-      _voiceEngine = prefs.getString('voice_engine') ?? 'system';
+      _voiceEngine = prefs.getString('voice_engine') ?? 'eleven_labs';
       _apiKeyController.text = prefs.getString('eleven_labs_api_key') ?? '';
       _selectedVoiceId = prefs.getString('selected_voice_id');
       
@@ -84,15 +84,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _loadVoices() async {
-    final voices = await _voiceService.getAvailableVoices();
+    // Use curated voices as requested
+    final voices = await _voiceService.getCuratedVoices();
     setState(() {
       _availableVoices = voices;
       _voiceEngine = _voiceService.currentEngine;
     });
-    
-    // Get current voice name
-    // This is a bit tricky as we only store ID. We need to find the name.
-    // For now, we'll just show "Select Voice" or try to match ID.
   }
 
   Future<void> _playVoiceSample(String voiceId) async {
@@ -131,6 +128,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 8),
+            Text(
+              'Standard Quality (Low Bitrate)',
+              style: GoogleFonts.inter(
+                color: AurealColors.stardust,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            Text(
+              'Upgrade to Premium for HD Voices',
+              style: GoogleFonts.inter(
+                color: AurealColors.hyperGold,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 16),
             Expanded(
               child: _availableVoices.isEmpty
@@ -139,12 +153,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       itemCount: _availableVoices.length,
                       itemBuilder: (context, index) {
                         final voice = _availableVoices[index];
-                        final isSelected = voice['name'] == _selectedVoiceName; // Use name for comparison as fallback
+                        final isSelected = voice['id'] == _selectedVoiceId || voice['name'] == _selectedVoiceName;
+                        final category = voice['category'] ?? 'Voice';
                         
                         return ListTile(
-                          leading: Icon(
-                            isSelected ? LucideIcons.checkCircle2 : LucideIcons.circle,
-                            color: isSelected ? AurealColors.plasmaCyan : AurealColors.ghost,
+                          leading: CircleAvatar(
+                            backgroundColor: isSelected ? AurealColors.plasmaCyan : Colors.white10,
+                            child: Text(
+                              category[0], // M, F, N
+                              style: GoogleFonts.spaceGrotesk(
+                                color: isSelected ? Colors.black : Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           title: Text(
                             voice['name']!,
@@ -154,7 +175,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                           ),
                           subtitle: Text(
-                            voice['id'] ?? '', // Show ID as subtitle
+                            category,
                             style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
                           ),
                           trailing: IconButton(
@@ -162,7 +183,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             onPressed: () => _playVoiceSample(voice['id'] ?? voice['name']!),
                           ),
                           onTap: () async {
-                            // Use ID if available (ElevenLabs), otherwise name (System)
                             final voiceId = voice['id'] ?? voice['name']!;
                             await _voiceService.setVoice(voiceId);
                             setState(() {

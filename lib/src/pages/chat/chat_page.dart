@@ -489,7 +489,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               const Icon(LucideIcons.triangle, color: AurealColors.hyperGold, size: 16),
               const SizedBox(width: 8),
               Text(
-                'AUREAL',
+                'SABLE',
                 style: GoogleFonts.spaceGrotesk(
                   color: AurealColors.hyperGold,
                   fontSize: 18,

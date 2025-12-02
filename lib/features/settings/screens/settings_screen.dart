@@ -532,36 +532,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             },
           ),
           
-          if (_voiceEngine == 'eleven_labs')
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AurealColors.plasmaCyan.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'RECOMMENDED VOICES',
-                      style: GoogleFonts.spaceGrotesk(
-                        color: AurealColors.plasmaCyan,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '• Bella: Soft, intense, warm (Female)\n• Josh: Deep, calm, reassuring (Male)\n\nTo add more: Go to Voice Library on ElevenLabs website, add to your lab, and they will appear here.',
-                      style: GoogleFonts.inter(color: AurealColors.stardust, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ),
 
           _buildSectionHeader('REAL-WORLD AWARENESS'),
           SettingsTile(

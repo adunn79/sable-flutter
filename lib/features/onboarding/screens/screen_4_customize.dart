@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/voice/locale_voice_service.dart';
+import 'package:sable/core/voice/voice_service.dart';
 import '../models/avatar_config.dart';
 import '../services/avatar_generation_service.dart';
 import '../services/onboarding_state_service.dart';
@@ -23,6 +25,7 @@ class Screen4Customize extends StatefulWidget {
 class _Screen4CustomizeState extends State<Screen4Customize> {
   OnboardingStateService? _stateService;
   final AvatarGenerationService _avatarService = AvatarGenerationService();
+  final VoiceService _voiceService = VoiceService();
 
   int _apparentAge = 25;
   String _origin = 'United States, California';
@@ -33,6 +36,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   String _hairStyle = 'Chestnut Waves';
   String _fashionAesthetic = 'Casual (Denim/Comfort)';
   String _distinguishingMark = 'None (Flawless)';
+  String? _selectedVoiceId;
 
   bool _isGenerating = false;
   String? _generatedImageUrl;
@@ -42,6 +46,11 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   void initState() {
     super.initState();
     _initServices();
+    _initVoice();
+  }
+
+  Future<void> _initVoice() async {
+    await _voiceService.initialize();
   }
 
   Future<void> _initServices() async {
@@ -68,6 +77,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
       hairStyle: _hairStyle,
       fashionAesthetic: _fashionAesthetic,
       distinguishingMark: _distinguishingMark,
+      selectedVoiceId: _selectedVoiceId,
     );
     
     // Use archetype image as default
@@ -105,6 +115,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
         hairStyle: _hairStyle,
         fashionAesthetic: _fashionAesthetic,
         distinguishingMark: _distinguishingMark,
+        selectedVoiceId: _selectedVoiceId,
       );
 
       final imageUrl = await _avatarService.generateAvatarImage(config);
@@ -240,6 +251,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                 hairStyle: _hairStyle,
                 fashionAesthetic: _fashionAesthetic,
                 distinguishingMark: _distinguishingMark,
+                selectedVoiceId: _selectedVoiceId,
               );
               final imageUrl = 'assets/images/archetypes/${widget.archetype.toLowerCase()}.png';
               _stateService?.saveAvatarUrl(imageUrl);
@@ -554,6 +566,13 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
                     const SizedBox(height: 24),
 
+                    // Voice Selection
+                    _buildSectionLabel('Voice (Accent-Based)'),
+                    const SizedBox(height: 8),
+                    _buildVoiceSelection(),
+
+                    const SizedBox(height: 24),
+
                     // Race
                     _buildSectionLabel('Race'),
                     const SizedBox(height: 8),
@@ -781,6 +800,53 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
       }).toList(),
       onChanged: onChanged,
       style: GoogleFonts.inter(color: AurealColors.stardust),
+    );
+  }
+
+  Widget _buildVoiceSelection() {
+    // Get voices filtered by current origin
+    final availableVoices = LocaleVoiceService.getVoicesForOrigin(_origin);
+    
+    return Row(
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            value: _selectedVoiceId,
+            dropdownColor: AurealColors.carbon,
+            isExpanded: true,
+            decoration: InputDecoration(
+              hintText: 'Select a voice',
+              hintStyle: GoogleFonts.inter(color: AurealColors.ghost),
+            ),
+            items: availableVoices.map((voice) {
+              return DropdownMenuItem(
+                value: voice.id,
+                child: Text(
+                  '${voice.name} (${voice.gender})',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedVoiceId = value;
+              });
+            },
+            style: GoogleFonts.inter(color: AurealColors.stardust),
+          ),
+        ),
+        const SizedBox(width: 12),
+        if (_selectedVoiceId != null)
+          IconButton(
+            icon: const Icon(Icons.play_circle_outline, color: AurealColors.plasmaCyan, size: 32),
+            onPressed: () async {
+              if (_selectedVoiceId != null) {
+                await _voiceService.setVoice(_selectedVoiceId!);
+                await _voiceService.speak("Hello, I'm excited to be with you.");
+              }
+            },
+          ),
+      ],
     );
   }
 }

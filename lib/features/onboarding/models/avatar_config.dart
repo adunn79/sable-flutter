@@ -12,6 +12,7 @@ class AvatarConfig {
   final String hairStyle; // Platinum Bob, Jet Black Sleek, etc.
   final String fashionAesthetic; // Executive, Casual, etc.
   final String distinguishingMark; // None, Beauty Mark, etc.
+  final String? selectedVoiceId; // ElevenLabs voice ID (optional)
 
   AvatarConfig({
     required this.archetype,
@@ -25,6 +26,7 @@ class AvatarConfig {
     required this.hairStyle,
     required this.fashionAesthetic,
     required this.distinguishingMark,
+    this.selectedVoiceId,
   });
 
   /// Generate fal.ai prompt from configuration
@@ -59,6 +61,7 @@ class AvatarConfig {
       'hairStyle': hairStyle,
       'fashionAesthetic': fashionAesthetic,
       'distinguishingMark': distinguishingMark,
+      'selectedVoiceId': selectedVoiceId,
     };
   }
 
@@ -75,6 +78,7 @@ class AvatarConfig {
       hairStyle: json['hairStyle'] as String,
       fashionAesthetic: json['fashionAesthetic'] as String,
       distinguishingMark: json['distinguishingMark'] as String,
+      selectedVoiceId: json['selectedVoiceId'] as String?,
     );
   }
 
@@ -96,6 +100,7 @@ class AvatarConfig {
     String? hairStyle,
     String? fashionAesthetic,
     String? distinguishingMark,
+    String? selectedVoiceId,
   }) {
     return AvatarConfig(
       archetype: archetype ?? this.archetype,
@@ -109,6 +114,7 @@ class AvatarConfig {
       hairStyle: hairStyle ?? this.hairStyle,
       fashionAesthetic: fashionAesthetic ?? this.fashionAesthetic,
       distinguishingMark: distinguishingMark ?? this.distinguishingMark,
+      selectedVoiceId: selectedVoiceId ?? this.selectedVoiceId,
     );
   }
 }

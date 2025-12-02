@@ -95,9 +95,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _playVoiceSample(String voiceId) async {
     const sampleText = "Hi! I'm your AI companion. This is how I sound.";
     
+    debugPrint('🔊 Playing voice sample for: $voiceId');
+    
     try {
       // Use VoiceService to play sample
       await _voiceService.speakWithVoice(sampleText, voiceId: voiceId);
+      debugPrint('✅ Voice sample playback started');
     } catch (e) {
       debugPrint('Error playing voice sample: $e');
       if (mounted) {

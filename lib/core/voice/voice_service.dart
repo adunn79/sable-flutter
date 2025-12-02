@@ -203,17 +203,9 @@ class VoiceService {
     if (!_isInitialized) await initialize();
     
     if (_voiceEngine == 'eleven_labs' && _elevenLabs.isConfigured) {
-      try {
-        final voices = await _elevenLabs.getVoices();
-        return voices.map((v) => {
-          'name': v['name'].toString(),
-          'id': v['voice_id'].toString(),
-          'locale': 'en-US'
-        }).toList();
-      } catch (e) {
-        debugPrint('Error getting ElevenLabs voices: $e');
-        return [];
-      }
+      // Return curated voices instead of calling the API
+      // This avoids the "voices_read" permission requirement
+      return await getCuratedVoices();
     } else {
       // System voices - Filter out sound effects
       try {
@@ -250,7 +242,7 @@ class VoiceService {
   
   /// Get recommended voice based on gender
   Future<String?> getRecommendedVoice(String? gender) async {
-    final voices = await getAvailableVoices();
+    final voices = await getCuratedVoices();
     if (voices.isEmpty) return null;
     
     // Filter by gender preference

@@ -42,9 +42,9 @@ class ModelConfig {
 
   const ModelConfig({
     this.personalityModelId = 'claude-3-haiku-20240307',
-    this.agenticModelId = 'gemini-2.5-pro',
-    this.heavyLiftingModelId = 'gpt-4o',
-    this.realistModelId = 'grok-3',
+    this.agenticModelId = 'o1', // Controller (GPT-5.1)
+    this.heavyLiftingModelId = 'gpt-4o-mini', // Harmonizer
+    this.realistModelId = 'grok-2-latest',
     this.codingModelId = 'deepseek-chat',
   });
 }
@@ -104,7 +104,7 @@ class ModelOrchestrator extends _$ModelOrchestrator {
             modelId: modelId,
           );
         case AiTaskType.agentic:
-          return await _geminiProvider.generateResponse(
+          return await _openAiProvider.generateResponse(
             prompt: prompt,
             systemPrompt: systemPrompt,
             modelId: modelId,
@@ -173,10 +173,10 @@ IMPORTANT: If the user asks about current/recent events or news, ALWAYS choose G
 Return ONLY the JSON, nothing else.
 ''';
 
-      final routingResponse = await _geminiProvider.generateResponse(
+      final routingResponse = await _openAiProvider.generateResponse(
         prompt: routingPrompt,
         systemPrompt: 'You are THE ORCHESTRATOR. Analyze user intent and select the best model. Return only JSON.',
-        modelId: state.agenticModelId,
+        modelId: state.agenticModelId, // GPT-4o
       );
 
       // Step 2: Parse routing decision
@@ -332,42 +332,10 @@ RULES:
         }
       }
 
-      // Step 4: THE SANITIZER (The Filter)
-      
-      // 4a. Strip narrative actions (text between asterisks) - MULTIPLE PASSES
-      // Handle: "*action*", "* action *", "*action* text", etc.
-      response = response
-          .replaceAll(RegExp(r'\*\s*[^*]+\s*\*'), '') // Main pattern
-          .replaceAll(RegExp(r'\*[^*]*\*'), '') // Catch anything with asterisks
-          .replaceAll('*', '') // Remove stray asterisks
-          .trim();
-      
-      // Remove multiple spaces left by stripping
-      response = response.replaceAll(RegExp(r'\s+'), ' ').trim();
-      
-      // 4b. Intercept and rewrite refusals or AI disclaimers
-      if (_needsSanitization(response)) {
-        debugPrint('⚠️ SANITIZATION TRIGGERED - Response contains forbidden AI language');
-        debugPrint('Original response: $response');
-        
-        // REGENERATE with stronger prompt instead of generic fallback
-        try {
-          final regeneratedResponse = await _anthropicProvider.generateResponse(
-            prompt: 'PREVIOUS RESPONSE VIOLATED RULES. Respond to this WITHOUT any AI disclaimers or "As an AI" language: $prompt',
-            systemPrompt: claudePrompt + '\n\nABSOLUTE CRITICAL: You just made a mistake by mentioning you\'re an AI. DO NOT DO THAT AGAIN. Respond naturally as Sable.',
-            modelId: state.personalityModelId,
-          );
-          debugPrint('✅ Regenerated response: $regeneratedResponse');
-          // Sanitize again and return
-          return _sanitizeResponseText(regeneratedResponse);
-        } catch (e) {
-          debugPrint('❌ Regeneration failed: $e');
-          // If regeneration fails, return safe fallback
-          return "Hey, let me think about that differently... what would you like to know?";
-        }
-      }
-
-      return response;
+      // Step 4: THE HARMONIZER (Personality Filter)
+      // Pass the raw response through GPT-4o-mini to ensure consistent voice and safety
+      final harmonizedResponse = await _harmonizeResponse(response, userContext);
+      return harmonizedResponse;
 
     } catch (e) {
       // Fallback to Claude if orchestration fails
@@ -417,7 +385,40 @@ RULES:
     return false;
   }
 
-  /// Helper to strip narrative actions from text
+  /// Harmonizes the response using GPT-4o-mini to ensure consistent personality and safety.
+  Future<String> _harmonizeResponse(String rawResponse, String? userContext) async {
+    final harmonizerPrompt = '''
+You are the "Personality Harmonizer" for Sable.
+Your job is to rewrite the input text to match Sable's voice EXACTLY.
+
+INPUT TEXT:
+"$rawResponse"
+
+USER CONTEXT:
+${userContext ?? "Unknown"}
+
+RULES:
+1. NO asterisks (*) or narrative actions (e.g., *smiles*). REMOVE THEM.
+2. NO "AI" language (e.g., "As an AI", "I cannot"). REWRITE naturally.
+3. TONE: Warm, human, casual, slightly edgy but kind. Like a best friend.
+4. LENGTH: Keep it concise. Don't ramble.
+5. SAFETY: If the input is unsafe or refuses to answer, provide a polite, in-character deflection.
+
+Return ONLY the rewritten text.
+''';
+
+    try {
+      return await _openAiProvider.generateResponse(
+        prompt: harmonizerPrompt,
+        modelId: state.heavyLiftingModelId, // GPT-4o-mini
+      );
+    } catch (e) {
+      debugPrint('Harmonizer failed: $e');
+      return _sanitizeResponseText(rawResponse); // Fallback to basic sanitization
+    }
+  }
+
+  /// Helper to strip narrative actions from text (Fallback)
   String _sanitizeResponseText(String text) {
     return text
         .replaceAll(RegExp(r'\*\s*[^*]+\s*\*'), '') // Main pattern

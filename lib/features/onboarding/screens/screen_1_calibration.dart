@@ -38,7 +38,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
 
   Future<void> _initVoiceService() async {
     await _voiceService.initialize();
-    final voices = await _voiceService.getAvailableVoices();
+    final voices = await _voiceService.getCuratedVoices();
     
     if (mounted) {
       setState(() {

@@ -538,22 +538,121 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 future: _voiceService?.getAutoSpeakEnabled() ?? Future.value(false),
                 builder: (context, snapshot) {
                   final isEnabled = snapshot.data ?? false;
-                  return IconButton(
-                    icon: Icon(
-                      isEnabled ? LucideIcons.volume2 : LucideIcons.volumeX,
-                      color: isEnabled ? AurealColors.plasmaCyan : Colors.white,
-                    ),
-                    onPressed: () async {
-                      if (_voiceService != null) {
-                        final current = await _voiceService!.getAutoSpeakEnabled();
-                        await _voiceService!.setAutoSpeakEnabled(!current);
-                        setState(() {}); // Rebuild to update icon
-                      }
-                    },
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black.withOpacity(0.3),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
+                  return Stack(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          isEnabled ? LucideIcons.volume2 : LucideIcons.volumeX,
+                          color: isEnabled ? AurealColors.plasmaCyan : Colors.white,
+                        ),
+                        onPressed: () async {
+                          if (_voiceService != null) {
+                            final current = await _voiceService!.getAutoSpeakEnabled();
+                            
+                            // Show premium notice on first enable
+                            if (!current) {
+                              final shouldEnable = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: AurealColors.carbon,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  title: Row(
+                                    children: [
+                                      const Icon(LucideIcons.volume2, color: AurealColors.plasmaCyan),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'TEXT-TO-VOICE',
+                                        style: GoogleFonts.spaceGrotesk(
+                                          color: AurealColors.plasmaCyan,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Harness cutting-edge AI to bring your companion to life.',
+                                        style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: AurealColors.plasmaCyan.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                                        ),
+                                        child: Text(
+                                          '⚡ Premium Feature\n\nLimited free usage available during preview. Full access comes with premium tiers.',
+                                          style: GoogleFonts.inter(
+                                            color: AurealColors.plasmaCyan,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: Text(
+                                        'NOT NOW',
+                                        style: GoogleFonts.inter(color: Colors.white54),
+                                      ),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AurealColors.plasmaCyan,
+                                        foregroundColor: AurealColors.obsidian,
+                                      ),
+                                      child: Text(
+                                        'ENABLE',
+                                        style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              
+                              if (shouldEnable == true) {
+                                await _voiceService!.setAutoSpeakEnabled(true);
+                                setState(() {});
+                              }
+                            } else {
+                              // Disable without dialog
+                              await _voiceService!.setAutoSpeakEnabled(false);
+                              setState(() {});
+                            }
+                          }
+                        },
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black.withOpacity(0.3),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      // Premium badge
+                      if (!isEnabled)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AurealColors.hyperGold,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '⚡',
+                              style: const TextStyle(fontSize: 8),
+                            ),
+                          ),
+                        ),
+                    ],
                   );
                 },
               ),

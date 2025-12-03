@@ -998,6 +998,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildBondEngineSection(String bondState) {
+    // Map bondState to slider value (0-100)
+    double sliderValue = bondState == 'cooled' ? 16.5 : (bondState == 'warm' ? 83.5 : 50.0);
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: Container(
@@ -1013,36 +1016,94 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Current State:', style: GoogleFonts.inter(color: Colors.white70)),
-                DropdownButton<String>(
-                  value: bondState,
-                  dropdownColor: AurealColors.carbon,
-                  style: GoogleFonts.inter(color: Colors.white),
-                  underline: Container(),
-                  icon: const Icon(LucideIcons.chevronDown, color: Colors.white54, size: 16),
-                  items: ['cooled', 'neutral', 'warm'].map((state) {
-                    return DropdownMenuItem(
-                      value: state,
-                      child: Text(
-                        state.toUpperCase(),
-                        style: TextStyle(
-                          color: _getBondColor(state == 'warm' ? BondState.warm : (state == 'cooled' ? BondState.cooled : BondState.neutral)),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (newState) async {
-                    if (newState != null) {
-                      await _setBondState(newState);
-                    }
-                  },
+                Text(
+                  bondState.toUpperCase(),
+                  style: GoogleFonts.spaceGrotesk(
+                    color: _getBondColor(bondState == 'warm' ? BondState.warm : (bondState == 'cooled' ? BondState.cooled : BondState.neutral)),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Levels: COOLED (Low) → NEUTRAL → WARM (High)',
-              style: GoogleFonts.inter(color: Colors.white30, fontSize: 10),
+            const SizedBox(height: 16),
+            // Slider
+            StatefulBuilder(
+              builder: (context, setSliderState) {
+                return Column(
+                  children: [
+                    SliderTheme(
+                      data: SliderThemeData(
+                        activeTrackColor: _getBondColor(
+                          sliderValue < 33.3 ? BondState.cooled : (sliderValue > 66.6 ? BondState.warm : BondState.neutral),
+                        ),
+                        inactiveTrackColor: Colors.white10,
+                        thumbColor: Colors.white,
+                        overlayColor: _getBondColor(
+                          sliderValue < 33.3 ? BondState.cooled : (sliderValue > 66.6 ? BondState.warm : BondState.neutral),
+                        ).withOpacity(0.2),
+                        trackHeight: 4,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                      ),
+                      child: Slider(
+                        value: sliderValue,
+                        min: 0,
+                        max: 100,
+                        divisions: 100,
+                        onChanged: (value) {
+                          setSliderState(() {
+                            sliderValue = value;
+                          });
+                        },
+                        onChangeEnd: (value) async {
+                          // Determine new state based on slider value
+                          String newState;
+                          if (value < 33.3) {
+                            newState = 'cooled';
+                          } else if (value > 66.6) {
+                            newState = 'warm';
+                          } else {
+                            newState = 'neutral';
+                          }
+                          
+                          // Set bond state with actual slider value
+                          await _setBondStateWithValue(newState, value);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'COOLED',
+                          style: GoogleFonts.inter(
+                            color: _getBondColor(BondState.cooled),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'NEUTRAL',
+                          style: GoogleFonts.inter(
+                            color: _getBondColor(BondState.neutral),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'WARM',
+                          style: GoogleFonts.inter(
+                            color: _getBondColor(BondState.warm),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -1072,6 +1133,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Bond state set to ${newState.toUpperCase()}')),
+      );
+    }
+  }
+
+  Future<void> _setBondStateWithValue(String newState, double sliderValue) async {
+    final emotionalService = await EmotionalStateService.create();
+    
+    // Use the slider value directly for more granular control
+    await emotionalService.setMood(sliderValue);
+    ref.invalidate(bondEngineProvider);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Bond calibrated to ${newState.toUpperCase()} (${sliderValue.toInt()}%)')),
       );
     }
   }

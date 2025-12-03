@@ -113,7 +113,7 @@ class _CascadingVoiceSelectorState extends State<CascadingVoiceSelector> {
   }
 
   List<VoiceWithMetadata> get _filteredVoices {
-    return widget.voices.where((v) {
+    final filtered = widget.voices.where((v) {
       final countryMatch = _getCountryFromRegion(v.labels['region'] ?? 'usa') == _selectedCountry;
       if (!countryMatch) return false;
 
@@ -127,6 +127,10 @@ class _CascadingVoiceSelectorState extends State<CascadingVoiceSelector> {
 
       return true;
     }).toList();
+    
+    // Deduplicate voices by ID to prevent "2 or more items" assertion error
+    final seenIds = <String>{};
+    return filtered.where((v) => seenIds.add(v.voiceId)).toList();
   }
 
   @override

@@ -165,7 +165,13 @@ class ElevenLabsApiService {
         await _cacheVoices(voices);
         
         debugPrint('✅ Parsed and cached ${voices.length} voices');
-        return voices;
+        debugPrint('✅ Parsed and cached ${voices.length} voices');
+        
+        // Deduplicate voices by ID as a safety measure
+        final seenIds = <String>{};
+        final uniqueVoices = voices.where((v) => seenIds.add(v.voiceId)).toList();
+        
+        return uniqueVoices;
       } else {
         debugPrint('❌ ElevenLabs API error: ${response.statusCode} - ${response.body}');
         debugPrint('⚠️ Falling back to curated voice list');

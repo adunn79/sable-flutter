@@ -317,6 +317,22 @@ class ElevenLabsApiService {
         labels: {'accent': 'european', 'gender': 'male', 'region': 'russia'},
         previewUrl: null,
       ),
+      VoiceWithMetadata(
+        voiceId: 'gedzfqL7OGdwm0ynTP',
+        name: 'Nadia',
+        gender: 'female',
+        accents: ['Russian', 'European'],
+        labels: {'accent': 'russian', 'gender': 'female', 'region': 'russia'},
+        previewUrl: null,
+      ),
+      VoiceWithMetadata(
+        voiceId: '8M81RK3MD7u4DOJpu2G5',
+        name: 'Viktoriia',
+        gender: 'female',
+        accents: ['Russian', 'European'],
+        labels: {'accent': 'russian', 'gender': 'female', 'region': 'russia'},
+        previewUrl: null,
+      ),
       
       // === FRENCH VOICES ===
       VoiceWithMetadata(

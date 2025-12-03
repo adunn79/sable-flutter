@@ -60,6 +60,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
 
   Future<void> _loadVoicesForOrigin() async {
+    if (!mounted) return;
     setState(() {
       _isLoadingVoices = true;
     });
@@ -67,6 +68,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
     try {
       // Load ALL voices to let the CascadingVoiceSelector handle filtering
       final voices = await _voiceService.getAllVoices();
+      if (!mounted) return;
       setState(() {
         _availableVoices = voices;
         _isLoadingVoices = false;
@@ -81,6 +83,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
       });
     } catch (e) {
       debugPrint('Error loading voices: $e');
+      if (!mounted) return;
       setState(() {
         _isLoadingVoices = false;
         _availableVoices = [];
@@ -137,6 +140,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
     if (widget.archetype == 'Custom') {
       _showCustomization = true;
     }
+    if (!mounted) return;
     setState(() {});
   }
 
@@ -176,6 +180,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
       return;
     }
 
+    if (!mounted) return;
     setState(() {
       _isGenerating = true;
     });
@@ -199,6 +204,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
       final imageUrl = await _avatarService.generateAvatarImage(config);
       await _stateService?.decrementGenerations();
 
+      if (!mounted) return;
       setState(() {
         _generatedImageUrl = imageUrl;
         _isGenerating = false;
@@ -206,6 +212,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
       _showGeneratedAvatar(config, imageUrl);
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isGenerating = false;
       });

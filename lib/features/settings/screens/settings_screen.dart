@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:audioplayers/audioplayers.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
 import 'package:sable/core/identity/bond_engine.dart';
+import 'package:sable/features/common/widgets/cascading_voice_selector.dart';
 import 'package:sable/features/settings/widgets/settings_tile.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:sable/core/emotion/conversation_memory_service.dart';
 import 'package:sable/core/voice/voice_service.dart';
+
+import 'package:sable/core/voice/elevenlabs_api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/emotion/emotional_state_service.dart';
-import 'package:sable/features/splash/splash_screen.dart';
+
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -51,17 +56,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   
   // Voice Settings
   final VoiceService _voiceService = VoiceService();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   final TextEditingController _apiKeyController = TextEditingController();
   String _voiceEngine = 'eleven_labs';
   String? _selectedVoiceName;
   String? _selectedVoiceId; // Added for storing voice ID
-  List<Map<String, String>> _availableVoices = [];
+  List<VoiceWithMetadata> _availableVoices = [];
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
     _loadVoices(); // Moved here as per user's implied change
+  }
+
+  @override
+  void dispose() {
+    _apiKeyController.dispose();
+    _audioPlayer.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSettings() async {
@@ -85,8 +98,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _loadVoices() async {
-    // Use curated voices as requested
-    final voices = await _voiceService.getCuratedVoices();
+    // Use all voices for the cascading selector
+    final voices = await _voiceService.getAllVoices();
     setState(() {
       _availableVoices = voices;
       _voiceEngine = _voiceService.currentEngine;
@@ -116,95 +129,65 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: AurealColors.obsidian,
+      isScrollControlled: true, // Allow full height
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        height: 400,
-        child: Column(
-          children: [
-            Text(
-              'Select Voice (${_voiceEngine == 'eleven_labs' ? 'ElevenLabs' : 'System'})',
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Standard Quality (Low Bitrate)',
-              style: GoogleFonts.inter(
-                color: AurealColors.stardust,
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            Text(
-              'Upgrade to Premium for HD Voices',
-              style: GoogleFonts.inter(
-                color: AurealColors.hyperGold,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _availableVoices.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListView.builder(
-                      itemCount: _availableVoices.length,
-                      itemBuilder: (context, index) {
-                        final voice = _availableVoices[index];
-                        final isSelected = voice['id'] == _selectedVoiceId || voice['name'] == _selectedVoiceName;
-                        final category = voice['category'] ?? 'Voice';
-                        
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: isSelected ? AurealColors.plasmaCyan : Colors.white10,
-                            child: Text(
-                              category[0], // M, F, N
-                              style: GoogleFonts.spaceGrotesk(
-                                color: isSelected ? Colors.black : Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          title: Text(
-                            voice['name']!,
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                          subtitle: Text(
-                            category,
-                            style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(LucideIcons.play, color: AurealColors.plasmaCyan),
-                            onPressed: () => _playVoiceSample(voice['id'] ?? voice['name']!),
-                          ),
-                          onTap: () async {
-                            final voiceId = voice['id'] ?? voice['name']!;
-                            await _voiceService.setVoice(voiceId);
-                            setState(() {
-                              _selectedVoiceName = voice['name'];
-                              _selectedVoiceId = voiceId;
-                            });
-                            Navigator.pop(context);
-                          },
-                        );
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: const EdgeInsets.all(24),
+            height: MediaQuery.of(context).size.height * 0.8,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Select Voice',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: CascadingVoiceSelector(
+                      voices: _availableVoices,
+                      selectedVoiceId: _selectedVoiceId,
+                      onVoiceSelected: (voiceId) async {
+                        await _voiceService.setVoice(voiceId);
+                        final voice = _availableVoices.firstWhere((v) => v.voiceId == voiceId);
+                        setState(() {
+                          _selectedVoiceName = voice.name;
+                          _selectedVoiceId = voiceId;
+                        });
+                        // Don't pop immediately, let user preview
+                      },
+                      onPlayPreview: () async {
+                        if (_selectedVoiceId != null) {
+                          await _playVoiceSample(_selectedVoiceId!);
+                        }
                       },
                     ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     final bondState = ref.watch(bondEngineProvider);
@@ -309,13 +292,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: 'Remove all conversation messages',
             icon: Icons.chat_bubble_outline,
             onTap: () async {
-              final memoryService = await ConversationMemoryService.create();
-              await memoryService.clearHistory();
-              
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Chat history cleared. Please restart chat.')),
-                );
+              try {
+                final memoryService = await ConversationMemoryService.create();
+                await memoryService.clearHistory();
+                
+                if (context.mounted) {
+                  // Navigate back to chat to trigger fresh greeting
+                  Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+                    '/home',
+                    (route) => false,
+                  );
+                }
+              } catch (e) {
+                debugPrint('Error clearing chat history: $e');
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error clearing: $e')),
+                  );
+                }
               }
             },
           ),
@@ -324,18 +318,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: 'Return to onboarding (keeps data)',
             icon: Icons.refresh,
             onTap: () async {
-              final prefs = await SharedPreferences.getInstance();
-              
-              // Just clear onboarding flag
-              await prefs.setBool('onboarding_complete', false);
-              
-              if (context.mounted) {
-                // Force app restart by navigating to a blank screen, then back
-                // This triggers a rebuild which will check onboarding status
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const AurealSplashScreen()),
-                  (route) => false,
-                );
+              debugPrint('🔄 Resetting onboarding...');
+              try {
+                // 1. Clear Onboarding Data
+                final stateService = await OnboardingStateService.create();
+                await stateService.clearOnboardingData();
+                debugPrint('✅ Onboarding data cleared');
+                
+                // 2. Clear Chat History
+                final memoryService = await ConversationMemoryService.create();
+                await memoryService.clearHistory();
+                debugPrint('✅ Chat history cleared');
+                
+                if (context.mounted) {
+                  debugPrint('🚀 Navigating directly to /onboarding');
+                  // Add delay to prevent Navigator lock
+                  await Future.delayed(Duration.zero);
+                  if (context.mounted) {
+                    // Use rootNavigator to access the main MaterialApp navigator with routes
+                    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/onboarding', (route) => false);
+                  }
+                }
+              } catch (e) {
+                debugPrint('❌ Error resetting onboarding: $e');
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error resetting: $e')),
+                  );
+                }
               }
             },
           ),
@@ -556,6 +566,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             },
           ),
           
+          SettingsTile(
+            title: 'Clear Voice Cache',
+            subtitle: 'Refresh voice library from server',
+            icon: Icons.refresh,
+            onTap: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('elevenlabs_voices_cache');
+              await prefs.remove('elevenlabs_voices_cache_timestamp');
+              
+              // Reload voices
+              await _loadVoices();
+              
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Voice cache cleared! Voices refreshed.'),
+                    backgroundColor: AurealColors.plasmaCyan,
+                  ),
+                );
+              }
+            },
+          ),
 
           _buildSectionHeader('REAL-WORLD AWARENESS'),
           SettingsTile(
@@ -1037,3 +1069,5 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 }
+
+

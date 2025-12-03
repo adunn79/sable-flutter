@@ -20,7 +20,7 @@ class CinematicBackground extends StatefulWidget {
 }
 
 class _CinematicBackgroundState extends State<CinematicBackground>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   
   // 1. BREATHING ANIMATION (Zoom)
   late AnimationController _breathController;

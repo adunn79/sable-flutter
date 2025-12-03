@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
-import 'package:sable/core/voice/locale_voice_service.dart';
 import 'package:sable/core/voice/voice_service.dart';
 import '../models/avatar_config.dart';
 import '../services/avatar_generation_service.dart';
 import '../services/onboarding_state_service.dart';
+import 'package:sable/core/voice/elevenlabs_api_service.dart';
+import 'package:sable/features/common/widgets/cascading_voice_selector.dart';
 
 class Screen4Customize extends StatefulWidget {
   final String archetype;
@@ -37,7 +38,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   String _fashionAesthetic = 'Casual (Denim/Comfort)';
   String _distinguishingMark = 'None (Flawless)';
   String? _selectedVoiceId;
-  List<dynamic> _availableVoices = []; // Will hold VoiceWithMetadata objects
+  List<VoiceWithMetadata> _availableVoices = []; // Will hold VoiceWithMetadata objects
   bool _isLoadingVoices = false;
 
   bool _isGenerating = false;
@@ -56,13 +57,16 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
     await _loadVoicesForOrigin(); // Load initial voices
   }
   
+
+
   Future<void> _loadVoicesForOrigin() async {
     setState(() {
       _isLoadingVoices = true;
     });
     
     try {
-      final voices = await LocaleVoiceService.getVoicesForOrigin(_origin);
+      // Load ALL voices to let the CascadingVoiceSelector handle filtering
+      final voices = await _voiceService.getAllVoices();
       setState(() {
         _availableVoices = voices;
         _isLoadingVoices = false;
@@ -82,6 +86,49 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
         _availableVoices = [];
       });
     }
+  }
+
+  Widget _buildVoiceSelection() {
+    if (_isLoadingVoices) {
+      return const Row(
+        children: [
+          Expanded(
+            child: Center(
+              child: CircularProgressIndicator(color: AurealColors.plasmaCyan),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    if (_availableVoices.isEmpty) {
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              'No voices available. Check your connection.',
+              style: GoogleFonts.inter(color: AurealColors.ghost),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    return CascadingVoiceSelector(
+      voices: _availableVoices,
+      selectedVoiceId: _selectedVoiceId,
+      onVoiceSelected: (voiceId) {
+        setState(() {
+          _selectedVoiceId = voiceId;
+        });
+      },
+      onPlayPreview: () async {
+        if (_selectedVoiceId != null) {
+          await _voiceService.setVoice(_selectedVoiceId!);
+          await _voiceService.speak("Hello, I'm excited to be with you.");
+        }
+      },
+    );
   }
 
   Future<void> _initServices() async {
@@ -535,6 +582,8 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                             setState(() {
                               _origin = selection;
                             });
+                            // Reload voices for the new origin
+                            _loadVoicesForOrigin();
                           },
                           fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
                             // Update state when text changes (for custom input)
@@ -834,73 +883,6 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
     );
   }
 
-  Widget _buildVoiceSelection() {
-    if (_isLoadingVoices) {
-      return const Row(
-        children: [
-          Expanded(
-            child: Center(
-              child: CircularProgressIndicator(color: AurealColors.plasmaCyan),
-            ),
-          ),
-        ],
-      );
-    }
-    
-    if (_availableVoices.isEmpty) {
-      return Row(
-        children: [
-          Expanded(
-            child: Text(
-              'No voices available. Check your connection.',
-              style: GoogleFonts.inter(color: AurealColors.ghost),
-            ),
-          ),
-        ],
-      );
-    }
-    
-    return Row(
-      children: [
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _selectedVoiceId,
-            dropdownColor: AurealColors.carbon,
-            isExpanded: true,
-            decoration: InputDecoration(
-              hintText: 'Select a voice',
-              hintStyle: GoogleFonts.inter(color: AurealColors.ghost),
-            ),
-            items: _availableVoices.map<DropdownMenuItem<String>>((voice) {
-              return DropdownMenuItem(
-                value: voice.voiceId,
-                child: Text(
-                  '${voice.name}${voice.gender != null ? " (${voice.gender})" : ""}',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedVoiceId = value;
-              });
-            },
-            style: GoogleFonts.inter(color: AurealColors.stardust),
-          ),
-        ),
-        const SizedBox(width: 12),
-        if (_selectedVoiceId != null)
-          IconButton(
-            icon: const Icon(Icons.play_circle_outline, color: AurealColors.plasmaCyan, size: 32),
-            onPressed: () async {
-              if (_selectedVoiceId != null) {
-                await _voiceService.setVoice(_selectedVoiceId!);
-                await _voiceService.speak("Hello, I'm excited to be with you.");
-              }
-            },
-          ),
-      ],
-    );
-  }
+
 
 }

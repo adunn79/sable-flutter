@@ -4,6 +4,7 @@ import 'package:sable/core/theme/aureal_theme.dart';
 import 'package:sable/core/identity/bond_engine.dart';
 import 'package:sable/core/identity/emotional_state.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DebugDashboard extends ConsumerStatefulWidget {
   const DebugDashboard({super.key});
@@ -109,6 +110,14 @@ class _DebugDashboardState extends ConsumerState<DebugDashboard> {
                     }),
                   ],
                 ),
+                const SizedBox(height: 24),
+                _buildSectionHeader('VOICE SYSTEM'),
+                _buildActionButton('Clear Voice Cache', () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.remove('elevenlabs_voices_cache');
+                  await prefs.remove('elevenlabs_voices_cache_timestamp');
+                  _logMessage('🗑️ Voice cache cleared - voices will re-fetch from API');
+                }),
               ],
             ),
           ),

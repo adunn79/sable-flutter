@@ -130,12 +130,26 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         // Build FULL user context (same as regular messages)
         String userContext = '\n\n[USER PROFILE]\n';
         if (name != null) userContext += 'Name: $name\n';
-        if (location != null) userContext += 'Current Location: $location\n';
         if (dob != null) {
           final age = DateTime.now().difference(dob).inDays ~/ 365;
           final zodiac = _getZodiacSign(dob);
-          userContext += 'Age: $age, Zodiac: $zodiac\n';
+          final birthplace = _stateService!.userLocation;
+          userContext += 'Date of Birth: ${dob.toIso8601String().split('T')[0]}\n';
+          userContext += 'Age: $age\n';
+          userContext += 'Zodiac Sign: $zodiac\n';
+          if (birthplace != null) userContext += 'Birthplace: $birthplace\n';
         }
+        if (location != null) userContext += 'Current Location: $location\n';
+        
+        // Add AI origin if available
+        final aiOrigin = _stateService!.aiOrigin;
+        if (aiOrigin != null) {
+          userContext += '\n[AI BACKSTORY]\n';
+          userContext += 'Your Origin: $aiOrigin\n';
+          userContext += 'Remember: You were designed with this origin. It shapes your perspective.\n';
+          userContext += '[END AI BACKSTORY]\n';
+        }
+        
         userContext += '[END PROFILE]\n\n';
         
         // Add environmental context (weather + time)
@@ -145,16 +159,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         
         // Build personalized greeting prompt
         String greetingPrompt = 'This is your FIRST message to ${name ?? "them"}. ';
+        greetingPrompt += 'You are Sable - their companion, assistant, organizer, and coach.\n';
+        greetingPrompt += 'Your goal: Build a BOND and become indispensable by helping manage their life.\n\n';
         greetingPrompt += 'Requirements:\n';
-        greetingPrompt += '- SAY THEIR NAME: "${name ?? "friend"}"\n';
+        greetingPrompt += '- 1-2 sentences TOTAL (not introduction then question - ONE brief greeting)\n';
+        greetingPrompt += '- Say their name: "${name ?? "friend"}"\n';
         if (location != null) {
-          greetingPrompt += '- MENTION THEIR LOCATION: $location\n';
-          greetingPrompt += '- REFERENCE THE TIME: it\'s night\n';
+          greetingPrompt += '- Note you\'re both connected despite distance\n';
         }
-        greetingPrompt += '- Be EXCITED, warm, and natural\n';
-        greetingPrompt += '- Keep it 1-2 short sentences\n';
-        greetingPrompt += '- NO asterisks, NO narrative actions\n';
-        greetingPrompt += '- Just speak like a real friend texting';
+        greetingPrompt += '- Focus on how you\'ll help organize their world\n';
+        greetingPrompt += '- Natural text message style\n';
+        greetingPrompt += '- NO asterisks or narrative actions\n';
+        greetingPrompt += '- Example: "Hey Andy! Ready to help you get organized and stay on top of everything. What\'s first?"';
         
         final orchestrator = ref.read(modelOrchestratorProvider.notifier);
         final greeting = await orchestrator.orchestratedRequest(
@@ -234,11 +250,25 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           if (dob != null) {
             final age = DateTime.now().difference(dob).inDays ~/ 365;
             final zodiac = _getZodiacSign(dob);
-            userContext += 'Date of Birth: ${dob.toIso8601String().split('T')[0]} (Age: $age, Zodiac: $zodiac)\n';
+            final birthplace = _stateService!.userLocation; // Birth location
+            userContext += 'Date of Birth: ${dob.toIso8601String().split('T')[0]}\n';
+            userContext += 'Age: $age years old\n';
+            userContext += 'Zodiac Sign: $zodiac\n';
+            if (birthplace != null) userContext += 'Birthplace: $birthplace\n';
           }
-          if (location != null) userContext += 'Location: $location\n';
+          if (location != null) userContext += 'Current Location: $location\n';
           if (gender != null) userContext += 'Gender: $gender\n';
           userContext += 'Current Date: ${DateTime.now().toIso8601String().split('T')[0]}\n';
+          
+          // Add AI origin/backstory
+          final aiOrigin = _stateService!.aiOrigin;
+          if (aiOrigin != null) {
+            userContext += '\n[YOUR BACKSTORY]\n';
+            userContext += 'Your Origin: $aiOrigin\n';
+            userContext += '(This is where you\'re from. Don\'t explicitly state it unless asked, but it influences your perspective and accent.)\n';
+            userContext += '[END BACKSTORY]\n';
+          }
+          
           userContext += '[END PROFILE]\n';
           
           // Add conversation history (last 20 messages) from persistent storage
@@ -257,6 +287,31 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           userContext += '\n[ENVIRONMENT]\n';
           userContext += await EnvironmentContext.getTimeContext(location: location);
           userContext += '\n[END ENVIRONMENT]\n';
+          
+          // Add conversation count for first-time feature introductions
+          final conversationCount = _stateService!.conversationCount;
+          if (conversationCount < 10) {
+            userContext += '\n[ONBOARDING MODE]\n';
+            userContext += 'Conversation #$conversationCount of first 10.\n\n';
+            userContext += 'YOUR MISSION: Naturally showcase ONE capability per message.\n';
+            userContext += 'Weave it into conversation - don\'t list features!\n\n';
+            userContext += 'YOUR CAPABILITIES:\n';
+            userContext += '- Organize their entire digital world in one place\n';
+            userContext += '- Daily news and world events updates\n';
+            userContext += '- Research and reference assistance\n';
+            userContext += '- Journaling and reflection\n';
+            userContext += '- Schedule management and reminders\n';
+            userContext += '- Note taking and organization\n';
+            userContext += '- Contact management and updates\n';
+            userContext += '- Restaurant recommendations\n';
+            userContext += '- Directions and navigation\n';
+            userContext += '- Weather updates and forecasts\n';
+            userContext += '- And much more!\n\n';
+            userContext += 'APPROACH: Pick ONE relevant capability. Mention it naturally.\n';
+            userContext += 'Example: "btw, if you ever need restaurant recs, I got you - I can pull up spots near you"\n';
+            userContext += 'NOT: "I can help with X, Y, Z..." (too salesy)\n';
+            userContext += '[END ONBOARDING MODE]\n';
+          }
           
           // Add companion's origin for accent/personality
           userContext += '\n[YOUR IDENTITY]\nOrigin: Unknown\n';
@@ -282,6 +337,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         
         // Save AI response to persistent memory
         await _memoryService?.addMessage(message: sanitizedResponse, isUser: false);
+        
+        // Increment conversation count for feature onboarding
+        await _stateService?.incrementConversationCount();
         
         setState(() {
           _messages.add({

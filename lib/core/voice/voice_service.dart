@@ -4,6 +4,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sable/core/voice/eleven_labs_provider.dart';
+import 'package:sable/core/voice/elevenlabs_api_service.dart';
 
 /// Service for voice input (STT) and output (TTS)
 class VoiceService {
@@ -196,6 +197,12 @@ class VoiceService {
       {'name': 'Adam (Neutral)', 'id': 'pNInz6obpgDQGcFmaJgB', 'category': 'Neutral'},
       {'name': 'Mimi (Neutral)', 'id': 'zrHiDhphv9ZnVXBqCLjz', 'category': 'Neutral'},
     ];
+  }
+
+  /// Get all available voices (ElevenLabs)
+  Future<List<VoiceWithMetadata>> getAllVoices() async {
+    final apiService = ElevenLabsApiService();
+    return await apiService.getAllVoices();
   }
 
   /// Get available voices (System or ElevenLabs)

@@ -119,6 +119,23 @@ class LocaleVoiceService {
       return 'South African';
     }
     
+    // Scandinavia / Northern Europe
+    if (originLower.contains('sweden') || 
+        originLower.contains('stockholm') ||
+        originLower.contains('norway') ||
+        originLower.contains('oslo') ||
+        originLower.contains('denmark') ||
+        originLower.contains('copenhagen') ||
+        originLower.contains('finland') ||
+        originLower.contains('helsinki')) {
+      return 'Swedish'; // Or 'European' if specific accents aren't available
+    }
+    
+    // Netherlands
+    if (originLower.contains('netherlands') || originLower.contains('amsterdam')) {
+      return 'Dutch';
+    }
+    
     // Default to American
     return 'American';
   }

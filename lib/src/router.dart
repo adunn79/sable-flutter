@@ -5,6 +5,8 @@ import 'pages/placeholder_page.dart';
 import 'pages/chat/chat_page.dart';
 import 'package:sable/features/settings/screens/settings_screen.dart';
 
+import 'package:sable/features/onboarding/onboarding_flow.dart';
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/chat',
@@ -14,7 +16,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           return AppShell(child: child);
         },
         routes: [
-          GoRoute(path: '/onboarding', builder: (context, state) => const PlaceholderPage(title: 'Onboarding')),
+          GoRoute(
+            path: '/onboarding', 
+            builder: (context, state) => OnboardingFlow(
+              onComplete: () => context.go('/chat'),
+            ),
+          ),
           GoRoute(path: '/welcome', builder: (context, state) => const PlaceholderPage(title: 'Welcome')),
           GoRoute(path: '/chat', builder: (context, state) => const ChatPage()),
           GoRoute(path: '/today', builder: (context, state) => const PlaceholderPage(title: 'Today')),

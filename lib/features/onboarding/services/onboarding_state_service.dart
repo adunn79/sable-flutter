@@ -62,6 +62,7 @@ class OnboardingStateService {
     await _prefs.setString(_keyAvatarUrl, url);
   }
 
+  static const String _keyAiOrigin = 'ai_origin';
   static const String _keyUserName = 'user_name';
   static const String _keyUserDob = 'user_dob';
   static const String _keyUserLocation = 'user_location'; // Birth place
@@ -76,6 +77,7 @@ class OnboardingStateService {
     String? currentLocation,
     String? gender,
     String? voiceId,
+    String? aiOrigin,
   }) async {
     await _prefs.setString(_keyUserName, name);
     await _prefs.setString(_keyUserDob, dob.toIso8601String());
@@ -88,6 +90,9 @@ class OnboardingStateService {
     }
     if (voiceId != null) {
       await _prefs.setString(_keySelectedVoiceId, voiceId);
+    }
+    if (aiOrigin != null) {
+      await _prefs.setString(_keyAiOrigin, aiOrigin);
     }
   }
 
@@ -113,6 +118,20 @@ class OnboardingStateService {
   /// Get selected voice ID
   String? get selectedVoiceId => _prefs.getString(_keySelectedVoiceId);
 
+  /// Get AI Origin
+  String? get aiOrigin => _prefs.getString(_keyAiOrigin);
+
+  static const String _keyConversationCount = 'conversation_count';
+  
+  /// Get conversation count (for first-time feature introductions)
+  int get conversationCount => _prefs.getInt(_keyConversationCount) ?? 0;
+  
+  /// Increment conversation count
+  Future<void> incrementConversationCount() async {
+    final current = conversationCount;
+    await _prefs.setInt(_keyConversationCount, current + 1);
+  }
+
   /// Clear all onboarding data (for testing)
   Future<void> clearOnboardingData() async {
     await _prefs.remove(_keyOnboardingComplete);
@@ -124,5 +143,7 @@ class OnboardingStateService {
     await _prefs.remove(_keyUserCurrentLocation);
     await _prefs.remove(_keyUserGender);
     await _prefs.remove(_keySelectedVoiceId);
+    await _prefs.remove(_keyAiOrigin);
+    await _prefs.remove(_keyConversationCount);
   }
 }

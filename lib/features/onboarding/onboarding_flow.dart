@@ -96,6 +96,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         currentLocation: _userProfile!.currentLocation,
         gender: _userProfile!.genderIdentity,
         voiceId: _avatarConfig?.selectedVoiceId, // Use avatar config's voice ID
+        aiOrigin: _avatarConfig?.origin,
       );
     }
     

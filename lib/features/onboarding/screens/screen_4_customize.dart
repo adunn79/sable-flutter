@@ -37,6 +37,8 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   String _fashionAesthetic = 'Casual (Denim/Comfort)';
   String _distinguishingMark = 'None (Flawless)';
   String? _selectedVoiceId;
+  List<dynamic> _availableVoices = []; // Will hold VoiceWithMetadata objects
+  bool _isLoadingVoices = false;
 
   bool _isGenerating = false;
   String? _generatedImageUrl;
@@ -51,6 +53,35 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
   Future<void> _initVoice() async {
     await _voiceService.initialize();
+    await _loadVoicesForOrigin(); // Load initial voices
+  }
+  
+  Future<void> _loadVoicesForOrigin() async {
+    setState(() {
+      _isLoadingVoices = true;
+    });
+    
+    try {
+      final voices = await LocaleVoiceService.getVoicesForOrigin(_origin);
+      setState(() {
+        _availableVoices = voices;
+        _isLoadingVoices = false;
+        
+        // Clear selected voice if it's not in the new list
+        if (_selectedVoiceId != null) {
+          final voiceExists = voices.any((v) => v.voiceId == _selectedVoiceId);
+          if (!voiceExists) {
+            _selectedVoiceId = null;
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('Error loading voices: $e');
+      setState(() {
+        _isLoadingVoices = false;
+        _availableVoices = [];
+      });
+    }
   }
 
   Future<void> _initServices() async {
@@ -804,8 +835,30 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   }
 
   Widget _buildVoiceSelection() {
-    // Get voices filtered by current origin
-    final availableVoices = LocaleVoiceService.getVoicesForOrigin(_origin);
+    if (_isLoadingVoices) {
+      return const Row(
+        children: [
+          Expanded(
+            child: Center(
+              child: CircularProgressIndicator(color: AurealColors.plasmaCyan),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    if (_availableVoices.isEmpty) {
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              'No voices available. Check your connection.',
+              style: GoogleFonts.inter(color: AurealColors.ghost),
+            ),
+          ),
+        ],
+      );
+    }
     
     return Row(
       children: [
@@ -818,11 +871,11 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
               hintText: 'Select a voice',
               hintStyle: GoogleFonts.inter(color: AurealColors.ghost),
             ),
-            items: availableVoices.map((voice) {
+            items: _availableVoices.map<DropdownMenuItem<String>>((voice) {
               return DropdownMenuItem(
-                value: voice.id,
+                value: voice.voiceId,
                 child: Text(
-                  '${voice.name} (${voice.gender})',
+                  '${voice.name}${voice.gender != null ? " (${voice.gender})" : ""}',
                   overflow: TextOverflow.ellipsis,
                 ),
               );
@@ -849,4 +902,5 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
       ],
     );
   }
+
 }

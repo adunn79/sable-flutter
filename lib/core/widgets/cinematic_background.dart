@@ -30,6 +30,10 @@ class _CinematicBackgroundState extends State<CinematicBackground>
   double _yOffset = 0.0;
   StreamSubscription<GyroscopeEvent>? _gyroStream;
 
+  // 3. AUTO-PAN STATE (For Simulator/Idle movement)
+  late AnimationController _panController;
+  late Animation<Offset> _panAnimation;
+
   @override
   void initState() {
     super.initState();
@@ -37,10 +41,24 @@ class _CinematicBackgroundState extends State<CinematicBackground>
     // Setup Breathing (Slow Zoom)
     _breathController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10),
+      duration: const Duration(seconds: 8), // Slightly faster breath
       lowerBound: 1.0,
-      upperBound: 1.05,
+      upperBound: 1.08, // More visible zoom
     )..repeat(reverse: true);
+
+    // Setup Auto-Pan (Subtle movement for aliveness)
+    _panController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 15),
+    )..repeat(reverse: true);
+    
+    _panAnimation = Tween<Offset>(
+      begin: const Offset(-10, -5),
+      end: const Offset(10, 5),
+    ).animate(CurvedAnimation(
+      parent: _panController,
+      curve: Curves.easeInOutSine,
+    ));
 
     // Setup Parallax (Gyroscope)
     // We listen to device tilt and shift the image slightly
@@ -62,6 +80,7 @@ class _CinematicBackgroundState extends State<CinematicBackground>
   @override
   void dispose() {
     _breathController.dispose();
+    _panController.dispose();
     _gyroStream?.cancel(); // Important: Stop listening to sensors
     super.dispose();
   }
@@ -72,12 +91,16 @@ class _CinematicBackgroundState extends State<CinematicBackground>
       children: [
         // LAYER 1: The Reactive Image
         AnimatedBuilder(
-          animation: _breathController,
+          animation: Listenable.merge([_breathController, _panController]),
           builder: (context, child) {
+            // Combine Gyro offset with Auto-Pan offset
+            final totalX = _xOffset + _panAnimation.value.dx;
+            final totalY = _yOffset + _panAnimation.value.dy;
+            
             return Transform.scale(
               scale: _breathController.value, // The Breath
               child: Transform.translate(
-                offset: Offset(_xOffset, _yOffset), // The Parallax
+                offset: Offset(totalX, totalY), // The Parallax + Auto-Pan
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 800), // Mood Cross-fade
                   child: Container(

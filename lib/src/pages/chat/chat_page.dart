@@ -259,7 +259,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           userContext += '\n[END ENVIRONMENT]\n';
           
           // Add companion's origin for accent/personality
-          userContext += '\n[YOUR IDENTITY]\nOrigin: ${_avatarUrl != null ? "Neo-Kyoto, Sector 7" : "Unknown"}\n';
+          userContext += '\n[YOUR IDENTITY]\nOrigin: Unknown\n';
           
           debugPrint('Formatted context:\n$userContext');
         } else {

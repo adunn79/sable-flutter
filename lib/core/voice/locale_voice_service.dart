@@ -1,124 +1,148 @@
 import 'package:flutter/foundation.dart';
+import 'elevenlabs_api_service.dart';
 
-/// Model for a voice option with metadata
-class VoiceOption {
-  final String id;
-  final String name;
-  final String gender; // 'Male', 'Female', 'Neutral'
-  final String accent; // 'Australian', 'American', 'British', etc.
-  
-  const VoiceOption({
-    required this.id,
-    required this.name,
-    required this.gender,
-    required this.accent,
-  });
-}
-
-/// Service to map ElevenLabs voices to locales/accents
+/// Service to map voices to locales/accents using ElevenLabs API
 class LocaleVoiceService {
-  // NOTE: Using the 6 curated voices we have available
-  // In a real implementation, you'd want more voices for each region
-  static const List<VoiceOption> allVoices = [
-    // American Voices
-    VoiceOption(
-      id: 'TxGEqnHWrfWFTfGW9XjX',
-      name: 'Josh',
-      gender: 'Male',
-      accent: 'American',
-    ),
-    VoiceOption(
-      id: 'ErXwobaYiN019PkySvjV',
-      name: 'Antoni',
-      gender: 'Male',
-      accent: 'American',
-    ),
-    VoiceOption(
-      id: '21m00Tcm4TlvDq8ikWAM',
-      name: 'Rachel',
-      gender: 'Female',
-      accent: 'American',
-    ),
-    VoiceOption(
-      id: 'EXAVITQu4vr4xnSDxMaL',
-      name: 'Bella',
-      gender: 'Female',
-      accent: 'American',
-    ),
-    VoiceOption(
-      id: 'pNInz6obpgDQGcFmaJgB',
-      name: 'Adam',
-      gender: 'Neutral',
-      accent: 'American',
-    ),
-    VoiceOption(
-      id: 'zrHiDhphv9ZnVXBqCLjz',
-      name: 'Mimi',
-      gender: 'Neutral',
-      accent: 'American',
-    ),
-  ];
-
+  static final ElevenLabsApiService _apiService = ElevenLabsApiService();
+  
   /// Get voices filtered by origin/location
-  /// Maps common country/city names to accent categories
-  static List<VoiceOption> getVoicesForOrigin(String origin) {
+  /// Fetches from ElevenLabs API and filters by accent
+  static Future<List<VoiceWithMetadata>> getVoicesForOrigin(String origin) async {
     final originLower = origin.toLowerCase();
     
-    String accent = 'American'; // Default
+    // Determine target accent based on origin
+    String targetAccent = _mapOriginToAccent(originLower);
     
-    // Determine accent based on origin
-    if (originLower.contains('australia')) {
-      accent = 'Australian';
-    } else if (originLower.contains('united kingdom') || 
-               originLower.contains('london') || 
-               originLower.contains('manchester') ||
-               originLower.contains('scotland') ||
-               originLower.contains('wales')) {
-      accent = 'British';
-    } else if (originLower.contains('united states') ||
-               originLower.contains('california') ||
-               originLower.contains('new york') ||
-               originLower.contains('texas') ||
-               originLower.contains('florida')) {
-      accent = 'American';
-    } else if (originLower.contains('canada')) {
-      accent = 'Canadian';
-    } else if (originLower.contains('south africa')) {
-      accent = 'South African';
-    } else if (originLower.contains('india')) {
-      accent = 'Indian';
+    debugPrint('🎤 Looking for $targetAccent accent voices for origin: $origin');
+    
+    try {
+      // Fetch all voices from API
+      final allVoices = await _apiService.getAllVoices();
+      
+      // Filter voices by accent
+      final matchingVoices = allVoices.where((voice) {
+        // Check if any of the voice's accents match the target
+        return voice.accents.any((accent) => 
+          accent.toLowerCase().contains(targetAccent.toLowerCase())
+        );
+      }).toList();
+      
+      // If no voices match, return all voices as fallback
+      if (matchingVoices.isEmpty) {
+        debugPrint('⚠️ No $targetAccent voices found, showing all ${allVoices.length} voices');
+        return allVoices;
+      }
+      
+      debugPrint('✅ Found ${matchingVoices.length} $targetAccent voices');
+      return matchingVoices;
+    } catch (e) {
+      debugPrint('❌ Error fetching voices: $e');
+      // Return empty list on error - UI should handle gracefully
+      return [];
     }
-    
-    // Filter voices by accent
-    final matchingVoices = allVoices.where((v) => v.accent == accent).toList();
-    
-    // If no voices match (e.g., we don't have Australian voices yet), 
-    // fall back to all voices
-    if (matchingVoices.isEmpty) {
-      debugPrint('⚠️ No voices found for accent: $accent, using all voices');
-      return allVoices;
-    }
-    
-    return matchingVoices;
   }
-
+  
+  /// Map origin string to accent category
+  static String _mapOriginToAccent(String originLower) {
+    // Russia
+    if (originLower.contains('russia') || 
+        originLower.contains('moscow') || 
+        originLower.contains('saint petersburg') ||
+        originLower.contains('st petersburg')) {
+      return 'Russian';
+    }
+    
+    // Australia
+    if (originLower.contains('australia') ||
+        originLower.contains('sydney') ||
+        originLower.contains('melbourne')) {
+      return 'Australian';
+    }
+    
+    // United Kingdom
+    if (originLower.contains('united kingdom') || 
+        originLower.contains('uk') ||
+        originLower.contains('england') ||
+        originLower.contains('london') || 
+        originLower.contains('manchester') ||
+        originLower.contains('scotland') ||
+        originLower.contains('wales') ||
+        originLower.contains('ireland')) {
+      return 'British';
+    }
+    
+    // United States
+    if (originLower.contains('united states') ||
+        originLower.contains('usa') ||
+        originLower.contains('america') ||
+        originLower.contains('california') ||
+        originLower.contains('new york') ||
+        originLower.contains('texas') ||
+        originLower.contains('florida')) {
+      return 'American';
+    }
+    
+    // Canada
+    if (originLower.contains('canada') ||
+        originLower.contains('toronto') ||
+        originLower.contains('vancouver')) {
+      return 'Canadian';
+    }
+    
+    // France
+    if (originLower.contains('france') || originLower.contains('paris')) {
+      return 'French';
+    }
+    
+    // Germany
+    if (originLower.contains('germany') || originLower.contains('berlin')) {
+      return 'German';
+    }
+    
+    // Italy
+    if (originLower.contains('italy') || originLower.contains('rome')) {
+      return 'Italian';
+    }
+    
+    // Spain
+    if (originLower.contains('spain') || originLower.contains('madrid')) {
+      return 'Spanish';
+    }
+    
+    // India
+    if (originLower.contains('india') || originLower.contains('mumbai')) {
+      return 'Indian';
+    }
+    
+    // South Africa
+    if (originLower.contains('south africa') || originLower.contains('cape town')) {
+      return 'South African';
+    }
+    
+    // Default to American
+    return 'American';
+  }
+  
   /// Get a recommended voice based on gender and origin
-  static VoiceOption? getRecommendedVoice({
+  static Future<VoiceWithMetadata?> getRecommendedVoice({
     required String origin,
     String? gender,
-  }) {
-    final voices = getVoicesForOrigin(origin);
+  }) async {
+    final voices = await getVoicesForOrigin(origin);
+    
+    if (voices.isEmpty) return null;
     
     if (gender == null || gender.isEmpty) {
-      return voices.isNotEmpty ? voices.first : null;
+      return voices.first;
     }
     
     final genderLower = gender.toLowerCase();
     
     // Try to match gender preference
     final matchingGender = voices.where((v) {
-      return v.gender.toLowerCase() == genderLower ||
-             (genderLower == 'non-binary' && v.gender == 'Neutral');
+      final voiceGender = v.gender?.toLowerCase() ?? '';
+      return voiceGender.contains(genderLower) ||
+             (genderLower.contains('non-binary') && voiceGender.contains('neutral'));
     }).toList();
     
     if (matchingGender.isNotEmpty) {
@@ -126,6 +150,14 @@ class LocaleVoiceService {
     }
     
     // Fallback to first available voice
-    return voices.isNotEmpty ? voices.first : null;
+    return voices.first;
+  }
+  
+  /// Clear the voice cache (useful for refreshing or debugging)
+  static Future<void> clearCache() async {
+    await _apiService.clearCache();
   }
 }
+
+
+

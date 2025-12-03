@@ -38,6 +38,10 @@ dependencies:
   audioplayers: ^6.4.0
   sensors_plus: ^7.0.0
   device_calendar: ^4.3.3
+  # Native app integrations
+  contacts_service: ^0.6.3
+  photo_manager: ^3.0.0
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:

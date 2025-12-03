@@ -40,5 +40,11 @@
 		<string>Aureal may use your camera for visual recognition features.</string>
 		<key>NSCalendarsUsageDescription</key>
 		<string>Sable helps organize your schedule and provides intelligent reminders.</string>
+		<key>NSContactsUsageDescription</key>
+		<string>Sable helps manage your contacts and suggests people to reach out to.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Sable can help you find and organize photos.</string>
+		<key>NSRemindersUsageDescription</key>
+		<string>Sable creates and manages reminders based on your conversations.</string>
 	</dict>
 </plist>

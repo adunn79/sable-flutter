@@ -55,5 +55,13 @@
 		<string>We need your location to provide local weather updates and context-aware responses.</string>
 		<key>NSCalendarsUsageDescription</key>
 		<string>Sable helps organize your schedule and provides intelligent reminders.</string>
+		<key>NSContactsUsageDescription</key>
+		<string>Sable helps manage your contacts and suggests people to reach out to.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Sable can help you find and organize photos.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Sable can save photos and images for you.</string>
+		<key>NSRemindersUsageDescription</key>
+		<string>Sable creates and manages reminders based on your conversations.</string>
 	</dict>
 </plist>

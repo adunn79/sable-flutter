@@ -38,5 +38,7 @@
 		<string>Aureal uses your location to provide context-aware responses and local information.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>Aureal may use your camera for visual recognition features.</string>
+		<key>NSCalendarsUsageDescription</key>
+		<string>Sable helps organize your schedule and provides intelligent reminders.</string>
 	</dict>
 </plist>

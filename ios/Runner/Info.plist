@@ -53,5 +53,7 @@
 		<string>We need your location to provide local weather updates and context-aware responses.</string>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 		<string>We need your location to provide local weather updates and context-aware responses.</string>
+		<key>NSCalendarsUsageDescription</key>
+		<string>Sable helps organize your schedule and provides intelligent reminders.</string>
 	</dict>
 </plist>

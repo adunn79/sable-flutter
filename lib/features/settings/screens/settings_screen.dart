@@ -16,6 +16,11 @@ import 'package:sable/core/voice/elevenlabs_api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/emotion/emotional_state_service.dart';
+// Native app services
+import 'package:sable/core/calendar/calendar_service.dart';
+import 'package:sable/core/contacts/contacts_service.dart';
+import 'package:sable/core/photos/photos_service.dart';
+import 'package:sable/core/reminders/reminders_service.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -450,42 +455,111 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           SettingsTile(
             title: 'Contacts',
-            subtitle: 'Relationship awareness (Future)',
+            subtitle: 'Relationship awareness',
             icon: Icons.contacts_outlined,
-            trailing: Switch(
-              value: _permissionContacts,
-              activeColor: AurealColors.hyperGold,
-              onChanged: (val) => setState(() => _permissionContacts = val),
+            trailing: FutureBuilder<bool>(
+              future: ContactsService.hasPermission(),
+              builder: (context, snapshot) {
+                final hasPermission = snapshot.data ?? false;
+                return Switch(
+                  value: hasPermission || _permissionContacts,
+                  activeColor: AurealColors.hyperGold,
+                  onChanged: (val) async {
+                    if (val) {
+                      final granted = await ContactsService.requestPermission();
+                      setState(() => _permissionContacts = granted);
+                    } else {
+                      // Show message: can't revoke, must go to Settings
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('To revoke permission, go to iOS Settings')),
+                        );
+                      }
+                    }
+                  },
+                );
+              },
             ),
           ),
           SettingsTile(
-            title: 'Notes',
-            subtitle: 'Shared note access (Future)',
-            icon: Icons.note_outlined,
-            trailing: Switch(
-              value: _permissionNotes,
-              activeColor: AurealColors.hyperGold,
-              onChanged: (val) => setState(() => _permissionNotes = val),
+            title: 'Photos',
+            subtitle: 'Photo library access',
+            icon: Icons.photo_library_outlined,
+            trailing: FutureBuilder<bool>(
+              future: PhotosService.hasPermission(),
+              builder: (context, snapshot) {
+                final hasPermission = snapshot.data ?? false;
+                return Switch(
+                  value: hasPermission || _permissionNotes,
+                  activeColor: AurealColors.hyperGold,
+                  onChanged: (val) async {
+                    if (val) {
+                      final granted = await PhotosService.requestPermission();
+                      setState(() => _permissionNotes = granted);
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('To revoke permission, go to iOS Settings')),
+                        );
+                      }
+                    }
+                  },
+                );
+              },
             ),
           ),
           SettingsTile(
             title: 'Calendar',
-            subtitle: 'Schedule integration (Future)',
+            subtitle: 'Schedule integration',
             icon: Icons.calendar_today_outlined,
-            trailing: Switch(
-              value: _permissionCalendar,
-              activeColor: AurealColors.hyperGold,
-              onChanged: (val) => setState(() => _permissionCalendar = val),
+            trailing: FutureBuilder<bool>(
+              future: CalendarService.hasPermission(),
+              builder: (context, snapshot) {
+                final hasPermission = snapshot.data ?? false;
+                return Switch(
+                  value: hasPermission || _permissionCalendar,
+                  activeColor: AurealColors.hyperGold,
+                  onChanged: (val) async {
+                    if (val) {
+                      final granted = await CalendarService.requestPermission();
+                      setState(() => _permissionCalendar = granted);
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('To revoke permission, go to iOS Settings')),
+                        );
+                      }
+                    }
+                  },
+                );
+              },
             ),
           ),
           SettingsTile(
             title: 'Reminders',
-            subtitle: 'Task management (Future)',
+            subtitle: 'Task management',
             icon: Icons.alarm_outlined,
-            trailing: Switch(
-              value: _permissionReminders,
-              activeColor: AurealColors.hyperGold,
-              onChanged: (val) => setState(() => _permissionReminders = val),
+            trailing: FutureBuilder<bool>(
+              future: RemindersService.hasPermission(),
+              builder: (context, snapshot) {
+                final hasPermission = snapshot.data ?? false;
+                return Switch(
+                  value: hasPermission || _permissionReminders,
+                  activeColor: AurealColors.hyperGold,
+                  onChanged: (val) async {
+                    if (val) {
+                      final granted = await RemindersService.requestPermission();
+                      setState(() => _permissionReminders = granted);
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('To revoke permission, go to iOS Settings')),
+                        );
+                      }
+                    }
+                  },
+                );
+              },
             ),
           ),
 

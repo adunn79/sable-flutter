@@ -15,6 +15,11 @@ import 'package:sable/core/emotion/location_service.dart';
 import 'package:sable/src/config/app_config.dart';
 import 'package:sable/core/emotion/conversation_memory_service.dart';
 import 'package:sable/core/voice/voice_service.dart';
+// Native app services
+import 'package:sable/core/calendar/calendar_service.dart';
+import 'package:sable/core/contacts/contacts_service.dart';
+import 'package:sable/core/photos/photos_service.dart';
+import 'package:sable/core/reminders/reminders_service.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});
@@ -287,6 +292,35 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           userContext += '\n[ENVIRONMENT]\n';
           userContext += await EnvironmentContext.getTimeContext(location: location);
           userContext += '\n[END ENVIRONMENT]\n';
+          
+          // Add native app integrations (only if permission granted)
+          try {
+            // Calendar
+            if (await CalendarService.hasPermission()) {
+              userContext += '\n';
+              userContext += await CalendarService.getCalendarSummary();
+            }
+            
+            // Contacts
+            if (await ContactsService.hasPermission()) {
+              userContext += '\n';
+              userContext += await ContactsService.getRecentContactsSummary();
+            }
+            
+            // Photos
+            if (await PhotosService.hasPermission()) {
+              userContext += '\n';
+              userContext += await PhotosService.getPhotosSummary();
+            }
+            
+            // Reminders
+            if (await RemindersService.hasPermission()) {
+              userContext += '\n';
+              userContext += await RemindersService.getRemindersSummary();
+            }
+          } catch (e) {
+            debugPrint('⚠️ Error loading native app context: $e');
+          }
           
           // Add conversation count for first-time feature introductions
           final conversationCount = _stateService!.conversationCount;

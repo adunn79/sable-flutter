@@ -146,4 +146,56 @@ class OnboardingStateService {
     await _prefs.remove(_keyAiOrigin);
     await _prefs.remove(_keyConversationCount);
   }
+
+  /// Get default voice ID based on origin (place of birth) and gender
+  static String? getDefaultVoiceForOrigin(String? origin, String? gender) {
+    if (origin == null) return null;
+    
+    final originLower = origin.toLowerCase();
+    final isFemale = gender?.toLowerCase().contains('female') ?? false;
+    final isMale = gender?.toLowerCase().contains('male') ?? false;
+    
+    // Russia
+    if (originLower.contains('russia') || originLower.contains('russian')) {
+      return isFemale ? 'gedzfqL7OGdwm0ynTP' : 'ODq5zmih8GrVes37Dizd'; // Nadia or Patrick
+    }
+    
+    // Sweden
+    if (originLower.contains('sweden') || originLower.contains('swedish')) {
+      return isFemale ? 'XrExE9yKIg1WjnnlVkGX' : 'ODq5zmih8GrVes37Dizd'; // Matilda or Patrick (fallback)
+    }
+    
+    // United Kingdom
+    if (originLower.contains('uk') || originLower.contains('britain') || originLower.contains('england')) {
+      return isFemale ? 'XB0fDUnXU5powFXDhCwa' : 'VR6AewLTigWG4xSOukaG'; // Charlotte or Arnold
+    }
+    
+    // Australia
+    if (originLower.contains('australia') || originLower.contains('aussie')) {
+      return isFemale ? 'XB0fDUnXU5powFXDhCwa' : 'IKne3meq5aSn9XLyUdCD'; // Charlotte (fallback) or Charlie
+    }
+    
+    // Ireland
+    if (originLower.contains('ireland') || originLower.contains('irish')) {
+      return isFemale ? 'XB0fDUnXU5powFXDhCwa' : 'bVMeCyTHy58xNoL34h3p'; // Charlotte (fallback) or Jeremy
+    }
+    
+    // France
+    if (originLower.contains('france') || originLower.contains('french')) {
+      return isFemale ? 'T558JOxAYVRUXPcjLmWL' : 'ZQe5CZNOzWyzPSCn5a3c'; // Serena or Liam
+    }
+    
+    // Italy
+    if (originLower.contains('italy') || originLower.contains('italian')) {
+      return isFemale ? 'MF3mGyEYCl7XYWbV9V6O' : '21m00Tcm4TlvDq8ikWAM'; // Elli or Rachel (fallback)
+    }
+    
+    // Spain
+    if (originLower.contains('spain') || originLower.contains('spanish')) {
+      return isFemale ? '21m00Tcm4TlvDq8ikWAM' : 'GBv7mTt0atIp3Br8iCZE'; // Rachel (fallback) or Thomas
+    }
+    
+    // USA / Default
+    return isFemale ? 'cgSgspJ2msm6clMCkdW9' : 'TxGEqnHWrfWFTfGW9XjX'; // Jessica or Josh
+  }
 }

@@ -89,13 +89,22 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     final stateService = await OnboardingStateService.create();
     
     if (_userProfile != null) {
+      // Auto-select voice based on origin if not already selected
+      String? voiceToSave = _avatarConfig?.selectedVoiceId;
+      if (voiceToSave == null && _avatarConfig?.origin != null) {
+        voiceToSave = OnboardingStateService.getDefaultVoiceForOrigin(
+          _avatarConfig!.origin,
+          _avatarConfig!.gender,
+        );
+      }
+      
       await stateService.saveUserProfile(
         name: _userProfile!.name,
         dob: _userProfile!.dateOfBirth,
         location: _userProfile!.location,
         currentLocation: _userProfile!.currentLocation,
         gender: _userProfile!.genderIdentity,
-        voiceId: _avatarConfig?.selectedVoiceId, // Use avatar config's voice ID
+        voiceId: voiceToSave,
         aiOrigin: _avatarConfig?.origin,
       );
     }

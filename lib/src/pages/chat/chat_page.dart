@@ -344,7 +344,37 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             userContext += 'APPROACH: Pick ONE relevant capability. Mention it naturally.\n';
             userContext += 'Example: "btw, if you ever need restaurant recs, I got you - I can pull up spots near you"\n';
             userContext += 'NOT: "I can help with X, Y, Z..." (too salesy)\n';
+            
+            // Check if we should set up daily news (conversations 3-5)
+            if (conversationCount >= 3 && conversationCount <= 5 && !_stateService!.hasSetNewsCategories) {
+              userContext += '\n\nSPECIAL OBJECTIVE THIS CONVERSATION:\n';
+              userContext += 'Casually ask if they want daily news updates.\n';
+              userContext += 'Examples:\n';
+              userContext += '- "btw, want me to keep you updated on stuff? tech, local news, sports—whatever."\n';
+              userContext += '- "I can hit you with a daily update on world events if you\'re into that"\n';
+              userContext += 'Keep it casual. Don\'t make it a formal setup. Just offer it naturally.\n';
+            }
+            
             userContext += '[END ONBOARDING MODE]\n';
+          }
+          
+          // Check if this is first interaction today (for daily greeting)
+          final isFirstToday = await _stateService!.isFirstInteractionToday();
+          if (isFirstToday && _stateService!.newsEnabled) {
+            userContext = (userContext ?? '') + '\n[DAILY GREETING MODE]\n';
+            userContext += 'This is the FIRST interaction today.\n';
+            userContext += 'Start with: "Good morning/afternoon ${name ?? "them"}" (use correct time of day)\n\n';
+            userContext += 'Then add ONE of these hooks (VARY IT, don\'t repeat):\n';
+            userContext += '- "Did you hear about [recent event from news]?"\n';
+            userContext += '- "Want your daily update?"\n';
+            userContext += '- "Crazy thing happened in [location/topic] last night"\n';
+            userContext += '- "[Hook about relevant news topic they care about]"\n\n';
+            userContext += 'Sable vibe: casual, direct, slightly edgy. NOT formal or robotic.\n';
+            userContext += 'Example: "Morning, ${name ?? "Andy"}. Did you see what went down overnight?"\n';
+            userContext += '[END DAILY GREETING MODE]\n';
+            
+            // Mark interaction as done
+            await _stateService!.updateLastInteractionDate();
           }
           
           debugPrint('Formatted context:\n$userContext');

@@ -68,6 +68,11 @@ class OnboardingStateService {
   static const String _keyUserLocation = 'user_location'; // Birth place
   static const String _keyUserCurrentLocation = 'user_current_location'; // Current location
   static const String _keyUserGender = 'user_gender';
+  
+  // Daily news tracking
+  static const String _keyLastInteractionDate = 'last_interaction_date';
+  static const String _keyNewsEnabled = 'news_enabled';
+  static const String _keyNewsCategories = 'news_categories';
 
   /// Save user profile data
   Future<void> saveUserProfile({
@@ -131,7 +136,62 @@ class OnboardingStateService {
     final current = conversationCount;
     await _prefs.setInt(_keyConversationCount, current + 1);
   }
-
+  
+  // ============================================
+  // DAILY NEWS TRACKING
+  // ============================================
+  
+  /// Check if this is the first interaction today
+  Future<bool> isFirstInteractionToday() async {
+    final lastDateStr = _prefs.getString(_keyLastInteractionDate);
+    if (lastDateStr == null) return true;
+    
+    final lastDate = DateTime.parse(lastDateStr);
+    final today = DateTime.now();
+    
+    // Check if dates are different days
+    return lastDate.year != today.year ||
+           lastDate.month != today.month ||
+           lastDate.day != today.day;
+  }
+  
+  /// Update last interaction date to today
+  Future<void> updateLastInteractionDate() async {
+    final today = DateTime.now().toIso8601String();
+    await _prefs.setString(_keyLastInteractionDate, today);
+  }
+  
+  /// Get last interaction date
+  DateTime? get lastInteractionDate {
+    final dateStr = _prefs.getString(_keyLastInteractionDate);
+    return dateStr != null ? DateTime.parse(dateStr) : null;
+  }
+  
+  /// Check if daily news is enabled
+  bool get newsEnabled {
+    return _prefs.getBool(_keyNewsEnabled) ?? true; // Default enabled
+  }
+  
+  /// Set news enabled/disabled
+  Future<void> setNewsEnabled(bool enabled) async {
+    await _prefs.setBool(_keyNewsEnabled, enabled);
+  }
+  
+  /// Get news categories
+  List<String> get newsCategories {
+    final categoriesStr = _prefs.getStringList(_keyNewsCategories);
+    return categoriesStr ?? ['local', 'tech', 'national']; // Defaults
+  }
+  
+  /// Set news categories
+  Future<void> setNewsCategories(List<String> categories) async {
+    await _prefs.setStringList(_keyNewsCategories, categories);
+  }
+  
+  /// Check if news categories have been set by user
+  bool get hasSetNewsCategories {
+    return _prefs.getStringList(_keyNewsCategories) != null;
+  }
   /// Clear all onboarding data (for testing)
   Future<void> clearOnboardingData() async {
     await _prefs.remove(_keyOnboardingComplete);

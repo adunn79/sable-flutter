@@ -44,6 +44,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   bool _isTyping = false;
   bool _isListening = false;
   String? _avatarUrl;
+  String? _userContextOverride; // For injecting specific context (like daily news)
   
   final List<Map<String, dynamic>> _messages = [];
 
@@ -426,6 +427,51 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         debugPrint('ERROR: _stateService is null!');
       }
 
+  Future<void> _sendMessage([String? message]) async {
+    final text = message ?? _controller.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      _messages.add({'message': text, 'isUser': true});
+      _controller.clear();
+      _isTyping = true;
+    });
+    _scrollToBottom();
+
+    // Save user message to persistent memory
+    await _memoryService?.addMessage(message: text, isUser: true);
+
+    try {
+      // Build User Context
+        if (location != null) userContext += 'Current Location: $location\n';
+        userContext += '[END PROFILE]\n\n';
+        
+        // 2. Add Environment Context
+        if (location != null) {
+          userContext += '[ENVIRONMENT]\n';
+          userContext += await EnvironmentContext.getTimeContext(location: location);
+          userContext += '\n[END ENVIRONMENT]\n';
+        }
+      }
+      
+      // 3. Add Structured Memory Context (Top 3 relevant memories)
+      if (_structuredMemoryService != null) {
+        final relevantMemories = await _structuredMemoryService!.retrieveRelevantMemories(text);
+        if (relevantMemories.isNotEmpty) {
+          userContext += '\n[RELEVANT MEMORIES]\n';
+          for (var mem in relevantMemories) {
+            userContext += '- ${mem.content} (${mem.category})\n';
+          }
+          userContext += '[END MEMORIES]\n';
+        }
+      }
+      
+      // 4. Add Override Context (e.g. Daily Update)
+      if (_userContextOverride != null) {
+        userContext += _userContextOverride!;
+        _userContextOverride = null; // Clear after use
+      }
+
       // Use orchestrated routing - Gemini decides Claude vs GPT-4o
       final orchestrator = ref.read(modelOrchestratorProvider.notifier);
       final response = await orchestrator.orchestratedRequest(
@@ -460,6 +506,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         
         // Update emotional state based on interaction
         if (_emotionalService != null) {
+          final sentiment = await _emotionalService!.analyzeSentiment(text); // Analyze user text
           final location = _stateService?.userCurrentLocation ?? _stateService?.userLocation;
           final environmentMod = await EnvironmentContext.getMoodModifier(location: location);
           await _emotionalService!.updateMood(
@@ -503,26 +550,32 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     });
   }
 
-          backgroundColor: AurealColors.plasmaCyan,
+  /// Handle rewrite request
+  Future<void> _handleRewrite() async {
+    final text = _controller.text;
+    if (text.isEmpty) return;
+
+    // Check availability first
+    final isAvailable = await AppleIntelligenceService.isAvailable();
+    if (!isAvailable) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Apple Intelligence requires iOS 18+'),
+            backgroundColor: AurealColors.plasmaCyan,
           ),
         );
       }
       return;
     }
 
-    // Show loading indicator or feedback
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Rewriting with Apple Intelligence...'),
-          duration: Duration(seconds: 1),
-          backgroundColor: AurealColors.plasmaCyan,
-        ),
-      );
-    }
+    setState(() => _isTyping = true);
 
     // Call native rewrite
     final rewritten = await AppleIntelligenceService.rewrite(text);
+    
+    setState(() => _isTyping = false);
+
     if (rewritten != null && mounted) {
       setState(() {
         _controller.text = rewritten;

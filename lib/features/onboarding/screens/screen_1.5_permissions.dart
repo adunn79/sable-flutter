@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:geolocator/geolocator.dart';
 import '../models/permissions_config.dart';
+import '../services/onboarding_state_service.dart';
 
 class Screen15Permissions extends StatefulWidget {
   final Function(PermissionsConfig) onComplete;
@@ -19,6 +21,32 @@ class Screen15Permissions extends StatefulWidget {
 class _Screen15PermissionsState extends State<Screen15Permissions> {
   bool _gpsEnabled = false;
   bool _webAccessEnabled = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentPermissions();
+  }
+
+  Future<void> _loadCurrentPermissions() async {
+    // Check GPS permission
+    final gpsStatus = await Geolocator.checkPermission();
+    final hasGps = gpsStatus == LocationPermission.always ||
+        gpsStatus == LocationPermission.whileInUse;
+
+    // Check web access (stored in OnboardingStateService)
+    final stateService = await OnboardingStateService.create();
+    final hasWeb = stateService.newsEnabled;
+
+    if (mounted) {
+      setState(() {
+        _gpsEnabled = hasGps;
+        _webAccessEnabled = hasWeb;
+        _isLoading = false;
+      });
+    }
+  }
 
   void _handleContinue() {
     final config = PermissionsConfig(

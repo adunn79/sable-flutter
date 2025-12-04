@@ -334,15 +334,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             userContext += '- Daily news and world events updates\n';
             userContext += '- Research and reference assistance\n';
             userContext += '- Journaling and reflection\n';
-            userContext += '- Schedule management and reminders\n';
-            userContext += '- Note taking and organization\n';
+            userContext += '- Schedule management and reminders (ask about upcoming events!)\n';
+            userContext += '- Note taking with persistent memory (mention this!)\n';
             userContext += '- Contact management and updates\n';
             userContext += '- Restaurant recommendations\n';
             userContext += '- Directions and navigation\n';
             userContext += '- Weather updates and forecasts\n';
             userContext += '- And much more!\n\n';
             userContext += 'APPROACH: Pick ONE relevant capability. Mention it naturally.\n';
-            userContext += 'Example: "btw, if you ever need restaurant recs, I got you - I can pull up spots near you"\n';
+            userContext += 'Examples:\n';
+            userContext += '- "btw, if you ever need restaurant recs, I got you - I can pull up spots near you"\n';
+            userContext += '- "got any events coming up I should know about? can add them to your calendar"\n';
+            userContext += '- "I remember everything we talk about btw - so if you need me to take notes, just say so"\n';
             userContext += 'NOT: "I can help with X, Y, Z..." (too salesy)\n';
             
             // Check if we should set up daily news (conversations 3-5)

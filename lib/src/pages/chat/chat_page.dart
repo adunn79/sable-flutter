@@ -384,7 +384,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             try {
               final webService = ref.read(webSearchServiceProvider);
               final categories = _stateService!.newsCategories;
-              final newsBrief = await webService.getDailyBriefing(categories);
+              
+              // Check if we already have news for today
+              String? newsBrief = _stateService!.getDailyNewsContent();
+              
+              if (newsBrief == null) {
+                // Fetch fresh news
+                debugPrint('🌍 Fetching fresh daily news...');
+                newsBrief = await webService.getDailyBriefing(categories);
+                // Save for later
+                await _stateService!.saveDailyNewsContent(newsBrief);
+              } else {
+                debugPrint('💾 Using cached daily news');
+              }
               
               userContext = (userContext ?? '') + '[REAL-TIME NEWS BRIEF]\n$newsBrief\n[END NEWS BRIEF]\n\n';
             } catch (e) {

@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import EventKit
+import AppIntents
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {

@@ -20,6 +20,8 @@ import 'package:sable/core/calendar/calendar_service.dart';
 import 'package:sable/core/contacts/contacts_service.dart';
 import 'package:sable/core/photos/photos_service.dart';
 import 'package:sable/core/reminders/reminders_service.dart';
+import 'package:sable/core/memory/structured_memory_service.dart';
+import 'package:sable/core/ai/apple_intelligence_service.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});
@@ -35,6 +37,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   EmotionalStateService? _emotionalService;
   String? _currentGpsLocation; // Real-time GPS location
   ConversationMemoryService? _memoryService;
+  StructuredMemoryService? _structuredMemoryService;
   VoiceService? _voiceService;
   
   bool _isTyping = false;
@@ -53,6 +56,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     _stateService = await OnboardingStateService.create();
     _emotionalService = await EmotionalStateService.create();
     _memoryService = await ConversationMemoryService.create();
+    _structuredMemoryService = StructuredMemoryService();
+    await _structuredMemoryService?.initialize();
     _voiceService = VoiceService();
     await _voiceService?.initialize();
     
@@ -293,6 +298,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           userContext += await EnvironmentContext.getTimeContext(location: location);
           userContext += '\n[END ENVIRONMENT]\n';
           
+          // Add structured persistent memory
+          if (_structuredMemoryService != null) {
+            final memoryContext = _structuredMemoryService!.getMemoryContext();
+            if (memoryContext.isNotEmpty) {
+              userContext += '\n$memoryContext\n';
+            }
+          }
+          
           // Add native app integrations (only if permission granted)
           try {
             // Calendar
@@ -466,6 +479,48 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   /// Handle voice input
+  Future<void> _handleRewrite() async {
+    final text = _controller.text;
+    if (text.isEmpty) return;
+
+    // Check availability first
+    final isAvailable = await AppleIntelligenceService.isAvailable();
+    if (!isAvailable) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Apple Intelligence requires iOS 18+'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Show loading indicator or feedback
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Rewriting with Apple Intelligence...'),
+          duration: Duration(seconds: 1),
+          backgroundColor: AurealColors.plasmaCyan,
+        ),
+      );
+    }
+
+    // Call native rewrite
+    final rewritten = await AppleIntelligenceService.rewrite(text);
+    if (rewritten != null && mounted) {
+      setState(() {
+        _controller.text = rewritten;
+        // Move cursor to end
+        _controller.selection = TextSelection.fromPosition(
+          TextPosition(offset: rewritten.length),
+        );
+      });
+    }
+  }
+
   Future<void> _handleVoiceInput() async {
     if (_voiceService == null) return;
 
@@ -848,6 +903,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       isDense: true,
                     ),
                     onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Rewrite button (Apple Intelligence)
+                GestureDetector(
+                  onTap: _handleRewrite,
+                  child: Icon(
+                    LucideIcons.wand2,
+                    color: _controller.text.isNotEmpty 
+                        ? AurealColors.hyperGold 
+                        : Colors.white.withOpacity(0.3),
+                    size: 20,
                   ),
                 ),
                 const SizedBox(width: 8),

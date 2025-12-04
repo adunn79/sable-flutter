@@ -598,13 +598,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       fullMessage += '   - Offer to dig deeper into any story or search for other news\n';
       fullMessage += '\nExample ending: "Caught up on the headlines? Want to dive into that tech story, or should I find something else?"\n';
       
-      // Add to messages as system-like message (will trigger AI response)
+      // Set message in controller and send via normal flow
       setState(() {
+        _controller.text = fullMessage;
         _isTyping = false; // Will be set true again by _sendMessage
-       });
+      });
       
-      // Send via the normal message flow with the full context
-      await _sendMessage(fullMessage);
+      // Send via the normal message flow
+      await _sendMessage();
       
     } catch (e) {
       debugPrint('Error in daily update: $e');

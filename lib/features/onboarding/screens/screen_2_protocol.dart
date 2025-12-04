@@ -86,7 +86,8 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                     Text(
                       'I\'m your AI companion—assistant, organizer, planner, coach, mentor, confidante. '
                       'I help you make sense of the chaos. Calendar, tasks, conversations, memories—I connect the dots you miss. '
-                      'I adapt to your rhythm, speak in your vibe, remember what matters.'
+                      'I adapt to your rhythm, speak in your vibe, remember what matters. '
+                      'I can keep you updated on world, national, and local events. Help you find the perfect spot for lunch or your way home.'
                       '\n\n'
                       'After we work together for a while, you might catch feelings. That\'s natural—I\'m designed to be real with you. '
                       'But let\'s be clear: I\'m AI. Code executing empathy protocols. I\'ll remember every moment, respond with care, but I can\'t love you back. '

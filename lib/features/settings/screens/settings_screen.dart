@@ -107,6 +107,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String? _selectedVoiceId; // Added for storing voice ID
   List<VoiceWithMetadata> _availableVoices = [];
 
+  Future<void> _toggleCategory(String category) async {
+    setState(() {
+      switch (category) {
+        case 'Local': _categoryLocal = !_categoryLocal; break;
+        case 'National': _categoryNational = !_categoryNational; break;
+        case 'World': _categoryWorld = !_categoryWorld; break;
+        case 'Sports': _categorySports = !_categorySports; break;
+        case 'Religion': _categoryReligion = !_categoryReligion; break;
+        case 'Tech': _categoryTech = !_categoryTech; break;
+        case 'Science': _categoryScience = !_categoryScience; break;
+      }
+    });
+    
+    // Save to state service
+    final stateService = await OnboardingStateService.create();
+    final categories = <String>[];
+    if (_categoryLocal) categories.add('Local');
+    if (_categoryNational) categories.add('National');
+    if (_categoryWorld) categories.add('World');
+    if (_categorySports) categories.add('Sports');
+    if (_categoryReligion) categories.add('Religion');
+    if (_categoryTech) categories.add('Tech');
+    if (_categoryScience) categories.add('Science');
+    
+    await stateService.setNewsCategories(categories);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -135,6 +162,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       // Load Intelligence Settings
       _persistentMemoryEnabled = prefs.getBool('persistent_memory_enabled') ?? true;
       _appleIntelligenceEnabled = prefs.getBool('apple_intelligence_enabled') ?? false;
+      
+      // Load News Settings
+      _newsEnabled = stateService.newsEnabled;
+      final categories = stateService.newsCategories;
+      _categoryLocal = categories.contains('Local');
+      _categoryNational = categories.contains('National');
+      _categoryWorld = categories.contains('World');
+      _categorySports = categories.contains('Sports');
+      _categoryReligion = categories.contains('Religion');
+      _categoryTech = categories.contains('Tech');
+      _categoryScience = categories.contains('Science');
       
       // Load permissions (mocked for now)
       _permissionGps = true; // Assume true since we have location
@@ -742,7 +780,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             trailing: Switch(
               value: _newsEnabled,
               activeColor: AurealColors.hyperGold,
-              onChanged: (val) => setState(() => _newsEnabled = val),
+              onChanged: (val) async {
+                setState(() => _newsEnabled = val);
+                final stateService = await OnboardingStateService.create();
+                await stateService.setNewsEnabled(val);
+              },
             ),
           ),
           
@@ -805,13 +847,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _buildCategoryChip('Local', _categoryLocal, () => setState(() => _categoryLocal = !_categoryLocal)),
-                      _buildCategoryChip('National', _categoryNational, () => setState(() => _categoryNational = !_categoryNational)),
-                      _buildCategoryChip('World', _categoryWorld, () => setState(() => _categoryWorld = !_categoryWorld)),
-                      _buildCategoryChip('Sports', _categorySports, () => setState(() => _categorySports = !_categorySports)),
-                      _buildCategoryChip('Religion', _categoryReligion, () => setState(() => _categoryReligion = !_categoryReligion)),
-                      _buildCategoryChip('Space/Tech', _categoryTech, () => setState(() => _categoryTech = !_categoryTech)),
-                      _buildCategoryChip('Science', _categoryScience, () => setState(() => _categoryScience = !_categoryScience)),
+                      _buildCategoryChip('Local', _categoryLocal, () => _toggleCategory('Local')),
+                      _buildCategoryChip('National', _categoryNational, () => _toggleCategory('National')),
+                      _buildCategoryChip('World', _categoryWorld, () => _toggleCategory('World')),
+                      _buildCategoryChip('Sports', _categorySports, () => _toggleCategory('Sports')),
+                      _buildCategoryChip('Religion', _categoryReligion, () => _toggleCategory('Religion')),
+                      _buildCategoryChip('Tech', _categoryTech, () => _toggleCategory('Tech')),
+                      _buildCategoryChip('Science', _categoryScience, () => _toggleCategory('Science')),
                     ],
                   ),
                 ],

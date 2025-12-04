@@ -35,9 +35,9 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
     final hasGps = gpsStatus == LocationPermission.always ||
         gpsStatus == LocationPermission.whileInUse;
 
-    // Check web access (stored in OnboardingStateService)
-    final stateService = await OnboardingStateService.create();
-    final hasWeb = stateService.newsEnabled;
+    // Web access defaults to true (no iOS permission needed)
+    // This is just a preference toggle
+    final hasWeb = true;
 
     if (mounted) {
       setState(() {

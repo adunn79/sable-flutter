@@ -45,21 +45,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _persistentMemoryEnabled = true;
   bool _appleIntelligenceEnabled = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
 
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _persistentMemoryEnabled = prefs.getBool('persistent_memory_enabled') ?? true;
-      _appleIntelligenceEnabled = prefs.getBool('apple_intelligence_enabled') ?? false;
-      
-      // Load other permissions if needed, though they are mostly checked live
-    });
-  }
 
   Future<void> _togglePersistentMemory(bool value) async {
     final prefs = await SharedPreferences.getInstance();
@@ -128,6 +114,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _voiceEngine = prefs.getString('voice_engine') ?? 'eleven_labs';
       _apiKeyController.text = prefs.getString('eleven_labs_api_key') ?? '';
       _selectedVoiceId = prefs.getString('selected_voice_id');
+      
+      // Load Intelligence Settings
+      _persistentMemoryEnabled = prefs.getBool('persistent_memory_enabled') ?? true;
+      _appleIntelligenceEnabled = prefs.getBool('apple_intelligence_enabled') ?? false;
       
       // Load permissions (mocked for now)
       _permissionGps = true; // Assume true since we have location

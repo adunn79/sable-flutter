@@ -39,7 +39,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _permissionMic = false;
   bool _permissionCamera = false;
   bool _permissionContacts = false;
-  bool _permissionNotes = false;
+  bool _permissionNotes = false; // Used for Photos currently
+  
+  // Intelligence Settings
+  bool _persistentMemoryEnabled = true;
+  bool _appleIntelligenceEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _persistentMemoryEnabled = prefs.getBool('persistent_memory_enabled') ?? true;
+      _appleIntelligenceEnabled = prefs.getBool('apple_intelligence_enabled') ?? false;
+      
+      // Load other permissions if needed, though they are mostly checked live
+    });
+  }
+
+  Future<void> _togglePersistentMemory(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('persistent_memory_enabled', value);
+    setState(() => _persistentMemoryEnabled = value);
+    
+    // If disabled, we might want to clear memory or just stop saving
+    // For now, it just controls the flag
+  }
+
+  Future<void> _toggleAppleIntelligence(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('apple_intelligence_enabled', value);
+    setState(() => _appleIntelligenceEnabled = value);
+  }
   bool _permissionCalendar = false;
   bool _permissionReminders = false;
   
@@ -405,6 +440,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 }
               }
             },
+          ),
+
+          _buildSectionHeader('INTELLIGENCE & MEMORY'),
+          SettingsTile(
+            title: 'Persistent Memory',
+            subtitle: 'Remember conversations forever',
+            icon: Icons.memory_outlined,
+            trailing: Switch(
+              value: _persistentMemoryEnabled,
+              activeColor: AurealColors.hyperGold,
+              onChanged: _togglePersistentMemory,
+            ),
+          ),
+          SettingsTile(
+            title: 'Apple Intelligence',
+            subtitle: 'On-device AI (Siri, Writing Tools)',
+            icon: Icons.apple,
+            trailing: Switch(
+              value: _appleIntelligenceEnabled,
+              activeColor: AurealColors.hyperGold,
+              onChanged: _toggleAppleIntelligence,
+            ),
           ),
 
           _buildSectionHeader('PERMISSIONS & ACCESS'),

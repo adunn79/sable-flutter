@@ -383,17 +383,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             // Fetch real news
             try {
               final webService = ref.read(webSearchServiceProvider);
-              final categories = _stateService!.getNewsCategories();
+              final categories = _stateService!.newsCategories;
               final newsBrief = await webService.getDailyBriefing(categories);
               
-              userContext += '[REAL-TIME NEWS BRIEF]\n$newsBrief\n[END NEWS BRIEF]\n\n';
+              userContext = (userContext ?? '') + '[REAL-TIME NEWS BRIEF]\n$newsBrief\n[END NEWS BRIEF]\n\n';
             } catch (e) {
               debugPrint('⚠️ Failed to fetch daily news: $e');
             }
 
-            userContext += 'This is the FIRST interaction today.\n';
-            userContext += 'Start with: "Good morning/afternoon ${name ?? "them"}" (use correct time of day)\n\n';
-            userContext += 'Then add ONE of these hooks (VARY IT, don\'t repeat):\n';
+            userContext = (userContext ?? '') + 'This is the FIRST interaction today.\n';
+            userContext = (userContext ?? '') + 'Start with: "Good morning/afternoon ${name ?? "them"}" (use correct time of day)\n\n';
+            userContext = (userContext ?? '') + 'Then add ONE of these hooks (VARY IT, don\'t repeat):\n';
             userContext += '- "Did you hear about [pick a headline from NEWS BRIEF]?"\n';
             userContext += '- "Want your daily update?"\n';
             userContext += '- "Crazy thing happened in [location/topic] last night"\n';

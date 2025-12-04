@@ -590,13 +590,22 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       fullMessage += 'User wants their daily news briefing.\n\n';
       fullMessage += '[NEWS DATA]\n$newsBrief\n[END NEWS DATA]\n\n';
       fullMessage += 'INSTRUCTIONS:\n';
-      fullMessage += '1. Summarize the top stories from World, National, Local news and categories: ${categories.join(", ")}.\n';
-      fullMessage += '2. Keep it conversational and casual ("Sable" style).\n';
-      fullMessage += '3. AT THE END:\n';
-      fullMessage += '   - Pick ONE topic you think they\'d find interesting\n';
-      fullMessage += '   - Ask if they want to discuss it\n';
-      fullMessage += '   - Offer to dig deeper into any story or search for other news\n';
-      fullMessage += '\nExample ending: "Caught up on the headlines? Want to dive into that tech story, or should I find something else?"\n';
+      fullMessage += '1. Give CONCISE bullet-point summaries (1-2 sentences each) of top stories from:\n';
+      fullMessage += '   - World news\n';
+      fullMessage += '   - National news\n';
+      fullMessage += '   - Local news (San Francisco area)\n';
+      fullMessage += '   - Categories: ${categories.join(", ")}\n';
+      fullMessage += '2. Format as SHORT bullets (e.g., "• Story headline - brief summary")\n';
+      fullMessage += '3. Keep it conversational and casual ("Sable" style)\n';
+      fullMessage += '4. AT THE END:\n';
+      fullMessage += '   - Ask if they want to EXPAND on any story\n';
+      fullMessage += '   - Offer to SEARCH for other news topics\n';
+      fullMessage += '\nExample format:\n';
+      fullMessage += '"Here\'s what\'s happening today:\n\n';
+      fullMessage += '• [World] Major development in X - brief detail\n';
+      fullMessage += '• [National] Y announced changes - quick summary\n';
+      fullMessage += '• [Tech] New Z launched - one-liner about it\n\n';
+      fullMessage += 'Want me to dig deeper into any of these? Or search for something else?"\n';
       
       // Set message in controller and send via normal flow
       setState(() {

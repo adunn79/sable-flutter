@@ -503,19 +503,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     });
   }
 
-  /// Handle voice input
-  Future<void> _handleRewrite() async {
-    final text = _controller.text;
-    if (text.isEmpty) return;
-
-    // Check availability first
-    final isAvailable = await AppleIntelligenceService.isAvailable();
-    if (!isAvailable) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Apple Intelligence requires iOS 18+'),
-            backgroundColor: Colors.red,
+          backgroundColor: AurealColors.plasmaCyan,
           ),
         );
       }
@@ -822,41 +810,44 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          _buildGlassChip(LucideIcons.sun, 'Daily Update'),
+          _buildGlassChip(LucideIcons.sun, 'Daily Update', onTap: _handleDailyUpdate),
           const SizedBox(width: 12),
-          _buildGlassChip(LucideIcons.book, 'Journal'),
+          _buildGlassChip(LucideIcons.book, 'Journal', onTap: () {}),
           const SizedBox(width: 12),
-          _buildGlassChip(LucideIcons.activity, 'Vital Balance'),
+          _buildGlassChip(LucideIcons.activity, 'Vital Balance', onTap: () {}),
         ],
       ),
     );
   }
 
-  Widget _buildGlassChip(IconData icon, String label) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: Colors.white, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+  Widget _buildGlassChip(IconData icon, String label, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

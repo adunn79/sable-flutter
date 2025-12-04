@@ -21,6 +21,7 @@ import 'package:sable/core/calendar/calendar_service.dart';
 import 'package:sable/core/contacts/contacts_service.dart';
 import 'package:sable/core/photos/photos_service.dart';
 import 'package:sable/core/reminders/reminders_service.dart';
+import 'package:sable/core/ai/apple_intelligence_service.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -57,6 +58,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _toggleAppleIntelligence(bool value) async {
+    if (value) {
+      // Check if available natively
+      final isAvailable = await AppleIntelligenceService.isAvailable();
+      if (!isAvailable) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Apple Intelligence requires iOS 18+ and compatible hardware.'),
+              backgroundColor: AurealColors.error,
+            ),
+          );
+        }
+        return; // Do not enable
+      }
+    }
+    
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('apple_intelligence_enabled', value);
     setState(() => _appleIntelligenceEnabled = value);

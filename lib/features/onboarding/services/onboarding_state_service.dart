@@ -188,9 +188,52 @@ class OnboardingStateService {
     await _prefs.setStringList(_keyNewsCategories, categories);
   }
   
+  static const String _keyNewsTimingFirst = 'news_timing_first';
+  static const String _keyNewsTimingOnDemand = 'news_timing_ondemand';
+  static const String _keyDailyNewsContent = 'daily_news_content';
+  static const String _keyDailyNewsDate = 'daily_news_date';
+
   /// Check if news categories have been set by user
   bool get hasSetNewsCategories {
     return _prefs.getStringList(_keyNewsCategories) != null;
+  }
+
+  /// Get news timing: First Interaction
+  bool get newsTimingFirstInteraction {
+    return _prefs.getBool(_keyNewsTimingFirst) ?? true;
+  }
+
+  /// Set news timing: First Interaction
+  Future<void> setNewsTimingFirstInteraction(bool value) async {
+    await _prefs.setBool(_keyNewsTimingFirst, value);
+  }
+
+  /// Get news timing: On Demand
+  bool get newsTimingOnDemand {
+    return _prefs.getBool(_keyNewsTimingOnDemand) ?? false;
+  }
+
+  /// Set news timing: On Demand
+  Future<void> setNewsTimingOnDemand(bool value) async {
+    await _prefs.setBool(_keyNewsTimingOnDemand, value);
+  }
+
+  /// Save daily news content
+  Future<void> saveDailyNewsContent(String content) async {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    await _prefs.setString(_keyDailyNewsContent, content);
+    await _prefs.setString(_keyDailyNewsDate, today);
+  }
+
+  /// Get stored daily news content if it matches today's date
+  String? getDailyNewsContent() {
+    final storedDate = _prefs.getString(_keyDailyNewsDate);
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    
+    if (storedDate == today) {
+      return _prefs.getString(_keyDailyNewsContent);
+    }
+    return null;
   }
   /// Clear all onboarding data (for testing)
   Future<void> clearOnboardingData() async {

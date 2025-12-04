@@ -174,6 +174,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _categoryTech = categories.contains('Tech');
       _categoryScience = categories.contains('Science');
       
+      _newsTimingFirstInteraction = stateService.newsTimingFirstInteraction;
+      _newsTimingOnDemand = stateService.newsTimingOnDemand;
+      
       // Load permissions (mocked for now)
       _permissionGps = true; // Assume true since we have location
     });
@@ -807,20 +810,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildTimingChip('First Interaction', _newsTimingFirstInteraction, () {
+                        child: _buildTimingChip('First Interaction', _newsTimingFirstInteraction, () async {
                           setState(() {
                             _newsTimingFirstInteraction = true;
-                            _newsTimingOnDemand = false;
+                            // _newsTimingOnDemand = false; // Allow both? User request implies preference. Let's keep them independent or toggle?
+                            // "First interaction, On-demand, Both" implies they are independent checkboxes essentially.
                           });
+                          final stateService = await OnboardingStateService.create();
+                          await stateService.setNewsTimingFirstInteraction(true);
                         }),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _buildTimingChip('On Demand', _newsTimingOnDemand, () {
+                        child: _buildTimingChip('On Demand', _newsTimingOnDemand, () async {
                           setState(() {
-                            _newsTimingFirstInteraction = false;
-                            _newsTimingOnDemand = true;
+                            _newsTimingOnDemand = !_newsTimingOnDemand;
                           });
+                          final stateService = await OnboardingStateService.create();
+                          await stateService.setNewsTimingOnDemand(_newsTimingOnDemand);
                         }),
                       ),
                     ],

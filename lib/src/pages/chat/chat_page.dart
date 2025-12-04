@@ -585,31 +585,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         debugPrint('💾 Using cached daily news');
       }
       
-      // 2. Build full context message for AI (not just inject)
-      String fullMessage = '[DAILY UPDATE REQUEST]\n';
-      fullMessage += 'User wants their daily news briefing.\n\n';
-      fullMessage += '[NEWS DATA]\n$newsBrief\n[END NEWS DATA]\n\n';
-      fullMessage += 'INSTRUCTIONS:\n';
-      fullMessage += '1. Give CONCISE bullet-point summaries (1-2 sentences each) of top stories from:\n';
-      fullMessage += '   - World news\n';
-      fullMessage += '   - National news\n';
-      fullMessage += '   - Local news (San Francisco area)\n';
-      fullMessage += '   - Categories: ${categories.join(", ")}\n';
-      fullMessage += '2. Format as SHORT bullets (e.g., "• Story headline - brief summary")\n';
-      fullMessage += '3. Keep it conversational and casual ("Sable" style)\n';
-      fullMessage += '4. AT THE END:\n';
-      fullMessage += '   - Ask if they want to EXPAND on any story\n';
-      fullMessage += '   - Offer to SEARCH for other news topics\n';
-      fullMessage += '\nExample format:\n';
-      fullMessage += '"Here\'s what\'s happening today:\n\n';
-      fullMessage += '• [World] Major development in X - brief detail\n';
-      fullMessage += '• [National] Y announced changes - quick summary\n';
-      fullMessage += '• [Tech] New Z launched - one-liner about it\n\n';
-      fullMessage += 'Want me to dig deeper into any of these? Or search for something else?"\n';
+      // 2. Build a clean message with embedded context
+      String fullMessage = 'Give me my daily update.\n\n[Internal Context - Do not repeat this]\n';
+      fullMessage += 'NEWS DATA:\n$newsBrief\n\n';
+      fullMessage += 'FORMAT INSTRUCTIONS:\n';
+      fullMessage += '- Provide CONCISE bullet-point summaries (1-2 sentences each)\n';
+      fullMessage += '- Use format: • [Category] Headline - brief summary\n';
+      fullMessage += '- Cover World, National, Local (SF), and: ${categories.join(", ")}\n';
+      fullMessage += '- Keep casual "Sable" style\n';
+      fullMessage += '- End by asking if they want to EXPAND on any story or SEARCH for other topics\n';
       
       // Set message in controller and send via normal flow
       setState(() {
-        _controller.text = fullMessage;
+        _controller.text = "Give me my daily update";
         _isTyping = false; // Will be set true again by _sendMessage
       });
       

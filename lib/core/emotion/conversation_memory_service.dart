@@ -36,6 +36,10 @@ class ConversationMemoryService {
     required String message,
     required bool isUser,
   }) async {
+    // Check if persistent memory is enabled
+    final isEnabled = _prefs.getBool('persistent_memory_enabled') ?? true;
+    if (!isEnabled) return;
+
     final messages = getAllMessages();
     
     messages.add(ConversationMessage(

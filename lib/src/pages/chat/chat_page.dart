@@ -325,7 +325,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           // Add conversation count for first-time feature introductions
           final conversationCount = _stateService!.conversationCount;
           if (conversationCount < 10) {
-            userContext += '\n[ONBOARDING MODE]\n';
+            userContext = (userContext ?? '') + '\n[ONBOARDING MODE]\n';
             userContext += 'Conversation #$conversationCount of first 10.\n\n';
             userContext += 'YOUR MISSION: Naturally showcase ONE capability per message.\n';
             userContext += 'Weave it into conversation - don\'t list features!\n\n';
@@ -346,9 +346,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             userContext += 'NOT: "I can help with X, Y, Z..." (too salesy)\n';
             userContext += '[END ONBOARDING MODE]\n';
           }
-          
-          // Add companion's origin for accent/personality
-          userContext += '\n[YOUR IDENTITY]\nOrigin: Unknown\n';
           
           debugPrint('Formatted context:\n$userContext');
         } else {

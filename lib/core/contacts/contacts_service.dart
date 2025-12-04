@@ -1,3 +1,4 @@
+import 'package:contacts_service/contacts_service.dart' as contacts_service;
 import 'package:contacts_service/contacts_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -36,9 +37,10 @@ class ContactsService {
         return [];
       }
       
-      final contacts = await ContactsService.getContacts();
+      // Use package's static method directly
+      final Iterable<Contact> contacts = await contacts_service.ContactsService.getContacts();
       debugPrint('📇 Retrieved ${contacts.length} contacts');
-      return contacts;
+      return contacts.toList();
     } catch (e) {
       debugPrint('❌ Failed to get contacts: $e');
       return [];

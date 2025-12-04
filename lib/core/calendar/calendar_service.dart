@@ -60,7 +60,7 @@ class CalendarService {
       
       return await getEventsInRange(startOfDay, endOfDay);
     } catch (e) {
-      debugPrint('❌ Failed to get today\\'s events: $e');
+      debugPrint('❌ Failed to get today\'s events: $e');
       return [];
     }
   }

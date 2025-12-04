@@ -36,7 +36,7 @@ class Reminder {
     return {
       'title': title,
       'notes': notes,
-      'dueDate': dueDate?.millisecondsSinceEpoch / 1000,
+      'dueDate': dueDate != null ? dueDate!.millisecondsSinceEpoch / 1000 : null,
       'priority': priority,
     };
   }
@@ -109,7 +109,7 @@ class RemindersService {
       final args = {
         'title': title,
         'notes': notes,
-        'dueDate': dueDate?.millisecondsSinceEpoch / 1000,
+        'dueDate': dueDate != null ? dueDate.millisecondsSinceEpoch / 1000 : null,
         'priority': priority,
       };
 

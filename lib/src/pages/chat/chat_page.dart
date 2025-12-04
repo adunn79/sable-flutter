@@ -44,6 +44,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   bool _isTyping = false;
   bool _isListening = false;
   String? _avatarUrl;
+  String? _dailyUpdateContext; // Holds news context for injection
   
   final List<Map<String, dynamic>> _messages = [];
 
@@ -374,7 +375,15 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             
             userContext += '[END ONBOARDING MODE]\n';
           }
-          
+        }
+        
+        // Inject daily update context if present
+        if (_dailyUpdateContext != null) {
+          userContext = (userContext ?? '') + '\n' + _dailyUpdateContext!;
+          _dailyUpdateContext = null; // Clear after use
+        }
+        
+        debugPrint('Formatted context:\n$userContext');
           // Check if this is first interaction today (for daily greeting)
           final isFirstToday = await _stateService!.isFirstInteractionToday();
           if (isFirstToday && _stateService!.newsEnabled) {
@@ -585,20 +594,21 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         debugPrint('💾 Using cached daily news');
       }
       
-      // 2. Build a clean message with embedded context
-      String fullMessage = 'Give me my daily update.\n\n[Internal Context - Do not repeat this]\n';
-      fullMessage += 'NEWS DATA:\n$newsBrief\n\n';
-      fullMessage += 'FORMAT INSTRUCTIONS:\n';
-      fullMessage += '- Provide CONCISE bullet-point summaries (1-2 sentences each)\n';
-      fullMessage += '- Use format: • [Category] Headline - brief summary\n';
-      fullMessage += '- Cover World, National, Local (SF), and: ${categories.join(", ")}\n';
-      fullMessage += '- Keep casual "Sable" style\n';
-      fullMessage += '- End by asking if they want to EXPAND on any story or SEARCH for other topics\n';
+      // 2. Build context for AI (will be injected by _sendMessage)
+      _dailyUpdateContext = '[DAILY NEWS UPDATE]\n';
+      _dailyUpdateContext! += 'NEWS DATA:\n$newsBrief\n\n';
+      _dailyUpdateContext! += 'INSTRUCTIONS:\n';
+      _dailyUpdateContext! += '- Provide CONCISE bullet-point summaries (1-2 sentences each)\n';
+      _dailyUpdateContext! += '- Format: • [Category] Headline - brief summary\n';
+      _dailyUpdateContext! += '- Cover World, National, Local (SF), and: ${categories.join(", ")}\n';
+      _dailyUpdateContext! += '- Keep casual "Sable" style\n';
+      _dailyUpdateContext! += '- End by asking if they want to EXPAND on any story or SEARCH for other topics\n';
+      _dailyUpdateContext! += '[END DAILY NEWS UPDATE]\n';
       
-      // Set message in controller and send via normal flow
+      // 3. Send clean message (context will be injected automatically)
       setState(() {
         _controller.text = "Give me my daily update";
-        _isTyping = false; // Will be set true again by _sendMessage
+        _isTyping = false;
       });
       
       // Send via the normal message flow

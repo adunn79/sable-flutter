@@ -38,4 +38,10 @@ class WebSearchService {
   Future<String> getLocalEvents(String location) async {
     return search('Events happening in $location today and this week');
   }
+
+  /// Gets a daily briefing based on categories
+  Future<String> getDailyBriefing(List<String> categories) async {
+    final topics = categories.isEmpty ? 'world news, tech, and pop culture' : categories.join(', ');
+    return search('Summarize the top headlines for today regarding: $topics. Keep it brief and punchy.');
+  }
 }

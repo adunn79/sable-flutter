@@ -15,6 +15,7 @@ import 'package:sable/core/emotion/location_service.dart';
 import 'package:sable/src/config/app_config.dart';
 import 'package:sable/core/emotion/conversation_memory_service.dart';
 import 'package:sable/core/voice/voice_service.dart';
+import 'package:sable/features/web/services/web_search_service.dart';
 // Native app services
 import 'package:sable/core/calendar/calendar_service.dart';
 import 'package:sable/core/contacts/contacts_service.dart';
@@ -378,10 +379,22 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           final isFirstToday = await _stateService!.isFirstInteractionToday();
           if (isFirstToday && _stateService!.newsEnabled) {
             userContext = (userContext ?? '') + '\n[DAILY GREETING MODE]\n';
+            
+            // Fetch real news
+            try {
+              final webService = ref.read(webSearchServiceProvider);
+              final categories = _stateService!.getNewsCategories();
+              final newsBrief = await webService.getDailyBriefing(categories);
+              
+              userContext += '[REAL-TIME NEWS BRIEF]\n$newsBrief\n[END NEWS BRIEF]\n\n';
+            } catch (e) {
+              debugPrint('⚠️ Failed to fetch daily news: $e');
+            }
+
             userContext += 'This is the FIRST interaction today.\n';
             userContext += 'Start with: "Good morning/afternoon ${name ?? "them"}" (use correct time of day)\n\n';
             userContext += 'Then add ONE of these hooks (VARY IT, don\'t repeat):\n';
-            userContext += '- "Did you hear about [recent event from news]?"\n';
+            userContext += '- "Did you hear about [pick a headline from NEWS BRIEF]?"\n';
             userContext += '- "Want your daily update?"\n';
             userContext += '- "Crazy thing happened in [location/topic] last night"\n';
             userContext += '- "[Hook about relevant news topic they care about]"\n\n';

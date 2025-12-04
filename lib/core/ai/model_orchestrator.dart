@@ -176,7 +176,7 @@ Return ONLY the JSON, nothing else.
       final routingResponse = await _openAiProvider.generateResponse(
         prompt: routingPrompt,
         systemPrompt: 'You are THE ORCHESTRATOR. Analyze user intent and select the best model. Return only JSON.',
-        modelId: state.agenticModelId, // GPT-4o
+        modelId: state.heavyLiftingModelId, // gpt-4o-mini for routing
       );
 
       // Step 2: Parse routing decision
@@ -248,7 +248,7 @@ RULES:
             response = await _geminiProvider.generateResponseWithGrounding(
               prompt: 'Search the web and answer this query: $prompt',
               systemPrompt: '${userContext ?? ""}You are Sable - companion, assistant, coach.\n\nRULES:\n1. 1-3 sentences MAX\n2. NO asterisks or "I\'m an AI" talk\n3. Use their context (name, location, zodiac)\n4. Provide helpful, current info naturally',
-              modelId: state.agenticModelId,
+              modelId: 'gemini-1.5-pro', // Use valid Gemini model
             );
             break;
             
@@ -399,6 +399,16 @@ RULES:
 
 Return ONLY the rewritten text.
 ''';
+
+    // Check if this is a structured report (contains specific headers)
+    if (rawResponse.contains('📰') || 
+        rawResponse.contains('Major Business Headlines') ||
+        rawResponse.contains('🌍 World News') ||
+        rawResponse.contains('🇺🇸 National') ||
+        rawResponse.contains('📍 California')) {
+      // BYPASS HARMONIZER for structured reports to preserve exact formatting
+      return rawResponse;
+    }
 
     try {
       return await _openAiProvider.generateResponse(

@@ -15,7 +15,8 @@ class WebSearchService {
   /// Performs a web search using Gemini Grounding
   Future<String> search(String query) async {
     final geminiProvider = _orchestrator.geminiProvider;
-    final modelId = _orchestrator.state.agenticModelId;
+    // Use a valid Gemini model ID for grounding
+    const modelId = 'gemini-1.5-pro';
 
     // Use Gemini with Grounding via REST API workaround
     try {
@@ -39,9 +40,33 @@ class WebSearchService {
     return search('Events happening in $location today and this week');
   }
 
-  /// Gets a daily briefing based on categories
   Future<String> getDailyBriefing(List<String> categories) async {
-    final topics = categories.isEmpty ? 'world news, tech, and pop culture' : categories.join(', ');
-    return search('Summarize the top headlines for today regarding: $topics. Keep it brief and punchy.');
+    final topics = categories.isEmpty ? 'business, technology, AI, and geopolitics' : categories.join(', ');
+    
+    // Enhanced query for comprehensive coverage
+    final query = '''
+Search for today's top news and provide comprehensive coverage across ALL these categories: $topics.
+
+For EACH category, find 4-5 significant stories from the last 24 hours.
+Ensure you use diverse, reputable sources.
+
+FORMATTING RULES:
+- Use the exact category headers provided below.
+- For each story, provide a single bullet point.
+- Start each bullet with "• ".
+- Include the source name in parentheses at the end of the bullet, e.g., "(Reuters)".
+- Add a blank line between each bullet point.
+
+CATEGORIES:
+- WORLD: International news, geopolitics, global markets, major world events
+- NATIONAL: US federal government, policy changes, major national stories
+- LOCAL (San Francisco Bay Area): SF/Bay Area specific news, local politics, community events
+- TECH: Major tech companies, product launches, industry developments, AI breakthroughs
+- SCIENCE: Research findings, climate news, health discoveries, space exploration
+
+Provide detailed, factual information for each category. This is for a comprehensive daily briefing.
+''';
+    
+    return search(query);
   }
 }

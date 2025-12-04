@@ -94,10 +94,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   /// Sanitize AI response to remove narrative actions and unwanted patterns
   String _sanitizeResponse(String response) {
     return response
-        .replaceAll(RegExp(r'\*\s*[^*]+\s*\*'), '') // Main pattern
-        .replaceAll(RegExp(r'\*[^*]*\*'), '') // Catch anything with asterisks
-        .replaceAll('*', '') // Remove stray asterisks
-        .replaceAll(RegExp(r'\s+'), ' ') // Remove multiple spaces
+        .replaceAll(RegExp(r'\*\s*[^*]+\s*\*'), '')
+        .replaceAll(RegExp(r'\*[^*]*\*'), '')
+        .replaceAll('*', '')
+        .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
   }
 
@@ -375,7 +375,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             
             userContext += '[END ONBOARDING MODE]\n';
           }
-        }
+
         
         // Inject daily update context if present
         if (_dailyUpdateContext != null) {
@@ -584,30 +584,61 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       final webService = ref.read(webSearchServiceProvider);
       final categories = _stateService!.newsCategories;
       
-      // Check cache first
-      String? newsBrief = _stateService!.getDailyNewsContent();
-      if (newsBrief == null) {
+      // TEMPORARY: Force fresh fetch to test new formatting
+      // String? newsBrief = _stateService!.getDailyNewsContent();
+      String? newsBrief;
+      // if (newsBrief == null) {
         debugPrint('🌍 Fetching fresh daily news...');
         newsBrief = await webService.getDailyBriefing(categories);
         await _stateService!.saveDailyNewsContent(newsBrief);
-      } else {
-        debugPrint('💾 Using cached daily news');
-      }
+      // } else {
+      //   debugPrint('💾 Using cached daily news');
+      // }
       
       // 2. Build context for AI (will be injected by _sendMessage)
-      _dailyUpdateContext = '[DAILY NEWS UPDATE]\n';
-      _dailyUpdateContext! += 'NEWS DATA:\n$newsBrief\n\n';
-      _dailyUpdateContext! += 'INSTRUCTIONS:\n';
-      _dailyUpdateContext! += '- Provide CONCISE bullet-point summaries (1-2 sentences each)\n';
-      _dailyUpdateContext! += '- Format: • [Category] Headline - brief summary\n';
-      _dailyUpdateContext! += '- Cover World, National, Local (SF), and: ${categories.join(", ")}\n';
-      _dailyUpdateContext! += '- Keep casual "Sable" style\n';
-      _dailyUpdateContext! += '- End by asking if they want to EXPAND on any story or SEARCH for other topics\n';
-      _dailyUpdateContext! += '[END DAILY NEWS UPDATE]\n';
+      // 2. Build context for AI (will be injected by _sendMessage)
+      // Build custom categories section
+      final customCategories = categories
+          .where((c) => !['World', 'National', 'Local'].contains(c))
+          .map((c) {
+            if (c == 'Tech') return '💻 Technology';
+            if (c == 'Science') return '🔬 Science';
+            return '📌 $c';
+          })
+          .join('\n');
       
-      // 3. Send clean message (context will be injected automatically)
+      _dailyUpdateContext = '''
+[Today's News Data]
+$newsBrief
+
+Create a daily news briefing with these sections IN THIS ORDER:
+
+🌍 World News
+🇺🇸 National (US)
+📍 California
+🌉 San Francisco Bay Area
+$customCategories
+
+For EACH section:
+- Provide 3-5 bullet points
+- Each bullet: ONE complete line with the key fact
+- Put TWO line breaks after each bullet (press Enter twice) to ensure spacing
+- Format: "• [Topic]: [Key fact]"
+- Do NOT use markdown bolding (**) for the topic, just plain text
+
+Example of proper spacing:
+🌍 World News
+
+• Ukraine: Peace talks scheduled for next week in Geneva
+
+• China: GDP growth exceeds expectations at 5.2% this quarter
+
+End with: "Want to dig into any of these?"
+''';
+      
+      // 3. Send with a simple trigger message
       setState(() {
-        _controller.text = "Give me my daily update";
+        _controller.text = "daily update";
         _isTyping = false;
       });
       

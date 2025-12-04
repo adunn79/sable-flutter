@@ -44,6 +44,40 @@ import EventKit
       }
     })
     
+    // Apple Intelligence Channel
+    let intelligenceChannel = FlutterMethodChannel(name: "com.aureal.sable/apple_intelligence",
+                                                 binaryMessenger: controller.binaryMessenger)
+    
+    intelligenceChannel.setMethodCallHandler({
+      [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      guard let self = self else { return }
+      
+      switch call.method {
+      case "isAvailable":
+        if #available(iOS 18.0, *) {
+          result(true)
+        } else {
+          result(false)
+        }
+      case "rewrite":
+        // Placeholder for Writing Tools integration
+        // Actual API requires UITextView interaction which is complex for Flutter
+        if #available(iOS 18.0, *) {
+          result(nil) // Return null to indicate "handled by system UI" or not implemented
+        } else {
+          result(FlutterError(code: "UNSUPPORTED", message: "Requires iOS 18+", details: nil))
+        }
+      case "summarize":
+        if #available(iOS 18.0, *) {
+          result(nil)
+        } else {
+          result(FlutterError(code: "UNSUPPORTED", message: "Requires iOS 18+", details: nil))
+        }
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    })
+    
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
   

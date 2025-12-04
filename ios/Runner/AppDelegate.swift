@@ -73,6 +73,18 @@ import EventKit
         } else {
           result(FlutterError(code: "UNSUPPORTED", message: "Requires iOS 18+", details: nil))
         }
+      case "launchSiri":
+        // Open Shortcuts app as a proxy for Siri interactions
+        if let url = URL(string: "shortcuts://") {
+          if application.canOpenURL(url) {
+            application.open(url, options: [:], completionHandler: nil)
+            result(true)
+          } else {
+            result(false)
+          }
+        } else {
+          result(false)
+        }
       default:
         result(FlutterMethodNotImplemented)
       }

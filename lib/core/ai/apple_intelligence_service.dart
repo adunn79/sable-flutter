@@ -43,4 +43,15 @@ class AppleIntelligenceService {
       return null;
     }
   }
+
+  /// Launch Siri / Shortcuts
+  static Future<bool> launchSiri() async {
+    try {
+      final bool result = await _channel.invokeMethod('launchSiri');
+      return result;
+    } on PlatformException catch (e) {
+      debugPrint('Error launching Siri: ${e.message}');
+      return false;
+    }
+  }
 }

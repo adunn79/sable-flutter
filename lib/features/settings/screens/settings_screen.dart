@@ -66,7 +66,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Apple Intelligence requires iOS 18+ and compatible hardware.'),
-              backgroundColor: AurealColors.error,
+              backgroundColor: Colors.red,
             ),
           );
         }

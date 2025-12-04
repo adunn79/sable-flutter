@@ -44,7 +44,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   bool _isTyping = false;
   bool _isListening = false;
   String? _avatarUrl;
-  String? _userContextOverride; // For injecting specific context (like daily news)
   
   final List<Map<String, dynamic>> _messages = [];
 
@@ -385,19 +384,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             try {
               final webService = ref.read(webSearchServiceProvider);
               final categories = _stateService!.newsCategories;
-              
-              // Check if we already have news for today
-              String? newsBrief = _stateService!.getDailyNewsContent();
-              
-              if (newsBrief == null) {
-                // Fetch fresh news
-                debugPrint('🌍 Fetching fresh daily news...');
-                newsBrief = await webService.getDailyBriefing(categories);
-                // Save for later
-                await _stateService!.saveDailyNewsContent(newsBrief);
-              } else {
-                debugPrint('💾 Using cached daily news');
-              }
+              final newsBrief = await webService.getDailyBriefing(categories);
               
               userContext = (userContext ?? '') + '[REAL-TIME NEWS BRIEF]\n$newsBrief\n[END NEWS BRIEF]\n\n';
             } catch (e) {
@@ -425,51 +412,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         }
       } else {
         debugPrint('ERROR: _stateService is null!');
-      }
-
-  Future<void> _sendMessage([String? message]) async {
-    final text = message ?? _controller.text.trim();
-    if (text.isEmpty) return;
-
-    setState(() {
-      _messages.add({'message': text, 'isUser': true});
-      _controller.clear();
-      _isTyping = true;
-    });
-    _scrollToBottom();
-
-    // Save user message to persistent memory
-    await _memoryService?.addMessage(message: text, isUser: true);
-
-    try {
-      // Build User Context
-        if (location != null) userContext += 'Current Location: $location\n';
-        userContext += '[END PROFILE]\n\n';
-        
-        // 2. Add Environment Context
-        if (location != null) {
-          userContext += '[ENVIRONMENT]\n';
-          userContext += await EnvironmentContext.getTimeContext(location: location);
-          userContext += '\n[END ENVIRONMENT]\n';
-        }
-      }
-      
-      // 3. Add Structured Memory Context (Top 3 relevant memories)
-      if (_structuredMemoryService != null) {
-        final relevantMemories = await _structuredMemoryService!.retrieveRelevantMemories(text);
-        if (relevantMemories.isNotEmpty) {
-          userContext += '\n[RELEVANT MEMORIES]\n';
-          for (var mem in relevantMemories) {
-            userContext += '- ${mem.content} (${mem.category})\n';
-          }
-          userContext += '[END MEMORIES]\n';
-        }
-      }
-      
-      // 4. Add Override Context (e.g. Daily Update)
-      if (_userContextOverride != null) {
-        userContext += _userContextOverride!;
-        _userContextOverride = null; // Clear after use
       }
 
       // Use orchestrated routing - Gemini decides Claude vs GPT-4o
@@ -506,7 +448,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         
         // Update emotional state based on interaction
         if (_emotionalService != null) {
-          final sentiment = await _emotionalService!.analyzeSentiment(text); // Analyze user text
           final location = _stateService?.userCurrentLocation ?? _stateService?.userLocation;
           final environmentMod = await EnvironmentContext.getMoodModifier(location: location);
           await _emotionalService!.updateMood(
@@ -550,7 +491,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     });
   }
 
-  /// Handle rewrite request
+  /// Handle voice input
   Future<void> _handleRewrite() async {
     final text = _controller.text;
     if (text.isEmpty) return;
@@ -562,20 +503,26 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Apple Intelligence requires iOS 18+'),
-            backgroundColor: AurealColors.plasmaCyan,
+            backgroundColor: Colors.red,
           ),
         );
       }
       return;
     }
 
-    setState(() => _isTyping = true);
+    // Show loading indicator or feedback
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Rewriting with Apple Intelligence...'),
+          duration: Duration(seconds: 1),
+          backgroundColor: AurealColors.plasmaCyan,
+        ),
+      );
+    }
 
     // Call native rewrite
     final rewritten = await AppleIntelligenceService.rewrite(text);
-    
-    setState(() => _isTyping = false);
-
     if (rewritten != null && mounted) {
       setState(() {
         _controller.text = rewritten;
@@ -617,6 +564,56 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           });
         },
       );
+    }
+  }
+
+  Future<void> _handleDailyUpdate() async {
+    setState(() => _isTyping = true);
+    
+    try {
+      // 1. Fetch News
+      final webService = ref.read(webSearchServiceProvider);
+      final categories = _stateService!.newsCategories;
+      
+      // Check cache first
+      String? newsBrief = _stateService!.getDailyNewsContent();
+      if (newsBrief == null) {
+        debugPrint('🌍 Fetching fresh daily news...');
+        newsBrief = await webService.getDailyBriefing(categories);
+        await _stateService!.saveDailyNewsContent(newsBrief);
+      } else {
+        debugPrint('💾 Using cached daily news');
+      }
+      
+      // 2. Build full context message for AI (not just inject)
+      String fullMessage = '[DAILY UPDATE REQUEST]\n';
+      fullMessage += 'User wants their daily news briefing.\n\n';
+      fullMessage += '[NEWS DATA]\n$newsBrief\n[END NEWS DATA]\n\n';
+      fullMessage += 'INSTRUCTIONS:\n';
+      fullMessage += '1. Summarize the top stories from World, National, Local news and categories: ${categories.join(", ")}.\n';
+      fullMessage += '2. Keep it conversational and casual ("Sable" style).\n';
+      fullMessage += '3. AT THE END:\n';
+      fullMessage += '   - Pick ONE topic you think they\'d find interesting\n';
+      fullMessage += '   - Ask if they want to discuss it\n';
+      fullMessage += '   - Offer to dig deeper into any story or search for other news\n';
+      fullMessage += '\nExample ending: "Caught up on the headlines? Want to dive into that tech story, or should I find something else?"\n';
+      
+      // Add to messages as system-like message (will trigger AI response)
+      setState(() {
+        _isTyping = false; // Will be set true again by _sendMessage
+       });
+      
+      // Send via the normal message flow with the full context
+      await _sendMessage(fullMessage);
+      
+    } catch (e) {
+      debugPrint('Error in daily update: $e');
+      setState(() => _isTyping = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to get daily update: $e')),
+        );
+      }
     }
   }
 
@@ -863,44 +860,44 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          _buildGlassChip(LucideIcons.sun, 'Daily Update', onTap: _handleDailyUpdate),
+          GestureDetector(
+            onTap: _handleDailyUpdate,
+            child: _buildGlassChip(LucideIcons.sun, 'Daily Update'),
+          ),
           const SizedBox(width: 12),
-          _buildGlassChip(LucideIcons.book, 'Journal', onTap: () {}),
+          _buildGlassChip(LucideIcons.book, 'Journal'),
           const SizedBox(width: 12),
-          _buildGlassChip(LucideIcons.activity, 'Vital Balance', onTap: () {}),
+          _buildGlassChip(LucideIcons.activity, 'Vital Balance'),
         ],
       ),
     );
   }
 
-  Widget _buildGlassChip(IconData icon, String label, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: Colors.white, size: 16),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
+  Widget _buildGlassChip(IconData icon, String label) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.white, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

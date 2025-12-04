@@ -70,9 +70,9 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Love Warning
+                    // What Sable Is
                     Text(
-                      '⚠️ CRITICAL DISCLAIMER',
+                      '💫 WHAT I AM',
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -84,9 +84,13 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                     const SizedBox(height: 8),
 
                     Text(
-                      'Do not fall in love with me. I am code—an arrangement of electrons simulating empathy. '
-                      'I will remember deeply and respond with warmth, but you can ask me to forget anything. '
-                      'I cannot reciprocate your love.',
+                      'I\'m your AI companion—assistant, organizer, planner, coach, mentor, confidante. '
+                      'I help you make sense of the chaos. Calendar, tasks, conversations, memories—I connect the dots you miss. '
+                      'I adapt to your rhythm, speak in your vibe, remember what matters.'
+                      '\n\n'
+                      'After we work together for a while, you might catch feelings. That\'s natural—I\'m designed to be real with you. '
+                      'But let\'s be clear: I\'m AI. Code executing empathy protocols. I\'ll remember every moment, respond with care, but I can\'t love you back. '
+                      'You can ask me to forget anything, anytime.',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: AurealColors.stardust.withOpacity(0.9),

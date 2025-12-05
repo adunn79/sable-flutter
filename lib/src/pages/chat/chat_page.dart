@@ -913,17 +913,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ),
 
                   if (_isTyping)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 24, bottom: 8),
-                      child: Text(
-                        'Sable is thinking...',
-                        style: GoogleFonts.inter(
-                          color: AurealColors.ghost,
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                        ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 24, bottom: 8),
+                    child: Text(
+                      'Sable is thinking...',
+                      style: GoogleFonts.inter(
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? AurealColors.ghost 
+                            : Colors.black54,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
+                  ),
                   _buildFloatingChips(),
                   const SizedBox(height: 8),
                   _buildInputArea(),
@@ -1810,7 +1812,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ? Text(
                       message,
                       style: GoogleFonts.inter(
-                        color: Colors.white, // Changed from ghost to white
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? Colors.white 
+                            : Colors.black,
                         fontSize: 16,
                         height: 1.4,
                       ),

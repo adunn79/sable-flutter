@@ -15,8 +15,8 @@ class WebSearchService {
   /// Performs a web search using Gemini Grounding
   Future<String> search(String query) async {
     final geminiProvider = _orchestrator.geminiProvider;
-    // Use a valid Gemini model ID for grounding
-    const modelId = 'gemini-1.5-pro';
+    // Use Gemini 2.5 Flash with new google_search tool
+    const modelId = 'gemini-2.5-flash';
 
     // Use Gemini with Grounding via REST API workaround
     try {
@@ -28,6 +28,38 @@ class WebSearchService {
     } catch (e) {
       return 'I had trouble searching the web for that. ($e)';
     }
+  }
+
+  /// Ensures proper spacing between bullet points
+  String _formatBulletSpacing(String text) {
+    // Split by lines
+    final lines = text.split('\n');
+    final formatted = <String>[];
+    
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      formatted.add(line);
+      
+      // If this line starts with a bullet and there's a next line
+      if (line.trim().startsWith('•') && i < lines.length - 1) {
+        final nextLine = lines[i + 1].trim();
+        // If the next line is NOT empty and NOT another bullet and NOT a header
+        if (nextLine.isNotEmpty && 
+            !nextLine.startsWith('•') && 
+            !nextLine.contains('📰') &&
+            !nextLine.contains('🌍') &&
+            !nextLine.contains('🇺🇸') &&
+            !nextLine.contains('📍') &&
+            !nextLine.contains('🌉') &&
+            !nextLine.contains('💻') &&
+            !nextLine.contains('🔬')) {
+          // Add a blank line after this bullet
+          formatted.add('');
+        }
+      }
+    }
+    
+    return formatted.join('\n');
   }
 
   /// Gets news about a specific topic
@@ -67,6 +99,8 @@ CATEGORIES:
 Provide detailed, factual information for each category. This is for a comprehensive daily briefing.
 ''';
     
-    return search(query);
+    final result = await search(query);
+    // Apply bullet spacing formatting
+    return _formatBulletSpacing(result);
   }
 }

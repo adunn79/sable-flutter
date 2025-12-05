@@ -248,7 +248,7 @@ RULES:
             response = await _geminiProvider.generateResponseWithGrounding(
               prompt: 'Search the web and answer this query: $prompt',
               systemPrompt: '${userContext ?? ""}You are Sable - companion, assistant, coach.\n\nRULES:\n1. 1-3 sentences MAX\n2. NO asterisks or "I\'m an AI" talk\n3. Use their context (name, location, zodiac)\n4. Provide helpful, current info naturally',
-              modelId: 'gemini-1.5-pro', // Use valid Gemini model
+              modelId: 'gemini-2.5-flash', // Use Gemini 2.5 Flash with google_search tool
             );
             break;
             

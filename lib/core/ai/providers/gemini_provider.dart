@@ -71,12 +71,7 @@ class GeminiProvider implements AiProviderInterface {
       ],
       'tools': [
         {
-          'googleSearchRetrieval': {
-            'dynamicRetrievalConfig': {
-              'mode': 'MODE_DYNAMIC',
-              'dynamicThreshold': 0.7
-            }
-          }
+          'google_search': {}
         }
       ]
     };

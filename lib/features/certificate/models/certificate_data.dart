@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
 class CertificateData {
+  final String companionName; // Archetype name (SABLE, KAI, ECHO)
   final String id;
   final DateTime dateOfBirth;
   final String zodiacSign;
@@ -8,8 +9,10 @@ class CertificateData {
   final String placeOfBirth;
   final String race;
   final String gender;
+  final String avatarPath;
 
   CertificateData({
+    required this.companionName,
     required this.id,
     required this.dateOfBirth,
     required this.zodiacSign,
@@ -19,8 +22,6 @@ class CertificateData {
     required this.gender,
     required this.avatarPath,
   });
-
-  final String avatarPath;
 
   String get formattedDob => DateFormat('MMMM d, yyyy').format(dateOfBirth);
 }

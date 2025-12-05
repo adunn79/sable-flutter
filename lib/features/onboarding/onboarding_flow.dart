@@ -73,10 +73,10 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       _avatarImageUrl = imageUrl;
     });
 
-    // Generate Certificate Data
-    if (_userProfile != null) {
+    // Generate Certificate Data using selected archetype
+    if (_selectedArchetype != null) {
       final certificateData = await GenesisService.generateCertificate(
-        _userProfile!,
+        _selectedArchetype!,
         imageUrl,
       );
       

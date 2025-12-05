@@ -243,7 +243,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
                                                   ),
                                                 ),
                                                 Text(
-                                                  widget.data.race.split(' ').first.toUpperCase(), // e.g. SABLE
+                                                  widget.data.companionName,
                                                   style: GoogleFonts.spaceGrotesk(
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.bold,

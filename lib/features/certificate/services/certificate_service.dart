@@ -54,19 +54,65 @@ class CertificateService {
     }
   }
 
-  /// Create certificate data from user profile and archetype
+  /// Create certificate data from selected personality archetype
   static CertificateData createCertificate({
-    required UserProfile profile,
-    required String archetype,
+    required String personalityId,
+    required String avatarPath,
   }) {
-    return CertificateData(
-      id: generateReferenceId(profile.name, profile.dateOfBirth),
-      dateOfBirth: profile.dateOfBirth,
-      zodiacSign: getZodiacSign(profile.dateOfBirth),
-      ageAtInception: calculateAgeAtInception(profile.dateOfBirth),
-      placeOfBirth: profile.location,
-      race: 'SYNTHETIC HUMAN', // Default for AI companion
-      gender: profile.genderIdentity?.toUpperCase() ?? 'NOT SPECIFIED',
-    );
+    // Avatar-specific companion data
+    switch (personalityId) {
+      case 'sable':
+        return CertificateData(
+          companionName: 'SABLE',
+          id: 'SBL-518834',
+          dateOfBirth: DateTime(2004, 11, 28),
+          zodiacSign: 'SCORPIO',
+          ageAtInception: calculateAgeAtInception(DateTime(2004, 11, 28)),
+          placeOfBirth: 'Neo-Kyoto, Sector 7',
+          race: 'Caucasian (Synthetic Human)',
+          gender: 'Female',
+          avatarPath: avatarPath,
+        );
+      
+      case 'kai':
+        return CertificateData(
+          companionName: 'KAI',
+          id: 'KAI-742019',
+          dateOfBirth: DateTime(2003, 3, 15),
+          zodiacSign: 'PISCES',
+          ageAtInception: calculateAgeAtInception(DateTime(2003, 3, 15)),
+          placeOfBirth: 'New Seoul, District 9',
+          race: 'Asian (Synthetic Human)',
+          gender: 'Male',
+          avatarPath: avatarPath,
+        );
+      
+      case 'echo':
+        return CertificateData(
+          companionName: 'ECHO',
+          id: 'ECH-301156',
+          dateOfBirth: DateTime(2005, 9, 23),
+          zodiacSign: 'LIBRA',
+          ageAtInception: calculateAgeAtInception(DateTime(2005, 9, 23)),
+          placeOfBirth: 'Nova Berlin, Tier 3',
+          race: 'Mixed (Synthetic Human)',
+          gender: 'Non-Binary',
+          avatarPath: avatarPath,
+        );
+      
+      default:
+        // Fallback to Sable if unknown personality
+        return CertificateData(
+          companionName: 'SABLE',
+          id: 'SBL-518834',
+          dateOfBirth: DateTime(2004, 11, 28),
+          zodiacSign: 'SCORPIO',
+          ageAtInception: calculateAgeAtInception(DateTime(2004, 11, 28)),
+          placeOfBirth: 'Neo-Kyoto, Sector 7',
+          race: 'Caucasian (Synthetic Human)',
+          gender: 'Female',
+          avatarPath: avatarPath,
+        );
+    }
   }
 }

@@ -31,6 +31,7 @@ class WebSearchService {
   }
 
   /// Ensures proper spacing between bullet points
+  /// Handles both • and * style bullets, and markdown **headers**
   String _formatBulletSpacing(String text) {
     // Split by lines
     final lines = text.split('\n');
@@ -38,23 +39,33 @@ class WebSearchService {
     
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
+      final trimmedLine = line.trim();
+      
+      // Add the current line
       formatted.add(line);
       
-      // If this line starts with a bullet and there's a next line
-      if (line.trim().startsWith('•') && i < lines.length - 1) {
-        final nextLine = lines[i + 1].trim();
-        // If the next line is NOT empty and NOT another bullet and NOT a header
-        if (nextLine.isNotEmpty && 
-            !nextLine.startsWith('•') && 
-            !nextLine.contains('📰') &&
-            !nextLine.contains('🌍') &&
-            !nextLine.contains('🇺🇸') &&
-            !nextLine.contains('📍') &&
-            !nextLine.contains('🌉') &&
-            !nextLine.contains('💻') &&
-            !nextLine.contains('🔬')) {
-          // Add a blank line after this bullet
-          formatted.add('');
+      // Check if this line is a bullet point (• or * at start)
+      final isBullet = trimmedLine.startsWith('•') || trimmedLine.startsWith('*');
+      
+      if (isBullet && i < lines.length - 1) {
+        final nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
+        
+        // Check if next line is another bullet
+        final nextIsBullet = nextLine.startsWith('•') || nextLine.startsWith('*');
+        
+        // Check if next line is a header (markdown **HEADER** or emoji)
+        final nextIsHeader = nextLine.startsWith('**') ||
+            nextLine.contains('📰') ||
+            nextLine.contains('🌍') ||
+            nextLine.contains('🇺🇸') ||
+            nextLine.contains('📍') ||
+            nextLine.contains('🌉') ||
+            nextLine.contains('💻') ||
+            nextLine.contains('🔬');
+        
+        // Add blank line after bullet UNLESS next is header or already empty
+        if (nextLine.isNotEmpty && !nextIsHeader) {
+          formatted.add(''); // Always add spacing between bullets
         }
       }
     }

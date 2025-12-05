@@ -30,13 +30,9 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
   }
 
   Future<void> _loadCurrentPermissions() async {
-    // Check GPS permission
-    final gpsStatus = await Geolocator.checkPermission();
-    final hasGps = gpsStatus == LocationPermission.always ||
-        gpsStatus == LocationPermission.whileInUse;
-
-    // Web access defaults to false - user must opt in
-    // This is just a preference toggle
+    // Both permissions default to false - user must explicitly opt in
+    // Even if OS permissions are already granted, we want user to consciously enable
+    final hasGps = false;
     final hasWeb = false;
 
     if (mounted) {

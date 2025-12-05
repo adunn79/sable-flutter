@@ -1910,8 +1910,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
 
   Widget _buildInputArea() {
-    final brightness = Theme.of(context).brightness;
-    final isDark = brightness == Brightness.dark;
+    // FIX: Calculate isDark based on actual background settings, not inherited Theme
+    // This ensures icons adapt correctly even if parent Theme context is mismatched
+    final isLightBackground = _avatarDisplayMode == AvatarDisplaySettings.modeIcon && 
+                              _backgroundColor == AvatarDisplaySettings.colorWhite;
+    final isDark = !isLightBackground;
     
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -1935,10 +1938,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     controller: _controller,
                     enabled: true, // Always enabled
                     style: GoogleFonts.inter(color: isDark ? Colors.white : Colors.black),
+                    cursorColor: isDark ? Colors.white : Colors.black, // Match text color
                     minLines: 1,
                     maxLines: 5,
                     textInputAction: TextInputAction.send,
                     decoration: InputDecoration(
+                      filled: true, // Force filled to override theme
+                      fillColor: Colors.transparent, // Transparent to show container color
                       hintText: _isTyping ? 'AI is thinking...' : 'Type a message...',
                       hintStyle: GoogleFonts.inter(
                         color: isDark ? Colors.white.withOpacity(0.3) : Colors.black.withOpacity(0.3),
@@ -1957,8 +1963,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     LucideIcons.wand2,
                     color: _controller.text.isNotEmpty 
                         ? AurealColors.hyperGold 
-                        : (isDark ? Colors.white : Colors.grey[800]!),
-                    size: 24,
+                        : (isDark ? Colors.white70 : Colors.grey[700]), // Reverted to semi-transparent/grey
+                    size: 20, // Reverted to standard size
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1969,8 +1975,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     _isListening ? LucideIcons.micOff : LucideIcons.mic,
                     color: _isListening 
                         ? AurealColors.plasmaCyan 
-                        : (isDark ? Colors.white : Colors.grey[800]!),
-                    size: 24,
+                        : (isDark ? Colors.white70 : Colors.grey[700]), // Reverted to semi-transparent/grey
+                    size: 20, // Reverted to standard size
                   ),
                 ),
                 const SizedBox(width: 8),

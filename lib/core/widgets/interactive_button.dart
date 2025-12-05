@@ -39,6 +39,8 @@ class InteractiveButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasInfo = infoTitle != null && infoDescription != null;
+    final brightness = Theme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () {
@@ -69,21 +71,22 @@ class InteractiveButton extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: backgroundColor ?? Colors.white.withOpacity(0.1),
+              color: backgroundColor ?? 
+                     (isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.08)),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isDestructive
                     ? Colors.red.withOpacity(0.3)
-                    : Colors.white.withOpacity(0.2),
+                    : (isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.2)),
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (icon != null) ...[
+                if (icon != null) ...[ 
                   Icon(
                     icon!,
-                    color: iconColor ?? (isDestructive ? Colors.red : Colors.white),
+                    color: iconColor ?? (isDestructive ? Colors.red : (isDark ? Colors.white : Colors.black)),
                     size: 16,
                   ),
                   const SizedBox(width: 8),
@@ -92,7 +95,7 @@ class InteractiveButton extends ConsumerWidget {
                   label,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                    color: isDestructive ? Colors.red : Colors.white,
+                    color: isDestructive ? Colors.red : (isDark ? Colors.white : Colors.black),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),

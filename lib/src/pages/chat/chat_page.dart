@@ -1648,65 +1648,68 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Widget _buildFloatingChips() {
-    return Align(
-      alignment: Alignment.center,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-          // Daily Update
-          InteractiveButton(
-            label: 'Daily\nUpdate',
-            onTap: _handleDailyUpdate,
-            infoTitle: 'DAILY UPDATE',
-            infoDescription: 'Get a personalized briefing of the latest news and events based on your interests.',
-            infoDetails: '• Curated news from your selected categories\n• Summarized for quick reading\n• Interactive links to learn more',
-            actionLabel: 'GET UPDATE',
-          ),
-          const SizedBox(width: 12),
-          // Local Vibe
-          InteractiveButton(
-            label: 'Local\nVibe',
-            onTap: _handleLocalVibe,
-            infoTitle: 'LOCAL VIBE',
-            infoDescription: 'Discover what\'s happening in your area right now.',
-            infoDetails: '• Location-based insights\n• Local events and news\n• Tap to explore your area',
-            actionLabel: 'GET LOCAL VIBE',
-          ),
-          const SizedBox(width: 12),
-          // Scroll to Bottom
-          InteractiveButton(
-            label: 'Scroll\n↓',
-            onTap: _scrollToBottomNow,
-            infoTitle: 'SCROLL TO BOTTOM',
-            infoDescription: 'Quickly jump to the most recent message in your conversation.',
-            infoDetails: '• Instantly scroll to the latest message\n• Useful for long conversations\n• One-tap navigation',
-            actionLabel: 'SCROLL NOW',
-          ),
-          const SizedBox(width: 12),
-          // Clear Screen
-          InteractiveButton(
-            label: 'Clear\nScreen',
-            onTap: _handleClearScreen,
-            infoTitle: 'CLEAR SCREEN',
-            infoDescription: 'Clear visible messages from the screen without deleting conversation history.',
-            infoDetails: '• Cleans up your view\n• History is preserved\n• Messages reload on app restart',
-            actionLabel: 'CLEAR NOW',
-          ),
-          const SizedBox(width: 12),
-          // Share
-          InteractiveButton(
-            label: 'Share',
-            onTap: _handleShare,
-            infoTitle: 'SHARE CONVERSATION',
-            infoDescription: 'Share your conversation with Sable to your favorite apps or save it for later.',
-            infoDetails: '• Your conversation history\n• Formatted as readable text\n• Share via Messages, Mail, Notes, etc.',
-            actionLabel: 'SHARE NOW',
-          ),
-        ],
-      ),
+    return SizedBox(
+      height: 60, // Fixed height for chips
+      child: Align(
+        alignment: Alignment.center,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+            // Daily Update
+            InteractiveButton(
+              label: 'Daily\nUpdate',
+              onTap: _handleDailyUpdate,
+              infoTitle: 'DAILY UPDATE',
+              infoDescription: 'Get a personalized briefing of the latest news and events based on your interests.',
+              infoDetails: '• Curated news from your selected categories\n• Summarized for quick reading\n• Interactive links to learn more',
+              actionLabel: 'GET UPDATE',
+            ),
+            const SizedBox(width: 12),
+            // Local Vibe
+            InteractiveButton(
+              label: 'Local\nVibe',
+              onTap: _handleLocalVibe,
+              infoTitle: 'LOCAL VIBE',
+              infoDescription: 'Discover what\'s happening in your area right now.',
+              infoDetails: '• Location-based insights\n• Local events and news\n• Tap to explore your area',
+              actionLabel: 'GET LOCAL VIBE',
+            ),
+            const SizedBox(width: 12),
+            // Scroll to Bottom
+            InteractiveButton(
+              label: 'Scroll\n↓',
+              onTap: _scrollToBottomNow,
+              infoTitle: 'SCROLL TO BOTTOM',
+              infoDescription: 'Quickly jump to the most recent message in your conversation.',
+              infoDetails: '• Instantly scroll to the latest message\n• Useful for long conversations\n• One-tap navigation',
+              actionLabel: 'SCROLL NOW',
+            ),
+            const SizedBox(width: 12),
+            // Clear Screen
+            InteractiveButton(
+              label: 'Clear\nScreen',
+              onTap: _handleClearScreen,
+              infoTitle: 'CLEAR SCREEN',
+              infoDescription: 'Clear visible messages from the screen without deleting conversation history.',
+              infoDetails: '• Cleans up your view\n• History is preserved\n• Messages reload on app restart',
+              actionLabel: 'CLEAR NOW',
+            ),
+            const SizedBox(width: 12),
+            // Share
+            InteractiveButton(
+              label: 'Share',
+              onTap: _handleShare,
+              infoTitle: 'SHARE CONVERSATION',
+              infoDescription: 'Share your conversation with Sable to your favorite apps or save it for later.',
+              infoDetails: '• Your conversation history\n• Formatted as readable text\n• Share via Messages, Mail, Notes, etc.',
+              actionLabel: 'SHARE NOW',
+            ),
+          ],
+        ),
+        ),
       ),
     );
   }

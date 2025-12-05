@@ -1905,6 +1905,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
 
   Widget _buildInputArea() {
+    final brightness = Theme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
+    
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: ClipRRect(
@@ -1914,9 +1917,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
               borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              border: Border.all(
+                color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+              ),
             ),
             child: Row(
               children: [
@@ -1924,13 +1929,15 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   child: TextField(
                     controller: _controller,
                     enabled: true, // Always enabled
-                    style: GoogleFonts.inter(color: Colors.white),
+                    style: GoogleFonts.inter(color: isDark ? Colors.white : Colors.black),
                     minLines: 1,
                     maxLines: 5,
                     textInputAction: TextInputAction.send,
                     decoration: InputDecoration(
                       hintText: _isTyping ? 'AI is thinking...' : 'Type a message...',
-                      hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.3)),
+                      hintStyle: GoogleFonts.inter(
+                        color: isDark ? Colors.white.withOpacity(0.3) : Colors.black.withOpacity(0.3),
+                      ),
                       border: InputBorder.none,
                       isDense: true,
                     ),
@@ -1945,7 +1952,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     LucideIcons.wand2,
                     color: _controller.text.isNotEmpty 
                         ? AurealColors.hyperGold 
-                        : Colors.white.withOpacity(0.3),
+                        : (isDark ? Colors.white.withOpacity(0.3) : Colors.black.withOpacity(0.3)),
                     size: 20,
                   ),
                 ),
@@ -1955,7 +1962,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   onTap: _handleVoiceInput,
                   child: Icon(
                     _isListening ? LucideIcons.micOff : LucideIcons.mic,
-                    color: _isListening ? AurealColors.plasmaCyan : Colors.white.withOpacity(0.6),
+                    color: _isListening 
+                        ? AurealColors.plasmaCyan 
+                        : (isDark ? Colors.white.withOpacity(0.6) : Colors.black.withOpacity(0.6)),
                     size: 20,
                   ),
                 ),

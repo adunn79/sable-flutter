@@ -595,55 +595,28 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       //   debugPrint('💾 Using cached daily news');
       // }
       
-      // 2. Build context for AI (will be injected by _sendMessage)
-      // 2. Build context for AI (will be injected by _sendMessage)
-      // Build custom categories section
-      final customCategories = categories
-          .where((c) => !['World', 'National', 'Local'].contains(c))
-          .map((c) {
-            if (c == 'Tech') return '💻 Technology';
-            if (c == 'Science') return '🔬 Science';
-            return '📌 $c';
-          })
-          .join('\n');
+      // 2. Display news directly without AI processing
+      // This preserves the exact formatting and spacing from the formatter
+      final displayText = "Here's what's happening:\n\n$newsBrief\n\nWant to dig into any of these?";
       
-      _dailyUpdateContext = '''
-[Today's News Data]
-$newsBrief
-
-Create a daily news briefing with these sections IN THIS ORDER:
-
-🌍 World News
-🇺🇸 National (US)
-📍 California
-🌉 San Francisco Bay Area
-$customCategories
-
-For EACH section:
-- Provide 3-5 bullet points
-- Each bullet: ONE complete line with the key fact
-- Put TWO line breaks after each bullet (press Enter twice) to ensure spacing
-- Format: "• [Topic]: [Key fact]"
-- Do NOT use markdown bolding (**) for the topic, just plain text
-
-Example of proper spacing:
-🌍 World News
-
-• Ukraine: Peace talks scheduled for next week in Geneva
-
-• China: GDP growth exceeds expectations at 5.2% this quarter
-
-End with: "Want to dig into any of these?"
-''';
+      // Save to memory
+      await _memoryService?.addMessage(message: "daily update", isUser: true);
+      await _memoryService?.addMessage(message: displayText, isUser: false);
       
-      // 3. Send with a simple trigger message
       setState(() {
-        _controller.text = "daily update";
+        _messages.add({'message': "daily update", 'isUser': true});
+        _messages.add({'message': displayText, 'isUser': false});
         _isTyping = false;
       });
       
-      // Send via the normal message flow
-      await _sendMessage();
+      _scrollToBottom();
+      
+      // Auto-speak if enabled
+      final autoSpeak = await _voiceService?.getAutoSpeakEnabled() ?? true;
+      if (autoSpeak && _voiceService != null) {
+        // Speak a shortened version
+        await _voiceService!.speak("Here's your daily update. Check out the latest news.");
+      }
       
     } catch (e) {
       debugPrint('Error in daily update: $e');

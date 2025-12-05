@@ -76,19 +76,19 @@ Ensure the results are truly LOCAL to the specified area.
 FORMATTING RULES (CRITICAL - FOLLOW EXACTLY):
 - Use markdown headers for categories (e.g., "### 🍽️ New Openings").
 - For each item, create a clickable link using markdown format with SQUARE BRACKETS:
-  Format: [• Brief description here](expand:Topic_Name)
+  Format: [• Brief description here](#expand-Topic_Name)
   
 CORRECT Examples:
-[• Explore the Divisadero Farmer's Market, open Sundays 9AM-1PM](expand:Divisadero_Farmers_Market)
-[• Holiday Bazaar at Civic Center Park on Dec 13th](expand:Holiday_Bazaar_Civic_Center)
+[• Explore the Divisadero Farmer's Market, open Sundays 9AM-1PM](#expand-Divisadero_Farmers_Market)
+[• Holiday Bazaar at Civic Center Park on Dec 13th](#expand-Holiday_Bazaar_Civic_Center)
 
 INCORRECT - DO NOT USE:
-• Description text (expand:Topic) ← WRONG - missing square brackets
-(expand:Topic) Description ← WRONG - wrong order
+• Description text (#expand-Topic) ← WRONG - missing square brackets
+(#expand-Topic) Description ← WRONG - wrong order
 
 - The text in square brackets [• ...] is what the user sees
-- The (expand:Topic_Name) part creates the clickable link action
-- Topic should be condensed without special characters
+- The (#expand-Topic_Name) part creates the clickable link action
+- Topic should be condensed without special characters or spaces, use underscores
 - Include specific details (time, place, price) in the description
 - Add a blank line between each bullet point.
 
@@ -129,6 +129,37 @@ Provide a vibrant, engaging digest of what's happening locally.
       if (_settings.targetCities.isEmpty) return null;
       return _settings.targetCities.join(', ');
     }
+  }
+
+  String _fixMalformedLinks(String text) {
+    // Fix pattern: [• Description] (#expand-Topic) -> [• Description](#expand-Topic)
+    // Also fix: • Description (#expand-Topic) -> [• Description](#expand-Topic)
+    
+    var fixed = text;
+    
+    // Pattern 1: [• text] (#expand-topic) with space before parenthesis
+    fixed = fixed.replaceAllMapped(
+      RegExp(r'\[([^\]]+)\]\s+\(#expand-([^)]+)\)'),
+      (match) => '[${match.group(1)}](#expand-${match.group(2)})',
+    );
+    
+    // Pattern 2: • text (#expand-topic) without square brackets
+    fixed = fixed.replaceAllMapped(
+      RegExp(r'(•[^(]+)\s*\(#expand-([^)]+)\)'),
+      (match) {
+        final text = match.group(1)!.trim();
+        final topic = match.group(2)!.trim();
+        return '[$text](#expand-$topic)';
+      },
+    );
+    
+    // Also handle old expand: format and convert to #expand-
+    fixed = fixed.replaceAllMapped(
+      RegExp(r'\(expand:([^)]+)\)'),
+      (match) => '(#expand-${match.group(1)})',
+    );
+    
+    return fixed;
   }
 
   String _ensureSpacing(String text) {

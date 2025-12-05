@@ -1860,7 +1860,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         
         if (href == null) return;
         
-        if (href.startsWith('expand:')) {
+        // Handle #expand- links (anchor format)
+        if (href.startsWith('#expand-')) {
+          final topic = href.substring(8).replaceAll('_', ' '); // Remove '#expand-' prefix and replace underscores
+          debugPrint('🔗 Tapped custom link: $topic');
+          setState(() {
+            _controller.text = "Tell me more about $topic";
+          });
+          _sendMessage();
+        }
+        // Handle legacy expand: format
+        else if (href.startsWith('expand:')) {
           final topic = href.substring(7); // Remove 'expand:' prefix
           debugPrint('🔗 Tapped custom link: $topic');
           setState(() {

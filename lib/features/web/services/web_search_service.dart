@@ -38,65 +38,72 @@ class WebSearchService {
     final lines = text.split('\n');
     final formatted = <String>[];
     
+    String? currentBullet;
+    
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
       final trimmedLine = line.trim();
       
+      if (trimmedLine.isEmpty) continue;
+      
       // Check if this line is a bullet point (• or * at start)
       final isBullet = trimmedLine.startsWith('•') || trimmedLine.startsWith('*');
       
-      if (isBullet) {
-        // Make interactive: Wrap the content in a link
-        // Extract content after bullet
-        String content = trimmedLine.substring(1).trim();
-        
-        // Try to extract topic (text before first colon)
-        String topic = content;
-        final colonIndex = content.indexOf(':');
-        if (colonIndex > 0 && colonIndex < 50) { // Reasonable length for a topic
-          topic = content.substring(0, colonIndex).trim();
-        } else {
-          // Fallback: use first 5 words or full content if short
-          final words = content.split(' ');
-          if (words.length > 5) {
-            topic = words.take(5).join(' ');
-          }
+      // Check if this line is a header
+      final isHeader = trimmedLine.startsWith('**') ||
+          trimmedLine.contains('📰') ||
+          trimmedLine.contains('🌍') ||
+          trimmedLine.contains('🇺🇸') ||
+          trimmedLine.contains('📍') ||
+          trimmedLine.contains('🌉') ||
+          trimmedLine.contains('💻') ||
+          trimmedLine.contains('🔬');
+
+      if (isHeader) {
+        // Flush pending bullet if any
+        if (currentBullet != null) {
+          _addFormattedBullet(formatted, currentBullet);
+          currentBullet = null;
+          formatted.add(''); // Spacing after bullet
         }
-        
-        // Clean topic for the command
-        topic = topic.replaceAll(RegExp(r'[\[\]()]'), '');
-        
-        // Reconstruct line with link: * [Content](expand:Topic)
-        formatted.add('* [$content](expand:$topic)');
-      } else {
-        // Add non-bullet lines as is
         formatted.add(line);
+        continue;
       }
-      
-      if (isBullet && i < lines.length - 1) {
-        final nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
-        
-        // Check if next line is another bullet
-        final nextIsBullet = nextLine.startsWith('•') || nextLine.startsWith('*');
-        
-        // Check if next line is a header (markdown **HEADER** or emoji)
-        final nextIsHeader = nextLine.startsWith('**') ||
-            nextLine.contains('📰') ||
-            nextLine.contains('🌍') ||
-            nextLine.contains('🇺🇸') ||
-            nextLine.contains('📍') ||
-            nextLine.contains('🌉') ||
-            nextLine.contains('💻') ||
-            nextLine.contains('🔬');
-        
-        // Add blank line after bullet UNLESS next is header or already empty
-        if (nextLine.isNotEmpty && !nextIsHeader) {
-          formatted.add(''); // Always add spacing between bullets
+
+      if (isBullet) {
+        // Flush previous bullet
+        if (currentBullet != null) {
+          _addFormattedBullet(formatted, currentBullet);
+          formatted.add(''); // Spacing between bullets
+        }
+        // Start new bullet
+        currentBullet = trimmedLine.substring(1).trim();
+      } else {
+        // Continuation of previous bullet or just text
+        if (currentBullet != null) {
+          currentBullet += ' ' + trimmedLine;
+        } else {
+          // Just a loose line? Add it.
+          formatted.add(line);
         }
       }
     }
     
+    // Flush last bullet
+    if (currentBullet != null) {
+      _addFormattedBullet(formatted, currentBullet);
+    }
+    
     return formatted.join('\n');
+  }
+
+  void _addFormattedBullet(List<String> formatted, String content) {
+    // Use the full content as the topic to ensure the AI has full context
+    // We clean it of brackets/parentheses to avoid breaking the markdown link syntax
+    String topic = content.replaceAll(RegExp(r'[\[\]()]'), '');
+    
+    // Reconstruct line with link: [• Content](expand:Topic)
+    formatted.add('[• $content](expand:$topic)');
   }
 
   /// Gets news about a specific topic

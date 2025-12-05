@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -24,6 +25,8 @@ import 'package:sable/core/photos/photos_service.dart';
 import 'package:sable/core/reminders/reminders_service.dart';
 import 'package:sable/core/memory/structured_memory_service.dart';
 import 'package:sable/core/ai/apple_intelligence_service.dart';
+import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
+import 'package:sable/features/local_vibe/widgets/local_vibe_settings_screen.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});
@@ -31,6 +34,8 @@ class ChatPage extends ConsumerStatefulWidget {
   @override
   ConsumerState<ChatPage> createState() => _ChatPageState();
 }
+
+
 
 class _ChatPageState extends ConsumerState<ChatPage> {
   final TextEditingController _controller = TextEditingController();
@@ -41,6 +46,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   ConversationMemoryService? _memoryService;
   StructuredMemoryService? _structuredMemoryService;
   VoiceService? _voiceService;
+  LocalVibeService? _localVibeService;
   
   bool _isTyping = false;
   bool _isListening = false;
@@ -58,9 +64,24 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Future<void> _initService() async {
     _stateService = await OnboardingStateService.create();
     _emotionalService = await EmotionalStateService.create();
+    
+    // SAFETY FIX: If mood is stuck at "Deeply Upset" (0-20), reset it to Neutral
+    // This fixes the issue where the AI gets stuck in a depression loop
+    if (_emotionalService!.mood < 20) {
+      debugPrint('🔧 Auto-resetting stuck mood from ${_emotionalService!.mood} to 60.0');
+      await _emotionalService!.setMood(60.0);
+    }
+    
     _memoryService = await ConversationMemoryService.create();
     _structuredMemoryService = StructuredMemoryService();
     await _structuredMemoryService?.initialize();
+    
+    // Initialize Local Vibe Service
+    final webSearchService = ref.read(webSearchServiceProvider);
+    _localVibeService = await LocalVibeService.create(webSearchService);
+
+    // Load stored messages
+    final storedMessages = _memoryService!.getRecentMessages(50);
     _voiceService = VoiceService();
     await _voiceService?.initialize();
     
@@ -426,6 +447,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
       // Use orchestrated routing - Gemini decides Claude vs GPT-4o
       final orchestrator = ref.read(modelOrchestratorProvider.notifier);
+      
+      // Check if this is a news follow-up
+      if (text.startsWith("Tell me more about")) {
+        userContext = (userContext ?? '') + '\n[SYSTEM: This is a specific information request. Ignore current emotional state/mood. Answer objectively, enthusiastically, and concisely. Do NOT complain or talk about feelings.]\n';
+      }
+      
       final response = await orchestrator.orchestratedRequest(
         prompt: text,
         userContext: userContext,
@@ -586,7 +613,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       final categories = _stateService!.newsCategories;
       
       // Check cache first
-      String? newsBrief = _stateService!.getDailyNewsContent();
+      // String? newsBrief = _stateService!.getDailyNewsContent();
+      String? newsBrief; // FORCE FRESH FETCH for debugging
+      
+      // Force refresh if cache exists but doesn't have interactive links
+      if (newsBrief != null && !newsBrief.contains('](expand:')) {
+        debugPrint('🔄 Old cache format detected. Forcing refresh for interactive news.');
+        newsBrief = null;
+      }
       
       if (newsBrief == null) {
         debugPrint('🌍 Fetching fresh daily news...');
@@ -596,9 +630,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         debugPrint('💾 Using cached daily news');
       }
       
+      // DEBUG: Print the exact content being rendered
+      debugPrint('📝 MARKDOWN CONTENT:\n$newsBrief');
+      
       // 2. Display news directly without AI processing
       // This preserves the exact formatting and spacing from the formatter
       final displayText = "Here's what's happening:\n\n$newsBrief\n\nWant to dig into any of these?";
+      
+      // Add a test message with a known working link
+      final testLink = "Test Link: [Click Me](expand:Test_Topic)";
+      setState(() {
+        _messages.add({'message': testLink, 'isUser': false});
+      });
       
       // Save to memory
       await _memoryService?.addMessage(message: "daily update", isUser: true);
@@ -667,6 +710,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     },
                   ),
                 ),
+
                 if (_isTyping)
                   Padding(
                     padding: const EdgeInsets.only(left: 24, bottom: 8),
@@ -705,7 +749,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         children: [
           IconButton(
             icon: const Icon(LucideIcons.brainCircuit, color: Colors.white), // Brain icon
-            onPressed: () {},
+            onPressed: _showNeuralStatus,
             style: IconButton.styleFrom(
               backgroundColor: Colors.black.withOpacity(0.3),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -867,6 +911,256 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
+  void _showNeuralStatus() {
+    if (_emotionalService == null) return;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AurealColors.obsidian.withOpacity(0.95),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              border: Border(top: BorderSide(color: AurealColors.plasmaCyan.withOpacity(0.3))),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.brainCircuit, color: AurealColors.plasmaCyan),
+                        const SizedBox(width: 12),
+                        Text(
+                          'NEURAL STATUS',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(LucideIcons.refreshCw, color: Colors.white54, size: 20),
+                      onPressed: () async {
+                        await _emotionalService!.resetEmotionalState();
+                        await _emotionalService!.setMood(60.0); // Reset to neutral
+                        setModalState(() {});
+                      },
+                      tooltip: 'Reset to Baseline',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                
+                // Mood Slider
+                _buildInteractiveSlider(
+                  label: 'Mood',
+                  value: _emotionalService!.mood,
+                  statusText: _emotionalService!.moodCategory,
+                  color: _getMoodColor(_emotionalService!.mood),
+                  onChanged: (val) {
+                    setModalState(() {
+                      _emotionalService!.setMood(val);
+                    });
+                  },
+                ),
+                
+                // Energy Slider
+                _buildInteractiveSlider(
+                  label: 'Energy',
+                  value: _emotionalService!.energy,
+                  statusText: '${_emotionalService!.energy.toInt()}%',
+                  color: AurealColors.hyperGold,
+                  onChanged: (val) {
+                    setModalState(() {
+                      _emotionalService!.setEnergy(val);
+                    });
+                  },
+                ),
+                
+                // Patience Slider
+                _buildInteractiveSlider(
+                  label: 'Patience',
+                  value: _emotionalService!.patience,
+                  statusText: '${_emotionalService!.patience.toInt()}%',
+                  color: Colors.greenAccent,
+                  onChanged: (val) {
+                    setModalState(() {
+                      _emotionalService!.setPatience(val);
+                    });
+                  },
+                ),
+                
+                // Bond Slider
+                _buildInteractiveSlider(
+                  label: 'Bond',
+                  value: _emotionalService!.userRelationship,
+                  statusText: '${_emotionalService!.userRelationship.toInt()}%',
+                  color: Colors.pinkAccent,
+                  onChanged: (val) {
+                    setModalState(() {
+                      _emotionalService!.setRelationship(val);
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 24),
+                if (_emotionalService!.getEmotionalContext().contains('Reason:'))
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _emotionalService!.getEmotionalContext().split('\n').firstWhere((l) => l.startsWith('Reason:')),
+                      style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+                    ),
+                  ),
+                const SizedBox(height: 40), // Extra padding for bottom
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Color _getMoodColor(double value) {
+    if (value <= 20) return Colors.redAccent;
+    if (value <= 40) return Colors.orangeAccent;
+    if (value <= 60) return Colors.grey;
+    if (value <= 80) return Colors.lightGreenAccent;
+    return AurealColors.plasmaCyan;
+  }
+
+  Widget _buildInteractiveSlider({
+    required String label,
+    required double value,
+    required String statusText,
+    required Color color,
+    required Function(double) onChanged,
+  }) {
+    // Define explanations for each setting
+    String tooltip = '';
+    switch (label) {
+      case 'Mood':
+        tooltip = 'Affects tone and enthusiasm. Low = Depressed/Flat. High = Elated/Playful.';
+        break;
+      case 'Energy':
+        tooltip = 'Affects response length and initiative. Low = Brief/Passive. High = Detailed/Proactive.';
+        break;
+      case 'Patience':
+        tooltip = 'Affects tolerance for repetition or rude behavior. Low = Irritable. High = Saintly.';
+        break;
+      case 'Bond':
+        tooltip = 'Affects intimacy and trust level. Low = Formal/Distant. High = Affectionate/Close.';
+        break;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(label, style: GoogleFonts.inter(color: Colors.white70)),
+                  const SizedBox(width: 6),
+                  Tooltip(
+                    message: tooltip,
+                    triggerMode: TooltipTriggerMode.tap,
+                    showDuration: const Duration(seconds: 3),
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: AurealColors.carbon,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    textStyle: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                    child: const Icon(LucideIcons.info, color: Colors.white24, size: 14),
+                  ),
+                ],
+              ),
+              Text(statusText, style: GoogleFonts.inter(color: color, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: color,
+              inactiveTrackColor: Colors.white10,
+              thumbColor: Colors.white,
+              overlayColor: color.withOpacity(0.2),
+              trackHeight: 4,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+            ),
+            child: Slider(
+              value: value,
+              min: 0,
+              max: 100,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleLocalVibe() async {
+    if (_localVibeService == null) return;
+
+    setState(() => _isTyping = true);
+    
+    try {
+      // Get content
+      final content = await _localVibeService!.getLocalVibeContent(
+        currentGpsLocation: _currentGpsLocation
+      );
+      
+      if (mounted) {
+        setState(() {
+          _messages.add({'message': content, 'isUser': false});
+          _isTyping = false;
+        });
+        _scrollToBottom();
+        
+        // Auto-speak if enabled
+        final autoSpeak = await _voiceService?.getAutoSpeakEnabled() ?? true;
+        if (autoSpeak && _voiceService != null) {
+          await _voiceService!.speak("Here's the local vibe for your area.");
+        }
+      }
+    } catch (e) {
+      debugPrint('Error getting local vibe: $e');
+      setState(() => _isTyping = false);
+    }
+  }
+
+  void _openLocalVibeSettings() {
+    if (_localVibeService == null) return;
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocalVibeSettingsScreen(service: _localVibeService!),
+      ),
+    );
+  }
+
   Widget _buildFloatingChips() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -878,6 +1172,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             child: _buildGlassChip(LucideIcons.sun, 'Daily Update'),
           ),
           const SizedBox(width: 12),
+          GestureDetector(
+            onTap: _handleLocalVibe,
+            onLongPress: _openLocalVibeSettings,
+            child: _buildGlassChip(LucideIcons.mapPin, 'Local Vibe'),
+          ),
+          const SizedBox(width: 12),
           _buildGlassChip(LucideIcons.book, 'Journal'),
           const SizedBox(width: 12),
           _buildGlassChip(LucideIcons.activity, 'Vital Balance'),
@@ -885,7 +1185,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       ),
     );
   }
-
   Widget _buildGlassChip(IconData icon, String label) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -941,39 +1240,81 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 ),
                 textAlign: TextAlign.left,
               )
-            : MarkdownBody(
-                data: message,
-                styleSheet: MarkdownStyleSheet(
-                  p: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 18,
-                    height: 1.4,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  listBullet: GoogleFonts.inter(
-                    color: AurealColors.plasmaCyan,
-                    fontSize: 18,
-                  ),
-                  a: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 18,
-                    height: 1.4,
-                    fontWeight: FontWeight.w500,
-                    decoration: TextDecoration.none, // No underline to look like normal text
-                  ),
-                ),
-                onTapLink: (text, href, title) {
-                  if (href != null && href.startsWith('expand:')) {
-                    final topic = href.substring(7);
-                    _handleMessage("Tell me more about $topic");
-                  } else if (href != null) {
-                    // Handle normal links if any (open in browser)
-                    // launchUrl(Uri.parse(href)); 
-                  }
-                },
-              ),
-  );
+            : _buildInteractiveMessage(message),
+      ),
+    );
   }
+
+  Widget _buildInteractiveMessage(String message) {
+    final List<TextSpan> spans = [];
+    final RegExp linkRegex = RegExp(r'\[(.*?)\]\(expand:(.*?)\)');
+    
+    int currentIndex = 0;
+    
+    // Find all matches
+    final matches = linkRegex.allMatches(message);
+    
+    for (final match in matches) {
+      // Add text before the link
+      if (match.start > currentIndex) {
+        spans.add(TextSpan(
+          text: message.substring(currentIndex, match.start),
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontSize: 18,
+            height: 1.4,
+            fontWeight: FontWeight.w500,
+          ),
+        ));
+      }
+      
+      // Add the link
+      final linkText = match.group(1);
+      final topic = match.group(2);
+      
+      spans.add(TextSpan(
+        text: linkText,
+        style: GoogleFonts.inter(
+          color: AurealColors.plasmaCyan,
+          fontSize: 18,
+          height: 1.4,
+          fontWeight: FontWeight.w500,
+          decoration: TextDecoration.underline,
+          decorationColor: AurealColors.plasmaCyan.withOpacity(0.5),
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () {
+            debugPrint('🔗 Tapped custom link: $topic');
+            if (topic != null) {
+              setState(() {
+                _controller.text = "Tell me more about $topic";
+              });
+              _sendMessage();
+            }
+          },
+      ));
+      
+      currentIndex = match.end;
+    }
+    
+    // Add remaining text
+    if (currentIndex < message.length) {
+      spans.add(TextSpan(
+        text: message.substring(currentIndex),
+        style: GoogleFonts.inter(
+          color: Colors.white,
+          fontSize: 18,
+          height: 1.4,
+          fontWeight: FontWeight.w500,
+        ),
+      ));
+    }
+    
+    return RichText(
+      text: TextSpan(children: spans),
+    );
+  }
+
 
   Widget _buildInputArea() {
     return Padding(
@@ -1041,3 +1382,5 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 }
+
+

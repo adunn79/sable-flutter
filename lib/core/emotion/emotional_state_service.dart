@@ -62,7 +62,15 @@ class EmotionalStateService {
     double newRelationship = userRelationship;
 
     // Sentiment impact (3x amplified)
-    newMood += sentimentScore * 15; // -15 to +15 (was -5 to +5)
+    double sentimentImpact = sentimentScore * 15; // -15 to +15
+    
+    // RECOVERY BOOST: If mood is low (< 30) and interaction is positive, boost it significantly
+    // This prevents the AI from getting "stuck" in a depressed state
+    if (mood < 30 && sentimentScore > 0) {
+      sentimentImpact *= 2.5; // 2.5x boost for recovery
+    }
+    
+    newMood += sentimentImpact;
     
     // Environmental impact (3x amplified)
     newMood += environmentalModifier * 0.9; // (was 0.3)
@@ -78,6 +86,11 @@ class EmotionalStateService {
       newPatience += 15; // (was 5)
       newRelationship += 9; // (was 3)
       await _prefs.setInt(_keyPositiveCount, positiveCount + 1);
+      
+      // Bonus relationship boost if recovering
+      if (mood < 30) {
+        newRelationship += 5;
+      }
     }
 
     // Clamp values
@@ -121,6 +134,24 @@ class EmotionalStateService {
     await _prefs.setDouble(_keyMood, newMood);
   }
 
+  /// Set energy directly
+  Future<void> setEnergy(double value) async {
+    final newEnergy = value.clamp(0.0, 100.0);
+    await _prefs.setDouble(_keyEnergy, newEnergy);
+  }
+
+  /// Set patience directly
+  Future<void> setPatience(double value) async {
+    final newPatience = value.clamp(0.0, 100.0);
+    await _prefs.setDouble(_keyPatience, newPatience);
+  }
+
+  /// Set relationship score directly
+  Future<void> setRelationship(double value) async {
+    final newRelationship = value.clamp(0.0, 100.0);
+    await _prefs.setDouble(_keyUserRelationship, newRelationship);
+  }
+
   /// Get mood category description
   String get moodCategory {
     if (mood <= 20) return 'Deeply Upset';
@@ -143,7 +174,14 @@ class EmotionalStateService {
     if (energy < 40) reasons.add('low energy');
     if (patience < 40) reasons.add('feeling impatient');
 
+    // CONTRADICTION CHECK: If mood is low but user is kind, explain it
+    if (mood < 30 && reasons.contains('user has been kind')) {
+      reasons.add('but feeling down due to internal/environmental factors');
+    }
+
     final reasonStr = reasons.isNotEmpty ? 'Reason: ${reasons.join(", ")}' : '';
+
+
 
     return '''
 [EMOTIONAL STATE]

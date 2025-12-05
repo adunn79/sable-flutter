@@ -789,7 +789,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   Future<void> _handleDailyUpdate() async {
     ref.read(feedbackServiceProvider).medium();
-    setState(() => _isTyping = true);
     
     try {
       // 1. Fetch News
@@ -806,6 +805,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
       
       if (newsBrief == null) {
+        // Show typing indicator ONLY when fetching fresh data
+        setState(() => _isTyping = true);
         debugPrint('🌍 Fetching fresh daily news...');
         newsBrief = await webService.getDailyBriefing(categories);
         await _stateService!.saveDailyNewsContent(newsBrief);

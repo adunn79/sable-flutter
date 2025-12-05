@@ -32,6 +32,9 @@ import 'package:sable/core/ai/apple_intelligence_service.dart';
 import 'package:sable/core/personality/personality_service.dart'; // Added implementation
 import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
 import 'package:sable/core/ui/feedback_service.dart'; // Added implementation
+import 'package:share_plus/share_plus.dart';
+import 'package:sable/core/audio/button_sound_service.dart';
+import 'package:sable/core/widgets/interactive_button.dart';
 
 
 class ChatPage extends ConsumerStatefulWidget {
@@ -150,6 +153,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     // Initialize Local Vibe Service
     final webSearchService = ref.read(webSearchServiceProvider);
     _localVibeService = await LocalVibeService.create(webSearchService);
+    
+    // Pre-fetch Local Vibe IN BACKGROUND so it's ready instantly (after service init)
+    _prefetchLocalVibe();
 
     // Load stored messages
     final storedMessages = _memoryService!.getRecentMessages(50);
@@ -325,6 +331,34 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
     } catch (e) {
       debugPrint('⚠️ Prefetch error: $e');
+    }
+  }
+
+  Future<void> _prefetchLocalVibe() async {
+    debugPrint('📍 Pre-fetching Local Vibe...');
+    try {
+      if (_localVibeService == null) {
+        debugPrint('⚠️ Local Vibe Service not initialized yet');
+        return;
+      }
+      
+      final currentLocation = _stateService?.userCurrentLocation;
+      if (currentLocation == null || currentLocation.isEmpty) {
+        debugPrint('⚠️ No location set for Local Vibe prefetch');
+        return;
+      }
+      
+      // Fetch in background, don't block UI
+      _localVibeService!.getLocalVibeContent(
+        currentGpsLocation: currentLocation,
+        forceRefresh: false, // Use cache if available
+      ).then((content) {
+        debugPrint('✅ Local Vibe cached in background');
+      }).catchError((e) {
+        debugPrint('⚠️ Background Local Vibe fetch failed: $e');
+      });
+    } catch (e) {
+      debugPrint('⚠️ Local Vibe prefetch error: $e');
     }
   }
 
@@ -897,6 +931,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                           color: isEnabled ? AurealColors.plasmaCyan : Colors.white,
                         ),
                         onPressed: () async {
+                          ref.read(buttonSoundServiceProvider).playMediumTap();
                           ref.read(feedbackServiceProvider).medium();
                           if (_voiceService != null) {
                             final current = await _voiceService!.getAutoSpeakEnabled();
@@ -1008,17 +1043,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   );
                 },
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(LucideIcons.share2, color: Colors.white),
-                onPressed: () {
-                  ref.read(feedbackServiceProvider).medium();
-                },
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withOpacity(0.3),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
+
             ],
           ),
         ],
@@ -1236,6 +1261,151 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
+  void _showShareInfo() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AurealColors.carbon,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.share2, color: AurealColors.plasmaCyan),
+            const SizedBox(width: 12),
+            Text(
+              'SHARE CONVERSATION',
+              style: GoogleFonts.spaceGrotesk(
+                color: AurealColors.plasmaCyan,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Share your conversation with Sable to your favorite apps or save it for later.',
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AurealColors.plasmaCyan.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '📤 What gets shared:',
+                    style: GoogleFonts.inter(
+                      color: AurealColors.plasmaCyan,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '• Your conversation history\n• Formatted as readable text\n• Share via Messages, Mail, Notes, etc.',
+                    style: GoogleFonts.inter(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'GOT IT',
+              style: GoogleFonts.inter(color: Colors.white54),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              _handleShare();
+            },
+            icon: const Icon(LucideIcons.share2, size: 16),
+            label: Text(
+              'SHARE NOW',
+              style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AurealColors.plasmaCyan,
+              foregroundColor: AurealColors.obsidian,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleShare() async {
+    ref.read(feedbackServiceProvider).medium();
+    
+    if (_messages.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No conversation to share yet!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      // Build a formatted conversation text
+      final buffer = StringBuffer();
+      buffer.writeln('🤖 Conversation with Sable\n');
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      
+      for (final msg in _messages) {
+        final isUser = msg['isUser'] as bool;
+        final message = msg['message'] as String;
+        
+        if (isUser) {
+          buffer.writeln('👤 You:');
+        } else {
+          buffer.writeln('🤖 Sable:');
+        }
+        buffer.writeln(message);
+        buffer.writeln();
+      }
+      
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      buffer.writeln('Shared from Sable - Your Ultra-Human AI Assistant');
+
+      // Share the text
+      await Share.share(
+        buffer.toString(),
+        subject: 'My conversation with Sable',
+      );
+      
+    } catch (e) {
+      debugPrint('Error sharing conversation: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleLocalVibe() async {
     ref.read(feedbackServiceProvider).medium();
     if (_localVibeService == null) return;
@@ -1269,24 +1439,228 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
 
 
+  void _showDailyUpdateInfo() {
+    showDialog(
+      context: context,
+      builder: (context) => _buildInfoDialog(
+        icon: LucideIcons.sun,
+        title: 'DAILY UPDATE',
+        description: 'Get a personalized briefing of the latest news and events based on your interests.',
+        details: '• Curated news from your selected categories\n• Summarized for quick reading\n• Interactive links to learn more',
+        actionLabel: 'GET UPDATE',
+        onAction: () {
+          Navigator.pop(context);
+          _handleDailyUpdate();
+        },
+      ),
+    );
+  }
+
+  void _showScrollInfo() {
+    showDialog(
+      context: context,
+      builder: (context) => _buildInfoDialog(
+        icon: LucideIcons.arrowDown,
+        title: 'SCROLL TO BOTTOM',
+        description: 'Quickly jump to the most recent message in your conversation.',
+        details: '• Instantly scroll to the latest message\n• Useful for long conversations\n• One-tap navigation',
+        actionLabel: 'SCROLL NOW',
+        onAction: () {
+          Navigator.pop(context);
+          _scrollToBottom();
+        },
+      ),
+    );
+  }
+
+  void _showLocalVibeInfo() {
+    showDialog(
+      context: context,
+      builder: (context) => _buildInfoDialog(
+        icon: LucideIcons.mapPin,
+        title: 'LOCAL VIBE',
+        description: 'Discover what\'s happening in your area right now.',
+        details: '• Location-based insights\n• Local events and news\n• Long-press to configure settings',
+        actionLabel: 'GET LOCAL VIBE',
+        onAction: () {
+          Navigator.pop(context);
+          _handleLocalVibe();
+        },
+      ),
+    );
+  }
+
+  void _showClearScreenInfo() {
+    showDialog(
+      context: context,
+      builder: (context) => _buildInfoDialog(
+        icon: LucideIcons.trash2,
+        title: 'CLEAR SCREEN',
+        description: 'Clear visible messages from the screen without deleting conversation history.',
+        details: '• Cleans up your view\n• History is preserved\n• Messages reload on app restart',
+        actionLabel: 'CLEAR NOW',
+        onAction: () {
+          Navigator.pop(context);
+          _handleClearScreen();
+        },
+      ),
+    );
+  }
+
+  Widget _buildInfoDialog({
+    required IconData icon,
+    required String title,
+    required String description,
+    required String details,
+    required String actionLabel,
+    required VoidCallback onAction,
+  }) {
+    return AlertDialog(
+      backgroundColor: AurealColors.carbon,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          Icon(icon, color: AurealColors.plasmaCyan),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              title,
+              style: GoogleFonts.spaceGrotesk(
+                color: AurealColors.plasmaCyan,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            description,
+            style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AurealColors.plasmaCyan.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+            ),
+            child: Text(
+              details,
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+                fontSize: 12,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            'GOT IT',
+            style: GoogleFonts.inter(color: Colors.white54),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: onAction,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AurealColors.plasmaCyan,
+            foregroundColor: AurealColors.obsidian,
+          ),
+          child: Text(
+            actionLabel,
+            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _handleClearScreen() {
+    ref.read(feedbackServiceProvider).medium();
+    setState(() {
+      _messages.clear();
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Screen cleared. History is preserved.'),
+          backgroundColor: AurealColors.plasmaCyan,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   Widget _buildFloatingChips() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          GestureDetector(
+          // Daily Update
+          InteractiveButton(
+            icon: LucideIcons.sun,
+            label: 'Daily Update',
             onTap: _handleDailyUpdate,
-            child: _buildGlassChip(LucideIcons.sun, 'Daily Update'),
+            infoTitle: 'DAILY UPDATE',
+            infoDescription: 'Get a personalized briefing of the latest news and events based on your interests.',
+            infoDetails: '• Curated news from your selected categories\n• Summarized for quick reading\n• Interactive links to learn more',
+            actionLabel: 'GET UPDATE',
           ),
           const SizedBox(width: 12),
-          GestureDetector(
+          // Scroll to Bottom
+          InteractiveButton(
+            icon: LucideIcons.arrowDown,
+            label: 'Scroll',
+            onTap: _scrollToBottom,
+            infoTitle: 'SCROLL TO BOTTOM',
+            infoDescription: 'Quickly jump to the most recent message in your conversation.',
+            infoDetails: '• Instantly scroll to the latest message\n• Useful for long conversations\n• One-tap navigation',
+            actionLabel: 'SCROLL NOW',
+          ),
+          const SizedBox(width: 12),
+          // Local Vibe
+          InteractiveButton(
+            icon: LucideIcons.mapPin,
+            label: 'Local Vibe',
             onTap: _handleLocalVibe,
-            onLongPress: _openLocalVibeSettings,
-            child: _buildGlassChip(LucideIcons.mapPin, 'Local Vibe'),
+            infoTitle: 'LOCAL VIBE',
+            infoDescription: 'Discover what\'s happening in your area right now.',
+            infoDetails: '• Location-based insights\n• Local events and news\n• Tap to explore your area',
+            actionLabel: 'GET LOCAL VIBE',
           ),
           const SizedBox(width: 12),
-          _buildGlassChip(LucideIcons.activity, 'Vital Balance'),
+          // Share
+          InteractiveButton(
+            icon: LucideIcons.share2,
+            label: 'Share',
+            onTap: _handleShare,
+            infoTitle: 'SHARE CONVERSATION',
+            infoDescription: 'Share your conversation with Sable to your favorite apps or save it for later.',
+            infoDetails: '• Your conversation history\n• Formatted as readable text\n• Share via Messages, Mail, Notes, etc.',
+            actionLabel: 'SHARE NOW',
+          ),
+          const SizedBox(width: 12),
+          // Clear Screen
+          InteractiveButton(
+            icon: LucideIcons.trash2,
+            label: 'Clear',
+            onTap: _handleClearScreen,
+            infoTitle: 'CLEAR SCREEN',
+            infoDescription: 'Clear visible messages from the screen without deleting conversation history.',
+            infoDetails: '• Cleans up your view\n• History is preserved\n• Messages reload on app restart',
+            actionLabel: 'CLEAR NOW',
+          ),
         ],
       ),
     );

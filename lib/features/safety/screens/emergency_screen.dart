@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:sable/core/contacts/contacts_service.dart';
 
 class EmergencyScreen extends ConsumerStatefulWidget {
   const EmergencyScreen({super.key});
@@ -24,6 +25,24 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
       'number': '988',
       'subtitle': '24/7, free and confidential support',
       'action': 'tel:988'
+    },
+    {
+      'title': 'SAMHSA National Helpline',
+      'number': '1-800-662-4357',
+      'subtitle': 'Mental health & substance abuse support',
+      'action': 'tel:18006624357'
+    },
+    {
+      'title': 'NAMI HelpLine',
+      'number': '1-800-950-6264',
+      'subtitle': 'Mental health information and resources',
+      'action': 'tel:18009506264'
+    },
+    {
+      'title': 'Anxiety & Depression Hotline',
+      'number': '1-800-273-8255',
+      'subtitle': 'Free counseling for anxiety and depression',
+      'action': 'tel:18002738255'
     },
     {
       'title': 'National Domestic Violence Hotline',
@@ -73,27 +92,102 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
   Future<void> _addContact() async {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
+    final emailController = TextEditingController();
+    final relationshipController = TextEditingController();
 
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AurealColors.carbon,
         title: Text('Add Emergency Contact', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: 'Name', labelStyle: TextStyle(color: Colors.white54)),
-            ),
-            TextField(
-              controller: phoneController,
-              style: const TextStyle(color: Colors.white),
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Phone', labelStyle: TextStyle(color: Colors.white54)),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  labelStyle: TextStyle(color: Colors.white54),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: phoneController,
+                style: const TextStyle(color: Colors.white),
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Phone',
+                  labelStyle: TextStyle(color: Colors.white54),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: emailController,
+                style: const TextStyle(color: Colors.white),
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email (optional)',
+                  labelStyle: TextStyle(color: Colors.white54),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: relationshipController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Relationship',
+                  hintText: 'e.g., Mother, Friend, Spouse',
+                  labelStyle: TextStyle(color: Colors.white54),
+                  hintStyle: TextStyle(color: Colors.white24),
+                ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  try {
+                    final hasPermission = await ContactsService.hasPermission();
+                    if (!hasPermission) {
+                      final granted = await ContactsService.requestPermission();
+                      if (!granted) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Permission denied. Cannot access contacts.')),
+                          );
+                        }
+                        return;
+                      }
+                    }
+                    
+                    final contact = await ContactsService.pickContact();
+                    if (contact != null) {
+                      nameController.text = contact.name;
+                      if (contact.phone != null) {
+                        phoneController.text = contact.phone!;
+                      }
+                      if (contact.email != null) {
+                        emailController.text = contact.email!;
+                      }
+                    }
+                  } catch (e) {
+                    debugPrint('Error picking contact: $e');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e')),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(LucideIcons.users, size: 16),
+                label: const Text('Import from Contacts'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AurealColors.plasmaCyan,
+                  side: BorderSide(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -107,11 +201,17 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                   _emergencyContacts.add({
                     'name': nameController.text,
                     'phone': phoneController.text,
+                    'email': emailController.text.isNotEmpty ? emailController.text : '',
+                    'relationship': relationshipController.text.isNotEmpty ? relationshipController.text : 'Contact',
                   });
                 });
                 Navigator.pop(context);
               }
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AurealColors.hyperGold,
+              foregroundColor: AurealColors.obsidian,
+            ),
             child: const Text('Add'),
           ),
         ],
@@ -187,6 +287,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                 ..._emergencyContacts.asMap().entries.map((entry) {
                    final index = entry.key;
                    final contact = entry.value;
+                   final relationship = contact['relationship'] ?? 'Contact';
                    return Container(
                      margin: const EdgeInsets.only(bottom: 8),
                      decoration: BoxDecoration(
@@ -196,8 +297,20 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                      ),
                      child: ListTile(
                        leading: const Icon(LucideIcons.user, color: Colors.white),
-                       title: Text(contact['name']!, style: const TextStyle(color: Colors.white)),
-                       subtitle: Text(contact['phone']!, style: const TextStyle(color: Colors.white54)),
+                       title: Text(contact['name']!, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                       subtitle: Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           Text(
+                             contact['phone']!,
+                             style: const TextStyle(color: Colors.white70),
+                           ),
+                           Text(
+                             relationship,
+                             style: TextStyle(color: AurealColors.plasmaCyan, fontSize: 12),
+                           ),
+                         ],
+                       ),
                        trailing: IconButton(
                          icon: const Icon(LucideIcons.trash2, color: Colors.red, size: 18),
                          onPressed: () {

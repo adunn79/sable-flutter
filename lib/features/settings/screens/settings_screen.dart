@@ -34,6 +34,7 @@ import 'package:sable/features/safety/screens/emergency_screen.dart';
 import 'package:sable/features/settings/screens/vault_screen.dart';
 import 'package:sable/core/widgets/restart_widget.dart';
 import 'package:flutter/services.dart'; // For Haptics
+import 'package:sable/core/audio/button_sound_service.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -223,7 +224,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _newsTimingOnDemand = stateService.newsTimingOnDemand;
       
       // Load permissions (mocked for now)
-      _permissionGps = true; // Assume true since we have location
+      _permissionGps = stateService.permissionGps;
+      _permissionMic = stateService.permissionMic;
+      _permissionCamera = stateService.permissionCamera;
       
       // Load Feedback Settings
       _hapticsEnabled = stateService.hapticsEnabled;
@@ -390,171 +393,359 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Profile',
             subtitle: 'Manage your identity',
             icon: Icons.person_outline,
-            onTap: _showProfileDialog,
+            onTap: () {
+              ref.read(buttonSoundServiceProvider).playMediumTap();
+              _showProfileDialog();
+            },
+            onLongPress: () {
+              ref.read(buttonSoundServiceProvider).playLightTap();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AurealColors.carbon,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.person_outline, color: AurealColors.plasmaCyan),
+                      const SizedBox(width: 12),
+                      Text('PROFILE', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Manage your identity and how Sable knows you.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AurealColors.plasmaCyan.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                        ),
+                        child: Text('• Your name and personal details\n• How Sable addresses you\n• Identity preferences', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                  ],
+                ),
+              );
+            },
           ),
           SettingsTile(
             title: 'Subscription',
             subtitle: 'Aureal Pro Active',
             icon: Icons.diamond_outlined,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SubscriptionScreen()),
-            ),
-          ),
-
-          _buildSectionHeader('PRIVACY FORTRESS'),
-          SettingsTile(
-            title: 'The Vault',
-            subtitle: 'Zero-Knowledge Zone',
-            icon: Icons.lock_outline,
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const VaultScreen()),
-              );
+              ref.read(buttonSoundServiceProvider).playMediumTap();
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
             },
-          ),
-          SettingsTile(
-            title: 'How we use your info',
-            subtitle: 'Data usage & protection policy',
-            icon: Icons.shield_outlined,
-            onTap: () {
+            onLongPress: () {
+              ref.read(buttonSoundServiceProvider).playLightTap();
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
                   backgroundColor: AurealColors.carbon,
-                  title: Text('Data Privacy', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
-                  content: Text(
-                    'Your data is encrypted locally. We do not sell your personal information. '
-                    'Conversations are processed for response generation only and are not stored permanently on our servers without your consent.',
-                    style: GoogleFonts.inter(color: AurealColors.stardust),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.diamond_outlined, color: AurealColors.hyperGold),
+                      const SizedBox(width: 12),
+                      Text('SUBSCRIPTION', style: GoogleFonts.spaceGrotesk(color: AurealColors.hyperGold, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Manage your Aureal subscription and unlock premium features.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AurealColors.hyperGold.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AurealColors.hyperGold.withOpacity(0.3)),
+                        ),
+                        child: Text('• View current plan and benefits\n• Upgrade or change subscription\n• Manage billing', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                      ),
+                    ],
                   ),
                   actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Close'),
-                    ),
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
                   ],
                 ),
               );
             },
           ),
-          SettingsTile(
-            title: 'Forget Last Interaction',
-            subtitle: 'Remove from short-term memory',
-            icon: Icons.history,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Memory shredded.')),
-              );
-            },
-          ),
-          SettingsTile(
-            title: 'Clear Chat History',
-            subtitle: 'Remove all conversation messages',
-            icon: Icons.chat_bubble_outline,
-            onTap: () async {
-              try {
-                final memoryService = await ConversationMemoryService.create();
-                await memoryService.clearHistory();
-                
-                if (context.mounted) {
-                  // Navigate back to chat to trigger fresh greeting
-                  Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-                    '/home',
-                    (route) => false,
-                  );
-                }
-              } catch (e) {
-                debugPrint('Error clearing chat history: $e');
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error clearing: $e')),
-                  );
-                }
-              }
-            },
-          ),
-          SettingsTile(
-            title: 'Reset Onboarding',
-            subtitle: 'Return to onboarding (keeps data)',
-            icon: Icons.refresh,
-            onTap: () async {
-              debugPrint('🔄 Resetting onboarding...');
-              try {
-                // 1. Clear Onboarding Data
-                final stateService = await OnboardingStateService.create();
-                await stateService.clearOnboardingData();
-                debugPrint('✅ Onboarding data cleared');
-                
-                // 2. Clear Chat History
-                final memoryService = await ConversationMemoryService.create();
-                await memoryService.clearHistory();
-                debugPrint('✅ Chat history cleared');
-                
-                if (context.mounted) {
-                  debugPrint('🚀 Navigating directly to /onboarding');
-                  // Add delay to prevent Navigator lock
-                  await Future.delayed(Duration.zero);
-                  if (context.mounted) {
-                    // Use rootNavigator to access the main MaterialApp navigator with routes
-                    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/onboarding', (route) => false);
-                  }
-                }
-              } catch (e) {
-                debugPrint('❌ Error resetting onboarding: $e');
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error resetting: $e')),
-                  );
-                }
-              }
-            },
-          ),
-          SettingsTile(
-            title: 'Wipe Memory',
-            subtitle: 'Reset Bond Graph completely',
-            icon: Icons.delete_forever,
-            isDestructive: true,
-            onTap: () async {
-              // Show confirmation dialog
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AurealColors.carbon,
-                  title: Text('Wipe All Data?', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
-                  content: Text(
-                    'This will completely reset the app and return you to onboarding. All conversation history, profile data, and preferences will be lost.',
-                    style: GoogleFonts.inter(color: AurealColors.stardust),
+
+
+
+          // Privacy Fortress - Collapsible Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                initiallyExpanded: false,
+                tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                backgroundColor: AurealColors.carbon,
+                collapsedBackgroundColor: AurealColors.carbon,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                leading: const Icon(Icons.lock_outline, color: AurealColors.plasmaCyan),
+                title: Text(
+                  'PRIVACY FORTRESS',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: AurealColors.plasmaCyan,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      style: TextButton.styleFrom(foregroundColor: Colors.red),
-                      child: const Text('Wipe Everything'),
-                    ),
-                  ],
                 ),
-              );
-              
-              if (confirm == true) {
-                // Clear all data
-                final service = await OnboardingStateService.create();
-                await service.clearOnboardingData();
-                
-                final memoryService = await ConversationMemoryService.create();
-                await memoryService.clearHistory();
-                
-                if (context.mounted) {
-                  // Navigate back to splash, which will redirect to onboarding
-                  Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-                }
-              }
-            },
+                subtitle: Text(
+                  'Tap to manage privacy & data',
+                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 11),
+                ),
+                children: [
+                  SettingsTile(
+                    title: 'The Vault',
+                    subtitle: 'Zero-Knowledge Zone',
+                    icon: Icons.lock_outline,
+                    onTap: () {
+                      ref.read(buttonSoundServiceProvider).playMediumTap();
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const VaultScreen()));
+                    },
+                  ),
+                  SettingsTile(
+                    title: 'How we use your info',
+                    subtitle: 'Data usage & protection policy',
+                    icon: Icons.shield_outlined,
+                    onTap: () {
+                      ref.read(buttonSoundServiceProvider).playMediumTap();
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: AurealColors.carbon,
+                          title: Text('Data Privacy', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+                          content: Text(
+                            'Your data is encrypted locally. We do not sell your personal information. '
+                            'Conversations are processed for response generation only and are not stored permanently on our servers without your consent.',
+                            style: GoogleFonts.inter(color: AurealColors.stardust),
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  SettingsTile(
+                    title: 'Forget Last Interaction',
+                    subtitle: 'Remove from short-term memory',
+                    icon: Icons.history,
+                    onTap: () {
+                      ref.read(buttonSoundServiceProvider).playMediumTap();
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Memory shredded.')));
+                    },
+                    onLongPress: () {
+                      ref.read(buttonSoundServiceProvider).playLightTap();
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: AurealColors.carbon,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: Row(
+                            children: [
+                              const Icon(Icons.history, color: AurealColors.plasmaCyan),
+                              const SizedBox(width: 12),
+                              Text('FORGET LAST INTERACTION', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                            ],
+                          ),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Removes only the most recent conversation exchange from short-term memory.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: AurealColors.plasmaCyan.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                                ),
+                                child: Text('• Clears last interaction only\\n• Preserves all other conversations\\n• Bond and personality data untouched\\n• Useful for correcting mistakes', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  SettingsTile(
+                    title: 'Clear Chat History',
+                    subtitle: 'Remove all conversation messages',
+                    icon: Icons.chat_bubble_outline,
+                    onTap: () async {
+                      ref.read(buttonSoundServiceProvider).playMediumTap();
+                      try {
+                        final memoryService = await ConversationMemoryService.create();
+                        await memoryService.clearHistory();
+                        if (context.mounted) {
+                          Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/home', (route) => false);
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error clearing: $e')));
+                        }
+                      }
+                    },
+                    onLongPress: () {
+                      ref.read(buttonSoundServiceProvider).playLightTap();
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: AurealColors.carbon,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: Row(
+                            children: [
+                              const Icon(Icons.chat_bubble_outline, color: AurealColors.plasmaCyan),
+                              const SizedBox(width: 12),
+                              Text('CLEAR CHAT HISTORY', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                            ],
+                          ),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Removes all visible conversation messages from your chat history.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: AurealColors.plasmaCyan.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                                ),
+                                child: Text('• Deletes all conversation messages\\n• Preserves bond and personality data\\n• Returns you to chat with fresh greeting\\n• Profile and settings remain intact', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  SettingsTile(
+                    title: 'Reset Onboarding',
+                    subtitle: 'Return to onboarding (keeps data)',
+                    icon: Icons.refresh,
+                    onTap: () async {
+                      ref.read(buttonSoundServiceProvider).playMediumTap();
+                      try {
+                        final stateService = await OnboardingStateService.create();
+                        await stateService.clearOnboardingData();
+                        final memoryService = await ConversationMemoryService.create();
+                        await memoryService.clearHistory();
+                        if (context.mounted) {
+                          await Future.delayed(Duration.zero);
+                          if (context.mounted) {
+                            Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/onboarding', (route) => false);
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error resetting: $e')));
+                        }
+                      }
+                    },
+                    onLongPress: () {
+                      ref.read(buttonSoundServiceProvider).playLightTap();
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: AurealColors.carbon,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: Row(
+                            children: [
+                              const Icon(Icons.refresh, color: AurealColors.plasmaCyan),
+                              const SizedBox(width: 12),
+                              Text('RESET ONBOARDING', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                            ],
+                          ),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Returns you to the initial setup flow while preserving your existing data.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: AurealColors.plasmaCyan.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                                ),
+                                child: Text('• Restarts onboarding screens\\n• Clears chat history\\n• Keeps your profile data\\n• Useful for re-customizing experience', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  SettingsTile(
+                    title: 'Wipe Memory',
+                    subtitle: 'Reset Bond Graph completely',
+                    icon: Icons.delete_forever,
+                    isDestructive: true,
+                    onTap: () async {
+                      ref.read(buttonSoundServiceProvider).playHeavyTap();
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: AurealColors.carbon,
+                          title: Text('Wipe All Data?', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+                          content: Text(
+                            'This will completely reset the app and return you to onboarding. All conversation history, profile data, and preferences will be lost.',
+                            style: GoogleFonts.inter(color: AurealColors.stardust),
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              style: TextButton.styleFrom(foregroundColor: Colors.red),
+                              child: const Text('Wipe Everything'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        final service = await OnboardingStateService.create();
+                        await service.clearOnboardingData();
+                        final memoryService = await ConversationMemoryService.create();
+                        await memoryService.clearHistory();
+                        if (context.mounted) {
+                          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
           ),
 
           _buildSectionHeader('INTELLIGENCE & MEMORY'),
@@ -562,6 +753,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Persistent Memory',
             subtitle: 'Remember conversations forever',
             icon: Icons.memory_outlined,
+            onLongPress: () {
+              ref.read(buttonSoundServiceProvider).playLightTap();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AurealColors.carbon,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.memory_outlined, color: AurealColors.plasmaCyan),
+                      const SizedBox(width: 12),
+                      Text('PERSISTENT MEMORY', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Enables long-term memory of your conversations and context.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AurealColors.plasmaCyan.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                        ),
+                        child: Text('• Remembers across sessions\n• Builds deeper understanding\n• Personalized responses\n• Disable to prevent learning', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                  ],
+                ),
+              );
+            },
             trailing: Switch(
               value: _persistentMemoryEnabled,
               activeColor: AurealColors.hyperGold,
@@ -572,6 +800,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Apple Intelligence',
             subtitle: 'On-device AI (Siri, Writing Tools)',
             icon: Icons.apple,
+            onLongPress: () {
+              ref.read(buttonSoundServiceProvider).playLightTap();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AurealColors.carbon,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.apple, color: AurealColors.plasmaCyan),
+                      const SizedBox(width: 12),
+                      Text('APPLE INTELLIGENCE', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Integrates with Apple\'s on-device AI features like Siri and Writing Tools.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AurealColors.plasmaCyan.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                        ),
+                        child: Text('• 100% on-device processing\n• Privacy-focused\n• Requires iOS 18.1+\n• Limited to supported devices', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                  ],
+                ),
+              );
+            },
             trailing: Switch(
               value: _appleIntelligenceEnabled,
               activeColor: AurealColors.hyperGold,
@@ -584,6 +849,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Haptic Feedback',
             subtitle: 'Vibrations on interaction',
             icon: Icons.vibration,
+            onLongPress: () {
+              ref.read(buttonSoundServiceProvider).playLightTap();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AurealColors.carbon,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.vibration, color: AurealColors.plasmaCyan),
+                      const SizedBox(width: 12),
+                      Text('HAPTIC FEEDBACK', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Physical vibration feedback when interacting with buttons and controls.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AurealColors.plasmaCyan.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                        ),
+                        child: Text('• Tactile confirmation\n• Enhanced immersion\n• Different levels per action\n• Disable to save battery', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                  ],
+                ),
+              );
+            },
             trailing: Switch(
               value: _hapticsEnabled,
               activeColor: AurealColors.hyperGold,
@@ -591,7 +893,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 setState(() => _hapticsEnabled = val);
                 final state = await OnboardingStateService.create();
                 await state.setHapticsEnabled(val);
-                // Reload feedback service to apply change instantly
                 ref.read(feedbackServiceProvider).reloadSettings();
                 if (val) ref.read(feedbackServiceProvider).medium();
               },
@@ -601,6 +902,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'UI Sounds',
             subtitle: 'Clicks and effects',
             icon: Icons.volume_up_outlined,
+            onLongPress: () {
+              ref.read(buttonSoundServiceProvider).playLightTap();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AurealColors.carbon,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.volume_up_outlined, color: AurealColors.plasmaCyan),
+                      const SizedBox(width: 12),
+                      Text('UI SOUNDS', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Audio feedback for button taps and UI interactions.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AurealColors.plasmaCyan.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                        ),
+                        child: Text('• Click sounds on tap\n• Auditory confirmation\n• Enhances user experience\n• Disable for silent mode', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                  ],
+                ),
+              );
+            },
             trailing: Switch(
               value: _soundsEnabled,
               activeColor: AurealColors.hyperGold,
@@ -622,7 +960,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             trailing: Switch(
               value: _permissionGps,
               activeColor: AurealColors.hyperGold,
-              onChanged: (val) => setState(() => _permissionGps = val),
+              onChanged: (val) async {
+                setState(() => _permissionGps = val);
+                final state = await OnboardingStateService.create();
+                await state.setPermissionGps(val);
+              },
             ),
           ),
           if (_permissionGps)
@@ -647,7 +989,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             trailing: Switch(
               value: _permissionMic,
               activeColor: AurealColors.hyperGold,
-              onChanged: (val) => setState(() => _permissionMic = val),
+              onChanged: (val) async {
+                setState(() => _permissionMic = val);
+                final state = await OnboardingStateService.create();
+                await state.setPermissionMic(val);
+              },
             ),
           ),
           SettingsTile(
@@ -657,7 +1003,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             trailing: Switch(
               value: _permissionCamera,
               activeColor: AurealColors.hyperGold,
-              onChanged: (val) => setState(() => _permissionCamera = val),
+              onChanged: (val) async {
+                setState(() => _permissionCamera = val);
+                final state = await OnboardingStateService.create();
+                await state.setPermissionCamera(val);
+              },
             ),
           ),
           SettingsTile(
@@ -1149,11 +1499,93 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Contact Us',
             subtitle: 'support@aureal.ai',
             icon: Icons.mail_outline,
+            onTap: () {
+              ref.read(buttonSoundServiceProvider).playMediumTap();
+              // TODO: Open email client
+            },
+            onLongPress: () {
+              ref.read(buttonSoundServiceProvider).playLightTap();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AurealColors.carbon,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.mail_outline, color: AurealColors.plasmaCyan),
+                      const SizedBox(width: 12),
+                      Text('CONTACT SUPPORT', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Get help from our support team at support@aureal.ai', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AurealColors.plasmaCyan.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                        ),
+                        child: Text('• Response time: 24-48 hours\n• Include app version and device\n• Attach screenshots if helpful', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                  ],
+                ),
+              );
+            },
           ),
-          const SettingsTile(
+          SettingsTile(
             title: 'Help Center',
             subtitle: 'FAQ & Guides',
             icon: Icons.help_outline,
+            onTap: () {
+              ref.read(buttonSoundServiceProvider).playMediumTap();
+              // TODO: Open help center
+            },
+            onLongPress: () {
+              ref.read(buttonSoundServiceProvider).playLightTap();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AurealColors.carbon,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.help_outline, color: AurealColors.plasmaCyan),
+                      const SizedBox(width: 12),
+                      Text('HELP CENTER', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Access frequently asked questions and user guides.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AurealColors.plasmaCyan.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                        ),
+                        child: Text('• Getting started guides\n• Feature tutorials\n• Troubleshooting tips\n• Privacy and security info', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                  ],
+                ),
+              );
+            },
           ),
           
           // Emergency Services (Moved to bottom of support)
@@ -1163,10 +1595,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
 
           _buildSectionHeader('ABOUT'),
-          const SettingsTile(
+          SettingsTile(
             title: 'Version',
             subtitle: '1.0.0 (Build 102)',
             icon: Icons.info_outline,
+            onTap: () {
+              ref.read(buttonSoundServiceProvider).playLightTap();
+            },
+            onLongPress: () {
+              ref.read(buttonSoundServiceProvider).playLightTap();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AurealColors.carbon,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: AurealColors.plasmaCyan),
+                      const SizedBox(width: 12),
+                      Text('APP VERSION', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Current version and build information for troubleshooting.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AurealColors.plasmaCyan.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                        ),
+                        child: Text('• Version: 1.0.0\n• Build: 102\n• Include this info when contacting support', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                  ],
+                ),
+              );
+            },
           ),
           
           SettingsTile(
@@ -1175,7 +1647,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             icon: Icons.refresh,
             iconColor: AurealColors.hyperGold,
             onTap: () {
+              ref.read(buttonSoundServiceProvider).playMediumTap();
               RestartWidget.restartApp(context);
+            },
+            onLongPress: () {
+              ref.read(buttonSoundServiceProvider).playLightTap();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AurealColors.carbon,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.refresh, color: AurealColors.hyperGold),
+                      const SizedBox(width: 12),
+                      Text('RESTART APP', style: GoogleFonts.spaceGrotesk(color: AurealColors.hyperGold, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Restarts the app to reload the interface and refresh all services.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AurealColors.hyperGold.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AurealColors.hyperGold.withOpacity(0.3)),
+                        ),
+                        child: Text('• Reloads UI and state\n• Does NOT delete data\n• Useful for fixing display issues\n• Returns to home screen', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                  ],
+                ),
+              );
             },
           ),
           const SizedBox(height: 40),

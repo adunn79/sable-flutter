@@ -333,6 +333,37 @@ class OnboardingStateService {
     await _prefs.setString(_keyPersonalityId, id);
   }
 
+  // ============================================
+  // PERMISSIONS
+  // ============================================
+  static const String _keyPermissionGps = 'permission_gps';
+  static const String _keyPermissionMic = 'permission_mic';
+  static const String _keyPermissionCamera = 'permission_camera';
+
+  /// Get GPS permission status (Default: true)
+  bool get permissionGps => _prefs.getBool(_keyPermissionGps) ?? true;
+
+  /// Set GPS permission status
+  Future<void> setPermissionGps(bool enabled) async {
+    await _prefs.setBool(_keyPermissionGps, enabled);
+  }
+
+  /// Get Microphone permission status (Default: true)
+  bool get permissionMic => _prefs.getBool(_keyPermissionMic) ?? true;
+
+  /// Set Microphone permission status
+  Future<void> setPermissionMic(bool enabled) async {
+    await _prefs.setBool(_keyPermissionMic, enabled);
+  }
+
+  ///Get Camera permission status (Default: false)
+  bool get permissionCamera => _prefs.getBool(_keyPermissionCamera) ?? false;
+
+  /// Set Camera permission status
+  Future<void> setPermissionCamera(bool enabled) async {
+    await _prefs.setBool(_keyPermissionCamera, enabled);
+  }
+
   /// Save daily news content
   Future<void> saveDailyNewsContent(String content) async {
     final today = DateTime.now().toIso8601String().split('T')[0];

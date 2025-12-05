@@ -1949,7 +1949,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 // Rewrite button (Apple Intelligence)
                 GestureDetector(
                   onTap: _handleRewrite,
@@ -1957,11 +1957,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     LucideIcons.wand2,
                     color: _controller.text.isNotEmpty 
                         ? AurealColors.hyperGold 
-                        : (isDark ? Colors.white70 : Colors.grey[700]),
-                    size: 20,
+                        : (isDark ? Colors.white : Colors.grey[800]!),
+                    size: 24,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 // Microphone button
                 GestureDetector(
                   onTap: _handleVoiceInput,
@@ -1969,8 +1969,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     _isListening ? LucideIcons.micOff : LucideIcons.mic,
                     color: _isListening 
                         ? AurealColors.plasmaCyan 
-                        : (isDark ? Colors.white70 : Colors.grey[700]),
-                    size: 20,
+                        : (isDark ? Colors.white : Colors.grey[800]!),
+                    size: 24,
                   ),
                 ),
                 const SizedBox(width: 8),

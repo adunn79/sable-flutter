@@ -50,14 +50,12 @@ class WebSearchService {
       final isBullet = trimmedLine.startsWith('•') || trimmedLine.startsWith('*');
       
       // Check if this line is a header
-      final isHeader = trimmedLine.startsWith('**') ||
-          trimmedLine.contains('📰') ||
-          trimmedLine.contains('🌍') ||
-          trimmedLine.contains('🇺🇸') ||
-          trimmedLine.contains('📍') ||
-          trimmedLine.contains('🌉') ||
-          trimmedLine.contains('💻') ||
-          trimmedLine.contains('🔬');
+      final isHeader = trimmedLine.startsWith('**') && 
+          (trimmedLine.contains('🌍') || 
+           trimmedLine.contains('🇺🇸') || 
+           trimmedLine.contains('📍') || 
+           trimmedLine.contains('💻') || 
+           trimmedLine.contains('🔬'));
 
       if (isHeader) {
         // Flush pending bullet if any
@@ -99,11 +97,14 @@ class WebSearchService {
 
   void _addFormattedBullet(List<String> formatted, String content) {
     // Use the full content as the topic to ensure the AI has full context
-    // We clean it of brackets/parentheses to avoid breaking the markdown link syntax
-    String topic = content.replaceAll(RegExp(r'[\[\]()]'), '');
+    // Clean topic of special characters for URL
+    String topic = content.replaceAll(RegExp(r'[\[\]()]'), '').replaceAll(' ', '_');
+    
+    // For content in the link text, escape brackets so they don't break markdown
+    String displayContent = content.replaceAll('[', '\\[').replaceAll(']', '\\]');
     
     // Reconstruct line with link: [• Content](expand:Topic)
-    formatted.add('[• $content](expand:$topic)');
+    formatted.add('[• $displayContent](expand:$topic)');
   }
 
   /// Gets news about a specific topic
@@ -127,18 +128,18 @@ For EACH category, find 4-5 significant stories from the last 24 hours.
 Ensure you use diverse, reputable sources.
 
 FORMATTING RULES:
-- Use the exact category headers provided below.
+- Use the exact category headers provided below (including emojis).
 - For each story, provide a single bullet point.
 - Start each bullet with "• ".
 - Include the source name in parentheses at the end of the bullet, e.g., "(Reuters)".
 - Add a blank line between each bullet point.
 
 CATEGORIES:
-- WORLD: International news, geopolitics, global markets, major world events
-- NATIONAL: US federal government, policy changes, major national stories
-- LOCAL (San Francisco Bay Area): SF/Bay Area specific news, local politics, community events
-- TECH: Major tech companies, product launches, industry developments, AI breakthroughs
-- SCIENCE: Research findings, climate news, health discoveries, space exploration
+- **🌍 WORLD**: International news, geopolitics, global markets, major world events
+- **🇺🇸 NATIONAL**: US federal government, policy changes, major national stories
+- **📍 LOCAL (San Francisco Bay Area)**: SF/Bay Area specific news, local politics, community events
+- **💻 TECH**: Major tech companies, product launches, industry developments, AI breakthroughs
+- **🔬 SCIENCE**: Research findings, climate news, health discoveries, space exploration
 
 Provide detailed, factual information for each category. This is for a comprehensive daily briefing.
 ''';

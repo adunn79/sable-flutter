@@ -48,9 +48,16 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
     return Scaffold(
       backgroundColor: AurealColors.obsidian,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AurealColors.obsidian,
         elevation: 0,
-        title: Text('Local Vibe Settings', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+        title: Text(
+          'LOCAL VIBE SETTINGS',
+          style: GoogleFonts.spaceGrotesk(
+            color: Colors.white,
+            letterSpacing: 2,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -63,12 +70,14 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader('LOCATION'),
+            _buildSectionHeader('LOCATION MODE'),
+            const SizedBox(height: 16),
             _buildLocationToggle(),
+            
             if (_settings.useCurrentLocation)
               _buildRadiusSlider()
             else
@@ -76,6 +85,7 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
             
             const SizedBox(height: 32),
             _buildSectionHeader('CATEGORIES'),
+            const SizedBox(height: 8),
             Text(
               'Select what you want to track locally.',
               style: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
@@ -92,121 +102,171 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
   }
 
   Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Text(
-        title,
-        style: GoogleFonts.inter(
-          color: AurealColors.plasmaCyan,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.5,
-        ),
+    return Text(
+      title,
+      style: GoogleFonts.spaceGrotesk(
+        color: AurealColors.plasmaCyan,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.5,
       ),
     );
   }
 
   Widget _buildLocationToggle() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          RadioListTile<bool>(
-            value: true,
-            groupValue: _settings.useCurrentLocation,
-            onChanged: (val) => setState(() => _settings = _settings.copyWith(useCurrentLocation: true)),
-            title: Text('Current Location (GPS)', style: GoogleFonts.inter(color: Colors.white)),
-            secondary: const Icon(LucideIcons.mapPin, color: AurealColors.hyperGold),
-            activeColor: AurealColors.plasmaCyan,
+    return Row(
+      children: [
+        Expanded(
+          child: _buildSegmentButton(
+            'Current Location',
+            _settings.useCurrentLocation,
+            () => setState(() => _settings = _settings.copyWith(useCurrentLocation: true)),
           ),
-          RadioListTile<bool>(
-            value: false,
-            groupValue: _settings.useCurrentLocation,
-            onChanged: (val) => setState(() => _settings = _settings.copyWith(useCurrentLocation: false)),
-            title: Text('Specific Cities', style: GoogleFonts.inter(color: Colors.white)),
-            secondary: const Icon(LucideIcons.building, color: Colors.white54),
-            activeColor: AurealColors.plasmaCyan,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildSegmentButton(
+            'Specific Cities',
+            !_settings.useCurrentLocation,
+            () => setState(() => _settings = _settings.copyWith(useCurrentLocation: false)),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSegmentButton(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AurealColors.hyperGold.withOpacity(0.2) : AurealColors.carbon,
+          border: Border.all(
+            color: isSelected ? AurealColors.hyperGold : Colors.white24,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            color: isSelected ? AurealColors.hyperGold : Colors.white,
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildRadiusSlider() {
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Search Radius', style: GoogleFonts.inter(color: Colors.white70)),
-              Text('${_settings.radiusMiles.toInt()} miles', style: GoogleFonts.inter(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          Slider(
-            value: _settings.radiusMiles,
-            min: 1,
-            max: 50,
-            divisions: 49,
-            activeColor: AurealColors.plasmaCyan,
-            inactiveColor: Colors.white10,
-            onChanged: (val) => setState(() => _settings = _settings.copyWith(radiusMiles: val)),
-          ),
-        ],
+      padding: const EdgeInsets.only(top: 24),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AurealColors.carbon,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Search Radius', style: GoogleFonts.inter(color: Colors.white70)),
+                Text(
+                  '${_settings.radiusMiles.toInt()} miles',
+                  style: GoogleFonts.inter(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            SliderTheme(
+              data: SliderThemeData(
+                activeTrackColor: AurealColors.plasmaCyan,
+                inactiveTrackColor: Colors.white10,
+                thumbColor: Colors.white,
+                overlayColor: AurealColors.plasmaCyan.withOpacity(0.2),
+                trackHeight: 4,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+              ),
+              child: Slider(
+                value: _settings.radiusMiles,
+                min: 1,
+                max: 50,
+                divisions: 49,
+                onChanged: (val) => setState(() => _settings = _settings.copyWith(radiusMiles: val)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCityInput() {
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.only(top: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _settings.targetCities.map((city) => Chip(
-              label: Text(city, style: GoogleFonts.inter(color: Colors.white)),
-              backgroundColor: AurealColors.carbon,
-              deleteIcon: const Icon(LucideIcons.x, size: 14, color: Colors.white54),
-              onDeleted: () {
-                final updated = List<String>.from(_settings.targetCities)..remove(city);
-                setState(() => _settings = _settings.copyWith(targetCities: updated));
-              },
-            )).toList(),
-          ),
-          const SizedBox(height: 12),
+          if (_settings.targetCities.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _settings.targetCities.map((city) => Chip(
+                  label: Text(city, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
+                  backgroundColor: AurealColors.plasmaCyan.withOpacity(0.2),
+                  deleteIcon: const Icon(LucideIcons.x, size: 14, color: AurealColors.plasmaCyan),
+                  onDeleted: () {
+                    final updated = List<String>.from(_settings.targetCities)..remove(city);
+                    setState(() => _settings = _settings.copyWith(targetCities: updated));
+                  },
+                  side: const BorderSide(color: AurealColors.plasmaCyan),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                )).toList(),
+              ),
+            ),
           if (_settings.targetCities.length < 5)
             Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _cityController,
-                    style: GoogleFonts.inter(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Add city (e.g. Brooklyn, NY)',
-                      hintStyle: GoogleFonts.inter(color: Colors.white30),
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AurealColors.carbon,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
                     ),
-                    onSubmitted: (_) => _addCity(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    alignment: Alignment.centerLeft,
+                    child: TextField(
+                      controller: _cityController,
+                      style: GoogleFonts.inter(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Add city (e.g. Brooklyn, NY)',
+                        hintStyle: GoogleFonts.inter(color: Colors.white30),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      onSubmitted: (_) => _addCity(),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(LucideIcons.plusCircle, color: AurealColors.plasmaCyan),
                   onPressed: _addCity,
+                  style: IconButton.styleFrom(
+                    backgroundColor: AurealColors.carbon,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ],
             ),
@@ -237,33 +297,44 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
       runSpacing: 8,
       children: allCategories.map((category) {
         final isSelected = _settings.activeCategories.contains(category);
-        return FilterChip(
-          label: Text(category),
-          selected: isSelected,
-          onSelected: (selected) {
+        return _buildCategoryChip(
+          category,
+          isSelected,
+          () {
             final updated = List<String>.from(_settings.activeCategories);
-            if (selected) {
-              updated.add(category);
-            } else {
+            if (isSelected) {
               updated.remove(category);
+            } else {
+              updated.add(category);
             }
             setState(() => _settings = _settings.copyWith(activeCategories: updated));
           },
-          backgroundColor: Colors.white.withOpacity(0.05),
-          selectedColor: AurealColors.plasmaCyan.withOpacity(0.2),
-          checkmarkColor: AurealColors.plasmaCyan,
-          labelStyle: GoogleFonts.inter(
-            color: isSelected ? AurealColors.plasmaCyan : Colors.white70,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: isSelected ? AurealColors.plasmaCyan.withOpacity(0.5) : Colors.white10,
-            ),
-          ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildCategoryChip(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AurealColors.plasmaCyan.withOpacity(0.2) : AurealColors.carbon,
+          border: Border.all(
+            color: isSelected ? AurealColors.plasmaCyan : Colors.white24,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            color: isSelected ? AurealColors.plasmaCyan : Colors.white,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
     );
   }
 
@@ -272,46 +343,61 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Custom Categories (${_settings.customCategories.length}/5)', style: GoogleFonts.inter(color: Colors.white70)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _settings.customCategories.map((cat) => Chip(
-            label: Text(cat, style: GoogleFonts.inter(color: Colors.white)),
-            backgroundColor: AurealColors.carbon,
-            deleteIcon: const Icon(LucideIcons.x, size: 14, color: Colors.white54),
-            onDeleted: () {
-              final updated = List<String>.from(_settings.customCategories)..remove(cat);
-              setState(() => _settings = _settings.copyWith(customCategories: updated));
-            },
-          )).toList(),
-        ),
         const SizedBox(height: 12),
+        if (_settings.customCategories.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _settings.customCategories.map((cat) => Chip(
+                label: Text(cat, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
+                backgroundColor: AurealColors.plasmaCyan.withOpacity(0.2),
+                deleteIcon: const Icon(LucideIcons.x, size: 14, color: AurealColors.plasmaCyan),
+                onDeleted: () {
+                  final updated = List<String>.from(_settings.customCategories)..remove(cat);
+                  setState(() => _settings = _settings.copyWith(customCategories: updated));
+                },
+                side: const BorderSide(color: AurealColors.plasmaCyan),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              )).toList(),
+            ),
+          ),
         if (_settings.customCategories.length < 5)
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _categoryController,
-                  style: GoogleFonts.inter(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'Add custom (e.g. Jazz Clubs)',
-                    hintStyle: GoogleFonts.inter(color: Colors.white30),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AurealColors.carbon,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white24),
                   ),
-                  onSubmitted: (_) => _addCustomCategory(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  alignment: Alignment.centerLeft,
+                  child: TextField(
+                    controller: _categoryController,
+                    style: GoogleFonts.inter(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Add custom (e.g. Jazz Clubs)',
+                      hintStyle: GoogleFonts.inter(color: Colors.white30),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    onSubmitted: (_) => _addCustomCategory(),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(LucideIcons.plusCircle, color: AurealColors.plasmaCyan),
                 onPressed: _addCustomCategory,
+                style: IconButton.styleFrom(
+                  backgroundColor: AurealColors.carbon,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ],
           ),

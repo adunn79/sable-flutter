@@ -1,7 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:markdown/markdown.dart' as md;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -18,6 +20,7 @@ import 'package:sable/src/config/app_config.dart';
 import 'package:sable/core/emotion/conversation_memory_service.dart';
 import 'package:sable/core/voice/voice_service.dart';
 import 'package:sable/features/web/services/web_search_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 // Native app services
 import 'package:sable/core/calendar/calendar_service.dart';
 import 'package:sable/core/contacts/contacts_service.dart';
@@ -25,8 +28,10 @@ import 'package:sable/core/photos/photos_service.dart';
 import 'package:sable/core/reminders/reminders_service.dart';
 import 'package:sable/core/memory/structured_memory_service.dart';
 import 'package:sable/core/ai/apple_intelligence_service.dart';
+import 'package:sable/core/personality/personality_service.dart'; // Added implementation
 import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
-import 'package:sable/features/local_vibe/widgets/local_vibe_settings_screen.dart';
+import 'package:sable/core/ui/feedback_service.dart'; // Added implementation
+
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});
@@ -58,10 +63,54 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   @override
   void initState() {
     super.initState();
-    _initService();
+    _loadStateService();
+    // Start background pre-fetch (fire and forget)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _prefetchContent();
+    });
   }
 
-  Future<void> _initService() async {
+  Future<void> _prefetchContent() async {
+    // Wait for services to be ready
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted || _stateService == null) return;
+    
+    // 1. Prefetch Daily News
+    final newsContent = _stateService!.getDailyNewsContent();
+    if (newsContent == null) {
+      debugPrint('📰 Pre-fetching Daily News...');
+      try {
+        final webService = ref.read(webSearchServiceProvider);
+        final categories = _stateService!.newsCategories;
+        final freshContent = await webService.getDailyBriefing(categories);
+        await _stateService!.saveDailyNewsContent(freshContent);
+        debugPrint('✅ Daily News cached in background');
+      } catch (e) {
+        debugPrint('⚠️ Daily News pre-fetch failed: $e');
+      }
+    } else {
+      debugPrint('📰 Daily News already cached');
+    }
+
+    // 2. Prefetch Local Vibe
+    // Note: LocalVibeService needs to be created first
+    try {
+      final webService = ref.read(webSearchServiceProvider);
+      final vibeService = await LocalVibeService.create(webService);
+      // We can check cache implicitly by calling with forceRefresh=false
+      // But we need to check if it returns valid content or the error message
+      final content = await vibeService.getLocalVibeContent(
+        currentGpsLocation: _stateService!.userCurrentLocation,
+        forceRefresh: false
+      );
+      // If it returns the "I need your location" string, we don't count that as success, but it's fine.
+      debugPrint('✅ Local Vibe background check complete');
+    } catch (e) {
+      debugPrint('⚠️ Local Vibe pre-fetch failed: $e');
+    }
+  }
+
+  Future<void> _loadStateService() async {
     _stateService = await OnboardingStateService.create();
     _emotionalService = await EmotionalStateService.create();
     
@@ -110,6 +159,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (_messages.isEmpty && _stateService != null) {
         await _sendInitialGreeting();
       }
+      
+      // Always scroll to bottom to show most recent messages
+      _scrollToBottom();
     }
   }
 
@@ -249,6 +301,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _sendMessage() async {
+    ref.read(feedbackServiceProvider).medium();
+    debugPrint('🔘 Feedback triggered');
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
@@ -444,6 +498,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       } else {
         debugPrint('ERROR: _stateService is null!');
       }
+      
+      // INJECT PERSONALITY OVERRIDE
+      if (_stateService != null) {
+        final currentPersonalityId = _stateService!.selectedPersonalityId;
+        final archetype = PersonalityService.getById(currentPersonalityId);
+        
+        userContext = (userContext ?? '') + '\n\n[PERSONALITY CORE: ACTIVE]\n';
+        userContext += archetype.promptInstruction;
+        userContext += '\n[END PERSONALITY CORE]\n';
+        
+        debugPrint('🧠 Personality Injected: ${archetype.name}');
+      }
 
       // Use orchestrated routing - Gemini decides Claude vs GPT-4o
       final orchestrator = ref.read(modelOrchestratorProvider.notifier);
@@ -530,6 +596,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   /// Handle voice input
   Future<void> _handleRewrite() async {
+    ref.read(feedbackServiceProvider).medium();
     final text = _controller.text;
     if (text.isEmpty) return;
 
@@ -572,6 +639,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _handleVoiceInput() async {
+    ref.read(feedbackServiceProvider).medium();
     if (_voiceService == null) return;
 
     if (_isListening) {
@@ -605,6 +673,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _handleDailyUpdate() async {
+    ref.read(feedbackServiceProvider).medium();
     setState(() => _isTyping = true);
     
     try {
@@ -635,7 +704,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       
       // 2. Display news directly without AI processing
       // This preserves the exact formatting and spacing from the formatter
-      final displayText = "Here's what's happening:\n\n$newsBrief\n\nWant to dig into any of these?";
+      final displayText = "$newsBrief\n\nTap any story to learn more.";
       
       // Add a test message with a known working link
       final testLink = "Test Link: [Click Me](expand:Test_Topic)";
@@ -699,10 +768,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 Expanded(
                   child: ListView.builder(
                     controller: _scrollController,
+                    reverse: true, // Start at bottom like a proper chat app
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                    itemCount: _messages.length,
+                    // Only show the most recent 25 messages for better performance
+                    itemCount: _messages.length > 25 ? 25 : _messages.length,
                     itemBuilder: (context, index) {
-                      final msg = _messages[index];
+                      // Get messages from the end of the list (most recent)
+                      final messageIndex = _messages.length - 1 - index;
+                      final msg = _messages[messageIndex];
                       return _buildMessageBubble(
                         msg['message'] as String,
                         msg['isUser'] as bool,
@@ -747,14 +820,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: const Icon(LucideIcons.brainCircuit, color: Colors.white), // Brain icon
-            onPressed: _showNeuralStatus,
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.black.withOpacity(0.3),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
+          // Brain button removed
           Row(
             children: [
               const Icon(LucideIcons.triangle, color: AurealColors.hyperGold, size: 16),
@@ -785,6 +851,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                           color: isEnabled ? AurealColors.plasmaCyan : Colors.white,
                         ),
                         onPressed: () async {
+                          ref.read(feedbackServiceProvider).medium();
                           if (_voiceService != null) {
                             final current = await _voiceService!.getAutoSpeakEnabled();
                             
@@ -898,7 +965,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(LucideIcons.share2, color: Colors.white),
-                onPressed: () {},
+                onPressed: () {
+                  ref.read(feedbackServiceProvider).medium();
+                },
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.black.withOpacity(0.3),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -952,6 +1021,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     IconButton(
                       icon: const Icon(LucideIcons.refreshCw, color: Colors.white54, size: 20),
                       onPressed: () async {
+                        ref.read(feedbackServiceProvider).heavy(); // Distinct heavy impact for reset
                         await _emotionalService!.resetEmotionalState();
                         await _emotionalService!.setMood(60.0); // Reset to neutral
                         setModalState(() {});
@@ -1121,6 +1191,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _handleLocalVibe() async {
+    ref.read(feedbackServiceProvider).medium();
     if (_localVibeService == null) return;
 
     setState(() => _isTyping = true);
@@ -1150,16 +1221,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
   }
 
-  void _openLocalVibeSettings() {
-    if (_localVibeService == null) return;
-    
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LocalVibeSettingsScreen(service: _localVibeService!),
-      ),
-    );
-  }
+
 
   Widget _buildFloatingChips() {
     return SingleChildScrollView(
@@ -1178,13 +1240,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             child: _buildGlassChip(LucideIcons.mapPin, 'Local Vibe'),
           ),
           const SizedBox(width: 12),
-          _buildGlassChip(LucideIcons.book, 'Journal'),
-          const SizedBox(width: 12),
           _buildGlassChip(LucideIcons.activity, 'Vital Balance'),
         ],
       ),
     );
   }
+
+  void _openLocalVibeSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+    );
+  }
+
   Widget _buildGlassChip(IconData icon, String label) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -1246,72 +1314,71 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Widget _buildInteractiveMessage(String message) {
-    final List<TextSpan> spans = [];
-    final RegExp linkRegex = RegExp(r'\[(.*?)\]\(expand:(.*?)\)');
-    
-    int currentIndex = 0;
-    
-    // Find all matches
-    final matches = linkRegex.allMatches(message);
-    
-    for (final match in matches) {
-      // Add text before the link
-      if (match.start > currentIndex) {
-        spans.add(TextSpan(
-          text: message.substring(currentIndex, match.start),
-          style: GoogleFonts.inter(
-            color: Colors.white,
-            fontSize: 18,
-            height: 1.4,
-            fontWeight: FontWeight.w500,
-          ),
-        ));
-      }
-      
-      // Add the link
-      final linkText = match.group(1);
-      final topic = match.group(2);
-      
-      spans.add(TextSpan(
-        text: linkText,
-        style: GoogleFonts.inter(
+    return MarkdownBody(
+      data: message,
+      selectable: true,
+      extensionSet: md.ExtensionSet.gitHubFlavored,
+      styleSheet: MarkdownStyleSheet(
+        p: GoogleFonts.inter(
+          color: Colors.white,
+          fontSize: 16,
+          height: 1.4,
+        ),
+        a: GoogleFonts.inter(
           color: AurealColors.plasmaCyan,
-          fontSize: 18,
+          fontSize: 16,
           height: 1.4,
           fontWeight: FontWeight.w500,
           decoration: TextDecoration.underline,
           decorationColor: AurealColors.plasmaCyan.withOpacity(0.5),
         ),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () {
-            debugPrint('🔗 Tapped custom link: $topic');
-            if (topic != null) {
-              setState(() {
-                _controller.text = "Tell me more about $topic";
-              });
-              _sendMessage();
-            }
-          },
-      ));
-      
-      currentIndex = match.end;
-    }
-    
-    // Add remaining text
-    if (currentIndex < message.length) {
-      spans.add(TextSpan(
-        text: message.substring(currentIndex),
-        style: GoogleFonts.inter(
+        strong: GoogleFonts.inter(
           color: Colors.white,
-          fontSize: 18,
-          height: 1.4,
-          fontWeight: FontWeight.w500,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
         ),
-      ));
-    }
-    
-    return RichText(
-      text: TextSpan(children: spans),
+        h1: GoogleFonts.spaceGrotesk(
+          color: AurealColors.hyperGold,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
+        h2: GoogleFonts.spaceGrotesk(
+          color: AurealColors.hyperGold,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        h3: GoogleFonts.spaceGrotesk(
+          color: AurealColors.plasmaCyan,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+        listBullet: GoogleFonts.inter(
+          color: AurealColors.plasmaCyan,
+          fontSize: 16,
+        ),
+      ),
+      onTapLink: (text, href, title) async {
+        ref.read(feedbackServiceProvider).tap();
+        
+        if (href == null) return;
+        
+        if (href.startsWith('expand:')) {
+          final topic = href.substring(7); // Remove 'expand:' prefix
+          debugPrint('🔗 Tapped custom link: $topic');
+          setState(() {
+            _controller.text = "Tell me more about $topic";
+          });
+          _sendMessage();
+        } else {
+          // Handle standard URLs
+          final uri = Uri.tryParse(href);
+          if (uri != null && await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            debugPrint('Could not launch $href');
+          }
+        }
+      },
     );
   }
 

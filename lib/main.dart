@@ -9,6 +9,7 @@ import 'src/app.dart' as legacy;
 import 'features/debug/debug_dashboard.dart';
 import 'features/settings/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'core/widgets/restart_widget.dart';
 
 void main() async {
   try {
@@ -33,8 +34,16 @@ void main() async {
   } catch (e, stackTrace) {
     debugPrint('Initialization Error: $e\n$stackTrace');
   }
-  runApp(const ProviderScope(child: AurealApp()));
+  runApp(
+    const ProviderScope(
+      child: RestartWidget(
+        child: AurealApp(),
+      ),
+    ),
+  );
 }
+
+// Inline RestartWidget removed (moved to shared file)
 
 class AurealApp extends StatelessWidget {
   const AurealApp({super.key});
@@ -57,6 +66,7 @@ class AurealApp extends StatelessWidget {
         '/access-denied': (context) => const AccessDeniedScreen(),
         '/debug': (context) => const DebugDashboard(),
         '/settings': (context) => const SettingsScreen(),
+        '/splash': (context) => const AurealSplashScreen(),
       },
     );
   }

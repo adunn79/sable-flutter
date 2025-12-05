@@ -45,7 +45,16 @@ class LocalVibeService {
     await _prefs.setString(_keySettings, newSettings.toJson());
   }
 
-  Future<String> getLocalVibeContent({String? currentGpsLocation}) async {
+  static const String _keyLastVibeContent = 'last_vibe_content';
+  static const String _keyLastVibeDate = 'last_vibe_date';
+
+  Future<String> getLocalVibeContent({String? currentGpsLocation, bool forceRefresh = false}) async {
+    // Check Cache First
+    if (!forceRefresh) {
+      final cached = _getCachedContent();
+      if (cached != null) return cached;
+    }
+
     final locationQuery = _buildLocationQuery(currentGpsLocation);
     if (locationQuery == null) {
       return "I need your location to find the local vibe. Please enable GPS or add cities in settings.";
@@ -76,10 +85,26 @@ Provide a vibrant, engaging digest of what's happening locally.
 
     final result = await _webSearchService.search(query);
     
-    // We can reuse the formatter from WebSearchService if we make it public, 
-    // or just rely on the prompt to format it mostly right, and then apply a simple pass.
-    // For now, let's assume the prompt does a good job, but we might need to ensure spacing.
-    return _ensureSpacing(result);
+    // Format and Cache
+    final formatted = _ensureSpacing(result);
+    await _saveCachedContent(formatted);
+    return formatted;
+  }
+  
+  String? _getCachedContent() {
+    final storedDate = _prefs.getString(_keyLastVibeDate);
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    
+    if (storedDate == today) {
+      return _prefs.getString(_keyLastVibeContent);
+    }
+    return null;
+  }
+
+  Future<void> _saveCachedContent(String content) async {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    await _prefs.setString(_keyLastVibeContent, content);
+    await _prefs.setString(_keyLastVibeDate, today);
   }
 
   String? _buildLocationQuery(String? currentGpsLocation) {

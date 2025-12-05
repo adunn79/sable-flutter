@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:sable/core/ai/model_orchestrator.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
@@ -16,12 +17,22 @@ import 'package:sable/core/voice/elevenlabs_api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/emotion/emotional_state_service.dart';
+import 'package:sable/core/ui/feedback_service.dart';
+import 'package:sable/core/personality/personality_service.dart'; // Added implementation
 // Native app services
 import 'package:sable/core/calendar/calendar_service.dart';
 import 'package:sable/core/contacts/contacts_service.dart';
 import 'package:sable/core/photos/photos_service.dart';
 import 'package:sable/core/reminders/reminders_service.dart';
 import 'package:sable/core/ai/apple_intelligence_service.dart';
+import 'package:sable/features/subscription/screens/subscription_screen.dart';
+import 'package:sable/features/local_vibe/widgets/local_vibe_settings_screen.dart';
+import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
+import 'package:sable/features/local_vibe/models/local_vibe_settings.dart';
+import 'package:sable/features/web/services/web_search_service.dart';
+import 'package:sable/features/safety/screens/emergency_screen.dart';
+import 'package:sable/features/settings/screens/vault_screen.dart';
+import 'package:sable/core/widgets/restart_widget.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -45,6 +56,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // Intelligence Settings
   bool _persistentMemoryEnabled = true;
   bool _appleIntelligenceEnabled = false;
+
+  // Feedback Settings
+  bool _hapticsEnabled = true;
+  bool _soundsEnabled = true;
+
+  // Personality Settings
+  String _selectedPersonalityId = 'sassy_realist';
 
 
 
@@ -84,18 +102,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // News Settings
   bool _newsTimingFirstInteraction = true;
   bool _newsTimingOnDemand = false;
-  bool _categoryLocal = true;
-  bool _categoryNational = true;
-  bool _categoryWorld = false;
-  bool _categorySports = false;
-  bool _categoryReligion = false;
-  bool _categoryTech = true;
-  bool _categoryScience = true;
   
-  // Manual Location
-  String? _manualLocation;
+  final TextEditingController _topicController = TextEditingController();
+  final TextEditingController controller = TextEditingController(); // Location controller
+  String _manualLocation = '';
+
+  // Local Vibe Settings
+  LocalVibeSettings _localVibeSettings = const LocalVibeSettings();
+  final TextEditingController _localVibeCategoryController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
+
+  // News Categories
+  Set<String> _selectedCategories = {};
+  bool _showAllCategories = false;
+
+  static const List<String> _allNewsCategories = [
+    // 1. Essentials
+    'Business', 'Finance', 'Entertainment', 'Health', 'Politics',
+    'National', 'World', 'Local',
+    // 2. Lifestyle
+    'Gaming', 'Travel', 'Food & Dining', 'Automotive',
+    // 3. Specials
+    'Good News', 'AI & Future', 'Crypto', 'Tech', 'Science',
+    // Others
+    'Sports', 'Religion'
+  ];
+
+  static const List<String> _suggestedLocalVibeCategories = [
+    '☕ Coffee Shops',
+    '🍸 Speakeasies',
+    '🎵 Live Music',
+    '🌳 Parks & Nature',
+    '🎨 Art Galleries',
+    '🍽️ Hidden Gem Software', // "Foodie"
+    '🧘 Yoga & Wellness',
+    '🛍️ Vintage Shopping',
+    '📚 Bookstores',
+    '🏰 Historic Sites',
+  ];
+
+  Future<void> _toggleCategory(String category) async {
+    setState(() {
+      if (_selectedCategories.contains(category)) {
+        _selectedCategories.remove(category);
+      } else {
+        _selectedCategories.add(category);
+      }
+    });
+    
+    // Save to state service
+    final stateService = await OnboardingStateService.create();
+    await stateService.setNewsCategories(_selectedCategories.toList());
+  }
   
-  // News Settings
+
+
+  // News Settings (Custom)
   List<String> _customNewsTopics = [];
   
   // Voice Settings
@@ -103,36 +165,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final TextEditingController _apiKeyController = TextEditingController();
   String _voiceEngine = 'eleven_labs';
+  String? _selectedVoiceId; 
   String? _selectedVoiceName;
-  String? _selectedVoiceId; // Added for storing voice ID
   List<VoiceWithMetadata> _availableVoices = [];
-
-  Future<void> _toggleCategory(String category) async {
-    setState(() {
-      switch (category) {
-        case 'Local': _categoryLocal = !_categoryLocal; break;
-        case 'National': _categoryNational = !_categoryNational; break;
-        case 'World': _categoryWorld = !_categoryWorld; break;
-        case 'Sports': _categorySports = !_categorySports; break;
-        case 'Religion': _categoryReligion = !_categoryReligion; break;
-        case 'Tech': _categoryTech = !_categoryTech; break;
-        case 'Science': _categoryScience = !_categoryScience; break;
-      }
-    });
-    
-    // Save to state service
-    final stateService = await OnboardingStateService.create();
-    final categories = <String>[];
-    if (_categoryLocal) categories.add('Local');
-    if (_categoryNational) categories.add('National');
-    if (_categoryWorld) categories.add('World');
-    if (_categorySports) categories.add('Sports');
-    if (_categoryReligion) categories.add('Religion');
-    if (_categoryTech) categories.add('Tech');
-    if (_categoryScience) categories.add('Science');
-    
-    await stateService.setNewsCategories(categories);
-  }
+  
+  // Local Vibe Service handle
+  LocalVibeService? _localVibeService;
 
   @override
   void initState() {
@@ -145,6 +183,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void dispose() {
     _apiKeyController.dispose();
     _audioPlayer.dispose();
+    _cityController.dispose();
+    _localVibeCategoryController.dispose();
     super.dispose();
   }
 
@@ -154,7 +194,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     
     setState(() {
-      _manualLocation = stateService.userCurrentLocation;
+      _manualLocation = stateService.userCurrentLocation ?? '';
       _voiceEngine = prefs.getString('voice_engine') ?? 'eleven_labs';
       _apiKeyController.text = prefs.getString('eleven_labs_api_key') ?? '';
       _selectedVoiceId = prefs.getString('selected_voice_id');
@@ -165,25 +205,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       
       // Load News Settings
       _newsEnabled = stateService.newsEnabled;
+
       final categories = stateService.newsCategories;
-      _categoryLocal = categories.contains('Local');
-      _categoryNational = categories.contains('National');
-      _categoryWorld = categories.contains('World');
-      _categorySports = categories.contains('Sports');
-      _categoryReligion = categories.contains('Religion');
-      _categoryTech = categories.contains('Tech');
-      _categoryScience = categories.contains('Science');
+      _selectedCategories = Set.from(categories);
       
       _newsTimingFirstInteraction = stateService.newsTimingFirstInteraction;
       _newsTimingOnDemand = stateService.newsTimingOnDemand;
       
+      _newsTimingOnDemand = stateService.newsTimingOnDemand;
+      
       // Load permissions (mocked for now)
       _permissionGps = true; // Assume true since we have location
+      
+      // Load Feedback Settings
+      _hapticsEnabled = stateService.hapticsEnabled;
+      _soundsEnabled = stateService.soundsEnabled;
+      _selectedPersonalityId = stateService.selectedPersonalityId;
     });
+
+    // Load Local Vibe Settings
+    try {
+      final webSearchService = ref.read(webSearchServiceProvider);
+      final vibeService = await LocalVibeService.create(webSearchService);
+      if (mounted) {
+        setState(() {
+          _localVibeSettings = vibeService.settings;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading Local Vibe settings: $e');
+    }
     
     // Load API Key if exists (for display purposes, though usually hidden)
     // In a real app, we might not want to populate the text field for security, 
     // but for UX here we will leave it empty unless user wants to change it.
+    
+    // Load Local Vibe Settings
+    // Load Local Vibe Settings
+    final orchestrator = ref.read(modelOrchestratorProvider.notifier);
+    final webSearch = WebSearchService(orchestrator);
+    _localVibeService = await LocalVibeService.create(webSearch);
+    setState(() {
+      _localVibeSettings = _localVibeService!.settings;
+    });
   }
 
   Future<void> _loadVoices() async {
@@ -279,6 +343,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
   @override
   Widget build(BuildContext context) {
+    debugPrint('Building SettingsScreen'); // Debug print
     final bondState = ref.watch(bondEngineProvider);
 
     return Scaffold(
@@ -320,9 +385,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               icon: Icons.emergency,
               iconColor: Colors.red,
               onTap: () {
-                // TODO: Implement emergency call/info
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Emergency protocols activated.')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const EmergencyScreen()),
                 );
               },
             ),
@@ -335,17 +400,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             icon: Icons.person_outline,
             onTap: _showProfileDialog,
           ),
-          const SettingsTile(
+          SettingsTile(
             title: 'Subscription',
             subtitle: 'Aureal Pro Active',
             icon: Icons.diamond_outlined,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SubscriptionScreen()),
+            ),
           ),
 
           _buildSectionHeader('PRIVACY FORTRESS'),
-          const SettingsTile(
+          SettingsTile(
             title: 'The Vault',
             subtitle: 'Zero-Knowledge Zone',
             icon: Icons.lock_outline,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const VaultScreen()),
+              );
+            },
           ),
           SettingsTile(
             title: 'How we use your info',
@@ -509,6 +584,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               value: _appleIntelligenceEnabled,
               activeColor: AurealColors.hyperGold,
               onChanged: _toggleAppleIntelligence,
+            ),
+          ),
+
+          _buildSectionHeader('FEEDBACK & IMMERSION'),
+          SettingsTile(
+            title: 'Haptic Feedback',
+            subtitle: 'Vibrations on interaction',
+            icon: Icons.vibration,
+            trailing: Switch(
+              value: _hapticsEnabled,
+              activeColor: AurealColors.hyperGold,
+              onChanged: (val) async {
+                setState(() => _hapticsEnabled = val);
+                final state = await OnboardingStateService.create();
+                await state.setHapticsEnabled(val);
+                // Reload feedback service to apply change instantly
+                ref.read(feedbackServiceProvider).reloadSettings();
+                if (val) ref.read(feedbackServiceProvider).medium();
+              },
+            ),
+          ),
+          SettingsTile(
+            title: 'UI Sounds',
+            subtitle: 'Clicks and effects',
+            icon: Icons.volume_up_outlined,
+            trailing: Switch(
+              value: _soundsEnabled,
+              activeColor: AurealColors.hyperGold,
+              onChanged: (val) async {
+                setState(() => _soundsEnabled = val);
+                final state = await OnboardingStateService.create();
+                await state.setSoundsEnabled(val);
+                ref.read(feedbackServiceProvider).reloadSettings();
+                if (val) ref.read(feedbackServiceProvider).tap();
+              },
             ),
           ),
 
@@ -777,6 +887,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           _buildSectionHeader('REAL-WORLD AWARENESS'),
           SettingsTile(
+            title: 'Local Vibe',
+            subtitle: 'Location & Preferences',
+            icon: Icons.location_on_outlined,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Switch(
+                  value: _gpsEnabled,
+                  activeColor: AurealColors.hyperGold,
+                  onChanged: (val) => setState(() => _gpsEnabled = val),
+                ),
+              ],
+            ),
+          ),
+          
+          if (_gpsEnabled) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader('LOCATION MODE'),
+                  const SizedBox(height: 16),
+                  _buildLocationToggle(),
+                  
+                  if (_localVibeSettings.useCurrentLocation)
+                    _buildRadiusSlider()
+                  else
+                    _buildCityInput(),
+                  
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('CATEGORIES'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Select what you want to track locally.',
+                    style: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCategoryChips(),
+                  
+                  const SizedBox(height: 24),
+                  _buildCustomCategoryInput(),
+                ],
+              ),
+            ),
+          ],
+          SettingsTile(
             title: 'Daily Briefing',
             subtitle: _newsEnabled ? 'Active' : 'Disabled',
             icon: Icons.newspaper,
@@ -854,13 +1011,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _buildCategoryChip('Local', _categoryLocal, () => _toggleCategory('Local')),
-                      _buildCategoryChip('National', _categoryNational, () => _toggleCategory('National')),
-                      _buildCategoryChip('World', _categoryWorld, () => _toggleCategory('World')),
-                      _buildCategoryChip('Sports', _categorySports, () => _toggleCategory('Sports')),
-                      _buildCategoryChip('Religion', _categoryReligion, () => _toggleCategory('Religion')),
-                      _buildCategoryChip('Tech', _categoryTech, () => _toggleCategory('Tech')),
-                      _buildCategoryChip('Science', _categoryScience, () => _toggleCategory('Science')),
+                      ...(_showAllCategories ? _allNewsCategories : _allNewsCategories.take(8)).map(
+                        (category) => _buildCategoryChip(
+                          category,
+                          _selectedCategories.contains(category),
+                          () => _toggleCategory(category),
+                        ),
+                      ),
+                      // Show More Button
+                      GestureDetector(
+                        onTap: () => setState(() => _showAllCategories = !_showAllCategories),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _showAllCategories ? 'Show Less' : 'Show More',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _showAllCategories ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                color: Colors.white70,
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -931,22 +1119,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // End of News Section
           ],
           
-          SettingsTile(
-            title: 'Local Guide',
-            subtitle: 'GPS suggestions',
-            icon: Icons.location_on_outlined,
-            trailing: Switch(
-              value: _gpsEnabled,
-              activeColor: AurealColors.hyperGold,
-              onChanged: (val) => setState(() => _gpsEnabled = val),
-            ),
-          ),
+
 
           _buildSectionHeader('BOND ENGINE'),
-          _buildBondEngineSection(bondState.name),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: _buildBondEngineSection(bondState.name),
+          ),
+          
+          _buildSectionHeader('PERSONALITY CORE'),
+          _buildPersonalitySection(),
 
-          _buildSectionHeader('SUPPORT'),
-          const SettingsTile(
+          _buildSectionHeader('VOICE & PERSONA'),
+          SettingsTile(
             title: 'Contact Us',
             subtitle: 'support@aureal.ai',
             icon: Icons.mail_outline,
@@ -962,6 +1147,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Version',
             subtitle: '1.0.0 (Build 102)',
             icon: Icons.info_outline,
+          ),
+          
+          SettingsTile(
+            title: 'Restart App',
+            subtitle: 'Reload interface & state',
+            icon: Icons.refresh,
+            iconColor: AurealColors.hyperGold,
+            onTap: () {
+              RestartWidget.restartApp(context);
+            },
           ),
           const SizedBox(height: 40),
         ],
@@ -1108,51 +1303,128 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _showProfileDialog() async {
     final stateService = await OnboardingStateService.create();
-    final nameController = TextEditingController(text: stateService.userName);
     
+    // Controllers
+    final nameController = TextEditingController(text: stateService.userName);
+    final phoneController = TextEditingController(text: stateService.userPhone ?? '');
+    final emailController = TextEditingController(text: stateService.userEmail ?? '');
+    final locationController = TextEditingController(text: stateService.userLocation ?? '');
+    String? selectedGender = stateService.userGender;
+
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
-        title: Text('Edit Profile', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              style: GoogleFonts.inter(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'Name',
-                labelStyle: TextStyle(color: AurealColors.stardust),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AurealColors.plasmaCyan)),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: AurealColors.carbon,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text('Edit Profile', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildTextField(nameController, 'Full Name', Icons.person),
+                    const SizedBox(height: 12),
+                    _buildTextField(phoneController, 'Phone Number', Icons.phone),
+                    const SizedBox(height: 12),
+                    _buildTextField(emailController, 'Email Address', Icons.email),
+                    const SizedBox(height: 12),
+                    _buildTextField(locationController, 'Home Location', Icons.location_on),
+                    const SizedBox(height: 12),
+                    // Gender Dropdown
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedGender,
+                          isExpanded: true,
+                          dropdownColor: AurealColors.carbon,
+                          hint: Text('Select Gender', style: TextStyle(color: AurealColors.stardust)),
+                          icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                          items: ['Male', 'Female', 'Non-Binary', 'Prefer not to say'].map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value, style: GoogleFonts.inter(color: Colors.white)),
+                            );
+                          }).toList(),
+                          onChanged: (newValue) {
+                            setDialogState(() {
+                              selectedGender = newValue;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final newName = nameController.text.trim();
+                  
+                  await stateService.saveUserProfile(
+                    name: newName.isNotEmpty ? newName : (stateService.userName ?? 'User'),
+                    dob: stateService.userDob ?? DateTime.now(),
+                    location: locationController.text.trim(),
+                    currentLocation: stateService.userCurrentLocation,
+                    gender: selectedGender,
+                    voiceId: stateService.selectedVoiceId,
+                    phone: phoneController.text.trim(),
+                    email: emailController.text.trim(),
+                  );
+                  
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Profile updated successfully.')),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AurealColors.plasmaCyan,
+                  foregroundColor: Colors.black,
+                ),
+                child: const Text('Save Changes'),
+              ),
+            ],
+          );
+        }
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon) {
+    return TextField(
+      controller: controller,
+      style: GoogleFonts.inter(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: AurealColors.stardust),
+        prefixIcon: Icon(icon, color: Colors.white54, size: 20),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.white24)
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newName = nameController.text.trim();
-              if (newName.isNotEmpty) {
-                await stateService.saveUserProfile(
-                  name: newName,
-                  dob: stateService.userDob ?? DateTime.now(),
-                  location: stateService.userLocation ?? 'Unknown',
-                  currentLocation: stateService.userCurrentLocation,
-                  gender: stateService.userGender,
-                  voiceId: stateService.selectedVoiceId,
-                );
-              }
-              Navigator.pop(context);
-            },
-            child: Text('Save', style: TextStyle(color: AurealColors.plasmaCyan)),
-          ),
-        ],
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AurealColors.plasmaCyan)
+        ),
+        fillColor: Colors.white.withOpacity(0.05),
+        filled: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );
   }
@@ -1188,9 +1460,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // Map bondState to slider value (0-100)
     double sliderValue = bondState == 'cooled' ? 16.5 : (bondState == 'warm' ? 83.5 : 50.0);
     
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Container(
+    return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AurealColors.carbon,
@@ -1294,8 +1564,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Future<void> _setBondState(String newState) async {
@@ -1327,16 +1596,462 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _setBondStateWithValue(String newState, double sliderValue) async {
     final emotionalService = await EmotionalStateService.create();
     
-    // Use the slider value directly for more granular control
+    // Map slider value (0-100) to mood (0-100) reasonably directly but keeping the bands
+    // 0-33 = Cooled (0-40 mood)
+    // 33-66 = Neutral (40-60 mood)
+    // 66-100 = Warm (60-100 mood)
+    
+    // Simple mapping:
     await emotionalService.setMood(sliderValue);
     ref.invalidate(bondEngineProvider);
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Bond calibrated to ${newState.toUpperCase()} (${sliderValue.toInt()}%)')),
-      );
+  }
+
+  Widget _buildPersonalitySection() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          child: SizedBox(
+            height: 140,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: PersonalityService.archetypes.length,
+              itemBuilder: (context, index) {
+                final archetype = PersonalityService.archetypes[index];
+                final isSelected = _selectedPersonalityId == archetype.id;
+                
+                return GestureDetector(
+                  onTap: () async {
+                    setState(() => _selectedPersonalityId = archetype.id);
+                    ref.read(feedbackServiceProvider).medium();
+                    
+                    // Save
+                    final state = await OnboardingStateService.create();
+                    await state.setPersonalityId(archetype.id);
+                  },
+                  child: Container(
+                    width: 160,
+                    margin: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AurealColors.hyperGold.withOpacity(0.1) : AurealColors.carbon,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected ? AurealColors.hyperGold : Colors.white10,
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: isSelected ? AurealColors.hyperGold : Colors.white10,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                LucideIcons.brainCircuit,
+                                size: 16,
+                                color: isSelected ? Colors.black : Colors.white70,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                _showPersonalityInfo(archetype);
+                              },
+                              child: Icon(
+                                Icons.info_outline,
+                                size: 18,
+                                color: Colors.white54,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        Text(
+                          archetype.name,
+                          style: GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          archetype.subtitle,
+                          style: GoogleFonts.inter(
+                            color: isSelected ? AurealColors.hyperGold : Colors.white54,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showPersonalityInfo(PersonalityArchetype archetype) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AurealColors.carbon,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(LucideIcons.brainCircuit, color: AurealColors.plasmaCyan),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                archetype.name,
+                style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(archetype.subtitle, style: GoogleFonts.inter(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _buildInfoRow('Vibe', archetype.vibe),
+            const SizedBox(height: 12),
+            _buildInfoRow('Traits', archetype.traits),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                archetype.description,
+                style: GoogleFonts.inter(color: Colors.white70, fontStyle: FontStyle.italic),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close', style: TextStyle(color: AurealColors.hyperGold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label.toUpperCase(), style: GoogleFonts.inter(color: Colors.white54, fontSize: 10, letterSpacing: 1.5)),
+        const SizedBox(height: 4),
+        Text(value, style: GoogleFonts.inter(color: Colors.white)),
+      ],
+    );
+  }
+
+  Widget _buildLocationToggle() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildSegmentButton(
+            'Current Location',
+            _localVibeSettings.useCurrentLocation,
+            () => _updateLocalVibeSettings(_localVibeSettings.copyWith(useCurrentLocation: true)),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildSegmentButton(
+            'Specific Cities',
+            !_localVibeSettings.useCurrentLocation,
+            () => _updateLocalVibeSettings(_localVibeSettings.copyWith(useCurrentLocation: false)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSegmentButton(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AurealColors.hyperGold.withOpacity(0.2) : AurealColors.carbon,
+          border: Border.all(
+            color: isSelected ? AurealColors.hyperGold : Colors.white24,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            color: isSelected ? AurealColors.hyperGold : Colors.white,
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRadiusSlider() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AurealColors.carbon,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Search Radius', style: GoogleFonts.inter(color: Colors.white70)),
+                Text(
+                  '${_localVibeSettings.radiusMiles.toInt()} miles',
+                  style: GoogleFonts.inter(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            SliderTheme(
+              data: SliderThemeData(
+                activeTrackColor: AurealColors.plasmaCyan,
+                inactiveTrackColor: Colors.white10,
+                thumbColor: Colors.white,
+                overlayColor: AurealColors.plasmaCyan.withOpacity(0.2),
+                trackHeight: 4,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+              ),
+              child: Slider(
+                value: _localVibeSettings.radiusMiles,
+                min: 1,
+                max: 50,
+                divisions: 49,
+                onChanged: (val) => _updateLocalVibeSettings(_localVibeSettings.copyWith(radiusMiles: val)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCityInput() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_localVibeSettings.targetCities.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _localVibeSettings.targetCities.map((city) => Chip(
+                  label: Text(city, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
+                  backgroundColor: AurealColors.plasmaCyan.withOpacity(0.2),
+                  deleteIcon: const Icon(LucideIcons.x, size: 14, color: AurealColors.plasmaCyan),
+                  onDeleted: () {
+                    final updated = List<String>.from(_localVibeSettings.targetCities)..remove(city);
+                    _updateLocalVibeSettings(_localVibeSettings.copyWith(targetCities: updated));
+                  },
+                  side: const BorderSide(color: AurealColors.plasmaCyan),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                )).toList(),
+              ),
+            ),
+          if (_localVibeSettings.targetCities.length < 5)
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AurealColors.carbon,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    alignment: Alignment.centerLeft,
+                    child: TextField(
+                      controller: _cityController,
+                      style: GoogleFonts.inter(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Add city (e.g. Brooklyn, NY)',
+                        hintStyle: GoogleFonts.inter(color: Colors.white30),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      onSubmitted: (_) => _addCity(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(LucideIcons.plusCircle, color: AurealColors.plasmaCyan),
+                  onPressed: _addCity,
+                  style: IconButton.styleFrom(
+                    backgroundColor: AurealColors.carbon,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _addCity() {
+    final city = _cityController.text.trim();
+    if (city.isNotEmpty && !_localVibeSettings.targetCities.contains(city)) {
+      final updated = List<String>.from(_localVibeSettings.targetCities)..add(city);
+      _updateLocalVibeSettings(_localVibeSettings.copyWith(targetCities: updated));
+      _cityController.clear();
     }
   }
+
+  Widget _buildCategoryChips() {
+    final allCategories = {
+      ..._localVibeSettings.activeCategories,
+      ..._suggestedLocalVibeCategories,
+    }.toList();
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: allCategories.map((category) {
+        final isSelected = _localVibeSettings.activeCategories.contains(category);
+        return _buildCategoryChip(
+          category,
+          isSelected,
+          () {
+            final updated = List<String>.from(_localVibeSettings.activeCategories);
+            if (isSelected) {
+              updated.remove(category);
+            } else {
+              updated.add(category);
+            }
+            _updateLocalVibeSettings(_localVibeSettings.copyWith(activeCategories: updated));
+          },
+        );
+      }).toList(),
+    );
+  }
+
+
+
+  Widget _buildCustomCategoryInput() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Custom Categories (${_localVibeSettings.customCategories.length}/5)', style: GoogleFonts.inter(color: Colors.white70)),
+        const SizedBox(height: 12),
+        if (_localVibeSettings.customCategories.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _localVibeSettings.customCategories.map((cat) => Chip(
+                label: Text(cat, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
+                backgroundColor: AurealColors.plasmaCyan.withOpacity(0.2),
+                deleteIcon: const Icon(LucideIcons.x, size: 14, color: AurealColors.plasmaCyan),
+                onDeleted: () {
+                  final updated = List<String>.from(_localVibeSettings.customCategories)..remove(cat);
+                  _updateLocalVibeSettings(_localVibeSettings.copyWith(customCategories: updated));
+                },
+                side: const BorderSide(color: AurealColors.plasmaCyan),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              )).toList(),
+            ),
+          ),
+        if (_localVibeSettings.customCategories.length < 5)
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AurealColors.carbon,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  alignment: Alignment.centerLeft,
+                  child: TextField(
+                    controller: _localVibeCategoryController,
+                    style: GoogleFonts.inter(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Add custom (e.g. Jazz Clubs)',
+                      hintStyle: GoogleFonts.inter(color: Colors.white30),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    onSubmitted: (_) => _addCustomCategory(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(LucideIcons.plusCircle, color: AurealColors.plasmaCyan),
+                onPressed: _addCustomCategory,
+                style: IconButton.styleFrom(
+                  backgroundColor: AurealColors.carbon,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  void _addCustomCategory() {
+    final cat = _localVibeCategoryController.text.trim();
+    if (cat.isNotEmpty && !_localVibeSettings.customCategories.contains(cat)) {
+      final updated = List<String>.from(_localVibeSettings.customCategories)..add(cat);
+      _updateLocalVibeSettings(_localVibeSettings.copyWith(customCategories: updated));
+      _localVibeCategoryController.clear();
+    }
+  }
+
+  Future<void> _updateLocalVibeSettings(LocalVibeSettings settings) async {
+    setState(() => _localVibeSettings = settings);
+    try {
+      final webSearchService = ref.read(webSearchServiceProvider);
+      final service = await LocalVibeService.create(webSearchService);
+      await service.updateSettings(settings);
+    } catch (e) {
+      debugPrint('Error saving local vibe settings: $e');
+    }
+  }
+
 }
 
 

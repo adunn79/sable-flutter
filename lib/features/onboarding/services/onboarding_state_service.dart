@@ -68,6 +68,8 @@ class OnboardingStateService {
   static const String _keyUserLocation = 'user_location'; // Birth place
   static const String _keyUserCurrentLocation = 'user_current_location'; // Current location
   static const String _keyUserGender = 'user_gender';
+  static const String _keyUserPhone = 'user_phone';
+  static const String _keyUserEmail = 'user_email';
   
   // Daily news tracking
   static const String _keyLastInteractionDate = 'last_interaction_date';
@@ -83,6 +85,8 @@ class OnboardingStateService {
     String? gender,
     String? voiceId,
     String? aiOrigin,
+    String? phone,
+    String? email,
   }) async {
     await _prefs.setString(_keyUserName, name);
     await _prefs.setString(_keyUserDob, dob.toIso8601String());
@@ -98,6 +102,12 @@ class OnboardingStateService {
     }
     if (aiOrigin != null) {
       await _prefs.setString(_keyAiOrigin, aiOrigin);
+    }
+    if (phone != null) {
+      await _prefs.setString(_keyUserPhone, phone);
+    }
+    if (email != null) {
+      await _prefs.setString(_keyUserEmail, email);
     }
   }
 
@@ -119,6 +129,12 @@ class OnboardingStateService {
 
   /// Get user gender
   String? get userGender => _prefs.getString(_keyUserGender);
+
+  /// Get user phone
+  String? get userPhone => _prefs.getString(_keyUserPhone);
+
+  /// Get user email
+  String? get userEmail => _prefs.getString(_keyUserEmail);
 
   /// Get selected voice ID
   String? get selectedVoiceId => _prefs.getString(_keySelectedVoiceId);
@@ -188,6 +204,46 @@ class OnboardingStateService {
     await _prefs.setStringList(_keyNewsCategories, categories);
   }
   
+  // ============================================
+  // VAULT / MEMORY MANAGEMENT
+  // ============================================
+  
+  static const String _keyMemoryItems = 'structured_memory_items';
+  
+  /// Get structured memory items (The Vault)
+  List<String> get memoryItems {
+    return _prefs.getStringList(_keyMemoryItems) ?? [
+      // Default/Initial memories for demonstration if empty
+      'User prefers concise answers.',
+      'User is interested in AI technology.',
+      'User values privacy and security.',
+    ]; 
+  }
+  
+  /// Add a memory item
+  Future<void> addMemoryItem(String item) async {
+    final items = memoryItems;
+    items.add(item);
+    await _prefs.setStringList(_keyMemoryItems, items);
+  }
+  
+  /// Remove a memory item
+  Future<void> removeMemoryItem(int index) async {
+    final items = memoryItems;
+    if (index >= 0 && index < items.length) {
+      items.removeAt(index);
+      await _prefs.setStringList(_keyMemoryItems, items);
+    }
+  }
+  
+  /// Wipe all memory (The Vault reset)
+  Future<void> wipeAllMemory() async {
+    await _prefs.remove(_keyMemoryItems);
+    // Also clear other personal data if "Complete Wipe" is implied?
+    // User said "wipe the Ai's memory completely". 
+    // We might want to clear conversation history too if we had it stored here.
+  }
+  
   static const String _keyNewsTimingFirst = 'news_timing_first';
   static const String _keyNewsTimingOnDemand = 'news_timing_ondemand';
   static const String _keyDailyNewsContent = 'daily_news_content';
@@ -216,6 +272,37 @@ class OnboardingStateService {
   /// Set news timing: On Demand
   Future<void> setNewsTimingOnDemand(bool value) async {
     await _prefs.setBool(_keyNewsTimingOnDemand, value);
+  }
+
+  // ============================================
+  // FEEDBACK SETTINGS (Haptics & Sound)
+  // ============================================
+  static const String _keyHapticsEnabled = 'haptics_enabled';
+  static const String _keySoundsEnabled = 'sounds_enabled';
+  static const String _keyPersonalityId = 'selected_personality_id';
+
+  /// Get haptics enabled status (Default: true)
+  bool get hapticsEnabled => _prefs.getBool(_keyHapticsEnabled) ?? true;
+
+  /// Set haptics enabled status
+  Future<void> setHapticsEnabled(bool enabled) async {
+    await _prefs.setBool(_keyHapticsEnabled, enabled);
+  }
+
+  /// Get UI sounds enabled status (Default: true)
+  bool get soundsEnabled => _prefs.getBool(_keySoundsEnabled) ?? true;
+
+  /// Set UI sounds enabled status
+  Future<void> setSoundsEnabled(bool enabled) async {
+    await _prefs.setBool(_keySoundsEnabled, enabled);
+  }
+
+  /// Get selected personality ID (Default: 'sassy_realist')
+  String get selectedPersonalityId => _prefs.getString(_keyPersonalityId) ?? 'sassy_realist';
+
+  /// Set selected personality ID
+  Future<void> setPersonalityId(String id) async {
+    await _prefs.setString(_keyPersonalityId, id);
   }
 
   /// Save daily news content

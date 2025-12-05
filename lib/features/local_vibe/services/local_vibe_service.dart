@@ -119,6 +119,12 @@ Provide a vibrant, engaging digest of what's happening locally.
     await _prefs.setString(_keyLastVibeDate, today);
   }
 
+  /// Clear cached Local Vibe content to force refresh
+  Future<void> clearCache() async {
+    await _prefs.remove(_keyLastVibeContent);
+    await _prefs.remove(_keyLastVibeDate);
+  }
+
   String? _buildLocationQuery(String? currentGpsLocation) {
     if (_settings.useCurrentLocation) {
       if (currentGpsLocation != null) {

@@ -30,8 +30,9 @@ class WebSearchService {
     }
   }
 
-  /// Ensures proper spacing between bullet points
+  /// Ensures proper spacing between bullet points and makes them interactive
   /// Handles both • and * style bullets, and markdown **headers**
+  /// Wraps bullet content in [Text](expand:Topic) links
   String _formatBulletSpacing(String text) {
     // Split by lines
     final lines = text.split('\n');
@@ -41,11 +42,36 @@ class WebSearchService {
       final line = lines[i];
       final trimmedLine = line.trim();
       
-      // Add the current line
-      formatted.add(line);
-      
       // Check if this line is a bullet point (• or * at start)
       final isBullet = trimmedLine.startsWith('•') || trimmedLine.startsWith('*');
+      
+      if (isBullet) {
+        // Make interactive: Wrap the content in a link
+        // Extract content after bullet
+        String content = trimmedLine.substring(1).trim();
+        
+        // Try to extract topic (text before first colon)
+        String topic = content;
+        final colonIndex = content.indexOf(':');
+        if (colonIndex > 0 && colonIndex < 50) { // Reasonable length for a topic
+          topic = content.substring(0, colonIndex).trim();
+        } else {
+          // Fallback: use first 5 words or full content if short
+          final words = content.split(' ');
+          if (words.length > 5) {
+            topic = words.take(5).join(' ');
+          }
+        }
+        
+        // Clean topic for the command
+        topic = topic.replaceAll(RegExp(r'[\[\]()]'), '');
+        
+        // Reconstruct line with link: * [Content](expand:Topic)
+        formatted.add('* [$content](expand:$topic)');
+      } else {
+        // Add non-bullet lines as is
+        formatted.add(line);
+      }
       
       if (isBullet && i < lines.length - 1) {
         final nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';

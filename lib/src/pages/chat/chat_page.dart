@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -940,17 +941,38 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 ),
                 textAlign: TextAlign.left,
               )
-            : Text(
-                message,
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 18,
-                  height: 1.4,
-                  fontWeight: FontWeight.w500,
+            : MarkdownBody(
+                data: message,
+                styleSheet: MarkdownStyleSheet(
+                  p: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 18,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  listBullet: GoogleFonts.inter(
+                    color: AurealColors.plasmaCyan,
+                    fontSize: 18,
+                  ),
+                  a: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 18,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                    decoration: TextDecoration.none, // No underline to look like normal text
+                  ),
                 ),
+                onTapLink: (text, href, title) {
+                  if (href != null && href.startsWith('expand:')) {
+                    final topic = href.substring(7);
+                    _handleMessage("Tell me more about $topic");
+                  } else if (href != null) {
+                    // Handle normal links if any (open in browser)
+                    // launchUrl(Uri.parse(href)); 
+                  }
+                },
               ),
-      ),
-    );
+  );
   }
 
   Widget _buildInputArea() {

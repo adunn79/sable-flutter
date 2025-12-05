@@ -1956,7 +1956,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     LucideIcons.wand2,
                     color: _controller.text.isNotEmpty 
                         ? AurealColors.hyperGold 
-                        : (isDark ? Colors.white.withOpacity(0.3) : Colors.black.withOpacity(0.3)),
+                        : (isDark ? Colors.white.withOpacity(0.5) : Colors.black.withOpacity(0.5)),
                     size: 20,
                   ),
                 ),
@@ -1968,7 +1968,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     _isListening ? LucideIcons.micOff : LucideIcons.mic,
                     color: _isListening 
                         ? AurealColors.plasmaCyan 
-                        : (isDark ? Colors.white.withOpacity(0.6) : Colors.black.withOpacity(0.6)),
+                        : (isDark ? Colors.white.withOpacity(0.7) : Colors.black.withOpacity(0.7)),
                     size: 20,
                   ),
                 ),

@@ -854,74 +854,84 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   @override
   Widget build(BuildContext context) {
     debugPrint('🏗️ ChatPage.build called');
-    return Scaffold(
-      backgroundColor: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
-          ? (_backgroundColor == AvatarDisplaySettings.colorWhite ? Colors.white : Colors.black)
-          : AurealColors.obsidian,
-      extendBodyBehindAppBar: true,
-      resizeToAvoidBottomInset: true, // Explicitly handle keyboard
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 1. Background - Conditional based on avatar display mode
-          if (_avatarDisplayMode == AvatarDisplaySettings.modeFullscreen)
-            // Full screen avatar background
-            CinematicBackground(
-              imagePath: _avatarUrl ?? 'assets/images/archetypes/sable.png',
-            )
-          else
-            // Plain color background for icon mode
-            Container(
-              color: _backgroundColor == AvatarDisplaySettings.colorWhite 
-                  ? Colors.white 
-                  : Colors.black,
-            ),
+    
+    // Determine theme brightness based on background color
+    final isLightBackground = _avatarDisplayMode == AvatarDisplaySettings.modeIcon && 
+                              _backgroundColor == AvatarDisplaySettings.colorWhite;
+    
+    return Theme(
+      data: Theme.of(context).copyWith(
+        brightness: isLightBackground ? Brightness.light : Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
+            ? (_backgroundColor == AvatarDisplaySettings.colorWhite ? Colors.white : Colors.black)
+            : AurealColors.obsidian,
+        extendBodyBehindAppBar: true,
+        resizeToAvoidBottomInset: true, // Explicitly handle keyboard
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 1. Background - Conditional based on avatar display mode
+            if (_avatarDisplayMode == AvatarDisplaySettings.modeFullscreen)
+              // Full screen avatar background
+              CinematicBackground(
+                imagePath: _avatarUrl ?? 'assets/images/archetypes/sable.png',
+              )
+            else
+              // Plain color background for icon mode
+              Container(
+                color: _backgroundColor == AvatarDisplaySettings.colorWhite 
+                    ? Colors.white 
+                    : Colors.black,
+              ),
 
-          // 3. Content
-          SafeArea(
-            top: false, // Disable top SafeArea to handle it manually with padding
-            child: Column(
-              children: [
-                const SizedBox(height: 60), // Added manual spacing for header
-                _buildHeader(),
-                Expanded(
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    reverse: true, // Start at bottom like a proper chat app
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                    // Only show the most recent 25 messages for better performance
-                    itemCount: _messages.length > 25 ? 25 : _messages.length,
-                    itemBuilder: (context, index) {
-                      // Get messages from the end of the list (most recent)
-                      final messageIndex = _messages.length - 1 - index;
-                      final msg = _messages[messageIndex];
-                      return _buildMessageBubble(
-                        msg['message'] as String,
-                        msg['isUser'] as bool,
-                      );
-                    },
-                  ),
-                ),
-
-                if (_isTyping)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 24, bottom: 8),
-                    child: Text(
-                      'Sable is thinking...',
-                      style: GoogleFonts.inter(
-                        color: AurealColors.ghost,
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                      ),
+            // 3. Content
+            SafeArea(
+              top: false, // Disable top SafeArea to handle it manually with padding
+              child: Column(
+                children: [
+                  const SizedBox(height: 60), // Added manual spacing for header
+                  _buildHeader(),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      reverse: true, // Start at bottom like a proper chat app
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                      // Only show the most recent 25 messages for better performance
+                      itemCount: _messages.length > 25 ? 25 : _messages.length,
+                      itemBuilder: (context, index) {
+                        // Get messages from the end of the list (most recent)
+                        final messageIndex = _messages.length - 1 - index;
+                        final msg = _messages[messageIndex];
+                        return _buildMessageBubble(
+                          msg['message'] as String,
+                          msg['isUser'] as bool,
+                        );
+                      },
                     ),
                   ),
-                _buildFloatingChips(),
-                const SizedBox(height: 8),
-                _buildInputArea(),
-              ],
+
+                  if (_isTyping)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 24, bottom: 8),
+                      child: Text(
+                        'Sable is thinking...',
+                        style: GoogleFonts.inter(
+                          color: AurealColors.ghost,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  _buildFloatingChips(),
+                  const SizedBox(height: 8),
+                  _buildInputArea(),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

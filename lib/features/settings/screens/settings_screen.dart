@@ -35,6 +35,7 @@ import 'package:sable/features/settings/screens/vault_screen.dart';
 import 'package:sable/core/widgets/restart_widget.dart';
 import 'package:flutter/services.dart'; // For Haptics
 import 'package:sable/core/audio/button_sound_service.dart';
+import 'package:sable/features/settings/services/avatar_display_settings.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -47,6 +48,8 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _newsEnabled = true;
   bool _gpsEnabled = false;
+  String _avatarDisplayMode = AvatarDisplaySettings.modeFullscreen;
+  String _backgroundColor = AvatarDisplaySettings.colorBlack;
   
   // Permission Toggles (Default OFF)
   bool _permissionGps = false;
@@ -253,6 +256,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } catch (e) {
       debugPrint('Error loading Local Vibe settings: $e');
     }
+    
+    // Load Avatar Display Settings
+    final avatarSettings = AvatarDisplaySettings();
+    avatarSettings.getAvatarDisplayMode().then((mode) {
+      if (mounted) setState(() => _avatarDisplayMode = mode);
+    });
+    avatarSettings.getBackgroundColor().then((color) {
+      if (mounted) setState(() => _backgroundColor = color);
+    });
     
     // Load API Key if exists (for display purposes, though usually hidden)
     // In a real app, we might not want to populate the text field for security, 
@@ -745,6 +757,232 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       }
                     },
                   ),
+                ],
+              ),
+            ),
+          ),
+
+          // Chat Appearance Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                initiallyExpanded: false,
+                tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                backgroundColor: AurealColors.carbon,
+                collapsedBackgroundColor: AurealColors.carbon,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                leading: const Icon(Icons.palette_outlined, color: AurealColors.hyperGold),
+                title: Text(
+                  'CHAT APPEARANCE',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: AurealColors.hyperGold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                subtitle: Text(
+                  'Customize avatar and background',
+                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 11),
+                ),
+                children: [
+                  // Avatar Display Mode Toggle
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AurealColors.obsidian,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Avatar Display Mode',
+                          style: GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  ref.read(buttonSoundServiceProvider).playMediumTap();
+                                  final avatarSettings = AvatarDisplaySettings();
+                                  await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeFullscreen);
+                                  setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeFullscreen);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _avatarDisplayMode == AvatarDisplaySettings.modeFullscreen
+                                        ? AurealColors.hyperGold.withOpacity(0.2)
+                                        : Colors.transparent,
+                                    border: Border.all(
+                                      color: _avatarDisplayMode == AvatarDisplaySettings.modeFullscreen
+                                          ? AurealColors.hyperGold
+                                          : Colors.white24,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'Full Screen',
+                                      style: GoogleFonts.inter(
+                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeFullscreen
+                                            ? AurealColors.hyperGold
+                                            : Colors.white70,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  ref.read(buttonSoundServiceProvider).playMediumTap();
+                                  final avatarSettings = AvatarDisplaySettings();
+                                  await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeIcon);
+                                  setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeIcon);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
+                                        ? AurealColors.hyperGold.withOpacity(0.2)
+                                        : Colors.transparent,
+                                    border: Border.all(
+                                      color: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
+                                          ? AurealColors.hyperGold
+                                          : Colors.white24,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'Icon',
+                                      style: GoogleFonts.inter(
+                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
+                                            ? AurealColors.hyperGold
+                                            : Colors.white70,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Background Color Selector (only shown in Icon mode)
+                  if (_avatarDisplayMode == AvatarDisplaySettings.modeIcon)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AurealColors.obsidian,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Background Color',
+                            style: GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () async {
+                                    ref.read(buttonSoundServiceProvider).playMediumTap();
+                                    final avatarSettings = AvatarDisplaySettings();
+                                    await avatarSettings.setBackgroundColor(AvatarDisplaySettings.colorBlack);
+                                    setState(() => _backgroundColor = AvatarDisplaySettings.colorBlack);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black,
+                                      border: Border.all(
+                                        color: _backgroundColor == AvatarDisplaySettings.colorBlack
+                                            ? AurealColors.hyperGold
+                                            : Colors.white24,
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'Black',
+                                        style: GoogleFonts.inter(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () async {
+                                    ref.read(buttonSoundServiceProvider).playMediumTap();
+                                    final avatarSettings = AvatarDisplaySettings();
+                                    await avatarSettings.setBackgroundColor(AvatarDisplaySettings.colorWhite);
+                                    setState(() => _backgroundColor = AvatarDisplaySettings.colorWhite);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border.all(
+                                        color: _backgroundColor == AvatarDisplaySettings.colorWhite
+                                            ? AurealColors.hyperGold
+                                            : Colors.black26,
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'White',
+                                        style: GoogleFonts.inter(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),

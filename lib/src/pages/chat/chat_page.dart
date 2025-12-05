@@ -31,6 +31,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sable/core/ai/apple_intelligence_service.dart';
 import 'package:sable/core/personality/personality_service.dart'; // Added implementation
 import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
+import 'package:sable/features/settings/services/avatar_display_settings.dart';
 import 'package:sable/core/ui/feedback_service.dart'; // Added implementation
 import 'package:share_plus/share_plus.dart';
 import 'package:sable/core/audio/button_sound_service.dart';
@@ -58,6 +59,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   LocalVibeService? _localVibeService;
   
   bool _isTyping = false;
+  String _avatarDisplayMode = AvatarDisplaySettings.modeFullscreen;
+  String _backgroundColor = AvatarDisplaySettings.colorBlack;
   bool _isListening = false;
   String? _avatarUrl;
   String? _dailyUpdateContext; // Holds news context for injection
@@ -68,8 +71,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   void initState() {
     super.initState();
     _loadStateService();
+    // _controller = TextEditingController(); // This line is commented out because _controller is a final field and initialized at declaration. Re-initializing it here would cause an error.
+    _localVibeService = null;
+
+    // Load avatar display settings
+    final avatarSettings = AvatarDisplaySettings();
+    avatarSettings.getAvatarDisplayMode().then((mode) {
+      if (mounted) setState(() => _avatarDisplayMode = mode);
+    });
+    avatarSettings.getBackgroundColor().then((color) {
+      if (mounted) setState(() => _backgroundColor = color);
+    });
+
     // Start background pre-fetch (fire and forget)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _prefetchContent();
     });
   }
@@ -840,17 +855,54 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Widget build(BuildContext context) {
     debugPrint('🏗️ ChatPage.build called');
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
+          ? (_backgroundColor == AvatarDisplaySettings.colorWhite ? Colors.white : Colors.black)
+          : AurealColors.obsidian,
       extendBodyBehindAppBar: true,
       resizeToAvoidBottomInset: true, // Explicitly handle keyboard
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. Background Image
-          // 1. CINEMATIC BACKGROUND (Breathing + Parallax)
-          CinematicBackground(
-            imagePath: _avatarUrl ?? 'assets/images/archetypes/sable.png',
-          ),
+          // 1. Background - Conditional based on avatar display mode
+          if (_avatarDisplayMode == AvatarDisplaySettings.modeFullscreen)
+            // Full screen avatar background
+            CinematicBackground(
+              imagePath: _avatarUrl ?? 'assets/images/archetypes/sable.png',
+            )
+          else
+            // Plain color background for icon mode
+            Container(
+              color: _backgroundColor == AvatarDisplaySettings.colorWhite 
+                  ? Colors.white 
+                  : Colors.black,
+            ),
+
+          // 2. Avatar Icon (only in icon mode)
+          if (_avatarDisplayMode == AvatarDisplaySettings.modeIcon)
+            Positioned(
+              top: 70,
+              right: 16,
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                  image: DecorationImage(
+                    image: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                        ? NetworkImage(_avatarUrl!)
+                        : const AssetImage('assets/images/archetypes/sable.png') as ImageProvider,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
 
           // 3. Content
           SafeArea(

@@ -35,9 +35,9 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
     final hasGps = gpsStatus == LocationPermission.always ||
         gpsStatus == LocationPermission.whileInUse;
 
-    // Web access defaults to true (no iOS permission needed)
+    // Web access defaults to false - user must opt in
     // This is just a preference toggle
-    final hasWeb = true;
+    final hasWeb = false;
 
     if (mounted) {
       setState(() {

@@ -1635,16 +1635,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             actionLabel: 'GET UPDATE',
           ),
           const SizedBox(width: 12),
-          // Scroll to Bottom
-          InteractiveButton(
-            label: 'Scroll\n↓',
-            onTap: _scrollToBottomNow,
-            infoTitle: 'SCROLL TO BOTTOM',
-            infoDescription: 'Quickly jump to the most recent message in your conversation.',
-            infoDetails: '• Instantly scroll to the latest message\n• Useful for long conversations\n• One-tap navigation',
-            actionLabel: 'SCROLL NOW',
-          ),
-          const SizedBox(width: 12),
           // Local Vibe
           InteractiveButton(
             label: 'Local\nVibe',
@@ -1655,6 +1645,26 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             actionLabel: 'GET LOCAL VIBE',
           ),
           const SizedBox(width: 12),
+          // Scroll to Bottom
+          InteractiveButton(
+            label: 'Scroll\n↓',
+            onTap: _scrollToBottomNow,
+            infoTitle: 'SCROLL TO BOTTOM',
+            infoDescription: 'Quickly jump to the most recent message in your conversation.',
+            infoDetails: '• Instantly scroll to the latest message\n• Useful for long conversations\n• One-tap navigation',
+            actionLabel: 'SCROLL NOW',
+          ),
+          const SizedBox(width: 12),
+          // Clear Screen
+          InteractiveButton(
+            label: 'Clear\nScreen',
+            onTap: _handleClearScreen,
+            infoTitle: 'CLEAR SCREEN',
+            infoDescription: 'Clear visible messages from the screen without deleting conversation history.',
+            infoDetails: '• Cleans up your view\n• History is preserved\n• Messages reload on app restart',
+            actionLabel: 'CLEAR NOW',
+          ),
+          const SizedBox(width: 12),
           // Share
           InteractiveButton(
             label: 'Share',
@@ -1663,16 +1673,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             infoDescription: 'Share your conversation with Sable to your favorite apps or save it for later.',
             infoDetails: '• Your conversation history\n• Formatted as readable text\n• Share via Messages, Mail, Notes, etc.',
             actionLabel: 'SHARE NOW',
-          ),
-          const SizedBox(width: 12),
-          // Clear Screen
-          InteractiveButton(
-            label: 'Clear',
-            onTap: _handleClearScreen,
-            infoTitle: 'CLEAR SCREEN',
-            infoDescription: 'Clear visible messages from the screen without deleting conversation history.',
-            infoDetails: '• Cleans up your view\n• History is preserved\n• Messages reload on app restart',
-            actionLabel: 'CLEAR NOW',
           ),
         ],
       ),

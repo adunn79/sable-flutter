@@ -113,11 +113,6 @@ Provide detailed, factual information for each category. This is for a comprehen
     
     final result = await search(query);
     // Apply bullet spacing formatting
-    final formatted = _formatBulletSpacing(result);
-    
-    debugPrint('📰 RAW NEWS (before formatting): ${result.substring(0, result.length > 500 ? 500 : result.length)}...');
-    debugPrint('✨ FORMATTED NEWS (after spacing): ${formatted.substring(0, formatted.length > 500 ? 500 : formatted.length)}...');
-    
-    return formatted;
+    return _formatBulletSpacing(result);
   }
 }

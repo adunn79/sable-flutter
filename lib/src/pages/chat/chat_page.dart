@@ -584,16 +584,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       final webService = ref.read(webSearchServiceProvider);
       final categories = _stateService!.newsCategories;
       
-      // TEMPORARY: Force fresh fetch to test new formatting
-      // String? newsBrief = _stateService!.getDailyNewsContent();
-      String? newsBrief;
-      // if (newsBrief == null) {
+      // Check cache first
+      String? newsBrief = _stateService!.getDailyNewsContent();
+      
+      if (newsBrief == null) {
         debugPrint('🌍 Fetching fresh daily news...');
         newsBrief = await webService.getDailyBriefing(categories);
         await _stateService!.saveDailyNewsContent(newsBrief);
-      // } else {
-      //   debugPrint('💾 Using cached daily news');
-      // }
+      } else {
+        debugPrint('💾 Using cached daily news');
+      }
       
       // 2. Display news directly without AI processing
       // This preserves the exact formatting and spacing from the formatter

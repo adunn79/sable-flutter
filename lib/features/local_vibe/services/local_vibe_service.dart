@@ -97,9 +97,8 @@ Provide a vibrant, engaging digest of what's happening locally.
 
     final result = await _webSearchService.search(query);
     
-    // Fix malformed links and format spacing
-    final fixedLinks = _fixMalformedLinks(result);
-    final formatted = _ensureSpacing(fixedLinks);
+    // Format and Cache
+    final formatted = _ensureSpacing(result);
     await _saveCachedContent(formatted);
     return formatted;
   }
@@ -118,12 +117,6 @@ Provide a vibrant, engaging digest of what's happening locally.
     final today = DateTime.now().toIso8601String().split('T')[0];
     await _prefs.setString(_keyLastVibeContent, content);
     await _prefs.setString(_keyLastVibeDate, today);
-  }
-
-  /// Clear cached Local Vibe content to force refresh
-  Future<void> clearCache() async {
-    await _prefs.remove(_keyLastVibeContent);
-    await _prefs.remove(_keyLastVibeDate);
   }
 
   String? _buildLocationQuery(String? currentGpsLocation) {
@@ -153,30 +146,4 @@ Provide a vibrant, engaging digest of what's happening locally.
     }
     return formatted.join('\n').replaceAll('\n\n\n', '\n\n'); // Remove triple newlines
   }
-
-  String _fixMalformedLinks(String text) {
-    // Fix pattern: [• Description] (expand:Topic) -> [• Description](expand:Topic)
-    // Also fix: • Description (expand:Topic) -> [• Description](expand:Topic)
-    
-    var fixed = text;
-    
-    // Pattern 1: [• text] (expand:topic) with space before parenthesis
-    fixed = fixed.replaceAllMapped(
-      RegExp(r'\[([^\]]+)\]\s+\(expand:([^)]+)\)'),
-      (match) => '[${match.group(1)}](expand:${match.group(2)})',
-    );
-    
-    // Pattern 2: • text (expand:topic) without square brackets
-    fixed = fixed.replaceAllMapped(
-      RegExp(r'(•[^(]+)\s*\(expand:([^)]+)\)'),
-      (match) {
-        final text = match.group(1)!.trim();
-        final topic = match.group(2)!.trim();
-        return '[$text](expand:$topic)';
-      },
-    );
-    
-    return fixed;
-  }
 }
-

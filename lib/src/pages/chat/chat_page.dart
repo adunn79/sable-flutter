@@ -808,6 +808,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (newsBrief == null) {
         debugPrint('🌍 Fetching fresh daily news...');
         newsBrief = await webService.getDailyBriefing(categories);
+        await _stateService!.saveDailyNewsContent(newsBrief);
+      } else {
+        debugPrint('💾 Using cached daily news');
+      }
+      
       // DEBUG: Print the exact content being rendered
       debugPrint('📝 MARKDOWN CONTENT:\n$newsBrief');
         debugPrint('📝 MARKDOWN CONTENT:\n$newsBrief');

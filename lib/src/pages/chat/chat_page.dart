@@ -877,33 +877,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   : Colors.black,
             ),
 
-          // 2. Avatar Icon (only in icon mode)
-          if (_avatarDisplayMode == AvatarDisplaySettings.modeIcon)
-            Positioned(
-              top: 70,
-              right: 16,
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                  image: DecorationImage(
-                    image: _avatarUrl != null && _avatarUrl!.isNotEmpty
-                        ? NetworkImage(_avatarUrl!)
-                        : const AssetImage('assets/images/archetypes/sable.png') as ImageProvider,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ),
-
           // 3. Content
           SafeArea(
             top: false, // Disable top SafeArea to handle it manually with padding
@@ -1776,28 +1749,61 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Widget _buildMessageBubble(String message, bool isUser) {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        constraints: const BoxConstraints(maxWidth: 300),
-        padding: isUser ? const EdgeInsets.all(12) : null,
-        decoration: isUser 
-            ? BoxDecoration(
-                color: AurealColors.carbon.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(16).copyWith(bottomRight: Radius.zero),
-                border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-              )
-            : null,
-        child: isUser 
-            ? Text(
-                message,
-                style: GoogleFonts.inter(
-                  color: Colors.white, // Changed from ghost to white
-                  fontSize: 16,
-                  height: 1.4,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Avatar icon for AI messages in icon mode
+          if (!isUser && _avatarDisplayMode == AvatarDisplaySettings.modeIcon)
+            Padding(
+              padding: const EdgeInsets.only(right: 8, top: 4),
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _backgroundColor == AvatarDisplaySettings.colorWhite 
+                        ? Colors.black26 
+                        : Colors.white24,
+                    width: 1.5,
+                  ),
+                  image: DecorationImage(
+                    image: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                        ? NetworkImage(_avatarUrl!)
+                        : const AssetImage('assets/images/archetypes/sable.png') as ImageProvider,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-                textAlign: TextAlign.left,
-              )
-            : _buildInteractiveMessage(message),
+              ),
+            ),
+          // Message bubble
+          Flexible(
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              constraints: const BoxConstraints(maxWidth: 300),
+              padding: isUser ? const EdgeInsets.all(12) : null,
+              decoration: isUser 
+                  ? BoxDecoration(
+                      color: AurealColors.carbon.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(16).copyWith(bottomRight: Radius.zero),
+                      border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                    )
+                  : null,
+              child: isUser 
+                  ? Text(
+                      message,
+                      style: GoogleFonts.inter(
+                        color: Colors.white, // Changed from ghost to white
+                        fontSize: 16,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.left,
+                    )
+                  : _buildInteractiveMessage(message),
+            ),
+          ),
+        ],
       ),
     );
   }

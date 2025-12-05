@@ -1620,11 +1620,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Widget _buildFloatingChips() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
+    return Center(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           // Daily Update
           InteractiveButton(
             label: 'Daily\nUpdate',
@@ -1675,6 +1677,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             actionLabel: 'SHARE NOW',
           ),
         ],
+      ),
       ),
     );
   }
@@ -1837,6 +1840,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     controller: _controller,
                     enabled: true, // Always enabled
                     style: GoogleFonts.inter(color: Colors.white),
+                    minLines: 1,
+                    maxLines: 5,
+                    textInputAction: TextInputAction.send,
                     decoration: InputDecoration(
                       hintText: _isTyping ? 'AI is thinking...' : 'Type a message...',
                       hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.3)),

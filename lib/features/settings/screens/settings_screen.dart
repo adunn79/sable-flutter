@@ -1707,7 +1707,61 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           
 
 
-          _buildSectionHeader('BOND ENGINE'),
+          // Bond Engine with Info Icon
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildSectionHeader('BOND ENGINE'),
+                GestureDetector(
+                  onTap: () {
+                    ref.read(feedbackServiceProvider).tap();
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: AurealColors.carbon,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        title: Row(
+                          children: [
+                            const Icon(Icons.favorite, color: AurealColors.plasmaCyan),
+                            const SizedBox(width: 12),
+                            Text('BOND ENGINE', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                          ],
+                        ),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('The Bond Engine dynamically adjusts how your AI companion responds to you based on emotional connection.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AurealColors.plasmaCyan.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                              ),
+                              child: Text(
+                                '• COOLED: Respectful, professional distance\n'
+                                '• NEUTRAL: Balanced, friendly tone\n'
+                                '• WARM: Close, intimate connection',
+                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                        ],
+                      ),
+                    );
+                  },
+                  child: const Icon(Icons.info_outline, size: 18, color: Colors.white54),
+                ),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             child: _buildBondEngineSection(bondState.name),
@@ -1735,7 +1789,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           _buildPersonalitySection(),
 
-          _buildSectionHeader('BRAIN CONFIGURATION'),
+          // Brain Configuration with Info Icon
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildSectionHeader('BRAIN CONFIGURATION'),
+                GestureDetector(
+                  onTap: () {
+                    ref.read(feedbackServiceProvider).tap();
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: AurealColors.carbon,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        title: Row(
+                          children: [
+                            const Icon(LucideIcons.brainCircuit, color: AurealColors.plasmaCyan),
+                            const SizedBox(width: 12),
+                            Text('BRAIN CONFIGURATION', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                          ],
+                        ),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Fine-tune your AI companion\'s neural parameters to customize response style and behavior.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AurealColors.plasmaCyan.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                              ),
+                              child: Text(
+                                '• CREATIVITY: Controls randomness vs consistency\n'
+                                '• FOCUS: Balances detailed vs concise responses\n'
+                                '• MEMORY DEPTH: How much context to recall\n'
+                                '• EMPATHY: Emotional awareness in responses',
+                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                        ],
+                      ),
+                    );
+                  },
+                  child: const Icon(Icons.info_outline, size: 18, color: Colors.white54),
+                ),
+              ],
+            ),
+          ),
           _buildBrainSliders(),
 
           _buildSectionHeader('SUPPORT & SAFETY'),

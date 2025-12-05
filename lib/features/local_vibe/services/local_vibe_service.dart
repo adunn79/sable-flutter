@@ -73,12 +73,23 @@ Focus on these specific categories: $categories.
 For EACH category, find 3-4 distinct, specific items (events, news, openings, etc.) relevant to right now (today/this week).
 Ensure the results are truly LOCAL to the specified area.
 
-FORMATTING RULES:
+FORMATTING RULES (CRITICAL - FOLLOW EXACTLY):
 - Use markdown headers for categories (e.g., "### 🍽️ New Openings").
-- For each item, create a clickable link using this EXACT format: [• Brief description](expand:Full_Topic_Name)
-- Example: [• New coffee shop opens on Main Street](expand:New_Coffee_Shop_Main_Street)
-- Include specific details (time, place, price) in the brief description
-- The expand: link topic should be a condensed version without special characters
+- For each item, create a clickable link using markdown format with SQUARE BRACKETS:
+  Format: [• Brief description here](expand:Topic_Name)
+  
+CORRECT Examples:
+[• Explore the Divisadero Farmer's Market, open Sundays 9AM-1PM](expand:Divisadero_Farmers_Market)
+[• Holiday Bazaar at Civic Center Park on Dec 13th](expand:Holiday_Bazaar_Civic_Center)
+
+INCORRECT - DO NOT USE:
+• Description text (expand:Topic) ← WRONG - missing square brackets
+(expand:Topic) Description ← WRONG - wrong order
+
+- The text in square brackets [• ...] is what the user sees
+- The (expand:Topic_Name) part creates the clickable link action
+- Topic should be condensed without special characters
+- Include specific details (time, place, price) in the description
 - Add a blank line between each bullet point.
 
 Provide a vibrant, engaging digest of what's happening locally.

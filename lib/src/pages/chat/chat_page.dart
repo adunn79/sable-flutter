@@ -1672,12 +1672,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Widget _buildFloatingChips() {
-    return Center(
+    return Align(
+      alignment: Alignment.center,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
           // Daily Update
           InteractiveButton(

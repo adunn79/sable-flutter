@@ -1473,6 +1473,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     setState(() => _isTyping = true);
     
     try {
+      // Clear cache to ensure fresh content with fixed links
+      await _localVibeService!.clearCache();
+      
       // Get content
       final content = await _localVibeService!.getLocalVibeContent(
         currentGpsLocation: _currentGpsLocation

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -117,6 +118,10 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                 controller: phoneController,
                 style: const TextStyle(color: Colors.white),
                 keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  _PhoneNumberFormatter(),
+                ],
                 decoration: const InputDecoration(
                   labelText: 'Phone',
                   labelStyle: TextStyle(color: Colors.white54),
@@ -146,13 +151,16 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () async {
+                  // Store context before async operations
+                  final dialogContext = context;
+                  
                   try {
                     final hasPermission = await ContactsService.hasPermission();
                     if (!hasPermission) {
                       final granted = await ContactsService.requestPermission();
                       if (!granted) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                        if (dialogContext.mounted) {
+                          ScaffoldMessenger.of(dialogContext).showSnackBar(
                             const SnackBar(content: Text('Permission denied. Cannot access contacts.')),
                           );
                         }
@@ -162,18 +170,21 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                     
                     final contact = await ContactsService.pickContact();
                     if (contact != null) {
-                      nameController.text = contact.name;
-                      if (contact.phone != null) {
-                        phoneController.text = contact.phone!;
-                      }
-                      if (contact.email != null) {
-                        emailController.text = contact.email!;
+                      nameController.text = contact['name'] ?? '';
+                      phoneController.text = contact['phone'] ?? '';
+                      emailController.text = contact['email'] ?? '';
+                    } else {
+                      // Show message that contact picker isn't available yet
+                      if (dialogContext.mounted) {
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          const SnackBar(content: Text('Contact picker not yet available. Please enter manually.')),
+                        );
                       }
                     }
                   } catch (e) {
                     debugPrint('Error picking contact: $e');
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                    if (dialogContext.mounted) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
                         SnackBar(content: Text('Error: $e')),
                       );
                     }
@@ -449,6 +460,36 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
         ),
         onTap: () => _makeCall(resource['action']!),
       ),
+    );
+  }
+}
+
+/// Phone number input formatter that formats as XXX-XXX-XXXX
+class _PhoneNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = newValue.text;
+    
+    // Remove all non-digits
+    final digitsOnly = text.replaceAll(RegExp(r'\D'), '');
+    
+    // Build formatted string
+    final buffer = StringBuffer();
+    for (int i = 0; i < digitsOnly.length && i < 10; i++) {
+      if (i == 3 || i == 6) {
+        buffer.write('-');
+      }
+      buffer.write(digitsOnly[i]);
+    }
+    
+    final formatted = buffer.toString();
+    
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

@@ -120,7 +120,10 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
           child: _buildSegmentButton(
             'Current Location',
             _settings.useCurrentLocation,
-            () => setState(() => _settings = _settings.copyWith(useCurrentLocation: true)),
+            () {
+              setState(() => _settings = _settings.copyWith(useCurrentLocation: true));
+              widget.service.updateSettings(_settings);
+            },
           ),
         ),
         const SizedBox(width: 12),
@@ -128,7 +131,10 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
           child: _buildSegmentButton(
             'Specific Cities',
             !_settings.useCurrentLocation,
-            () => setState(() => _settings = _settings.copyWith(useCurrentLocation: false)),
+            () {
+              setState(() => _settings = _settings.copyWith(useCurrentLocation: false));
+              widget.service.updateSettings(_settings);
+            },
           ),
         ),
       ],
@@ -198,7 +204,10 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
                 min: 1,
                 max: 50,
                 divisions: 49,
-                onChanged: (val) => setState(() => _settings = _settings.copyWith(radiusMiles: val)),
+                onChanged: (val) {
+                  setState(() => _settings = _settings.copyWith(radiusMiles: val));
+                  widget.service.updateSettings(_settings);
+                },
               ),
             ),
           ],
@@ -226,6 +235,7 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
                   onDeleted: () {
                     final updated = List<String>.from(_settings.targetCities)..remove(city);
                     setState(() => _settings = _settings.copyWith(targetCities: updated));
+                    widget.service.updateSettings(_settings);
                   },
                   side: const BorderSide(color: AurealColors.plasmaCyan),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -283,6 +293,7 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
         _settings = _settings.copyWith(targetCities: updated);
         _cityController.clear();
       });
+      widget.service.updateSettings(_settings);
     }
   }
 
@@ -308,6 +319,7 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
               updated.add(category);
             }
             setState(() => _settings = _settings.copyWith(activeCategories: updated));
+            widget.service.updateSettings(_settings);
           },
         );
       }).toList(),
@@ -357,6 +369,7 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
                 onDeleted: () {
                   final updated = List<String>.from(_settings.customCategories)..remove(cat);
                   setState(() => _settings = _settings.copyWith(customCategories: updated));
+                  widget.service.updateSettings(_settings);
                 },
                 side: const BorderSide(color: AurealColors.plasmaCyan),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -413,6 +426,7 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
         _settings = _settings.copyWith(customCategories: updated);
         _categoryController.clear();
       });
+      widget.service.updateSettings(_settings);
     }
   }
 }

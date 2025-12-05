@@ -75,9 +75,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _prefetchContent() async {
-    // Wait for services to be ready
-    await Future.delayed(const Duration(seconds: 2));
+    // Wait for services to be ready (minimal delay)
+    await Future.delayed(const Duration(milliseconds: 500));
     if (!mounted || _stateService == null) return;
+    
+    debugPrint('🚀 Starting background pre-fetch...');
     
     // 1. Prefetch Daily News
     final newsContent = _stateService!.getDailyNewsContent();
@@ -93,22 +95,27 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         debugPrint('⚠️ Daily News pre-fetch failed: $e');
       }
     } else {
-      debugPrint('📰 Daily News already cached');
+      debugPrint('✅ Daily News already cached');
     }
 
     // 2. Prefetch Local Vibe
-    // Note: LocalVibeService needs to be created first
     try {
       final webService = ref.read(webSearchServiceProvider);
       final vibeService = await LocalVibeService.create(webService);
-      // We can check cache implicitly by calling with forceRefresh=false
-      // But we need to check if it returns valid content or the error message
-      final content = await vibeService.getLocalVibeContent(
-        currentGpsLocation: _stateService!.userCurrentLocation,
-        forceRefresh: false
-      );
-      // If it returns the "I need your location" string, we don't count that as success, but it's fine.
-      debugPrint('✅ Local Vibe background check complete');
+      
+      // Check if location is available
+      final location = _stateService!.userCurrentLocation;
+      if (location != null && location.isNotEmpty) {
+        debugPrint('📍 Pre-fetching Local Vibe for $location...');
+        // This will use cache if available, fetch if not
+        await vibeService.getLocalVibeContent(
+          currentGpsLocation: location,
+          forceRefresh: false
+        );
+        debugPrint('✅ Local Vibe pre-fetch complete');
+      } else {
+        debugPrint('⚠️ No location set - skipping Local Vibe pre-fetch');
+      }
     } catch (e) {
       debugPrint('⚠️ Local Vibe pre-fetch failed: $e');
     }
@@ -665,13 +672,26 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
+        // Since ListView is reversed, min extent is actually the bottom
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          _scrollController.position.minScrollExtent,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
     });
+  }
+  
+  /// Scroll to bottom immediately (for button tap)
+  void _scrollToBottomNow() {
+    if (_scrollController.hasClients) {
+      // Since ListView is reversed, min extent is actually the bottom
+      _scrollController.animateTo(
+        _scrollController.position.minScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   /// Handle voice input
@@ -762,8 +782,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       final categories = _stateService!.newsCategories;
       
       // Check cache first
-      // String? newsBrief = _stateService!.getDailyNewsContent();
-      String? newsBrief; // FORCE FRESH FETCH for debugging
+      String? newsBrief = _stateService!.getDailyNewsContent();
       
       // Force refresh if cache exists but doesn't have interactive links
       if (newsBrief != null && !newsBrief.contains('](expand:')) {
@@ -781,16 +800,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       
       // DEBUG: Print the exact content being rendered
       debugPrint('📝 MARKDOWN CONTENT:\n$newsBrief');
+        debugPrint('📝 MARKDOWN CONTENT:\n$newsBrief');
       
       // 2. Display news directly without AI processing
       // This preserves the exact formatting and spacing from the formatter
       final displayText = "$newsBrief\n\nTap any story to learn more.";
-      
-      // Add a test message with a known working link
-      final testLink = "Test Link: [Click Me](expand:Test_Topic)";
-      setState(() {
-        _messages.add({'message': testLink, 'isUser': false});
-      });
       
       // Save to memory
       await _memoryService?.addMessage(message: "daily update", isUser: true);
@@ -1391,6 +1405,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       await Share.share(
         buffer.toString(),
         subject: 'My conversation with Sable',
+        sharePositionOrigin: Rect.fromLTWH(0, 0, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height / 2),
       );
       
     } catch (e) {
@@ -1403,6 +1418,26 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _handleClearScreen() async {
+    ref.read(feedbackServiceProvider).medium();
+    
+    // Clear visible messages but keep history in memory service
+    setState(() {
+      _messages.clear();
+    });
+    
+    // Show confirmation
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Screen cleared! Your conversation history is safely preserved.'),
+          backgroundColor: AurealColors.plasmaCyan,
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -1584,23 +1619,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
-  void _handleClearScreen() {
-    ref.read(feedbackServiceProvider).medium();
-    setState(() {
-      _messages.clear();
-    });
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Screen cleared. History is preserved.'),
-          backgroundColor: AurealColors.plasmaCyan,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
   Widget _buildFloatingChips() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -1609,8 +1627,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         children: [
           // Daily Update
           InteractiveButton(
-            icon: LucideIcons.sun,
-            label: 'Daily Update',
+            label: 'Daily\nUpdate',
             onTap: _handleDailyUpdate,
             infoTitle: 'DAILY UPDATE',
             infoDescription: 'Get a personalized briefing of the latest news and events based on your interests.',
@@ -1620,9 +1637,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           const SizedBox(width: 12),
           // Scroll to Bottom
           InteractiveButton(
-            icon: LucideIcons.arrowDown,
-            label: 'Scroll',
-            onTap: _scrollToBottom,
+            label: 'Scroll\n↓',
+            onTap: _scrollToBottomNow,
             infoTitle: 'SCROLL TO BOTTOM',
             infoDescription: 'Quickly jump to the most recent message in your conversation.',
             infoDetails: '• Instantly scroll to the latest message\n• Useful for long conversations\n• One-tap navigation',
@@ -1631,8 +1647,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           const SizedBox(width: 12),
           // Local Vibe
           InteractiveButton(
-            icon: LucideIcons.mapPin,
-            label: 'Local Vibe',
+            label: 'Local\nVibe',
             onTap: _handleLocalVibe,
             infoTitle: 'LOCAL VIBE',
             infoDescription: 'Discover what\'s happening in your area right now.',
@@ -1642,7 +1657,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           const SizedBox(width: 12),
           // Share
           InteractiveButton(
-            icon: LucideIcons.share2,
             label: 'Share',
             onTap: _handleShare,
             infoTitle: 'SHARE CONVERSATION',
@@ -1653,7 +1667,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           const SizedBox(width: 12),
           // Clear Screen
           InteractiveButton(
-            icon: LucideIcons.trash2,
             label: 'Clear',
             onTap: _handleClearScreen,
             infoTitle: 'CLEAR SCREEN',

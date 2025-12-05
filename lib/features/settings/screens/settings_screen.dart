@@ -246,6 +246,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (mounted) {
         setState(() {
           _localVibeSettings = vibeService.settings;
+          // Load GPS enabled state from permissions
+          _gpsEnabled = stateService.permissionGps;
         });
       }
     } catch (e) {
@@ -1238,7 +1240,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Switch(
                   value: _gpsEnabled,
                   activeColor: AurealColors.hyperGold,
-                  onChanged: (val) => setState(() => _gpsEnabled = val),
+                  onChanged: (val) async {
+                    setState(() => _gpsEnabled = val);
+                    final state = await OnboardingStateService.create();
+                    await state.setPermissionGps(val);
+                  },
                 ),
               ],
             ),

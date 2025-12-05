@@ -2,14 +2,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/src/theme/colors.dart';
+import 'package:sable/core/theme/aureal_theme.dart';
 import 'package:sable/core/ui/feedback_service.dart';
 import 'package:sable/core/audio/button_sound_service.dart';
 
 /// A reusable button widget with built-in haptic feedback, sound effects,
 /// and optional info dialog on long-press
 class InteractiveButton extends ConsumerWidget {
-  final IconData icon;
+  final IconData? icon;  // Made optional
   final String label;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
@@ -23,7 +23,7 @@ class InteractiveButton extends ConsumerWidget {
 
   const InteractiveButton({
     super.key,
-    required this.icon,
+    this.icon,  // No longer required
     required this.label,
     required this.onTap,
     this.onLongPress,
@@ -58,7 +58,7 @@ class InteractiveButton extends ConsumerWidget {
       onLongPress: hasInfo
           ? () {
               ref.read(buttonSoundServiceProvider).playLightTap();
-              ref.read(feedbackServiceProvider).light();
+              ref.read(feedbackServiceProvider).tap();
               _showInfoDialog(context, ref);
             }
           : onLongPress,
@@ -80,17 +80,20 @@ class InteractiveButton extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  icon,
-                  color: iconColor ?? (isDestructive ? Colors.red : Colors.white),
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
+                if (icon != null) ...[
+                  Icon(
+                    icon!,
+                    color: iconColor ?? (isDestructive ? Colors.red : Colors.white),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 Text(
                   label,
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     color: isDestructive ? Colors.red : Colors.white,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

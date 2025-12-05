@@ -7,6 +7,7 @@ class SettingsTile extends StatelessWidget {
   final String? subtitle;
   final IconData icon;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final Widget? trailing;
   final bool isDestructive;
   final Color? iconColor;
@@ -17,6 +18,7 @@ class SettingsTile extends StatelessWidget {
     required this.icon,
     this.subtitle,
     this.onTap,
+    this.onLongPress,
     this.trailing,
     this.isDestructive = false,
     this.iconColor,
@@ -28,6 +30,7 @@ class SettingsTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Row(

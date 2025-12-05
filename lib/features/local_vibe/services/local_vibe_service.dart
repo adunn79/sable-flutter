@@ -75,10 +75,11 @@ Ensure the results are truly LOCAL to the specified area.
 
 FORMATTING RULES:
 - Use markdown headers for categories (e.g., "### 🍽️ New Openings").
-- For each item, provide a single bullet point starting with "• ".
-- Include specific details (time, place, price) where applicable.
+- For each item, create a clickable link using this EXACT format: [• Brief description](expand:Full_Topic_Name)
+- Example: [• New coffee shop opens on Main Street](expand:New_Coffee_Shop_Main_Street)
+- Include specific details (time, place, price) in the brief description
+- The expand: link topic should be a condensed version without special characters
 - Add a blank line between each bullet point.
-- Wrap the bullet content in a link like this: [• Content](expand:Topic) so I can click it.
 
 Provide a vibrant, engaging digest of what's happening locally.
 ''';

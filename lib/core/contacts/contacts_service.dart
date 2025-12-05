@@ -107,6 +107,26 @@ class ContactsService {
     }
   }
   
+  /// Pick a contact from the device contact list
+  /// Returns a map with name, phone, and email if available
+  static Future<Map<String, String>?> pickContact() async {
+    try {
+      if (!await hasPermission()) {
+        debugPrint('⚠️ No contacts permission for picking');
+        return null;
+      }
+      
+      // Get all contacts and let the UI handle selection
+      // In a real implementation, you'd use a contact picker plugin
+      // For now, we'll return null to indicate feature not fully implemented
+      debugPrint('📱 Contact picker not fully implemented - requires native picker plugin');
+      return null;
+    } catch (e) {
+      debugPrint('❌ Failed to pick contact: $e');
+      return null;
+    }
+  }
+  
   /// Get primary phone number for a contact
   static String? getPhoneNumber(Contact contact) {
     if (contact.phones == null || contact.phones!.isEmpty) {

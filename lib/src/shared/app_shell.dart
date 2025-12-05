@@ -28,10 +28,6 @@ class AppShell extends StatelessWidget {
             label: 'Journal',
           ),
           NavigationDestination(
-            icon: Icon(LucideIcons.brain),
-            label: 'Memory',
-          ),
-          NavigationDestination(
             icon: Icon(LucideIcons.settings),
             label: 'Settings',
           ),
@@ -45,8 +41,7 @@ class AppShell extends StatelessWidget {
     if (location.startsWith('/chat')) return 0;
     if (location.startsWith('/today')) return 1;
     if (location.startsWith('/journal')) return 2;
-    if (location.startsWith('/memory')) return 3;
-    if (location.startsWith('/settings')) return 4;
+    if (location.startsWith('/settings')) return 3;
     return 0;
   }
 
@@ -62,9 +57,6 @@ class AppShell extends StatelessWidget {
         context.go('/journal');
         break;
       case 3:
-        context.go('/memory');
-        break;
-      case 4:
         context.go('/settings');
         break;
     }

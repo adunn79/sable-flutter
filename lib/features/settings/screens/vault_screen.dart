@@ -65,28 +65,53 @@ class _VaultScreenState extends State<VaultScreen> {
   Future<void> _wipeAll() async {
     final confirmed = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF2A1010), // Dark Red
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.red.withOpacity(0.5), width: 2),
+        ),
         title: Row(
           children: [
-            const Icon(LucideIcons.alertTriangle, color: Colors.red),
+            const Icon(LucideIcons.alertTriangle, color: Colors.red, size: 28),
             const SizedBox(width: 12),
-            Text('WIPE MEMORY?', style: GoogleFonts.spaceGrotesk(color: Colors.red, fontWeight: FontWeight.bold)),
+            Expanded(
+              child: Text(
+                'IRREVERSIBLE ACTION',
+                style: GoogleFonts.spaceGrotesk(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
           ],
         ),
-        content: Text(
-          'This will permanently delete all structured memories, facts, and preferences the AI has learned about you. This action cannot be undone.',
-          style: GoogleFonts.inter(color: Colors.white70),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to wipe everything?',
+              style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This will permanently delete ALL memories, learned facts, and preferences.\n\nThis action cannot be undone.',
+              style: GoogleFonts.inter(color: Colors.white70, height: 1.5),
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: Text('CANCEL', style: GoogleFonts.inter(color: Colors.white54, fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('WIPE EVERYTHING', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            child: Text('YES, DELETE EVERYTHING', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -152,7 +177,7 @@ class _VaultScreenState extends State<VaultScreen> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(LucideIcons.lock, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [

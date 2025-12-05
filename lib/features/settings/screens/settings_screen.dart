@@ -33,6 +33,7 @@ import 'package:sable/features/web/services/web_search_service.dart';
 import 'package:sable/features/safety/screens/emergency_screen.dart';
 import 'package:sable/features/settings/screens/vault_screen.dart';
 import 'package:sable/core/widgets/restart_widget.dart';
+import 'package:flutter/services.dart'; // For Haptics
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -63,6 +64,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   // Personality Settings
   String _selectedPersonalityId = 'sassy_realist';
+
 
 
 
@@ -109,6 +111,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   // Local Vibe Settings
   LocalVibeSettings _localVibeSettings = const LocalVibeSettings();
+  bool _showAllVibeCategories = false;
   final TextEditingController _localVibeCategoryController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
 
@@ -169,6 +172,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String? _selectedVoiceName;
   List<VoiceWithMetadata> _availableVoices = [];
   
+  // Brain Sliders
+  double _brainCreativity = 0.7;
+  double _brainEmpathy = 0.8;
+  double _brainHumor = 0.6;
+  
   // Local Vibe Service handle
   LocalVibeService? _localVibeService;
 
@@ -221,6 +229,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _hapticsEnabled = stateService.hapticsEnabled;
       _soundsEnabled = stateService.soundsEnabled;
       _selectedPersonalityId = stateService.selectedPersonalityId;
+      
+      // Load Brain Settings
+      _brainCreativity = stateService.brainCreativity;
+      _brainEmpathy = stateService.brainEmpathy;
+      _brainHumor = stateService.brainHumor;
     });
 
     // Load Local Vibe Settings
@@ -371,27 +384,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       body: ListView(
         children: [
-          // Emergency Services (Prominent)
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
-              border: Border.all(color: Colors.red.withOpacity(0.5)),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: SettingsTile(
-              title: 'Emergency Services',
-              subtitle: 'Get help immediately',
-              icon: Icons.emergency,
-              iconColor: Colors.red,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const EmergencyScreen()),
-                );
-              },
-            ),
-          ),
 
           _buildSectionHeader('ACCOUNT'),
           SettingsTile(
@@ -1127,10 +1119,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: _buildBondEngineSection(bondState.name),
           ),
           
-          _buildSectionHeader('PERSONALITY CORE'),
+          
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildSectionHeader('PERSONALITY CORE'),
+                Padding(
+                  padding: const EdgeInsets.only(top: 24, right: 8),
+                  child: Row(
+                    children: [
+                      Text('Swipe to explore', style: GoogleFonts.inter(fontSize: 10, color: Colors.white30)),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.arrow_forward, size: 12, color: Colors.white30),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           _buildPersonalitySection(),
 
-          _buildSectionHeader('VOICE & PERSONA'),
+          _buildSectionHeader('BRAIN CONFIGURATION'),
+          _buildBrainSliders(),
+
+          _buildSectionHeader('SUPPORT & SAFETY'),
           SettingsTile(
             title: 'Contact Us',
             subtitle: 'support@aureal.ai',
@@ -1140,6 +1154,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Help Center',
             subtitle: 'FAQ & Guides',
             icon: Icons.help_outline,
+          ),
+          
+          // Emergency Services (Moved to bottom of support)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: _buildEmergencyTile(),
           ),
 
           _buildSectionHeader('ABOUT'),
@@ -1941,25 +1961,72 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ..._suggestedLocalVibeCategories,
     }.toList();
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: allCategories.map((category) {
-        final isSelected = _localVibeSettings.activeCategories.contains(category);
-        return _buildCategoryChip(
-          category,
-          isSelected,
-          () {
-            final updated = List<String>.from(_localVibeSettings.activeCategories);
-            if (isSelected) {
-              updated.remove(category);
-            } else {
-              updated.add(category);
-            }
-            _updateLocalVibeSettings(_localVibeSettings.copyWith(activeCategories: updated));
-          },
-        );
-      }).toList(),
+    // Determine items to show
+    final showCount = _showAllVibeCategories ? allCategories.length : 6;
+    final displayItems = allCategories.take(showCount).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: displayItems.map((category) {
+            final isSelected = _localVibeSettings.activeCategories.contains(category);
+            return _buildCategoryChip(
+              category,
+              isSelected,
+              () {
+                final updated = List<String>.from(_localVibeSettings.activeCategories);
+                if (isSelected) {
+                  updated.remove(category);
+                } else {
+                  updated.add(category);
+                }
+                _updateLocalVibeSettings(_localVibeSettings.copyWith(activeCategories: updated));
+              },
+            );
+          }).toList(),
+        ),
+        
+        // Show More / Less button
+        if (allCategories.length > 6)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _showAllVibeCategories = !_showAllVibeCategories);
+              },
+              child: Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                 decoration: BoxDecoration(
+                   color: AurealColors.carbon,
+                   borderRadius: BorderRadius.circular(20),
+                   border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.5)),
+                 ),
+                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _showAllVibeCategories ? 'Show Less' : 'Show All (${allCategories.length})',
+                      style: GoogleFonts.inter(
+                        color: AurealColors.plasmaCyan,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      _showAllVibeCategories ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                      color: AurealColors.plasmaCyan,
+                      size: 16,
+                    ),
+                  ],
+                 ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -2052,6 +2119,109 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  Widget _buildBrainSliders() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AurealColors.carbon,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        children: [
+          _buildBrainSlider('Creativity', _brainCreativity, (val) => _brainCreativity = val),
+          const SizedBox(height: 16),
+          _buildBrainSlider('Empathy', _brainEmpathy, (val) => _brainEmpathy = val),
+          const SizedBox(height: 16),
+          _buildBrainSlider('Humor', _brainHumor, (val) => _brainHumor = val),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBrainSlider(String label, double value, Function(double) onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w500)),
+            Text('${(value * 100).toInt()}%', style: GoogleFonts.inter(color: AurealColors.plasmaCyan)),
+          ],
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: AurealColors.plasmaCyan,
+            inactiveTrackColor: Colors.white10,
+            thumbColor: Colors.white,
+            overlayColor: AurealColors.plasmaCyan.withOpacity(0.2),
+            trackHeight: 2,
+          ),
+          child: Slider(
+            value: value,
+            min: 0.0,
+            max: 1.0,
+            onChanged: (val) {
+              HapticFeedback.selectionClick();
+              setState(() => onChanged(val));
+            },
+            onChangeEnd: (val) async {
+               HapticFeedback.lightImpact();
+               final service = await OnboardingStateService.create();
+               if (label == 'Creativity') await service.setBrainCreativity(val);
+               if (label == 'Empathy') await service.setBrainEmpathy(val);
+               if (label == 'Humor') await service.setBrainHumor(val);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildEmergencyTile() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF2A1010), // Dark Red
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(LucideIcons.alertTriangle, color: Colors.red),
+        ),
+        title: Text(
+          'Emergency Services',
+          style: GoogleFonts.inter(
+            color: Colors.red[100],
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(
+          'Get help immediately',
+          style: GoogleFonts.inter(
+            color: Colors.red[200]!.withOpacity(0.6),
+            fontSize: 12,
+          ),
+        ),
+        trailing: Icon(Icons.chevron_right, color: Colors.red[200]),
+        onTap: () {
+           Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const EmergencyScreen()),
+          );
+        },
+      ),
+    );
+  }
 }
 
 

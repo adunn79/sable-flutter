@@ -297,6 +297,34 @@ class OnboardingStateService {
     await _prefs.setBool(_keySoundsEnabled, enabled);
   }
 
+  static const String _keyBrainCreativity = 'brain_creativity';
+  static const String _keyBrainEmpathy = 'brain_empathy';
+  static const String _keyBrainHumor = 'brain_humor';
+
+  /// Get brain creativity level (Default: 0.5)
+  double get brainCreativity => _prefs.getDouble(_keyBrainCreativity) ?? 0.5;
+
+  /// Set brain creativity level
+  Future<void> setBrainCreativity(double value) async {
+    await _prefs.setDouble(_keyBrainCreativity, value);
+  }
+
+  /// Get brain empathy level (Default: 0.7)
+  double get brainEmpathy => _prefs.getDouble(_keyBrainEmpathy) ?? 0.7;
+
+  /// Set brain empathy level
+  Future<void> setBrainEmpathy(double value) async {
+    await _prefs.setDouble(_keyBrainEmpathy, value);
+  }
+
+  /// Get brain humor level (Default: 0.3)
+  double get brainHumor => _prefs.getDouble(_keyBrainHumor) ?? 0.3;
+
+  /// Set brain humor level
+  Future<void> setBrainHumor(double value) async {
+    await _prefs.setDouble(_keyBrainHumor, value);
+  }
+
   /// Get selected personality ID (Default: 'sassy_realist')
   String get selectedPersonalityId => _prefs.getString(_keyPersonalityId) ?? 'sassy_realist';
 

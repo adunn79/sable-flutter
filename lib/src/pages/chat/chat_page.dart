@@ -27,6 +27,7 @@ import 'package:sable/core/contacts/contacts_service.dart';
 import 'package:sable/core/photos/photos_service.dart';
 import 'package:sable/core/reminders/reminders_service.dart';
 import 'package:sable/core/memory/structured_memory_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sable/core/ai/apple_intelligence_service.dart';
 import 'package:sable/core/personality/personality_service.dart'; // Added implementation
 import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
@@ -124,15 +125,34 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     _memoryService = await ConversationMemoryService.create();
     _structuredMemoryService = StructuredMemoryService();
     await _structuredMemoryService?.initialize();
-    
+      
+      // Initialize Voice Service with new Settings-selected engine
+      final prefs = await SharedPreferences.getInstance();
+      final savedEngine = prefs.getString('voice_engine_type') ?? 'eleven_labs';
+      debugPrint('🎙️ Saved engine preference: $savedEngine');
+      
+      _voiceService = VoiceService();
+      await _voiceService!.initialize();
+      await _voiceService!.setEngine(savedEngine);
+      
+      debugPrint('✅ Current engine set to: ${_voiceService!.currentEngine}');
+      
+      // Load API Key specifically for ElevenLabs to ensure it is set
+      final apiKey = prefs.getString('eleven_labs_api_key');
+      if (apiKey != null && apiKey.isNotEmpty) {
+        // AppConfig.elevenLabsKey is static, we rely on the service reading from prefs or env
+        debugPrint('✅ ElevenLabs API key loaded'); 
+      }
+      
+      // Pre-fetch daily news IN BACKGROUND so it's ready instantly
+      _prefetchDailyUpdate(_stateService!);
+
     // Initialize Local Vibe Service
     final webSearchService = ref.read(webSearchServiceProvider);
     _localVibeService = await LocalVibeService.create(webSearchService);
 
     // Load stored messages
     final storedMessages = _memoryService!.getRecentMessages(50);
-    _voiceService = VoiceService();
-    await _voiceService?.initialize();
     
     if (mounted) {
       setState(() {
@@ -279,6 +299,32 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           });
         }
       }
+    }
+  }
+
+  Future<void> _prefetchDailyUpdate(OnboardingStateService stateService) async {
+    debugPrint('📰 Pre-fetching Daily News...');
+    try {
+      final webService = ref.read(webSearchServiceProvider);
+      final categories = stateService.newsCategories;
+      
+      // Check if we already have today's news
+      String? cachedNews = stateService.getDailyNewsContent();
+      
+      // If we don't have it, or it's stale (logic in service), fetch now
+      if (cachedNews == null) {
+         // Run in background, don't await the result blocking UI
+         webService.getDailyBriefing(categories).then((news) {
+           stateService.saveDailyNewsContent(news);
+           debugPrint('✅ Daily News cached in background');
+         }).catchError((e) {
+           debugPrint('⚠️ Background news fetch failed: $e');
+         });
+      } else {
+        debugPrint('✅ Daily News already cached');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Prefetch error: $e');
     }
   }
 

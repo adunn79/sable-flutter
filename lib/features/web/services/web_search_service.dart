@@ -123,25 +123,22 @@ class WebSearchService {
     // Enhanced query for comprehensive coverage
     final query = '''
 Search for today's top news and provide comprehensive coverage across ALL these categories: $topics.
-
-For EACH category, find 4-5 significant stories from the last 24 hours.
-Ensure you use diverse, reputable sources.
+FOR EACH STORY: Provide a SINGLE, SHORT sentence (max 15 words) that gives the gist.
 
 FORMATTING RULES:
 - Use the exact category headers provided below (including emojis).
-- For each story, provide a single bullet point.
 - Start each bullet with "• ".
-- Include the source name in parentheses at the end of the bullet, e.g., "(Reuters)".
+- Include the source name in parentheses at the end, e.g., "(Reuters)".
 - Add a blank line between each bullet point.
 
 CATEGORIES:
-- **🌍 WORLD**: International news, geopolitics, global markets, major world events
-- **🇺🇸 NATIONAL**: US federal government, policy changes, major national stories
-- **📍 LOCAL (San Francisco Bay Area)**: SF/Bay Area specific news, local politics, community events
-- **💻 TECH**: Major tech companies, product launches, industry developments, AI breakthroughs
-- **🔬 SCIENCE**: Research findings, climate news, health discoveries, space exploration
+- **🌍 WORLD**: Top 3 global stories.
+- **🇺🇸 NATIONAL**: Top 3 US national stories.
+- **📍 LOCAL (San Francisco Bay Area)**: Top 3 local stories.
+- **💻 TECH**: Top 3 tech/AI stories.
+- **🔬 SCIENCE**: Top 3 science/health stories.
 
-Provide detailed, factual information for each category. This is for a comprehensive daily briefing.
+REMEMBER: Be extremely concise. Just the headline and the gist. No fluff.
 ''';
     
     final result = await search(query);

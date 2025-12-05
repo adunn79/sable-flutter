@@ -285,6 +285,10 @@ class VoiceService {
     }
   }
   
+  Future<void> setEngine(String engine) async {
+    await setVoiceEngine(engine);
+  }
+
   /// Set Voice Engine ('system' or 'eleven_labs')
   Future<void> setVoiceEngine(String engine) async {
     _voiceEngine = engine;

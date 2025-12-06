@@ -26,6 +26,13 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
   bool _welcomeBannerDismissed = false;
   bool _welcomeBannerHiddenPermanently = false;
   
+  // Search filters
+  int? _filterMood;
+  String? _filterLocation;
+  DateTime? _filterStartDate;
+  DateTime? _filterEndDate;
+  bool _hasActiveFilters = false;
+  
   @override
   void initState() {
     super.initState();
@@ -60,13 +67,45 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
       _entries = JournalStorageService.getAllEntries();
     }
     
-    // Apply search filter
+    // Apply text search filter
     if (_searchQuery.isNotEmpty) {
       _entries = _entries.where((e) =>
         e.plainText.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        e.tags.any((t) => t.toLowerCase().contains(_searchQuery.toLowerCase()))
+        e.tags.any((t) => t.toLowerCase().contains(_searchQuery.toLowerCase())) ||
+        (e.location?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)
       ).toList();
     }
+    
+    // Apply date range filter
+    if (_filterStartDate != null) {
+      _entries = _entries.where((e) => 
+        e.timestamp.isAfter(_filterStartDate!) || 
+        e.timestamp.isAtSameMomentAs(_filterStartDate!)
+      ).toList();
+    }
+    if (_filterEndDate != null) {
+      _entries = _entries.where((e) => 
+        e.timestamp.isBefore(_filterEndDate!.add(const Duration(days: 1)))
+      ).toList();
+    }
+    
+    // Apply mood filter
+    if (_filterMood != null) {
+      _entries = _entries.where((e) => e.moodScore == _filterMood).toList();
+    }
+    
+    // Apply location filter
+    if (_filterLocation != null && _filterLocation!.isNotEmpty) {
+      _entries = _entries.where((e) => 
+        e.location?.toLowerCase().contains(_filterLocation!.toLowerCase()) ?? false
+      ).toList();
+    }
+    
+    // Update active filters flag
+    _hasActiveFilters = _filterMood != null || 
+        _filterLocation != null || 
+        _filterStartDate != null || 
+        _filterEndDate != null;
     
     setState(() => _isLoading = false);
   }
@@ -368,29 +407,88 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                   ),
                 ),
               
-              // Search bar
+              // Search bar with filter button
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: TextField(
-                  onChanged: (value) {
-                    setState(() => _searchQuery = value);
-                    _loadData();
-                  },
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'Search entries...',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                    prefixIcon: Icon(LucideIcons.search, color: Colors.white.withOpacity(0.3)),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        onChanged: (value) {
+                          setState(() => _searchQuery = value);
+                          _loadData();
+                        },
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Search entries, tags, locations...',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                          prefixIcon: Icon(LucideIcons.search, color: Colors.white.withOpacity(0.3)),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.05),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _showFilters,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _hasActiveFilters ? Colors.purple.withOpacity(0.3) : Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: _hasActiveFilters ? Border.all(color: Colors.purple) : null,
+                        ),
+                        child: Icon(
+                          LucideIcons.slidersHorizontal,
+                          color: _hasActiveFilters ? Colors.purple : Colors.white.withOpacity(0.5),
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              
+              // Active filter chips
+              if (_hasActiveFilters)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      if (_filterMood != null)
+                        _buildFilterChip('Mood: ${['😢', '😔', '😐', '🙂', '😊'][_filterMood! - 1]}', () {
+                          setState(() => _filterMood = null);
+                          _loadData();
+                        }),
+                      if (_filterStartDate != null)
+                        _buildFilterChip('From: ${_filterStartDate!.month}/${_filterStartDate!.day}', () {
+                          setState(() => _filterStartDate = null);
+                          _loadData();
+                        }),
+                      if (_filterEndDate != null)
+                        _buildFilterChip('To: ${_filterEndDate!.month}/${_filterEndDate!.day}', () {
+                          setState(() => _filterEndDate = null);
+                          _loadData();
+                        }),
+                      if (_filterLocation != null)
+                        _buildFilterChip('📍 $_filterLocation', () {
+                          setState(() => _filterLocation = null);
+                          _loadData();
+                        }),
+                      GestureDetector(
+                        onTap: _clearFilters,
+                        child: Text('Clear all', style: TextStyle(color: Colors.purple, fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                ),
               
               // Entries list
               Expanded(
@@ -518,7 +616,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
               ListTile(
                 leading: const Icon(LucideIcons.download, color: Colors.green),
                 title: const Text('Export Journal', style: TextStyle(color: Colors.white)),
-                subtitle: Text('Download entries as JSON', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                subtitle: Text('Save a backup of your entries', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                 trailing: const Icon(LucideIcons.chevronRight, color: Colors.white30),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -591,6 +689,208 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+  
+  void _showFilters() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            left: 20, right: 20, top: 20,
+            bottom: MediaQuery.of(ctx).padding.bottom + 20,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '🔍 Search Filters',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              
+              // Mood filter
+              const Text('Filter by Mood', style: TextStyle(color: Colors.white70, fontSize: 14)),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(5, (i) {
+                  final mood = i + 1;
+                  final emoji = ['😢', '😔', '😐', '🙂', '😊'][i];
+                  final isSelected = _filterMood == mood;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => _filterMood = isSelected ? null : mood);
+                      _loadData();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.purple.withOpacity(0.3) : Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: isSelected ? Border.all(color: Colors.purple) : null,
+                      ),
+                      child: Text(emoji, style: const TextStyle(fontSize: 24)),
+                    ),
+                  );
+                }),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Date range
+              const Text('Date Range', style: TextStyle(color: Colors.white70, fontSize: 14)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _filterStartDate ?? DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null) {
+                          setState(() => _filterStartDate = date);
+                          _loadData();
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.white30)),
+                      child: Text(
+                        _filterStartDate != null 
+                          ? '${_filterStartDate!.month}/${_filterStartDate!.day}/${_filterStartDate!.year}'
+                          : 'Start Date',
+                        style: TextStyle(color: _filterStartDate != null ? Colors.white : Colors.white54),
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Text('to', style: TextStyle(color: Colors.white30)),
+                  ),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _filterEndDate ?? DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null) {
+                          setState(() => _filterEndDate = date);
+                          _loadData();
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.white30)),
+                      child: Text(
+                        _filterEndDate != null 
+                          ? '${_filterEndDate!.month}/${_filterEndDate!.day}/${_filterEndDate!.year}'
+                          : 'End Date',
+                        style: TextStyle(color: _filterEndDate != null ? Colors.white : Colors.white54),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Location filter
+              const Text('Filter by Location', style: TextStyle(color: Colors.white70, fontSize: 14)),
+              const SizedBox(height: 8),
+              TextField(
+                onChanged: (value) {
+                  setState(() => _filterLocation = value.isEmpty ? null : value);
+                  _loadData();
+                },
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Enter city or location...',
+                  hintStyle: TextStyle(color: Colors.white30),
+                  prefixIcon: Icon(LucideIcons.mapPin, color: Colors.white30),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        _clearFilters();
+                        Navigator.pop(ctx);
+                      },
+                      style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.white30)),
+                      child: const Text('Clear All', style: TextStyle(color: Colors.white70)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
+                      child: const Text('Apply', style: TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  void _clearFilters() {
+    setState(() {
+      _filterMood = null;
+      _filterLocation = null;
+      _filterStartDate = null;
+      _filterEndDate = null;
+    });
+    _loadData();
+  }
+  
+  Widget _buildFilterChip(String label, VoidCallback onRemove) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.purple.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.purple.withOpacity(0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: onRemove,
+            child: Icon(LucideIcons.x, size: 14, color: Colors.white70),
+          ),
+        ],
       ),
     );
   }

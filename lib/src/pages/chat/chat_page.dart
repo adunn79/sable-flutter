@@ -1830,13 +1830,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Widget _buildInteractiveMessage(String message) {
+    // FIX: Calculate isDark based on actual background settings
+    final isLightBackground = _avatarDisplayMode == AvatarDisplaySettings.modeIcon && 
+                              _backgroundColor == AvatarDisplaySettings.colorWhite;
+    final isDark = !isLightBackground;
+    final textColor = isDark ? Colors.white : Colors.black;
+    final strongColor = isDark ? Colors.white : Colors.black;
+
     return MarkdownBody(
       data: message,
       selectable: true,
       extensionSet: md.ExtensionSet.gitHubFlavored,
       styleSheet: MarkdownStyleSheet(
         p: GoogleFonts.inter(
-          color: Colors.white,
+          color: textColor,
           fontSize: 16,
           height: 1.4,
         ),
@@ -1849,7 +1856,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           decorationColor: AurealColors.plasmaCyan.withOpacity(0.5),
         ),
         strong: GoogleFonts.inter(
-          color: Colors.white,
+          color: strongColor,
           fontSize: 16,
           fontWeight: FontWeight.bold,
         ),

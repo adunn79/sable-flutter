@@ -430,6 +430,138 @@ No hashtags, no explanations, just the tags.''',
     );
   }
   
+  Widget _buildHighlightedUndoRedo() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Undo button - highlighted
+        Tooltip(
+          message: 'Undo - Fix typing mistakes',
+          child: GestureDetector(
+            onTap: () {
+              if (_quillController.hasUndo) {
+                _quillController.undo();
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber.withOpacity(0.5)),
+              ),
+              child: Icon(
+                LucideIcons.undo, 
+                size: 18, 
+                color: _quillController.hasUndo ? Colors.amber : Colors.grey,
+              ),
+            ),
+          ),
+        ),
+        // Redo button - highlighted
+        Tooltip(
+          message: 'Redo - Restore undone text',
+          child: GestureDetector(
+            onTap: () {
+              if (_quillController.hasRedo) {
+                _quillController.redo();
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber.withOpacity(0.5)),
+              ),
+              child: Icon(
+                LucideIcons.redo, 
+                size: 18, 
+                color: _quillController.hasRedo ? Colors.amber : Colors.grey,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildInfoButton() {
+    return Tooltip(
+      message: 'Toolbar Help',
+      child: GestureDetector(
+        onTap: _showToolbarHelp,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          margin: const EdgeInsets.only(right: 8),
+          child: Icon(LucideIcons.info, size: 18, color: Colors.white.withOpacity(0.5)),
+        ),
+      ),
+    );
+  }
+  
+  void _showToolbarHelp() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '📝 Toolbar Guide',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildHelpItem('🎤', 'Voice Dictate', 'Speak to type'),
+            _buildHelpItem('↶ ↷', 'Undo/Redo', 'Fix mistakes (highlighted in gold)'),
+            _buildHelpItem('B', 'Bold', 'Make text bold'),
+            _buildHelpItem('I', 'Italic', 'Make text italic'),
+            _buildHelpItem('U', 'Underline', 'Add underline'),
+            _buildHelpItem('❝', 'Quote', 'Add a quote block'),
+            _buildHelpItem('•', 'Bullet List', 'Create bullet points'),
+            _buildHelpItem('1.', 'Number List', 'Create numbered list'),
+            _buildHelpItem('☑', 'Checklist', 'Add a task checklist'),
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Got it!', style: TextStyle(color: Colors.cyan, fontSize: 16)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildHelpItem(String icon, String title, String desc) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 30,
+            child: Text(icon, style: const TextStyle(fontSize: 16)),
+          ),
+          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(desc, style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
+  
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -590,11 +722,15 @@ No hashtags, no explanations, just the tags.''',
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: QuillEditor(
                   focusNode: _focusNode,
-                  scrollController: _editorScrollController, // Use persistent controller
+                  scrollController: _editorScrollController,
                   configurations: QuillEditorConfigurations(
                     controller: _quillController,
                     placeholder: 'Start writing...',
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    autoFocus: false, // Prevent auto-focus causing cursor issues
+                    expands: false, // Don't expand to fill
+                    showCursor: true,
+                    enableInteractiveSelection: true,
                   ),
                 ),
               ),
@@ -626,7 +762,16 @@ No hashtags, no explanations, just the tags.''',
                     height: 24,
                     color: Colors.white.withOpacity(0.1),
                   ),
-                  // Quill toolbar
+                  // HIGHLIGHTED Undo/Redo buttons
+                  _buildHighlightedUndoRedo(),
+                  // Divider
+                  Container(
+                    width: 1,
+                    height: 24,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    color: Colors.white.withOpacity(0.1),
+                  ),
+                  // Quill toolbar (formatting)
                   Expanded(
                     child: QuillToolbar.simple(
                 configurations: QuillSimpleToolbarConfigurations(
@@ -653,11 +798,13 @@ No hashtags, no explanations, just the tags.''',
                   showUnderLineButton: true,
                   showStrikeThrough: false,
                   showAlignmentButtons: false,
-                  showUndo: true,
-                  showRedo: true,
+                  showUndo: false, // Using custom undo
+                  showRedo: false, // Using custom redo
                 ),
               ),
             ), // End Expanded
+            // Info button
+            _buildInfoButton(),
           ], // End Row children
         ), // End Row
       ), // End Container

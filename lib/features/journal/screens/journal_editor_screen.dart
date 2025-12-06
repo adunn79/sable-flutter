@@ -239,8 +239,21 @@ Guidelines:
       String? locationName;
       if (_existingEntry == null) {
         position = await LocationService.getCurrentPosition();
-        final prefs = await SharedPreferences.getInstance();
-        locationName = prefs.getString('gps_location') ?? prefs.getString('manual_location');
+        // Get city name from coordinates using reverse geocoding
+        final apiKey = const String.fromEnvironment('GOOGLE_API_KEY', 
+          defaultValue: '') != '' 
+            ? const String.fromEnvironment('GOOGLE_API_KEY')
+            : (await SharedPreferences.getInstance()).getString('google_api_key') ?? '';
+        
+        // Try to get location name from geocoding, fallback to SharedPreferences
+        if (apiKey.isNotEmpty && position != null) {
+          locationName = await LocationService.getCurrentLocationName(apiKey);
+        }
+        // Fallback to cached GPS location if geocoding failed
+        if (locationName == null || locationName.isEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          locationName = prefs.getString('gps_location') ?? prefs.getString('manual_location');
+        }
         debugPrint('📍 Journal location: $locationName (${position?.latitude}, ${position?.longitude})');
       }
       
@@ -506,38 +519,47 @@ No hashtags, no explanations, just the tags.''',
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (ctx) => Container(
-        padding: const EdgeInsets.all(20),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.5,
+        ),
+        padding: EdgeInsets.only(
+          left: 20, right: 20, top: 20,
+          bottom: MediaQuery.of(ctx).padding.bottom + 20,
+        ),
         decoration: BoxDecoration(
           color: Colors.grey[900],
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '📝 Toolbar Guide',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildHelpItem('🎤', 'Voice Dictate', 'Speak to type'),
-            _buildHelpItem('↶ ↷', 'Undo/Redo', 'Fix mistakes (highlighted in gold)'),
-            _buildHelpItem('B', 'Bold', 'Make text bold'),
-            _buildHelpItem('I', 'Italic', 'Make text italic'),
-            _buildHelpItem('U', 'Underline', 'Add underline'),
-            _buildHelpItem('❝', 'Quote', 'Add a quote block'),
-            _buildHelpItem('•', 'Bullet List', 'Create bullet points'),
-            _buildHelpItem('1.', 'Number List', 'Create numbered list'),
-            _buildHelpItem('☑', 'Checklist', 'Add a task checklist'),
-            const SizedBox(height: 16),
-            Center(
-              child: TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Got it!', style: TextStyle(color: Colors.cyan, fontSize: 16)),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '📝 Toolbar Guide',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              _buildHelpItem('🎤', 'Voice Dictate', 'Speak to type'),
+              _buildHelpItem('↶ ↷', 'Undo/Redo', 'Fix mistakes (gold)'),
+              _buildHelpItem('B', 'Bold', 'Make text bold'),
+              _buildHelpItem('I', 'Italic', 'Italic text'),
+              _buildHelpItem('U', 'Underline', 'Underline'),
+              _buildHelpItem('❝', 'Quote', 'Quote block'),
+              _buildHelpItem('•', 'Bullets', 'Bullet list'),
+              _buildHelpItem('1.', 'Numbers', 'Numbered list'),
+              _buildHelpItem('☑', 'Checklist', 'Tasks'),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Got it!', style: TextStyle(color: Colors.cyan, fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

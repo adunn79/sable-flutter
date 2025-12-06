@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geolocator/geolocator.dart';
 import 'dart:convert';
 import '../services/journal_storage_service.dart';
 import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
 import '../widgets/avatar_journal_overlay.dart';
 import 'package:sable/core/voice/voice_service.dart';
+import 'package:sable/core/emotion/location_service.dart';
 
 /// Rich text journal editor with privacy toggle, mood, and tags
 class JournalEditorScreen extends StatefulWidget {
@@ -154,6 +156,16 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
     try {
       final content = jsonEncode(_quillController.document.toDelta().toJson());
       
+      // Auto-capture location for new entries
+      Position? position;
+      String? locationName;
+      if (_existingEntry == null) {
+        position = await LocationService.getCurrentPosition();
+        final prefs = await SharedPreferences.getInstance();
+        locationName = prefs.getString('gps_location') ?? prefs.getString('manual_location');
+        debugPrint('📍 Journal location: $locationName (${position?.latitude}, ${position?.longitude})');
+      }
+      
       if (_existingEntry != null) {
         // Update existing
         await JournalStorageService.updateEntry(
@@ -166,7 +178,7 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
           ),
         );
       } else {
-        // Create new
+        // Create new with location
         await JournalStorageService.createEntry(
           content: content,
           plainText: plainText,
@@ -174,6 +186,9 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
           isPrivate: _isPrivate,
           moodScore: _moodScore,
           tags: _tags,
+          location: locationName,
+          latitude: position?.latitude,
+          longitude: position?.longitude,
         );
       }
       

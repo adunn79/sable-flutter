@@ -1,9 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:geolocator/geolocator.dart';
-import 'dart:convert';
+
 import '../services/journal_storage_service.dart';
 import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
@@ -11,6 +12,7 @@ import '../widgets/avatar_journal_overlay.dart';
 import 'package:sable/core/voice/voice_service.dart';
 import 'package:sable/core/emotion/location_service.dart';
 import 'package:sable/core/ai/providers/gemini_provider.dart';
+import 'package:sable/src/config/app_config.dart';
 
 /// Rich text journal editor with privacy toggle, mood, and tags
 class JournalEditorScreen extends StatefulWidget {
@@ -240,12 +242,9 @@ Guidelines:
       if (_existingEntry == null) {
         position = await LocationService.getCurrentPosition();
         // Get city name from coordinates using reverse geocoding
-        final apiKey = const String.fromEnvironment('GOOGLE_API_KEY', 
-          defaultValue: '') != '' 
-            ? const String.fromEnvironment('GOOGLE_API_KEY')
-            : (await SharedPreferences.getInstance()).getString('google_api_key') ?? '';
+        final apiKey = AppConfig.googleKey;
         
-        // Try to get location name from geocoding, fallback to SharedPreferences
+        // Try to get location name from geocoding
         if (apiKey.isNotEmpty && position != null) {
           locationName = await LocationService.getCurrentLocationName(apiKey);
         }
@@ -522,17 +521,17 @@ No hashtags, no explanations, just the tags.''',
       isScrollControlled: true,
       builder: (ctx) => Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.5,
-        ),
-        padding: EdgeInsets.only(
-          left: 20, right: 20, top: 20,
-          bottom: MediaQuery.of(ctx).padding.bottom + 20,
+          maxHeight: MediaQuery.of(context).size.height * 0.45,
         ),
         decoration: BoxDecoration(
           color: Colors.grey[900],
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            left: 20, right: 20, top: 20,
+            bottom: MediaQuery.of(ctx).padding.bottom + 20,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,

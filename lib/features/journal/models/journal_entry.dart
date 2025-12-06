@@ -56,6 +56,9 @@ class JournalEntry extends HiveObject {
   @HiveField(16)
   String? firestoreId; // Firestore document ID
 
+  @HiveField(17)
+  bool isHidden; // Hidden from timeline view
+
   JournalEntry({
     required this.id,
     required this.content,
@@ -74,6 +77,7 @@ class JournalEntry extends HiveObject {
     this.embeddingRef,
     this.isSynced = false,
     this.firestoreId,
+    this.isHidden = false,
   });
 
   /// Create a copy with updated fields
@@ -95,6 +99,7 @@ class JournalEntry extends HiveObject {
     String? embeddingRef,
     bool? isSynced,
     String? firestoreId,
+    bool? isHidden,
   }) {
     return JournalEntry(
       id: id ?? this.id,
@@ -114,6 +119,7 @@ class JournalEntry extends HiveObject {
       embeddingRef: embeddingRef ?? this.embeddingRef,
       isSynced: isSynced ?? this.isSynced,
       firestoreId: firestoreId ?? this.firestoreId,
+      isHidden: isHidden ?? this.isHidden,
     );
   }
 

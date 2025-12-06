@@ -407,101 +407,210 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
     final bucket = JournalStorageService.getBucket(entry.bucketId);
     final dateFormat = DateFormat('MMM d, y • h:mm a');
     
-    return GestureDetector(
-      onTap: () => _openEditor(entryId: entry.id),
-      child: Container(
+    return Dismissible(
+      key: Key(entry.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) => _confirmDelete(entry),
+      background: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.red.withOpacity(0.3),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row
-            Row(
-              children: [
-                // Mood emoji
-                if (entry.moodScore != null)
-                  Text(_getMoodEmoji(entry.moodScore), style: const TextStyle(fontSize: 20)),
-                if (entry.moodScore != null) const SizedBox(width: 8),
-                
-                // Date and location
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        dateFormat.format(entry.timestamp),
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 12,
-                        ),
-                      ),
-                      if (entry.location != null && entry.location!.isNotEmpty)
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        child: const Icon(LucideIcons.trash2, color: Colors.red, size: 24),
+      ),
+      child: GestureDetector(
+        onTap: () => _openEditor(entryId: entry.id),
+        onLongPress: () => _showEntryOptions(entry),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: entry.isHidden ? Colors.grey.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: entry.isHidden ? Colors.grey.withOpacity(0.3) : Colors.white.withOpacity(0.08),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row
+              Row(
+                children: [
+                  // Mood emoji
+                  if (entry.moodScore != null)
+                    Text(_getMoodEmoji(entry.moodScore), style: const TextStyle(fontSize: 20)),
+                  if (entry.moodScore != null) const SizedBox(width: 8),
+                  
+                  // Date and location
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          '📍 ${entry.location}',
+                          dateFormat.format(entry.timestamp),
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
-                            fontSize: 11,
+                            color: Colors.white.withOpacity(0.5),
+                            fontSize: 12,
                           ),
                         ),
-                    ],
-                  ),
-                ),
-                
-                // Privacy indicator
-                if (entry.isPrivate)
-                  Icon(LucideIcons.eyeOff, size: 14, color: Colors.red.withOpacity(0.7)),
-                
-                // Bucket indicator
-                if (bucket != null && _selectedBucketId == null) ...[
-                  const SizedBox(width: 8),
-                  Text(bucket.icon, style: const TextStyle(fontSize: 14)),
-                ],
-              ],
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Preview text
-            Text(
-              entry.plainText.length > 150 
-                  ? '${entry.plainText.substring(0, 150)}...'
-                  : entry.plainText,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                height: 1.5,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            
-            // Tags
-            if (entry.tags.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: entry.tags.map((tag) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '#$tag',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
-                      fontSize: 11,
+                        if (entry.location != null && entry.location!.isNotEmpty)
+                          Text(
+                            '📍 ${entry.location}',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.4),
+                              fontSize: 11,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                )).toList(),
+                  
+                  // Hidden indicator
+                  if (entry.isHidden)
+                    Icon(LucideIcons.eyeOff, size: 14, color: Colors.grey.withOpacity(0.7)),
+                    
+                  // Privacy indicator
+                  if (entry.isPrivate && !entry.isHidden) ...[
+                    const SizedBox(width: 4),
+                    Icon(LucideIcons.lock, size: 14, color: Colors.red.withOpacity(0.7)),
+                  ],
+                  
+                  // Bucket indicator
+                  if (bucket != null && _selectedBucketId == null) ...[
+                    const SizedBox(width: 8),
+                    Text(bucket.icon, style: const TextStyle(fontSize: 14)),
+                  ],
+                ],
               ),
+              
+              const SizedBox(height: 12),
+              
+              // Preview text
+              Text(
+                entry.plainText.length > 150 
+                    ? '${entry.plainText.substring(0, 150)}...'
+                    : entry.plainText,
+                style: TextStyle(
+                  color: entry.isHidden ? Colors.grey : Colors.white,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              // Tags
+              if (entry.tags.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: entry.tags.map((tag) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '#$tag',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: 11,
+                      ),
+                    ),
+                  )).toList(),
+                ),
+              ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Future<bool> _confirmDelete(JournalEntry entry) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Delete Entry?', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'This will permanently delete this journal entry.',
+          style: TextStyle(color: Colors.grey[400]),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              await JournalStorageService.deleteEntry(entry.id);
+              Navigator.pop(ctx, true);
+              _loadData(); // Refresh list
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+  
+  void _showEntryOptions(JournalEntry entry) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(
+                entry.isHidden ? LucideIcons.eye : LucideIcons.eyeOff,
+                color: Colors.white70,
+              ),
+              title: Text(
+                entry.isHidden ? 'Unhide Entry' : 'Hide Entry',
+                style: const TextStyle(color: Colors.white),
+              ),
+              subtitle: Text(
+                entry.isHidden ? 'Show in timeline' : 'Hide from timeline view',
+                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              ),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await JournalStorageService.updateEntry(
+                  entry.copyWith(isHidden: !entry.isHidden),
+                );
+                _loadData();
+              },
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.edit, color: Colors.white70),
+              title: const Text('Edit Entry', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _openEditor(entryId: entry.id);
+              },
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.trash2, color: Colors.red),
+              title: const Text('Delete Entry', style: TextStyle(color: Colors.red)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final confirmed = await _confirmDelete(entry);
+                if (confirmed) _loadData();
+              },
+            ),
           ],
         ),
       ),

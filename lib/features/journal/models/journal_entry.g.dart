@@ -34,13 +34,14 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       embeddingRef: fields[14] as String?,
       isSynced: fields[15] as bool,
       firestoreId: fields[16] as String?,
+      isHidden: fields[17] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, JournalEntry obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(18)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -74,7 +75,9 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       ..writeByte(15)
       ..write(obj.isSynced)
       ..writeByte(16)
-      ..write(obj.firestoreId);
+      ..write(obj.firestoreId)
+      ..writeByte(17)
+      ..write(obj.isHidden);
   }
 
   @override

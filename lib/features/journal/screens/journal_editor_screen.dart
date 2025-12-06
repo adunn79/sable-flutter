@@ -668,13 +668,18 @@ Guidelines:
       AvatarJournalOverlay(
         isPrivate: _isPrivate,
         archetype: _archetype,
-        onSparkTap: _isPrivate ? null : _generateSparkPrompt, // Only show Spark when not private
-        onAvatarTap: () {
-          // TODO: Expand chat panel
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${_archetype[0].toUpperCase()}${_archetype.substring(1)} is ${_isPrivate ? "blind" : "observing"}')),
-          );
-        },
+        onSparkTap: null, // Removed - using avatar tap instead
+        onAvatarTap: _isPrivate 
+            ? () {
+                // When private, just show status
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${_archetype[0].toUpperCase()}${_archetype.substring(1)} can\'t see this entry (private mode)'),
+                    backgroundColor: Colors.grey[800],
+                  ),
+                );
+              }
+            : _generateSparkPrompt, // When observing, trigger AI prompt
       ),
     ],
   ),

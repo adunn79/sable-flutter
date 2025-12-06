@@ -428,6 +428,191 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
         backgroundColor: Colors.white,
         child: const Icon(LucideIcons.plus, color: Colors.black),
       ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black,
+          border: Border(top: BorderSide(color: Colors.white.withOpacity(0.1))),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildNavItem(LucideIcons.layoutList, 'Timeline', true, () {}),
+              _buildNavItem(LucideIcons.calendar, 'Calendar', false, () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('📅 Calendar view coming soon!')),
+                );
+              }),
+              _buildNavItem(LucideIcons.folderOpen, 'Buckets', false, _showBucketPicker),
+              _buildNavItem(LucideIcons.settings, 'Settings', false, _showJournalSettings),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  void _showJournalSettings() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            left: 20, right: 20, top: 20,
+            bottom: MediaQuery.of(ctx).padding.bottom + 20,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '⚙️ Journal Settings',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(LucideIcons.lock, color: Colors.purple),
+                title: const Text('Journal PIN', style: TextStyle(color: Colors.white)),
+                subtitle: Text('Change or remove PIN lock', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                trailing: const Icon(LucideIcons.chevronRight, color: Colors.white30),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showPinSettings();
+                },
+              ),
+              ListTile(
+                leading: const Icon(LucideIcons.fingerprint, color: Colors.cyan),
+                title: const Text('Biometric Unlock', style: TextStyle(color: Colors.white)),
+                subtitle: Text('Use Face ID / Touch ID', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                trailing: const Icon(LucideIcons.chevronRight, color: Colors.white30),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final prefs = await SharedPreferences.getInstance();
+                  final enabled = prefs.getBool('journal_biometric_enabled') ?? false;
+                  await prefs.setBool('journal_biometric_enabled', !enabled);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(!enabled ? '✅ Biometric unlock enabled' : '❌ Biometric unlock disabled')),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(LucideIcons.folderPlus, color: Colors.amber),
+                title: const Text('Manage Buckets', style: TextStyle(color: Colors.white)),
+                subtitle: Text('Create, edit, delete journals', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                trailing: const Icon(LucideIcons.chevronRight, color: Colors.white30),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showBucketPicker();
+                },
+              ),
+              ListTile(
+                leading: const Icon(LucideIcons.download, color: Colors.green),
+                title: const Text('Export Journal', style: TextStyle(color: Colors.white)),
+                subtitle: Text('Download entries as JSON', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                trailing: const Icon(LucideIcons.chevronRight, color: Colors.white30),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('📥 Export coming soon!')),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Close', style: TextStyle(color: Colors.grey)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  void _showPinSettings() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🔐 PIN Settings', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(LucideIcons.keyRound, color: Colors.purple),
+              title: const Text('Change PIN', style: TextStyle(color: Colors.white)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('journal_pin');
+                await prefs.setBool('journal_pin_enabled', false);
+                await prefs.setBool('journal_pin_prompted', false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('PIN removed. You can set a new one when you next open the journal.')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.unlock, color: Colors.red),
+              title: const Text('Remove PIN', style: TextStyle(color: Colors.red)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('journal_pin');
+                await prefs.setBool('journal_pin_enabled', false);
+                await prefs.setBool('journal_pin_prompted', true); // Don't ask again
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('❌ Journal PIN removed')),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildNavItem(IconData icon, String label, bool isActive, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 22, color: isActive ? Colors.white : Colors.white.withOpacity(0.4)),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.white.withOpacity(0.4),
+              fontSize: 10,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
     );
   }
   

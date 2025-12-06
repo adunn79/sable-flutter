@@ -203,31 +203,14 @@ Guidelines:
   }
   
   void _showSparkPromptDialog(String prompt) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Text('✨', style: TextStyle(fontSize: 24)),
-            const SizedBox(width: 8),
-            Text(
-              '${_archetype[0].toUpperCase()}${_archetype.substring(1)} asks...',
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-            ),
-          ],
-        ),
-        content: Text(
-          prompt,
-          style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 15, height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Thanks', style: TextStyle(color: Colors.purple)),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _JournalChatSheet(
+        initialPrompt: prompt,
+        archetype: _archetype,
+        journalContext: _quillController.document.toPlainText().trim(),
       ),
     );
   }
@@ -684,5 +667,231 @@ Guidelines:
     ],
   ),
 );
+  }
+}
+
+/// Inline chat sheet for journal coaching
+class _JournalChatSheet extends StatefulWidget {
+  final String initialPrompt;
+  final String archetype;
+  final String journalContext;
+  
+  const _JournalChatSheet({
+    required this.initialPrompt,
+    required this.archetype,
+    required this.journalContext,
+  });
+  
+  @override
+  State<_JournalChatSheet> createState() => _JournalChatSheetState();
+}
+
+class _JournalChatSheetState extends State<_JournalChatSheet> {
+  final TextEditingController _replyController = TextEditingController();
+  final List<Map<String, String>> _messages = [];
+  bool _isLoading = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _messages.add({'role': 'assistant', 'content': widget.initialPrompt});
+  }
+  
+  @override
+  void dispose() {
+    _replyController.dispose();
+    super.dispose();
+  }
+  
+  Future<void> _sendReply() async {
+    final text = _replyController.text.trim();
+    if (text.isEmpty || _isLoading) return;
+    
+    setState(() {
+      _messages.add({'role': 'user', 'content': text});
+      _isLoading = true;
+    });
+    _replyController.clear();
+    
+    try {
+      final gemini = GeminiProvider();
+      final systemPrompt = '''
+You are a gentle, empathetic journaling coach in a private journaling app.
+You are in the middle of a supportive conversation with the user about their journal entry.
+
+Their journal entry (for context): "${widget.journalContext}"
+
+Guidelines:
+- Be warm, curious, and non-judgmental
+- Keep responses SHORT (2-3 sentences max)
+- Ask gentle follow-up questions to explore feelings
+- Validate emotions before offering perspective
+- Never be preachy or give unsolicited advice
+''';
+
+      final conversationHistory = _messages.map((m) => 
+        '${m['role'] == 'user' ? 'User' : widget.archetype}: ${m['content']}'
+      ).join('\n');
+      
+      final response = await gemini.generateResponse(
+        prompt: 'Conversation so far:\n$conversationHistory\n\nRespond briefly and empathetically.',
+        systemPrompt: systemPrompt,
+        modelId: 'gemini-2.0-flash-exp',
+      );
+      
+      if (mounted) {
+        setState(() {
+          _messages.add({'role': 'assistant', 'content': response});
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Chat error: $e');
+      if (mounted) {
+        setState(() {
+          _messages.add({'role': 'assistant', 'content': 'Sorry, I had trouble responding. Let me try again later.'});
+          _isLoading = false;
+        });
+      }
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final avatarName = widget.archetype[0].toUpperCase() + widget.archetype.substring(1);
+    
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.5,
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[700],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Text('✨', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 8),
+                Text(
+                  '$avatarName is here to help',
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Icon(LucideIcons.x, color: Colors.grey[500], size: 20),
+                ),
+              ],
+            ),
+          ),
+          const Divider(color: Colors.white12, height: 1),
+          // Messages
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _messages.length + (_isLoading ? 1 : 0),
+              itemBuilder: (ctx, i) {
+                if (i >= _messages.length) {
+                  // Loading indicator
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 14, height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.purple[300]),
+                          ),
+                          const SizedBox(width: 8),
+                          Text('$avatarName is thinking...', style: TextStyle(color: Colors.purple[300], fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                
+                final msg = _messages[i];
+                final isUser = msg['role'] == 'user';
+                
+                return Align(
+                  alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                    decoration: BoxDecoration(
+                      color: isUser ? Colors.blue.withOpacity(0.3) : Colors.purple.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      msg['content'] ?? '',
+                      style: TextStyle(
+                        color: isUser ? Colors.white : Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          // Input
+          Container(
+            padding: EdgeInsets.only(
+              left: 16, right: 8, top: 8,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.grey[850],
+              border: Border(top: BorderSide(color: Colors.white.withOpacity(0.1))),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _replyController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Reply to $avatarName...',
+                      hintStyle: TextStyle(color: Colors.grey[500]),
+                      border: InputBorder.none,
+                    ),
+                    onSubmitted: (_) => _sendReply(),
+                  ),
+                ),
+                IconButton(
+                  onPressed: _isLoading ? null : _sendReply,
+                  icon: Icon(
+                    LucideIcons.send,
+                    color: _isLoading ? Colors.grey : Colors.purple,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -33,6 +33,7 @@ import 'package:sable/core/personality/personality_service.dart'; // Added imple
 import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
 import 'package:sable/features/settings/services/avatar_display_settings.dart';
 import 'package:sable/features/settings/widgets/magic_orb_widget.dart';
+import 'package:sable/core/emotion/weather_service.dart';
 import 'package:sable/core/ui/feedback_service.dart'; // Added implementation
 import 'package:share_plus/share_plus.dart';
 import 'package:sable/core/audio/button_sound_service.dart';
@@ -68,6 +69,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   String _companionName = 'SABLE'; // Default archetype name, loaded from prefs
   String _archetypeId = 'sable'; // Lowercase archetype ID for image path
   
+  // Weather display in header
+  String? _weatherTemp;
+  String? _weatherCondition;
+  
   final List<Map<String, dynamic>> _messages = [];
 
   @override
@@ -89,7 +94,31 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     // Start background pre-fetch (fire and forget)
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _prefetchContent();
+      _fetchWeather(); // Fetch weather for header display
     });
+  }
+  
+  /// Fetch current weather for header display
+  Future<void> _fetchWeather() async {
+    try {
+      // Get current location
+      final apiKey = AppConfig.googleMapsApiKey;
+      if (apiKey.isEmpty) return;
+      
+      final location = await LocationService.getCurrentLocationName(apiKey);
+      if (location == null || !mounted) return;
+      
+      // Fetch weather for location
+      final weather = await WeatherService.getWeather(location);
+      if (weather != null && mounted) {
+        setState(() {
+          _weatherTemp = '${weather.temperature.round()}°';
+          _weatherCondition = weather.description;
+        });
+      }
+    } catch (e) {
+      debugPrint('Weather fetch error: $e');
+    }
   }
 
   Future<void> _prefetchContent() async {
@@ -1093,19 +1122,60 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Brain button removed
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(LucideIcons.triangle, color: AurealColors.hyperGold, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                _companionName,
-                style: GoogleFonts.spaceGrotesk(
-                  color: AurealColors.hyperGold,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                ),
+              Row(
+                children: [
+                  const Icon(LucideIcons.triangle, color: AurealColors.hyperGold, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    _companionName,
+                    style: GoogleFonts.spaceGrotesk(
+                      color: AurealColors.hyperGold,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
               ),
+              // Weather under companion name
+              if (_weatherTemp != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 0, top: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.cloudSun,
+                        color: Colors.white.withOpacity(0.8),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _weatherTemp!,
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (_weatherCondition != null) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          _weatherCondition!.split(' ').first,
+                          style: GoogleFonts.inter(
+                            color: Colors.white.withOpacity(0.75),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
             ],
           ),
           Row(

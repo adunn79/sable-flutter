@@ -856,11 +856,11 @@ Guidelines:
               },
             ),
           ),
-          // Input
+          // Input - with safe area for bottom nav
           Container(
             padding: EdgeInsets.only(
               left: 16, right: 8, top: 8,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              bottom: MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 60,
             ),
             decoration: BoxDecoration(
               color: Colors.grey[850],

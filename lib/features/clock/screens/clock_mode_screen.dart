@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sable/features/clock/widgets/clock_face_widget.dart';
+import 'package:sable/features/clock/screens/alarm_screen.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
 import 'package:sable/core/emotion/weather_service.dart';
 
@@ -218,7 +219,7 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
                 child: ClockFaceWidget(
                   isAnalog: _isAnalog,
                   use24Hour: _use24Hour,
-                  size: 270,
+                  size: 337,
                   primaryColor: Colors.white,
                   secondaryColor: Colors.white70,
                   nextAlarmTime: _alarmActive && _alarmTime != null 
@@ -278,7 +279,7 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
                 child: ClockFaceWidget(
                   isAnalog: _isAnalog,
                   use24Hour: _use24Hour,
-                  size: 330,
+                  size: 412,
                   primaryColor: Colors.white,
                   secondaryColor: Colors.white70,
                   nextAlarmTime: _alarmActive && _alarmTime != null 
@@ -383,9 +384,14 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
                       // Set alarm
                       _buildControlButton(
                         icon: Icons.alarm_add,
-                        label: 'Set Alarm',
-                        onTap: _setAlarm,
-                        highlight: !_alarmActive,
+                        label: 'Alarms',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const AlarmScreen()),
+                          );
+                        },
+                        highlight: true,
                       ),
                       // Cancel alarm (if active)
                       if (_alarmActive)

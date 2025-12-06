@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -55,9 +56,11 @@ class _ClockFaceWidgetState extends State<ClockFaceWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
         // Clock display
         widget.isAnalog ? _buildAnalogClock() : _buildDigitalClock(),
         
@@ -129,7 +132,8 @@ class _ClockFaceWidgetState extends State<ClockFaceWidget> {
             ],
           ),
         ],
-      ],
+        ],
+      ),
     );
   }
 
@@ -206,27 +210,57 @@ class _AnalogClockPainter extends CustomPainter {
       ..strokeWidth = 2;
     canvas.drawCircle(center, radius - 4, outlinePaint);
 
-    // Draw hour markers
-    for (int i = 0; i < 12; i++) {
+    // Draw hour numbers
+    for (int i = 1; i <= 12; i++) {
       final angle = (i * 30) * (math.pi / 180) - math.pi / 2;
-      final isHour = true;
-      final markerLength = isHour ? 15 : 8;
-      final markerWidth = isHour ? 3.0 : 1.0;
-
-      final outerPoint = Offset(
-        center.dx + (radius - 10) * math.cos(angle),
-        center.dy + (radius - 10) * math.sin(angle),
+      
+      // Position for numbers (inside the clock face)
+      final numberRadius = radius * 0.75;
+      final numberPoint = Offset(
+        center.dx + numberRadius * math.cos(angle),
+        center.dy + numberRadius * math.sin(angle),
       );
-      final innerPoint = Offset(
-        center.dx + (radius - 10 - markerLength) * math.cos(angle),
-        center.dy + (radius - 10 - markerLength) * math.sin(angle),
+      
+      // Draw the hour number
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: i.toString(),
+          style: TextStyle(
+            color: primaryColor,
+            fontSize: radius * 0.18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        textDirection: ui.TextDirection.ltr,
       );
-
-      final markerPaint = Paint()
-        ..color = primaryColor
-        ..strokeWidth = markerWidth
-        ..strokeCap = StrokeCap.round;
-      canvas.drawLine(innerPoint, outerPoint, markerPaint);
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(
+          numberPoint.dx - textPainter.width / 2,
+          numberPoint.dy - textPainter.height / 2,
+        ),
+      );
+    }
+    
+    // Draw small tick marks for minutes (optional, subtle)
+    for (int i = 0; i < 60; i++) {
+      if (i % 5 != 0) { // Skip hour positions
+        final angle = (i * 6) * (math.pi / 180) - math.pi / 2;
+        final outerPoint = Offset(
+          center.dx + (radius - 6) * math.cos(angle),
+          center.dy + (radius - 6) * math.sin(angle),
+        );
+        final innerPoint = Offset(
+          center.dx + (radius - 10) * math.cos(angle),
+          center.dy + (radius - 10) * math.sin(angle),
+        );
+        final markerPaint = Paint()
+          ..color = secondaryColor.withOpacity(0.4)
+          ..strokeWidth = 1
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(innerPoint, outerPoint, markerPaint);
+      }
     }
 
     // Calculate hand angles

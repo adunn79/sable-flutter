@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -72,6 +73,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   String _archetypeId = 'sable'; // Lowercase archetype ID for image path
   bool _clockUse24Hour = false;
   bool _clockIsAnalog = false;
+  
+  // Clock mode dimming
+  bool _clockDimmed = false;
+  Timer? _clockDimTimer;
+  bool _showChatOverClock = false; // Temporarily show chat even when in clock mode
   
   // Weather display in header
   String? _weatherTemp;
@@ -1062,68 +1068,363 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ],
                 ),
               )
-            else if (_avatarDisplayMode == AvatarDisplaySettings.modeClock)
+            else if (_avatarDisplayMode == AvatarDisplaySettings.modeClock && !_showChatOverClock)
               // Clock mode - avatar with clock face
-              GestureDetector(
-                onTap: () {
-                  // Open full screen clock mode
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => ClockModeScreen(
-                        archetypeId: _archetypeId,
-                        onExit: () => Navigator.of(context).pop(),
+              Builder(
+                builder: (context) {
+                  // Start/reset dim timer when in clock mode
+                  _clockDimTimer?.cancel();
+                  _clockDimTimer = Timer(const Duration(minutes: 1), () {
+                    if (mounted && _avatarDisplayMode == AvatarDisplaySettings.modeClock) {
+                      setState(() => _clockDimmed = true);
+                    }
+                  });
+                  
+                  return GestureDetector(
+                    onTap: () {
+                      if (_clockDimmed) {
+                        // Wake up from dim
+                        setState(() => _clockDimmed = false);
+                        return;
+                      }
+                      // Open full screen clock mode
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ClockModeScreen(
+                            archetypeId: _archetypeId,
+                            onExit: () => Navigator.of(context).pop(),
+                          ),
+                        ),
+                      );
+                    },
+                    child: Stack(
+                      children: [
+                        // Clock display
+                        AnimatedOpacity(
+                          opacity: _clockDimmed ? 0.3 : 1.0,
+                          duration: const Duration(seconds: 2),
+                          child: Container(
+                            color: Colors.black,
+                            child: OrientationBuilder(
+                              builder: (context, orientation) {
+                            if (orientation == Orientation.landscape) {
+                              // Landscape: Avatar left 50%, Clock right 50%
+                              return Row(
+                                children: [
+                                  // Left 50% - Avatar
+                                  Expanded(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        image: DecorationImage(
+                                          image: AssetImage('assets/images/archetypes/$_archetypeId.png'),
+                                          fit: BoxFit.cover,
+                                          alignment: Alignment.center,
+                                        ),
+                                      ),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.centerLeft,
+                                            end: Alignment.centerRight,
+                                            colors: [
+                                              Colors.transparent,
+                                              Colors.black.withOpacity(0.8),
+                                            ],
+                                            stops: const [0.5, 1.0],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  // Right 50% - Clock
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(left: 16, right: 48),
+                                      child: Center(
+                                        child: ClockFaceWidget(
+                                          isAnalog: _clockIsAnalog,
+                                          use24Hour: _clockUse24Hour,
+                                          size: 252,
+                                          primaryColor: Colors.white,
+                                          secondaryColor: Colors.white70,
+                                          weatherTemp: _weatherTemp,
+                                          weatherCondition: _weatherCondition,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            } else {
+                              // Portrait: Avatar top, Clock bottom
+                              return Column(
+                                children: [
+                                  // Top for the avatar 
+                                  Container(
+                                    height: MediaQuery.of(context).size.height * 0.35,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      image: DecorationImage(
+                                        image: AssetImage('assets/images/archetypes/$_archetypeId.png'),
+                                        fit: BoxFit.cover,
+                                        alignment: Alignment.topCenter,
+                                      ),
+                                    ),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.transparent,
+                                            Colors.transparent,
+                                            Colors.black.withOpacity(0.8),
+                                            Colors.black,
+                                          ],
+                                          stops: const [0.0, 0.5, 0.85, 1.0],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  // Clock display
+                                  Expanded(
+                                    child: Center(
+                                      child: ClockFaceWidget(
+                                        isAnalog: _clockIsAnalog,
+                                        use24Hour: _clockUse24Hour,
+                                        size: 288,
+                                        primaryColor: Colors.white,
+                                        secondaryColor: Colors.white70,
+                                        weatherTemp: _weatherTemp,
+                                        weatherCondition: _weatherCondition,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+                          },
+                        ),
                       ),
                     ),
-                  );
+
+                  ],
+                ),
+              );
                 },
-                child: Container(
-                  color: Colors.black,
-                  child: Column(
-                    children: [
-                      // Top 50% for the avatar 
-                      Container(
-                        height: MediaQuery.of(context).size.height * 0.45,
-                        width: double.infinity,
+              )
+            else if (_avatarDisplayMode == AvatarDisplaySettings.modeConversation)
+              // Conversation mode - gradient background, chat on left, avatar figure on right
+              Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Background matching avatar's jacket color for seamless blend
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF2a3038), // Dark charcoal grey matching jacket
+                    ),
+                  ),
+                  // Avatar extended to fill right side
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: MediaQuery.of(context).size.width * 0.65, // 65% width - extends further
+                    child: Container(
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('assets/images/archetypes/$_archetypeId.png'),
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                        ),
+                      ),
+                      // Very gradual fade on left edge - starts at 60%
+                      child: Container(
                         decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: AssetImage('assets/images/archetypes/$_archetypeId.png'),
-                            fit: BoxFit.cover,
-                            alignment: Alignment.topCenter,
+                          gradient: LinearGradient(
+                            begin: Alignment.centerRight,
+                            end: Alignment.centerLeft,
+                            colors: [
+                              Colors.transparent,
+                              Colors.transparent,
+                              Colors.transparent,
+                              const Color(0xFF2a3038).withOpacity(0.3),
+                              const Color(0xFF2a3038).withOpacity(0.7),
+                              const Color(0xFF2a3038),
+                            ],
+                            stops: const [0.0, 0.3, 0.5, 0.65, 0.8, 1.0],
                           ),
                         ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.transparent,
-                                Colors.black.withOpacity(0.8),
-                                Colors.black,
+                      ),
+                    ),
+                  ),
+                  // Chat area overlay on left side
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: MediaQuery.of(context).size.width * 0.65, // 65% for chat
+                    child: SafeArea(
+                      right: false,
+                      child: Column(
+                        children: [
+                          // No spacing - KAI at very top
+                          // Header with name and weather
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16, right: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(LucideIcons.triangle, color: AurealColors.hyperGold, size: 16),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _companionName,
+                                      style: GoogleFonts.spaceGrotesk(
+                                        color: AurealColors.hyperGold,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                // Weather under companion name
+                                if (_weatherTemp != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          LucideIcons.cloudSun,
+                                          color: Colors.white.withOpacity(0.8),
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          _weatherTemp!,
+                                          style: GoogleFonts.inter(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        if (_weatherCondition != null) ...[
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            _weatherCondition!,
+                                            style: GoogleFonts.inter(
+                                              color: Colors.white.withOpacity(0.75),
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
                               ],
-                              stops: const [0.0, 0.5, 0.85, 1.0],
                             ),
                           ),
-                        ),
-                      ),
-                      // Clock display
-                      Expanded(
-                        child: Center(
-                          child: ClockFaceWidget(
-                            isAnalog: _clockIsAnalog,
-                            use24Hour: _clockUse24Hour,
-                            size: 240,
-                            primaryColor: Colors.white,
-                            secondaryColor: Colors.white70,
-                            weatherTemp: _weatherTemp,
-                            weatherCondition: _weatherCondition,
+                          const SizedBox(height: 8),
+                          // Messages
+                          Expanded(
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              reverse: true,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              itemCount: _messages.length > 25 ? 25 : _messages.length,
+                              itemBuilder: (context, index) {
+                                final messageIndex = _messages.length - 1 - index;
+                                final msg = _messages[messageIndex];
+                                final isUser = msg['isUser'] as bool;
+                                final message = msg['message'] as String;
+                                
+                                // Conversation mode: glassy pill-shaped bubbles
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 6),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(24),
+                                      child: BackdropFilter(
+                                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                        child: Container(
+                                          constraints: BoxConstraints(
+                                            maxWidth: MediaQuery.of(context).size.width * 0.55,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                              colors: isUser 
+                                                  ? [
+                                                      AurealColors.plasmaCyan.withOpacity(0.3),
+                                                      AurealColors.plasmaCyan.withOpacity(0.15),
+                                                    ]
+                                                  : [
+                                                      Colors.white.withOpacity(0.15),
+                                                      Colors.white.withOpacity(0.08),
+                                                    ],
+                                            ),
+                                            borderRadius: BorderRadius.circular(24),
+                                            border: Border.all(
+                                              color: isUser 
+                                                  ? AurealColors.plasmaCyan.withOpacity(0.5)
+                                                  : Colors.white.withOpacity(0.25),
+                                              width: 1.5,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: (isUser ? AurealColors.plasmaCyan : Colors.white).withOpacity(0.1),
+                                                blurRadius: 16,
+                                                spreadRadius: 0,
+                                              ),
+                                            ],
+                                          ),
+                                          child: Text(
+                                            message,
+                                            style: GoogleFonts.inter(
+                                              color: Colors.white,
+                                              fontSize: 15,
+                                              height: 1.5,
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
+                          // Typing indicator
+                          if (_isTyping)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 16, bottom: 8),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  '$_companionName is thinking...',
+                                  style: GoogleFonts.inter(
+                                    color: AurealColors.ghost,
+                                    fontSize: 12,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          // Input area
+                          _buildInputArea(),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               )
             else
               // Plain color background for icon mode
@@ -1133,8 +1434,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     : Colors.black,
               ),
 
-            // 3. Content - Hide when in clock mode
-            if (_avatarDisplayMode != AvatarDisplaySettings.modeClock)
+            // 3. Content - Hide when in clock or conversation mode (unless temporarily showing chat)
+            if (_avatarDisplayMode != AvatarDisplaySettings.modeClock && 
+                _avatarDisplayMode != AvatarDisplaySettings.modeConversation || 
+                _showChatOverClock)
             SafeArea(
               top: false, // Disable top SafeArea to handle it manually with padding
               child: Column(
@@ -1174,6 +1477,30 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       ),
                     ),
                   ),
+                  // Show "Back to Clock" button when chat is shown over clock mode
+                  if (_showChatOverClock && _avatarDisplayMode == AvatarDisplaySettings.modeClock)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _showChatOverClock = false),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.cyan.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.cyan.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(LucideIcons.clock, color: Colors.cyan, size: 16),
+                              const SizedBox(width: 8),
+                              Text('Back to Clock', style: TextStyle(color: Colors.cyan, fontSize: 14)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   _buildFloatingChips(),
                   const SizedBox(height: 8),
                   _buildInputArea(),

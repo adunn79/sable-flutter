@@ -39,53 +39,31 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
     // Default to 18 years ago if no date selected
     final initialDate = _selectedDate ?? DateTime.now().subtract(const Duration(days: 365 * 18));
     
-    await showModalBottomSheet(
+    // Use Material DatePicker - works with mouse clicks on web and all platforms
+    final picked = await showDatePicker(
       context: context,
-      backgroundColor: AurealColors.carbon,
-      builder: (BuildContext builder) {
-        return Container(
-          height: 300,
-          color: AurealColors.carbon,
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  CupertinoButton(
-                    child: Text('Done', style: GoogleFonts.inter(color: AurealColors.plasmaCyan)),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              Expanded(
-                child: CupertinoTheme(
-                  data: const CupertinoThemeData(
-                    brightness: Brightness.dark,
-                    textTheme: CupertinoTextThemeData(
-                      dateTimePickerTextStyle: TextStyle(
-                        color: AurealColors.stardust,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ),
-                  child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.date,
-                    initialDateTime: initialDate,
-                    minimumDate: DateTime(1900),
-                    maximumDate: DateTime.now(),
-                    onDateTimeChanged: (DateTime newDate) {
-                      setState(() {
-                        _selectedDate = newDate;
-                      });
-                    },
-                  ),
-                ),
-              ),
-            ],
+      initialDate: initialDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: AurealColors.plasmaCyan,
+              surface: AurealColors.carbon,
+              onSurface: AurealColors.stardust,
+            ),
+            dialogBackgroundColor: AurealColors.carbon,
           ),
+          child: child!,
         );
       },
     );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
   }
 
   void _handleContinue() {

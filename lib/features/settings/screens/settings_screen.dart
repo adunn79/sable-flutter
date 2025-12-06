@@ -1015,9 +1015,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 ),
                               ),
                             ),
-                            // Empty spacer for layout balance (optional)
                             const SizedBox(width: 12),
-                            const Expanded(child: SizedBox()),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  ref.read(buttonSoundServiceProvider).playMediumTap();
+                                  final avatarSettings = AvatarDisplaySettings();
+                                  await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeConversation);
+                                  setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeConversation);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _avatarDisplayMode == AvatarDisplaySettings.modeConversation
+                                        ? AurealColors.hyperGold.withOpacity(0.2)
+                                        : Colors.transparent,
+                                    border: Border.all(
+                                      color: _avatarDisplayMode == AvatarDisplaySettings.modeConversation
+                                          ? AurealColors.hyperGold
+                                          : Colors.white24,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'Chat',
+                                      style: GoogleFonts.inter(
+                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeConversation
+                                            ? AurealColors.hyperGold
+                                            : Colors.white70,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ],

@@ -11,32 +11,45 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _calculateSelectedIndex(context),
-        onDestinationSelected: (index) => _onItemTapped(index, context),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(LucideIcons.messageSquare),
-            label: 'Chat',
+      bottomNavigationBar: Theme(
+        data: Theme.of(context).copyWith(
+          navigationBarTheme: NavigationBarThemeData(
+            height: 50, // Reduced from default ~80
+            labelTextStyle: WidgetStateProperty.all(
+              const TextStyle(fontSize: 10),
+            ),
+            iconTheme: WidgetStateProperty.all(
+              const IconThemeData(size: 20),
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.calendar),
-            label: 'Today',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.book),
-            label: 'Journal',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.heartPulse),
-            label: 'Vital\nBalance',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.menu),
-            label: 'More',
-          ),
-        ],
+        ),
+        child: NavigationBar(
+          selectedIndex: _calculateSelectedIndex(context),
+          onDestinationSelected: (index) => _onItemTapped(index, context),
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(LucideIcons.messageSquare),
+              label: 'Chat',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.calendar),
+              label: 'Today',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.book),
+              label: 'Journal',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.heartPulse),
+              label: 'Vital Balance',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.menu),
+              label: 'More',
+            ),
+          ],
+        ),
       ),
     );
   }

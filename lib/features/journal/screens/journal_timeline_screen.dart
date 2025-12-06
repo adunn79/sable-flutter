@@ -23,19 +23,31 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
   String _searchQuery = '';
   bool _isLoading = true;
   String _archetype = 'sable';
+  bool _welcomeBannerDismissed = false;
+  bool _welcomeBannerHiddenPermanently = false;
   
   @override
   void initState() {
     super.initState();
-    _loadArchetype();
+    _loadPreferences();
     _loadData();
   }
   
-  Future<void> _loadArchetype() async {
+  Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _archetype = prefs.getString('selected_archetype_id') ?? 'sable';
+      _welcomeBannerHiddenPermanently = prefs.getBool('journal_welcome_hidden') ?? false;
     });
+  }
+  
+  Future<void> _dismissWelcomeBanner({bool permanently = false}) async {
+    setState(() => _welcomeBannerDismissed = true);
+    if (permanently) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('journal_welcome_hidden', true);
+      setState(() => _welcomeBannerHiddenPermanently = true);
+    }
   }
   
   Future<void> _loadData() async {
@@ -180,27 +192,30 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
         ),
         centerTitle: true,
         actions: [
-          // Streak counter
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('🔥', style: TextStyle(fontSize: 14)),
-                const SizedBox(width: 4),
-                Text(
-                  '${JournalStorageService.getCurrentStreak()}',
-                  style: const TextStyle(
-                    color: Colors.orange,
-                    fontWeight: FontWeight.bold,
+          // Streak counter with tooltip
+          Tooltip(
+            message: 'Your journaling streak - days in a row!',
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('🔥', style: TextStyle(fontSize: 14)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${JournalStorageService.getCurrentStreak()}',
+                    style: const TextStyle(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -209,8 +224,8 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
         children: [
           Column(
             children: [
-              // Welcome banner for new users
-              if (_entries.length <= 2)
+              // Welcome banner for new users (dismissible)
+              if (!_welcomeBannerDismissed && !_welcomeBannerHiddenPermanently)
                 Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(16),
@@ -228,13 +243,20 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                         children: [
                           const Text('✨', style: TextStyle(fontSize: 20)),
                           const SizedBox(width: 8),
-                          const Text(
-                            'Welcome to Your Journal',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                          const Expanded(
+                            child: Text(
+                              'Welcome to Your Journal',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
                             ),
+                          ),
+                          // Dismiss button
+                          GestureDetector(
+                            onTap: () => _dismissWelcomeBanner(),
+                            child: Icon(LucideIcons.x, color: Colors.white.withOpacity(0.5), size: 18),
                           ),
                         ],
                       ),
@@ -243,14 +265,33 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                         'Tap + to write an entry. ${_archetype[0].toUpperCase()}${_archetype.substring(1)} can help with prompts and reflection!',
                         style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '🔥 The flame shows your streak - journal daily to keep it going!',
+                        style: TextStyle(color: Colors.orange.withOpacity(0.8), fontSize: 12),
+                      ),
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 8,
+                        runSpacing: 6,
                         children: [
                           _buildFeatureChip('🎤 Voice dictate'),
                           _buildFeatureChip('👁️ Privacy control'),
                           _buildFeatureChip('📊 Mood tracking'),
                         ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Don't show again
+                      GestureDetector(
+                        onTap: () => _dismissWelcomeBanner(permanently: true),
+                        child: Text(
+                          "Don't show this again",
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.4),
+                            fontSize: 11,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
                       ),
                     ],
                   ),

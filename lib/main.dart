@@ -11,6 +11,7 @@ import 'features/settings/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/widgets/restart_widget.dart';
 import 'features/journal/services/journal_storage_service.dart';
+import 'features/journal/screens/journal_timeline_screen.dart';
 
 void main() async {
   try {
@@ -73,6 +74,7 @@ class AurealApp extends StatelessWidget {
         '/debug': (context) => const DebugDashboard(),
         '/settings': (context) => const SettingsScreen(),
         '/splash': (context) => const AurealSplashScreen(),
+        '/journal': (context) => const JournalTimelineScreen(),
       },
     );
   }

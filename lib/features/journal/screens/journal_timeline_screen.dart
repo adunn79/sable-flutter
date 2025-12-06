@@ -428,14 +428,27 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                   Text(_getMoodEmoji(entry.moodScore), style: const TextStyle(fontSize: 20)),
                 if (entry.moodScore != null) const SizedBox(width: 8),
                 
-                // Date
+                // Date and location
                 Expanded(
-                  child: Text(
-                    dateFormat.format(entry.timestamp),
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
-                      fontSize: 12,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        dateFormat.format(entry.timestamp),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (entry.location != null && entry.location!.isNotEmpty)
+                        Text(
+                          '📍 ${entry.location}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.4),
+                            fontSize: 11,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 

@@ -296,6 +296,53 @@ Guidelines:
     setState(() => _tags.remove(tag));
   }
   
+  Future<List<String>> _generateTagSuggestions() async {
+    final content = _quillController.document.toPlainText().trim();
+    if (content.isEmpty) {
+      return ['personal', 'note', 'daily'];
+    }
+    
+    try {
+      final gemini = GeminiProvider();
+      final response = await gemini.generateResponse(
+        prompt: '''Based on this journal entry, suggest 5 relevant tags for organization.
+        
+Entry: "$content"
+
+Return ONLY a comma-separated list of 5 short, lowercase tags (1-2 words each).
+Example: angry, work, restaurant, frustration, food
+No hashtags, no explanations, just the tags.''',
+        systemPrompt: 'You are a tagging assistant. Return only comma-separated tags, nothing else.',
+        modelId: 'gemini-2.0-flash-exp',
+      );
+      
+      return response
+          .split(',')
+          .map((s) => s.trim().toLowerCase().replaceAll('#', ''))
+          .where((s) => s.isNotEmpty && s.length < 20)
+          .take(5)
+          .toList();
+    } catch (e) {
+      debugPrint('Tag suggestion error: $e');
+      return ['personal', 'journal', 'thought'];
+    }
+  }
+  
+  void _showTagDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => _TagSuggestionDialog(
+        onTagAdded: (tag) {
+          _addTag(tag);
+          Navigator.pop(ctx);
+        },
+        onClose: () => Navigator.pop(ctx),
+        generateSuggestions: _generateTagSuggestions,
+        tagController: _tagController,
+      ),
+    );
+  }
+  
   void _showMoodPicker() {
     showModalBottomSheet(
       context: context,
@@ -502,39 +549,7 @@ Guidelines:
                           )),
                           // Add tag button
                           GestureDetector(
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text('Add Tag'),
-                                  content: TextField(
-                                    controller: _tagController,
-                                    autofocus: true,
-                                    decoration: const InputDecoration(
-                                      hintText: 'Enter tag name',
-                                      prefixText: '#',
-                                    ),
-                                    onSubmitted: (value) {
-                                      _addTag(value);
-                                      Navigator.pop(ctx);
-                                    },
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        _addTag(_tagController.text);
-                                        Navigator.pop(ctx);
-                                      },
-                                      child: const Text('Add'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
+                            onTap: _showTagDialog,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
@@ -925,6 +940,127 @@ CRITICAL - Your tone must:
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Dialog with AI-powered tag suggestions
+class _TagSuggestionDialog extends StatefulWidget {
+  final Function(String) onTagAdded;
+  final VoidCallback onClose;
+  final Future<List<String>> Function() generateSuggestions;
+  final TextEditingController tagController;
+  
+  const _TagSuggestionDialog({
+    required this.onTagAdded,
+    required this.onClose,
+    required this.generateSuggestions,
+    required this.tagController,
+  });
+  
+  @override
+  State<_TagSuggestionDialog> createState() => _TagSuggestionDialogState();
+}
+
+class _TagSuggestionDialogState extends State<_TagSuggestionDialog> {
+  List<String> _suggestions = [];
+  bool _isLoading = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadSuggestions();
+  }
+  
+  Future<void> _loadSuggestions() async {
+    setState(() => _isLoading = true);
+    final suggestions = await widget.generateSuggestions();
+    if (mounted) {
+      setState(() {
+        _suggestions = suggestions;
+        _isLoading = false;
+      });
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.grey[900],
+      title: Row(
+        children: [
+          const Text('Add Tag', style: TextStyle(color: Colors.white, fontSize: 18)),
+          const Spacer(),
+          if (_isLoading)
+            const SizedBox(
+              width: 16, height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.purple),
+            ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: widget.tagController,
+            autofocus: true,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Enter tag name',
+              hintStyle: TextStyle(color: Colors.grey[500]),
+              prefixText: '#',
+              prefixStyle: TextStyle(color: Colors.cyan[300]),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.cyan.withOpacity(0.5)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: const BorderSide(color: Colors.cyan),
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onSubmitted: (value) => widget.onTagAdded(value),
+          ),
+          if (_suggestions.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              '✨ Suggested tags:',
+              style: TextStyle(color: Colors.grey[400], fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _suggestions.map((tag) => GestureDetector(
+                onTap: () => widget.onTagAdded(tag),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.purple.withOpacity(0.4)),
+                  ),
+                  child: Text(
+                    '#$tag',
+                    style: TextStyle(color: Colors.purple[200], fontSize: 13),
+                  ),
+                ),
+              )).toList(),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: widget.onClose,
+          child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+        ),
+        TextButton(
+          onPressed: () => widget.onTagAdded(widget.tagController.text),
+          child: const Text('Add', style: TextStyle(color: Colors.cyan)),
+        ),
+      ],
     );
   }
 }

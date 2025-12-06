@@ -10,6 +10,7 @@ import '../models/journal_bucket.dart';
 import '../widgets/avatar_journal_overlay.dart';
 import 'package:sable/core/voice/voice_service.dart';
 import 'package:sable/core/emotion/location_service.dart';
+import 'package:sable/core/ai/providers/gemini_provider.dart';
 
 /// Rich text journal editor with privacy toggle, mood, and tags
 class JournalEditorScreen extends StatefulWidget {
@@ -138,6 +139,97 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
         },
       );
     }
+  }
+  
+  Future<void> _generateSparkPrompt() async {
+    final currentText = _quillController.document.toPlainText().trim();
+    
+    // Show loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+            SizedBox(width: 12),
+            Text('✨ Generating prompt...'),
+          ],
+        ),
+        duration: Duration(seconds: 10),
+      ),
+    );
+    
+    try {
+      final gemini = GeminiProvider();
+      final systemPrompt = '''
+You are a gentle, empathetic journaling coach in a private journaling app. 
+Your role is to provide ONE short, thoughtful prompt to help the user explore their thoughts more deeply.
+
+Guidelines:
+- Be warm, curious, and non-judgmental
+- Ask ONE open-ended question or offer ONE gentle reflection
+- Keep it VERY short (1-2 sentences max)
+- Use phrases like "I notice...", "What might...", "How did that..."
+- Never be preachy or give advice
+- If the entry mentions emotions, gently explore them
+- If the entry is empty, give a gentle starting prompt
+''';
+
+      String userPrompt;
+      if (currentText.isEmpty) {
+        userPrompt = 'The user just opened their journal and hasn\'t written anything yet. Give them a gentle, open-ended prompt to start writing.';
+      } else {
+        userPrompt = 'The user is writing this journal entry:\n\n"$currentText"\n\nGive them ONE short, empathetic prompt to help them explore this further.';
+      }
+      
+      final response = await gemini.generateResponse(
+        prompt: userPrompt,
+        systemPrompt: systemPrompt,
+        modelId: 'gemini-2.0-flash-exp',
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        _showSparkPromptDialog(response);
+      }
+    } catch (e) {
+      debugPrint('Spark error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('✨ Spark unavailable: $e')),
+        );
+      }
+    }
+  }
+  
+  void _showSparkPromptDialog(String prompt) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Text('✨', style: TextStyle(fontSize: 24)),
+            const SizedBox(width: 8),
+            Text(
+              '${_archetype[0].toUpperCase()}${_archetype.substring(1)} asks...',
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ],
+        ),
+        content: Text(
+          prompt,
+          style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 15, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Thanks', style: TextStyle(color: Colors.purple)),
+          ),
+        ],
+      ),
+    );
   }
   
   Future<void> _saveEntry() async {
@@ -576,12 +668,7 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
       AvatarJournalOverlay(
         isPrivate: _isPrivate,
         archetype: _archetype,
-        onSparkTap: () {
-          // TODO: Implement AI prompt generation
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('✨ Spark: AI prompts coming soon!')),
-          );
-        },
+        onSparkTap: _isPrivate ? null : _generateSparkPrompt, // Only show Spark when not private
         onAvatarTap: () {
           // TODO: Expand chat panel
           ScaffoldMessenger.of(context).showSnackBar(

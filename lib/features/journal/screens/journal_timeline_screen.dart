@@ -278,6 +278,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                           _buildFeatureChip('🎤 Voice dictate'),
                           _buildFeatureChip('👁️ Privacy control'),
                           _buildFeatureChip('📊 Mood tracking'),
+                          _buildFeatureChip('✨ Spark: AI prompts'),
                         ],
                       ),
                       const SizedBox(height: 12),

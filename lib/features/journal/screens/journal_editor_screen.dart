@@ -30,6 +30,7 @@ class JournalEditorScreen extends StatefulWidget {
 class _JournalEditorScreenState extends State<JournalEditorScreen> {
   late QuillController _quillController;
   late FocusNode _focusNode;
+  late ScrollController _editorScrollController; // Persistent scroll controller for editor
   
   bool _isPrivate = false;
   int? _moodScore;
@@ -50,6 +51,7 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
   void initState() {
     super.initState();
     _focusNode = FocusNode();
+    _editorScrollController = ScrollController(); // Persistent scroll controller
     _initVoice();
     _loadData();
   }
@@ -103,6 +105,7 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
     _quillController.dispose();
     _focusNode.dispose();
     _tagController.dispose();
+    _editorScrollController.dispose();
     super.dispose();
   }
   
@@ -587,7 +590,7 @@ No hashtags, no explanations, just the tags.''',
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: QuillEditor(
                   focusNode: _focusNode,
-                  scrollController: ScrollController(),
+                  scrollController: _editorScrollController, // Use persistent controller
                   configurations: QuillEditorConfigurations(
                     controller: _quillController,
                     placeholder: 'Start writing...',

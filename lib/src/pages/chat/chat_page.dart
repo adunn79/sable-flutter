@@ -70,6 +70,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   String? _dailyUpdateContext; // Holds news context for injection
   String _companionName = 'SABLE'; // Default archetype name, loaded from prefs
   String _archetypeId = 'sable'; // Lowercase archetype ID for image path
+  bool _clockUse24Hour = false;
+  bool _clockIsAnalog = false;
   
   // Weather display in header
   String? _weatherTemp;
@@ -91,6 +93,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     });
     avatarSettings.getBackgroundColor().then((color) {
       if (mounted) setState(() => _backgroundColor = color);
+    });
+    
+    // Load clock settings
+    SharedPreferences.getInstance().then((prefs) {
+      if (mounted) {
+        setState(() {
+          _clockUse24Hour = prefs.getBool('clock_use_24hour') ?? false;
+          _clockIsAnalog = prefs.getBool('clock_is_analog') ?? false;
+        });
+      }
     });
 
     // Start background pre-fetch (fire and forget)
@@ -1099,7 +1111,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       Expanded(
                         child: Center(
                           child: ClockFaceWidget(
-                            isAnalog: false,
+                            isAnalog: _clockIsAnalog,
+                            use24Hour: _clockUse24Hour,
                             size: 240,
                             primaryColor: Colors.white,
                             secondaryColor: Colors.white70,

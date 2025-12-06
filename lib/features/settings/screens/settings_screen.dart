@@ -403,11 +403,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            } else {
-              context.go('/chat');
-            }
+            // Navigate to More screen (parent) or Chat as fallback
+            context.go('/more');
           },
         ),
       ),

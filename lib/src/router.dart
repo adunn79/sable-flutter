@@ -40,6 +40,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/timers', builder: (context, state) => const PlaceholderPage(title: 'Timers')),
           GoRoute(path: '/calendar', builder: (context, state) => const PlaceholderPage(title: 'Calendar')),
           GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+          GoRoute(path: '/certificate', builder: (context, state) => const PlaceholderPage(title: 'Certificate')),
+          GoRoute(path: '/emergency', builder: (context, state) => const PlaceholderPage(title: 'Emergency')),
         ],
       ),
     ],

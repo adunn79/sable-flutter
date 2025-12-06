@@ -83,6 +83,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   String? _weatherTemp;
   String? _weatherCondition;
   
+  // Voice mute toggle
+  bool _isMuted = false;
+  
   final List<Map<String, dynamic>> _messages = [];
 
   @override
@@ -760,10 +763,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         });
         _scrollToBottom();
         
-        // Auto-speak AI response if enabled (using sanitized text)
-        final autoSpeak = await _voiceService?.getAutoSpeakEnabled() ?? true;
-        if (autoSpeak && _voiceService != null) {
+        // Auto-speak AI response if not muted (mute button is the quick toggle)
+        debugPrint('🔊 Voice debug: _isMuted=$_isMuted, voiceService=${_voiceService != null}');
+        if (!_isMuted && _voiceService != null) {
+          debugPrint('🔊 Attempting to speak response...');
           await _voiceService!.speak(sanitizedResponse);
+          debugPrint('🔊 Speak completed');
         }
         
         // Update emotional state based on interaction
@@ -1402,26 +1407,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                               },
                             ),
                           ),
-                          // Typing indicator
-                          if (_isTyping)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16, bottom: 8),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  '$_companionName is thinking...',
-                                  style: GoogleFonts.inter(
-                                    color: AurealColors.ghost,
-                                    fontSize: 12,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          // Input area
-                          _buildInputArea(),
+                          // Typing indicator removed - shown in input box instead
+                          // Remove input from here - it will be full width
                         ],
                       ),
+                    ),
+                  ),
+                  // Full-width input area at bottom
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: SafeArea(
+                      top: false,
+                      child: _buildInputArea(),
                     ),
                   ),
                 ],
@@ -2588,7 +2587,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     decoration: InputDecoration(
                       filled: true, // Force filled to override theme
                       fillColor: Colors.transparent, // Transparent to show container color
-                      hintText: _isTyping ? 'AI is thinking...' : 'Type a message...',
+                      hintText: _isTyping ? '$_companionName is thinking...' : 'Type a message...',
                       hintStyle: GoogleFonts.inter(
                         color: isDark ? Colors.white.withOpacity(0.3) : Colors.black.withOpacity(0.3),
                       ),
@@ -2620,6 +2619,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                         ? AurealColors.plasmaCyan 
                         : (isDark ? Colors.white70 : Colors.grey[700]), // Reverted to semi-transparent/grey
                     size: 20, // Reverted to standard size
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Mute button
+                GestureDetector(
+                  onTap: () {
+                    setState(() => _isMuted = !_isMuted);
+                  },
+                  child: Icon(
+                    _isMuted ? LucideIcons.volumeX : LucideIcons.volume2,
+                    color: _isMuted 
+                        ? Colors.red 
+                        : (isDark ? Colors.white70 : Colors.grey[700]),
+                    size: 20,
                   ),
                 ),
                 const SizedBox(width: 8),

@@ -70,6 +70,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   // Personality Settings
   String _selectedPersonalityId = 'sassy_realist';
+  
+  // Avatar Selection
+  String _selectedArchetypeId = 'sable';
 
 
 
@@ -237,6 +240,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _hapticsEnabled = stateService.hapticsEnabled;
       _soundsEnabled = stateService.soundsEnabled;
       _selectedPersonalityId = stateService.selectedPersonalityId;
+      _selectedArchetypeId = stateService.selectedArchetypeId;
       
       // Load Brain Settings
       _brainCreativity = stateService.brainCreativity;
@@ -798,6 +802,233 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: GoogleFonts.inter(color: Colors.white54, fontSize: 11),
                 ),
                 children: [
+                  // Avatar Selection (Sable, Kai, Echo)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AurealColors.obsidian,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Avatar',
+                          style: GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            // Sable (Female)
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  ref.read(buttonSoundServiceProvider).playMediumTap();
+                                  final stateService = await OnboardingStateService.create();
+                                  final previousArchetype = _selectedArchetypeId.toLowerCase();
+                                  await stateService.setArchetypeId('sable');
+                                  // Only change voice when switching FROM male (Kai) to female
+                                  if (previousArchetype == 'kai') {
+                                    final aiOrigin = stateService.aiOrigin ?? 'United States';
+                                    final femaleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'female');
+                                    if (femaleVoice != null) {
+                                      await _voiceService.setVoice(femaleVoice);
+                                      setState(() {
+                                        _selectedArchetypeId = 'sable';
+                                        _selectedVoiceId = femaleVoice;
+                                      });
+                                      return;
+                                    }
+                                  }
+                                  setState(() {
+                                    _selectedArchetypeId = 'sable';
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _selectedArchetypeId.toLowerCase() == 'sable'
+                                        ? AurealColors.hyperGold.withOpacity(0.2)
+                                        : Colors.transparent,
+                                    border: Border.all(
+                                      color: _selectedArchetypeId.toLowerCase() == 'sable'
+                                          ? AurealColors.hyperGold
+                                          : Colors.white24,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Image.asset(
+                                          'assets/images/archetypes/sable.png',
+                                          width: 40,
+                                          height: 40,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Sable',
+                                        style: GoogleFonts.inter(
+                                          color: _selectedArchetypeId.toLowerCase() == 'sable'
+                                              ? AurealColors.hyperGold
+                                              : Colors.white70,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Kai
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  ref.read(buttonSoundServiceProvider).playMediumTap();
+                                  final stateService = await OnboardingStateService.create();
+                                  final previousArchetype = _selectedArchetypeId.toLowerCase();
+                                  await stateService.setArchetypeId('kai');
+                                  // Only change voice when switching FROM female (Sable/Echo) to male
+                                  if (previousArchetype == 'sable' || previousArchetype == 'echo') {
+                                    final aiOrigin = stateService.aiOrigin ?? 'United States';
+                                    final maleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'male');
+                                    if (maleVoice != null) {
+                                      await _voiceService.setVoice(maleVoice);
+                                      setState(() {
+                                        _selectedArchetypeId = 'kai';
+                                        _selectedVoiceId = maleVoice;
+                                      });
+                                      return;
+                                    }
+                                  }
+                                  setState(() {
+                                    _selectedArchetypeId = 'kai';
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _selectedArchetypeId.toLowerCase() == 'kai'
+                                        ? AurealColors.hyperGold.withOpacity(0.2)
+                                        : Colors.transparent,
+                                    border: Border.all(
+                                      color: _selectedArchetypeId.toLowerCase() == 'kai'
+                                          ? AurealColors.hyperGold
+                                          : Colors.white24,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Image.asset(
+                                          'assets/images/archetypes/kai.png',
+                                          width: 40,
+                                          height: 40,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Kai',
+                                        style: GoogleFonts.inter(
+                                          color: _selectedArchetypeId.toLowerCase() == 'kai'
+                                              ? AurealColors.hyperGold
+                                              : Colors.white70,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Echo (Female)
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  ref.read(buttonSoundServiceProvider).playMediumTap();
+                                  final stateService = await OnboardingStateService.create();
+                                  final previousArchetype = _selectedArchetypeId.toLowerCase();
+                                  await stateService.setArchetypeId('echo');
+                                  // Only change voice when switching FROM male (Kai) to female
+                                  if (previousArchetype == 'kai') {
+                                    final aiOrigin = stateService.aiOrigin ?? 'United States';
+                                    final femaleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'female');
+                                    if (femaleVoice != null) {
+                                      await _voiceService.setVoice(femaleVoice);
+                                      setState(() {
+                                        _selectedArchetypeId = 'echo';
+                                        _selectedVoiceId = femaleVoice;
+                                      });
+                                      return;
+                                    }
+                                  }
+                                  setState(() {
+                                    _selectedArchetypeId = 'echo';
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _selectedArchetypeId.toLowerCase() == 'echo'
+                                        ? AurealColors.hyperGold.withOpacity(0.2)
+                                        : Colors.transparent,
+                                    border: Border.all(
+                                      color: _selectedArchetypeId.toLowerCase() == 'echo'
+                                          ? AurealColors.hyperGold
+                                          : Colors.white24,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Image.asset(
+                                          'assets/images/archetypes/echo.png',
+                                          width: 40,
+                                          height: 40,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Echo',
+                                        style: GoogleFonts.inter(
+                                          color: _selectedArchetypeId.toLowerCase() == 'echo'
+                                              ? AurealColors.hyperGold
+                                              : Colors.white70,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                   // Avatar Display Mode Toggle
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

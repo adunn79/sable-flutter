@@ -884,14 +884,90 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 ),
                               ),
                             ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  ref.read(buttonSoundServiceProvider).playMediumTap();
+                                  final avatarSettings = AvatarDisplaySettings();
+                                  await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeOrb);
+                                  setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeOrb);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
+                                        ? AurealColors.hyperGold.withOpacity(0.2)
+                                        : Colors.transparent,
+                                    border: Border.all(
+                                      color: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
+                                          ? AurealColors.hyperGold
+                                          : Colors.white24,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'Orb',
+                                      style: GoogleFonts.inter(
+                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
+                                            ? AurealColors.hyperGold
+                                            : Colors.white70,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  ref.read(buttonSoundServiceProvider).playMediumTap();
+                                  final avatarSettings = AvatarDisplaySettings();
+                                  await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modePortrait);
+                                  setState(() => _avatarDisplayMode = AvatarDisplaySettings.modePortrait);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: _avatarDisplayMode == AvatarDisplaySettings.modePortrait
+                                        ? AurealColors.hyperGold.withOpacity(0.2)
+                                        : Colors.transparent,
+                                    border: Border.all(
+                                      color: _avatarDisplayMode == AvatarDisplaySettings.modePortrait
+                                          ? AurealColors.hyperGold
+                                          : Colors.white24,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'Portrait',
+                                      style: GoogleFonts.inter(
+                                        color: _avatarDisplayMode == AvatarDisplaySettings.modePortrait
+                                            ? AurealColors.hyperGold
+                                            : Colors.white70,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ],
                     ),
                   ),
                   
-                  // Background Color Selector (only shown in Icon mode)
-                  if (_avatarDisplayMode == AvatarDisplaySettings.modeIcon)
+                  // Background Color Selector (shown in Icon, Orb, and Portrait modes)
+                  if (_avatarDisplayMode == AvatarDisplaySettings.modeIcon ||
+                      _avatarDisplayMode == AvatarDisplaySettings.modeOrb ||
+                      _avatarDisplayMode == AvatarDisplaySettings.modePortrait)
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       padding: const EdgeInsets.all(16),

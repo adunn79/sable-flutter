@@ -32,6 +32,7 @@ import 'package:sable/core/ai/apple_intelligence_service.dart';
 import 'package:sable/core/personality/personality_service.dart'; // Added implementation
 import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
 import 'package:sable/features/settings/services/avatar_display_settings.dart';
+import 'package:sable/features/settings/widgets/magic_orb_widget.dart';
 import 'package:sable/core/ui/feedback_service.dart'; // Added implementation
 import 'package:share_plus/share_plus.dart';
 import 'package:sable/core/audio/button_sound_service.dart';
@@ -65,6 +66,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   String? _avatarUrl;
   String? _dailyUpdateContext; // Holds news context for injection
   String _companionName = 'SABLE'; // Default archetype name, loaded from prefs
+  String _archetypeId = 'sable'; // Lowercase archetype ID for image path
   
   final List<Map<String, dynamic>> _messages = [];
 
@@ -194,6 +196,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       final archetypeId = _stateService!.selectedArchetypeId;
       if (mounted) {
         setState(() {
+          _archetypeId = archetypeId.toLowerCase();
           _companionName = _getArchetypeDisplayName(archetypeId);
         });
       }
@@ -920,7 +923,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     debugPrint('🏗️ ChatPage.build called');
     
     // Determine theme brightness based on background color
-    final isLightBackground = _avatarDisplayMode == AvatarDisplaySettings.modeIcon && 
+    final isLightBackground = (_avatarDisplayMode == AvatarDisplaySettings.modeIcon || 
+                               _avatarDisplayMode == AvatarDisplaySettings.modeOrb ||
+                               _avatarDisplayMode == AvatarDisplaySettings.modePortrait) && 
                               _backgroundColor == AvatarDisplaySettings.colorWhite;
     
     return Theme(
@@ -941,6 +946,78 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               // Full screen avatar background
               CinematicBackground(
                 imagePath: _avatarUrl ?? 'assets/images/archetypes/sable.png',
+              )
+            else if (_avatarDisplayMode == AvatarDisplaySettings.modeOrb)
+              // Magic orb mode - orb at top 20% of screen
+              Container(
+                color: _backgroundColor == AvatarDisplaySettings.colorWhite 
+                    ? Colors.white 
+                    : Colors.black,
+                child: Column(
+                  children: [
+                    // Top 22% for the orb
+                    Container(
+                      height: MediaQuery.of(context).size.height * 0.22,
+                      alignment: Alignment.center,
+                      child: SafeArea(
+                        bottom: false,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 40),
+                          child: MagicOrbWidget(
+                            size: 120,
+                            isActive: _isTyping || _isListening,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Rest of the screen
+                    Expanded(child: Container()),
+                  ],
+                ),
+              )
+            else if (_avatarDisplayMode == AvatarDisplaySettings.modePortrait)
+              // Portrait mode - high-quality avatar at top 30%
+              Container(
+                color: _backgroundColor == AvatarDisplaySettings.colorWhite 
+                    ? Colors.white 
+                    : Colors.black,
+                child: Column(
+                  children: [
+                    // Top 30% for the avatar portrait
+                    Container(
+                      height: MediaQuery.of(context).size.height * 0.32,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('assets/images/archetypes/$_archetypeId.png'),
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                        ),
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.transparent,
+                              (_backgroundColor == AvatarDisplaySettings.colorWhite 
+                                  ? Colors.white 
+                                  : Colors.black).withOpacity(0.8),
+                              _backgroundColor == AvatarDisplaySettings.colorWhite 
+                                  ? Colors.white 
+                                  : Colors.black,
+                            ],
+                            stops: const [0.0, 0.5, 0.85, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Rest of the screen
+                    Expanded(child: Container()),
+                  ],
+                ),
               )
             else
               // Plain color background for icon mode
@@ -1835,16 +1912,45 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar icon for AI messages (Always render for robustness)
-          if (!isUser)
+          // Avatar for AI messages - only in Icon mode (orb shows at top, fullscreen has avatar background)
+          if (!isUser && _avatarDisplayMode == AvatarDisplaySettings.modeIcon)
             Padding(
-              padding: const EdgeInsets.only(right: 8, top: 4),
-              child: CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.white,
-                backgroundImage: const AssetImage('assets/images/archetypes/sable.png'),
-                onBackgroundImageError: (_, __) {},
-                child: const Icon(LucideIcons.sparkles, size: 16, color: Colors.black),
+              padding: const EdgeInsets.only(right: 10, top: 4),
+              child: Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const SweepGradient(
+                    colors: [
+                      Color(0xFF06B6D4), // Cyan
+                      Color(0xFF8B5CF6), // Purple
+                      Color(0xFFF59E0B), // Amber
+                      Color(0xFF10B981), // Emerald
+                      Color(0xFF06B6D4), // Back to cyan
+                    ],
+                    stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF0F172A),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: CircleAvatar(
+                        radius: 26,
+                        backgroundColor: Colors.white,
+                        backgroundImage: AssetImage('assets/images/archetypes/$_archetypeId.png'),
+                        onBackgroundImageError: (_, __) {},
+                        child: const Icon(LucideIcons.sparkles, size: 24, color: Colors.black),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           // Message bubble
@@ -1882,7 +1988,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   Widget _buildInteractiveMessage(String message) {
     // FIX: Calculate isDark based on actual background settings
-    final isLightBackground = _avatarDisplayMode == AvatarDisplaySettings.modeIcon && 
+    final isLightBackground = (_avatarDisplayMode == AvatarDisplaySettings.modeIcon || 
+                               _avatarDisplayMode == AvatarDisplaySettings.modeOrb ||
+                               _avatarDisplayMode == AvatarDisplaySettings.modePortrait) && 
                               _backgroundColor == AvatarDisplaySettings.colorWhite;
     final isDark = !isLightBackground;
     final textColor = isDark ? Colors.white : Colors.black;
@@ -1970,7 +2078,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Widget _buildInputArea() {
     // FIX: Calculate isDark based on actual background settings, not inherited Theme
     // This ensures icons adapt correctly even if parent Theme context is mismatched
-    final isLightBackground = _avatarDisplayMode == AvatarDisplaySettings.modeIcon && 
+    final isLightBackground = (_avatarDisplayMode == AvatarDisplaySettings.modeIcon || 
+                               _avatarDisplayMode == AvatarDisplaySettings.modeOrb ||
+                               _avatarDisplayMode == AvatarDisplaySettings.modePortrait) && 
                               _backgroundColor == AvatarDisplaySettings.colorWhite;
     final isDark = !isLightBackground;
     

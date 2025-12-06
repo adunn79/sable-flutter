@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/journal_storage_service.dart';
 import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
+import '../widgets/avatar_journal_overlay.dart';
 import 'journal_editor_screen.dart';
 
 /// Main journal screen showing timeline of entries
@@ -20,11 +22,20 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
   String? _selectedBucketId;
   String _searchQuery = '';
   bool _isLoading = true;
+  String _archetype = 'sable';
   
   @override
   void initState() {
     super.initState();
+    _loadArchetype();
     _loadData();
+  }
+  
+  Future<void> _loadArchetype() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _archetype = prefs.getString('selected_archetype_id') ?? 'sable';
+    });
   }
   
   Future<void> _loadData() async {
@@ -194,43 +205,109 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              onChanged: (value) {
-                setState(() => _searchQuery = value);
-                _loadData();
-              },
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Search entries...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                prefixIcon: Icon(LucideIcons.search, color: Colors.white.withOpacity(0.3)),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+          Column(
+            children: [
+              // Welcome banner for new users
+              if (_entries.length <= 2)
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.purple.withOpacity(0.2), Colors.blue.withOpacity(0.1)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('✨', style: TextStyle(fontSize: 20)),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Welcome to Your Journal',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tap + to write an entry. ${_archetype[0].toUpperCase()}${_archetype.substring(1)} can help with prompts and reflection!',
+                        style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          _buildFeatureChip('🎤 Voice dictate'),
+                          _buildFeatureChip('👁️ Privacy control'),
+                          _buildFeatureChip('📊 Mood tracking'),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              
+              // Search bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: TextField(
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value);
+                    _loadData();
+                  },
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Search entries...',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                    prefixIcon: Icon(LucideIcons.search, color: Colors.white.withOpacity(0.3)),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                ),
               ),
-            ),
+              
+              // Entries list
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _entries.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: _entries.length,
+                            itemBuilder: (context, index) => _buildEntryCard(_entries[index]),
+                          ),
+              ),
+            ],
           ),
           
-          // Entries list
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _entries.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _entries.length,
-                        itemBuilder: (context, index) => _buildEntryCard(_entries[index]),
-                      ),
+          // Avatar overlay
+          AvatarJournalOverlay(
+            isPrivate: false,
+            archetype: _archetype,
+            onSparkTap: null, // No spark on timeline
+            onAvatarTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Hi! Tap + to start journaling. I can help with prompts! 💜'),
+                  backgroundColor: Colors.purple[800],
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -238,6 +315,20 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
         onPressed: () => _openEditor(),
         backgroundColor: Colors.white,
         child: const Icon(LucideIcons.plus, color: Colors.black),
+      ),
+    );
+  }
+  
+  Widget _buildFeatureChip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.white70, fontSize: 11),
       ),
     );
   }

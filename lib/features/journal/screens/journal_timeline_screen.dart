@@ -151,6 +151,70 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
     );
   }
   
+  void _showJournalHelp() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.5,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            left: 20, right: 20, top: 20,
+            bottom: MediaQuery.of(ctx).padding.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '📓 Journal Guide',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              _buildHelpRow('👆 Tap entry', 'Open and edit'),
+              _buildHelpRow('👆🏻 Hold entry', 'Show options menu (hide, delete)'),
+              _buildHelpRow('👈 Swipe left', 'Delete entry'),
+              _buildHelpRow('🔒 Private toggle', 'Hide from AI assistant'),
+              _buildHelpRow('❌ Hidden entries', 'Apps in timeline but dimmed'),
+              _buildHelpRow('🏷️ Tags', 'Organize with #hashtags'),
+              _buildHelpRow('📍 Location', 'Auto-captured when saving'),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Got it!', style: TextStyle(color: Colors.cyan, fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildHelpRow(String icon, String desc) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(icon, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          ),
+          Expanded(
+            child: Text(desc, style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
   String _getMoodEmoji(int? score) {
     if (score == null) return '';
     return ['😢', '😔', '😐', '🙂', '😊'][score - 1];
@@ -218,6 +282,12 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
               ),
             ),
           ),
+          // Info button with gesture instructions
+          IconButton(
+            icon: Icon(LucideIcons.info, color: Colors.white.withOpacity(0.5), size: 20),
+            onPressed: _showJournalHelp,
+            tooltip: 'Journal Help',
+          ),
         ],
       ),
       body: Stack(
@@ -275,10 +345,10 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                         spacing: 8,
                         runSpacing: 6,
                         children: [
+                          _buildFeatureChip('👈 Swipe to delete'),
+                          _buildFeatureChip('👆🏻 Hold for options'),
                           _buildFeatureChip('🎤 Voice dictate'),
                           _buildFeatureChip('👁️ Privacy control'),
-                          _buildFeatureChip('📊 Mood tracking'),
-                          _buildFeatureChip('✨ Spark: AI prompts'),
                         ],
                       ),
                       const SizedBox(height: 12),

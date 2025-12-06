@@ -34,6 +34,8 @@ import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
 import 'package:sable/features/settings/services/avatar_display_settings.dart';
 import 'package:sable/features/settings/widgets/magic_orb_widget.dart';
 import 'package:sable/core/emotion/weather_service.dart';
+import 'package:sable/features/clock/widgets/clock_face_widget.dart';
+import 'package:sable/features/clock/screens/clock_mode_screen.dart';
 import 'package:sable/core/ui/feedback_service.dart'; // Added implementation
 import 'package:share_plus/share_plus.dart';
 import 'package:sable/core/audio/button_sound_service.dart';
@@ -1048,6 +1050,68 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ],
                 ),
               )
+            else if (_avatarDisplayMode == AvatarDisplaySettings.modeClock)
+              // Clock mode - avatar with clock face
+              GestureDetector(
+                onTap: () {
+                  // Open full screen clock mode
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ClockModeScreen(
+                        archetypeId: _archetypeId,
+                        onExit: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  color: Colors.black,
+                  child: Column(
+                    children: [
+                      // Top 50% for the avatar 
+                      Container(
+                        height: MediaQuery.of(context).size.height * 0.45,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/images/archetypes/$_archetypeId.png'),
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
+                          ),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.8),
+                                Colors.black,
+                              ],
+                              stops: const [0.0, 0.5, 0.85, 1.0],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Clock display
+                      Expanded(
+                        child: Center(
+                          child: ClockFaceWidget(
+                            isAnalog: false,
+                            size: 240,
+                            primaryColor: Colors.white,
+                            secondaryColor: Colors.white70,
+                            weatherTemp: _weatherTemp,
+                            weatherCondition: _weatherCondition,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
             else
               // Plain color background for icon mode
               Container(
@@ -1056,7 +1120,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     : Colors.black,
               ),
 
-            // 3. Content
+            // 3. Content - Hide when in clock mode
+            if (_avatarDisplayMode != AvatarDisplaySettings.modeClock)
             SafeArea(
               top: false, // Disable top SafeArea to handle it manually with padding
               child: Column(

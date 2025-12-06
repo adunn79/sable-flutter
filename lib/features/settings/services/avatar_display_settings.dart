@@ -10,6 +10,7 @@ class AvatarDisplaySettings {
   static const String modeIcon = 'icon';
   static const String modeOrb = 'orb'; // Magic orb mode - animated flowing colors
   static const String modePortrait = 'portrait'; // High-quality avatar at top 30%
+  static const String modeClock = 'clock'; // Bedside clock mode with avatar
   
   // Background colors
   static const String colorBlack = 'black';

@@ -50,6 +50,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _gpsEnabled = false;
   String _avatarDisplayMode = AvatarDisplaySettings.modeFullscreen;
   String _backgroundColor = AvatarDisplaySettings.colorBlack;
+  bool _clockUse24Hour = false;
+  bool _clockIsAnalog = false;
   
   // Permission Toggles (Default OFF)
   bool _permissionGps = false;
@@ -264,6 +266,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
     avatarSettings.getBackgroundColor().then((color) {
       if (mounted) setState(() => _backgroundColor = color);
+    });
+    
+    // Load Clock Settings
+    SharedPreferences.getInstance().then((prefs) {
+      if (mounted) {
+        setState(() {
+          _clockUse24Hour = prefs.getBool('clock_use_24hour') ?? false;
+          _clockIsAnalog = prefs.getBool('clock_is_analog') ?? false;
+        });
+      }
     });
     
     // Load API Key if exists (for display purposes, though usually hidden)
@@ -809,6 +821,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
+                        // Row 1: Full Screen, Icon, Orb
                         Row(
                           children: [
                             Expanded(
@@ -841,6 +854,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                             ? AurealColors.hyperGold
                                             : Colors.white70,
                                         fontWeight: FontWeight.w600,
+                                        fontSize: 13,
                                       ),
                                     ),
                                   ),
@@ -878,6 +892,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                             ? AurealColors.hyperGold
                                             : Colors.white70,
                                         fontWeight: FontWeight.w600,
+                                        fontSize: 13,
                                       ),
                                     ),
                                   ),
@@ -915,13 +930,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                             ? AurealColors.hyperGold
                                             : Colors.white70,
                                         fontWeight: FontWeight.w600,
+                                        fontSize: 13,
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        // Row 2: Portrait, Clock
+                        Row(
+                          children: [
                             Expanded(
                               child: GestureDetector(
                                 onTap: () async {
@@ -952,6 +973,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                             ? AurealColors.hyperGold
                                             : Colors.white70,
                                         fontWeight: FontWeight.w600,
+                                        fontSize: 13,
                                       ),
                                     ),
                                   ),
@@ -989,12 +1011,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                             ? AurealColors.hyperGold
                                             : Colors.white70,
                                         fontWeight: FontWeight.w600,
+                                        fontSize: 13,
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
+                            // Empty spacer for layout balance (optional)
+                            const SizedBox(width: 12),
+                            const Expanded(child: SizedBox()),
                           ],
                         ),
                       ],
@@ -1090,6 +1116,187 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     ),
                                   ),
                                 ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  // Clock Settings (shown only in Clock mode)
+                  if (_avatarDisplayMode == AvatarDisplaySettings.modeClock)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AurealColors.obsidian,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Clock Settings',
+                            style: GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // 12hr / 24hr toggle
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Time Format',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () async {
+                                      ref.read(buttonSoundServiceProvider).playMediumTap();
+                                      final prefs = await SharedPreferences.getInstance();
+                                      await prefs.setBool('clock_use_24hour', false);
+                                      setState(() => _clockUse24Hour = false);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: !_clockUse24Hour
+                                            ? AurealColors.hyperGold.withOpacity(0.2)
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                          color: !_clockUse24Hour
+                                              ? AurealColors.hyperGold
+                                              : Colors.white24,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '12hr',
+                                        style: GoogleFonts.inter(
+                                          color: !_clockUse24Hour ? AurealColors.hyperGold : Colors.white54,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      ref.read(buttonSoundServiceProvider).playMediumTap();
+                                      final prefs = await SharedPreferences.getInstance();
+                                      await prefs.setBool('clock_use_24hour', true);
+                                      setState(() => _clockUse24Hour = true);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: _clockUse24Hour
+                                            ? AurealColors.hyperGold.withOpacity(0.2)
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                          color: _clockUse24Hour
+                                              ? AurealColors.hyperGold
+                                              : Colors.white24,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '24hr',
+                                        style: GoogleFonts.inter(
+                                          color: _clockUse24Hour ? AurealColors.hyperGold : Colors.white54,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Digital / Analog toggle
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Clock Style',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () async {
+                                      ref.read(buttonSoundServiceProvider).playMediumTap();
+                                      final prefs = await SharedPreferences.getInstance();
+                                      await prefs.setBool('clock_is_analog', false);
+                                      setState(() => _clockIsAnalog = false);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: !_clockIsAnalog
+                                            ? AurealColors.hyperGold.withOpacity(0.2)
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                          color: !_clockIsAnalog
+                                              ? AurealColors.hyperGold
+                                              : Colors.white24,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        'Digital',
+                                        style: GoogleFonts.inter(
+                                          color: !_clockIsAnalog ? AurealColors.hyperGold : Colors.white54,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      ref.read(buttonSoundServiceProvider).playMediumTap();
+                                      final prefs = await SharedPreferences.getInstance();
+                                      await prefs.setBool('clock_is_analog', true);
+                                      setState(() => _clockIsAnalog = true);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: _clockIsAnalog
+                                            ? AurealColors.hyperGold.withOpacity(0.2)
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                          color: _clockIsAnalog
+                                              ? AurealColors.hyperGold
+                                              : Colors.white24,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        'Analog',
+                                        style: GoogleFonts.inter(
+                                          color: _clockIsAnalog ? AurealColors.hyperGold : Colors.white54,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),

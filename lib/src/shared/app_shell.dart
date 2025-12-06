@@ -14,6 +14,7 @@ class AppShell extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _calculateSelectedIndex(context),
         onDestinationSelected: (index) => _onItemTapped(index, context),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: const [
           NavigationDestination(
             icon: Icon(LucideIcons.messageSquare),
@@ -28,8 +29,12 @@ class AppShell extends StatelessWidget {
             label: 'Journal',
           ),
           NavigationDestination(
-            icon: Icon(LucideIcons.settings),
-            label: 'Settings',
+            icon: Icon(LucideIcons.heartPulse),
+            label: 'Vital\nBalance',
+          ),
+          NavigationDestination(
+            icon: Icon(LucideIcons.menu),
+            label: 'More',
           ),
         ],
       ),
@@ -41,7 +46,8 @@ class AppShell extends StatelessWidget {
     if (location.startsWith('/chat')) return 0;
     if (location.startsWith('/today')) return 1;
     if (location.startsWith('/journal')) return 2;
-    if (location.startsWith('/settings')) return 3;
+    if (location.startsWith('/vital-balance')) return 3;
+    if (location.startsWith('/settings') || location.startsWith('/more')) return 4;
     return 0;
   }
 
@@ -57,7 +63,10 @@ class AppShell extends StatelessWidget {
         context.go('/journal');
         break;
       case 3:
-        context.go('/settings');
+        context.go('/vital-balance');
+        break;
+      case 4:
+        context.go('/more');
         break;
     }
   }

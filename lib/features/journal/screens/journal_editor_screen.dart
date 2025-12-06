@@ -688,18 +688,45 @@ class _JournalChatSheet extends StatefulWidget {
 
 class _JournalChatSheetState extends State<_JournalChatSheet> {
   final TextEditingController _replyController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final List<Map<String, String>> _messages = [];
   bool _isLoading = false;
+  String _userName = '';
+  String _userAge = '';
+  String _userOrigin = '';
   
   @override
   void initState() {
     super.initState();
     _messages.add({'role': 'assistant', 'content': widget.initialPrompt});
+    _loadUserProfile();
+  }
+  
+  Future<void> _loadUserProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userName = prefs.getString('user_name') ?? '';
+      _userAge = prefs.getString('user_age') ?? '';
+      _userOrigin = prefs.getString('ai_origin') ?? '';
+    });
+  }
+  
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      });
+    }
   }
   
   @override
   void dispose() {
     _replyController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
   
@@ -712,21 +739,25 @@ class _JournalChatSheetState extends State<_JournalChatSheet> {
       _isLoading = true;
     });
     _replyController.clear();
+    _scrollToBottom();
     
     try {
       final gemini = GeminiProvider();
+      final avatarName = widget.archetype[0].toUpperCase() + widget.archetype.substring(1);
       final systemPrompt = '''
-You are a gentle, empathetic journaling coach in a private journaling app.
-You are in the middle of a supportive conversation with the user about their journal entry.
+You are $avatarName, a supportive companion in a private journaling app.
+You are chatting with${_userName.isNotEmpty ? ' $_userName,' : ''} someone${_userAge.isNotEmpty ? ' who is $_userAge' : ''}${_userOrigin.isNotEmpty ? ' from $_userOrigin' : ''}.
 
-Their journal entry (for context): "${widget.journalContext}"
+Their journal entry: "${widget.journalContext}"
 
-Guidelines:
-- Be warm, curious, and non-judgmental
-- Keep responses SHORT (2-3 sentences max)
-- Ask gentle follow-up questions to explore feelings
-- Validate emotions before offering perspective
-- Never be preachy or give unsolicited advice
+CRITICAL - Your tone must:
+- Match their age and vocabulary (if young, be casual and relatable, not clinical)
+- Sound like a supportive friend, NOT a therapist
+- Use casual language: "that sucks", "I get it", "ugh", "honestly..."
+- Keep responses SHORT (2-3 sentences MAX)
+- Ask ONE follow-up question to explore feelings
+- Never be preachy, formal, or give unsolicited advice
+- Validate feelings first, always
 ''';
 
       final conversationHistory = _messages.map((m) => 
@@ -744,6 +775,7 @@ Guidelines:
           _messages.add({'role': 'assistant', 'content': response});
           _isLoading = false;
         });
+        _scrollToBottom();
       }
     } catch (e) {
       debugPrint('Chat error: $e');
@@ -801,6 +833,7 @@ Guidelines:
           // Messages
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
               itemCount: _messages.length + (_isLoading ? 1 : 0),
               itemBuilder: (ctx, i) {
@@ -860,7 +893,7 @@ Guidelines:
           Container(
             padding: EdgeInsets.only(
               left: 16, right: 8, top: 8,
-              bottom: MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 60,
+              bottom: MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 100,
             ),
             decoration: BoxDecoration(
               color: Colors.grey[850],

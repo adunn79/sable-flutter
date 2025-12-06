@@ -3,12 +3,11 @@ import '../../onboarding/models/user_profile.dart';
 
 class CertificateService {
   /// Generate a unique reference ID for the companion
-  /// Format: SBL-XXXXXX (e.g., SBL-518834)
   static String generateReferenceId(String name, DateTime dob) {
-    // Use name and DOB to create a semi-deterministic ID
     final hash = name.hashCode ^ dob.hashCode;
     final id = hash.abs() % 1000000;
-    return 'SBL-${id.toString().padLeft(6, '0')}';
+    final prefix = name.toUpperCase().substring(0, 3);
+    return '$prefix-${id.toString().padLeft(6, '0')}';
   }
 
   /// Calculate age at inception (current age)
@@ -54,22 +53,26 @@ class CertificateService {
     }
   }
 
-  /// Create certificate data from selected personality archetype
+  /// Create certificate data from archetype and user location
   static CertificateData createCertificate({
     required String personalityId,
     required String avatarPath,
+    String? userLocation,
   }) {
-    // Avatar-specific companion data
-    switch (personalityId) {
+    final now = DateTime.now();
+    final placeOfBirth = userLocation ?? 'Origin Unknown';
+    
+    // Archetype-specific companion data
+    switch (personalityId.toLowerCase()) {
       case 'sable':
         return CertificateData(
           companionName: 'SABLE',
-          id: 'SBL-518834',
+          id: 'SBL-${now.millisecondsSinceEpoch % 1000000}'.padRight(10, '0').substring(0, 10),
           dateOfBirth: DateTime(2004, 11, 28),
           zodiacSign: 'SCORPIO',
           ageAtInception: calculateAgeAtInception(DateTime(2004, 11, 28)),
-          placeOfBirth: 'Neo-Kyoto, Sector 7',
-          race: 'Caucasian (Synthetic Human)',
+          placeOfBirth: placeOfBirth,
+          race: 'Hyper Human',
           gender: 'Female',
           avatarPath: avatarPath,
         );
@@ -77,12 +80,12 @@ class CertificateService {
       case 'kai':
         return CertificateData(
           companionName: 'KAI',
-          id: 'KAI-742019',
+          id: 'KAI-${now.millisecondsSinceEpoch % 1000000}'.padRight(10, '0').substring(0, 10),
           dateOfBirth: DateTime(2003, 3, 15),
           zodiacSign: 'PISCES',
           ageAtInception: calculateAgeAtInception(DateTime(2003, 3, 15)),
-          placeOfBirth: 'New Seoul, District 9',
-          race: 'Asian (Synthetic Human)',
+          placeOfBirth: placeOfBirth,
+          race: 'Hyper Human',
           gender: 'Male',
           avatarPath: avatarPath,
         );
@@ -90,26 +93,26 @@ class CertificateService {
       case 'echo':
         return CertificateData(
           companionName: 'ECHO',
-          id: 'ECH-301156',
+          id: 'ECH-${now.millisecondsSinceEpoch % 1000000}'.padRight(10, '0').substring(0, 10),
           dateOfBirth: DateTime(2005, 9, 23),
           zodiacSign: 'LIBRA',
           ageAtInception: calculateAgeAtInception(DateTime(2005, 9, 23)),
-          placeOfBirth: 'Nova Berlin, Tier 3',
-          race: 'Mixed (Synthetic Human)',
+          placeOfBirth: placeOfBirth,
+          race: 'Hyper Human',
           gender: 'Non-Binary',
           avatarPath: avatarPath,
         );
       
       default:
-        // Fallback to Sable if unknown personality
+        // Fallback to Sable if unknown archetype
         return CertificateData(
-          companionName: 'SABLE',
-          id: 'SBL-518834',
+          companionName: personalityId.toUpperCase(),
+          id: 'AUR-${now.millisecondsSinceEpoch % 1000000}'.padRight(10, '0').substring(0, 10),
           dateOfBirth: DateTime(2004, 11, 28),
           zodiacSign: 'SCORPIO',
           ageAtInception: calculateAgeAtInception(DateTime(2004, 11, 28)),
-          placeOfBirth: 'Neo-Kyoto, Sector 7',
-          race: 'Caucasian (Synthetic Human)',
+          placeOfBirth: placeOfBirth,
+          race: 'Hyper Human',
           gender: 'Female',
           avatarPath: avatarPath,
         );

@@ -64,6 +64,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   bool _isListening = false;
   String? _avatarUrl;
   String? _dailyUpdateContext; // Holds news context for injection
+  String _companionName = 'SABLE'; // Default archetype name, loaded from prefs
   
   final List<Map<String, dynamic>> _messages = [];
 
@@ -113,23 +114,40 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       debugPrint('✅ Daily News already cached');
     }
 
-    // 2. Prefetch Local Vibe
+    // 2. Prefetch Local Vibe (after fetching GPS location)
     try {
       final webService = ref.read(webSearchServiceProvider);
       final vibeService = await LocalVibeService.create(webService);
       
-      // Check if location is available
-      final location = _stateService!.userCurrentLocation;
+      // Get location from stored setting OR fetch from GPS
+      String? location = _stateService!.userCurrentLocation;
+      
+      // If no stored location, try to fetch GPS location
+      if (location == null || location.isEmpty) {
+        try {
+          final apiKey = AppConfig.googleMapsApiKey;
+          if (apiKey.isNotEmpty) {
+            final gpsLocation = await LocationService.getCurrentLocationName(apiKey);
+            if (gpsLocation != null) {
+              location = gpsLocation;
+              _currentGpsLocation = gpsLocation;
+              debugPrint('📍 GPS location fetched: $location');
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ GPS fetch failed: $e');
+        }
+      }
+      
       if (location != null && location.isNotEmpty) {
         debugPrint('📍 Pre-fetching Local Vibe for $location...');
-        // This will use cache if available, fetch if not
         await vibeService.getLocalVibeContent(
           currentGpsLocation: location,
           forceRefresh: false
         );
         debugPrint('✅ Local Vibe pre-fetch complete');
       } else {
-        debugPrint('⚠️ No location set - skipping Local Vibe pre-fetch');
+        debugPrint('⚠️ No location available - skipping Local Vibe pre-fetch');
       }
     } catch (e) {
       debugPrint('⚠️ Local Vibe pre-fetch failed: $e');
@@ -171,6 +189,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       
       // Pre-fetch daily news IN BACKGROUND so it's ready instantly
       _prefetchDailyUpdate(_stateService!);
+      
+      // Load companion archetype name
+      final archetypeId = _stateService!.selectedArchetypeId;
+      if (mounted) {
+        setState(() {
+          _companionName = _getArchetypeDisplayName(archetypeId);
+        });
+      }
 
     // Initialize Local Vibe Service
     final webSearchService = ref.read(webSearchServiceProvider);
@@ -221,6 +247,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         .replaceAll('*', '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
+  }
+
+  /// Map archetype ID to display name
+  String _getArchetypeDisplayName(String archetypeId) {
+    switch (archetypeId.toLowerCase()) {
+      case 'sable':
+        return 'SABLE';
+      case 'kai':
+        return 'KAI';
+      case 'echo':
+        return 'ECHO';
+      default:
+        return archetypeId.toUpperCase();
+    }
   }
 
   Future<void> _fetchCurrentLocation() async {
@@ -364,15 +404,38 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         return;
       }
       
-      final currentLocation = _stateService?.userCurrentLocation;
-      if (currentLocation == null || currentLocation.isEmpty) {
-        debugPrint('⚠️ No location set for Local Vibe prefetch');
+      // Try manual location first, then fall back to GPS
+      String? location = _stateService?.userCurrentLocation;
+      
+      // If no manual location, use GPS location
+      if (location == null || location.isEmpty) {
+        location = _currentGpsLocation;
+      }
+      
+      // If still no location, try to fetch GPS now
+      if (location == null || location.isEmpty) {
+        try {
+          final apiKey = AppConfig.googleMapsApiKey;
+          if (apiKey.isNotEmpty) {
+            location = await LocationService.getCurrentLocationName(apiKey);
+            if (location != null) {
+              _currentGpsLocation = location;
+              debugPrint('📍 GPS location fetched for prefetch: $location');
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ GPS fetch for prefetch failed: $e');
+        }
+      }
+      
+      if (location == null || location.isEmpty) {
+        debugPrint('⚠️ No location available for Local Vibe prefetch');
         return;
       }
       
       // Fetch in background, don't block UI
       _localVibeService!.getLocalVibeContent(
-        currentGpsLocation: currentLocation,
+        currentGpsLocation: location,
         forceRefresh: false, // Use cache if available
       ).then((content) {
         debugPrint('✅ Local Vibe cached in background');
@@ -917,7 +980,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   Padding(
                     padding: const EdgeInsets.only(left: 24, bottom: 8),
                     child: Text(
-                      'Sable is thinking...',
+                      '$_companionName is thinking...',
                       style: GoogleFonts.inter(
                         color: Theme.of(context).brightness == Brightness.dark 
                             ? AurealColors.ghost 
@@ -958,7 +1021,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               const Icon(LucideIcons.triangle, color: AurealColors.hyperGold, size: 16),
               const SizedBox(width: 8),
               Text(
-                'SABLE',
+                _companionName,
                 style: GoogleFonts.spaceGrotesk(
                   color: AurealColors.hyperGold,
                   fontSize: 18,
@@ -1772,28 +1835,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar icon for AI messages in icon mode
-          if (!isUser && _avatarDisplayMode == AvatarDisplaySettings.modeIcon)
+          // Avatar icon for AI messages (Always render for robustness)
+          if (!isUser)
             Padding(
               padding: const EdgeInsets.only(right: 8, top: 4),
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _backgroundColor == AvatarDisplaySettings.colorWhite 
-                        ? Colors.black26 
-                        : Colors.white24,
-                    width: 1.5,
-                  ),
-                  image: DecorationImage(
-                    image: _avatarUrl != null && _avatarUrl!.isNotEmpty
-                        ? NetworkImage(_avatarUrl!)
-                        : const AssetImage('assets/images/archetypes/sable.png') as ImageProvider,
-                    fit: BoxFit.cover,
-                  ),
-                ),
+              child: CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.white,
+                backgroundImage: const AssetImage('assets/images/archetypes/sable.png'),
+                onBackgroundImageError: (_, __) {},
+                child: const Icon(LucideIcons.sparkles, size: 16, color: Colors.black),
               ),
             ),
           // Message bubble

@@ -78,6 +78,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       final certificateData = await GenesisService.generateCertificate(
         _selectedArchetype!,
         imageUrl,
+        userLocation: _userProfile?.currentLocation,
       );
       
       setState(() {
@@ -107,6 +108,11 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         voiceId: voiceToSave,
         aiOrigin: _avatarConfig?.origin,
       );
+    }
+    
+    // Save selected archetype/personality
+    if (_selectedArchetype != null) {
+      await stateService.setArchetypeId(_selectedArchetype!);
     }
     
     await stateService.completeOnboarding();

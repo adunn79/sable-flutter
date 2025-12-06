@@ -280,6 +280,7 @@ class OnboardingStateService {
   static const String _keyHapticsEnabled = 'haptics_enabled';
   static const String _keySoundsEnabled = 'sounds_enabled';
   static const String _keyPersonalityId = 'selected_personality_id';
+  static const String _keyArchetypeId = 'selected_archetype_id';
 
   /// Get haptics enabled status (Default: true)
   bool get hapticsEnabled => _prefs.getBool(_keyHapticsEnabled) ?? true;
@@ -331,6 +332,14 @@ class OnboardingStateService {
   /// Set selected personality ID
   Future<void> setPersonalityId(String id) async {
     await _prefs.setString(_keyPersonalityId, id);
+  }
+
+  /// Get selected archetype ID (Sable, Kai, Echo) - Default: 'sable'
+  String get selectedArchetypeId => _prefs.getString(_keyArchetypeId) ?? 'sable';
+
+  /// Set selected archetype ID
+  Future<void> setArchetypeId(String id) async {
+    await _prefs.setString(_keyArchetypeId, id);
   }
 
   // ============================================

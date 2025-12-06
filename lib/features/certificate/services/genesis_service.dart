@@ -4,12 +4,14 @@ import 'certificate_service.dart';
 class GenesisService {
   static Future<CertificateData> generateCertificate(
     String personalityId,
-    String avatarPath,
-  ) async {
-    // Use CertificateService to generate avatar-specific certificate
+    String avatarPath, {
+    String? userLocation,
+  }) async {
+    // Use CertificateService to generate archetype-specific certificate
     return CertificateService.createCertificate(
       personalityId: personalityId,
       avatarPath: avatarPath,
+      userLocation: userLocation,
     );
   }
 }

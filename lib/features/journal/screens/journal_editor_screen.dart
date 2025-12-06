@@ -7,6 +7,7 @@ import '../services/journal_storage_service.dart';
 import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
 import '../widgets/avatar_journal_overlay.dart';
+import 'package:sable/core/voice/voice_service.dart';
 
 /// Rich text journal editor with privacy toggle, mood, and tags
 class JournalEditorScreen extends StatefulWidget {
@@ -38,10 +39,15 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
   bool _isSaving = false;
   String _archetype = 'sable'; // Current avatar for overlay
   
+  // Voice dictation
+  VoiceService? _voiceService;
+  bool _isListening = false;
+  
   @override
   void initState() {
     super.initState();
     _focusNode = FocusNode();
+    _initVoice();
     _loadData();
   }
   
@@ -95,6 +101,41 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
     _focusNode.dispose();
     _tagController.dispose();
     super.dispose();
+  }
+  
+  Future<void> _initVoice() async {
+    _voiceService = VoiceService();
+    await _voiceService!.initialize();
+  }
+  
+  Future<void> _toggleVoiceDictation() async {
+    if (_voiceService == null) return;
+    
+    if (_isListening) {
+      // Stop listening
+      await _voiceService!.stopListening();
+      setState(() => _isListening = false);
+    } else {
+      // Start listening
+      setState(() => _isListening = true);
+      
+      await _voiceService!.startListening(
+        onResult: (text) {
+          // Insert dictated text at cursor position
+          final index = _quillController.selection.baseOffset;
+          _quillController.document.insert(index, text + ' ');
+          _quillController.updateSelection(
+            TextSelection.collapsed(offset: index + text.length + 1),
+            ChangeSource.local,
+          );
+          setState(() => _isListening = false);
+        },
+        onPartialResult: (text) {
+          // Show partial text in a snackbar or overlay
+          debugPrint('🎤 Partial: $text');
+        },
+      );
+    }
   }
   
   Future<void> _saveEntry() async {
@@ -451,13 +492,35 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
               ),
             ),
             
-            // Toolbar
+            // Toolbar with voice dictation
             Container(
               decoration: BoxDecoration(
                 color: Colors.grey[900],
                 border: Border(top: BorderSide(color: Colors.white.withOpacity(0.1))),
               ),
-              child: QuillToolbar.simple(
+              child: Row(
+                children: [
+                  // Voice dictation button
+                  GestureDetector(
+                    onTap: _toggleVoiceDictation,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      child: Icon(
+                        _isListening ? LucideIcons.micOff : LucideIcons.mic,
+                        color: _isListening ? Colors.red : Colors.white70,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  // Divider
+                  Container(
+                    width: 1,
+                    height: 24,
+                    color: Colors.white.withOpacity(0.1),
+                  ),
+                  // Quill toolbar
+                  Expanded(
+                    child: QuillToolbar.simple(
                 configurations: QuillSimpleToolbarConfigurations(
                   controller: _quillController,
                   showFontFamily: false,
@@ -486,10 +549,13 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
                   showRedo: true,
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ), // End Expanded
+          ], // End Row children
+        ), // End Row
+      ), // End Container
+          ], // End Column children
+        ), // End Column
+      ), // End SafeArea
       
       // Avatar overlay with privacy state
       AvatarJournalOverlay(

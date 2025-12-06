@@ -44,6 +44,10 @@ dependencies:
   url_launcher: ^6.2.5
   flutter_markdown: ^0.7.7+1
   alarm: ^4.0.0  # Cross-platform alarm with audio, vibration, notifications
+  # Journaling feature dependencies
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  flutter_quill: ^9.4.0
 
 dev_dependencies:
   flutter_test:
@@ -55,6 +59,7 @@ dev_dependencies:
   json_serializable: ^6.7.1
   flutter_launcher_icons: ^0.13.1
   riverpod: ^2.6.1
+  hive_generator: ^2.0.1
 
 flutter:
   uses-material-design: true

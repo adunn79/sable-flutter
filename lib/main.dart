@@ -10,6 +10,7 @@ import 'features/debug/debug_dashboard.dart';
 import 'features/settings/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/widgets/restart_widget.dart';
+import 'features/journal/services/journal_storage_service.dart';
 
 void main() async {
   try {
@@ -23,6 +24,11 @@ void main() async {
     };
     
     await AppConfig.initialize();
+    
+    // Initialize Hive for journal storage
+    await JournalStorageService.initialize();
+    await JournalStorageService.createDefaultBuckets();
+    debugPrint('✅ Journal storage initialized');
     
     // Save ElevenLabs API key to SharedPreferences for VoiceService
     if (AppConfig.elevenLabsKey.isNotEmpty) {

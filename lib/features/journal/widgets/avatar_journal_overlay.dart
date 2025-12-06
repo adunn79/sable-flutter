@@ -64,19 +64,20 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
     }
   }
   
-  String get _avatarEmoji {
+  String get _avatarImagePath {
     switch (widget.archetype.toLowerCase()) {
       case 'kai':
-        return '🛡️';
+        return 'assets/images/archetypes/kai.png';
       case 'echo':
-        return '🌿';
+        return 'assets/images/archetypes/echo.png';
       default:
-        return '✨';
+        return 'assets/images/archetypes/sable.png';
     }
   }
   
   @override
   Widget build(BuildContext context) {
+    debugPrint('🎭 Building AvatarJournalOverlay: archetype=${widget.archetype}, isPrivate=${widget.isPrivate}');
     return Positioned(
       bottom: 100, // Above the keyboard/toolbar
       right: 16,
@@ -121,18 +122,17 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
               },
               child: Stack(
                 children: [
-                  // Main avatar circle
+                  // Main avatar circle with actual image
                   Container(
-                    width: 56,
-                    height: 56,
+                    width: 60,
+                    height: 60,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: widget.isPrivate
-                            ? [Colors.grey[800]!, Colors.grey[900]!]
-                            : [_avatarColor, _avatarColor.withOpacity(0.7)],
+                      border: Border.all(
+                        color: widget.isPrivate 
+                            ? Colors.grey 
+                            : _avatarColor,
+                        width: 3,
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -144,12 +144,32 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
                         ),
                       ],
                     ),
-                    child: Center(
-                      child: Text(
-                        _avatarEmoji,
-                        style: TextStyle(
-                          fontSize: 24,
-                          color: widget.isPrivate ? Colors.grey[500] : null,
+                    child: ClipOval(
+                      child: ColorFiltered(
+                        colorFilter: widget.isPrivate
+                            ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
+                            : const ColorFilter.mode(Colors.transparent, BlendMode.overlay),
+                        child: Image.asset(
+                          _avatarImagePath,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stack) {
+                            // Fallback to colored circle with initial
+                            return Container(
+                              color: _avatarColor,
+                              child: Center(
+                                child: Text(
+                                  widget.archetype.isNotEmpty 
+                                      ? widget.archetype[0].toUpperCase() 
+                                      : 'S',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),

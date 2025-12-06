@@ -144,10 +144,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white70),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false, // No back button - bottom nav handles this
         title: GestureDetector(
           onTap: _showBucketPicker,
           child: Row(

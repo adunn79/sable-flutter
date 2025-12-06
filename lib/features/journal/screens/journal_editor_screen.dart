@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../services/journal_storage_service.dart';
 import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
+import '../widgets/avatar_journal_overlay.dart';
 
 /// Rich text journal editor with privacy toggle, mood, and tags
 class JournalEditorScreen extends StatefulWidget {
@@ -34,6 +36,7 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
   JournalEntry? _existingEntry;
   bool _isLoading = true;
   bool _isSaving = false;
+  String _archetype = 'sable'; // Current avatar for overlay
   
   @override
   void initState() {
@@ -44,6 +47,10 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
   
   Future<void> _loadData() async {
     _bucket = JournalStorageService.getBucket(widget.bucketId);
+    
+    // Load current archetype for avatar overlay
+    final prefs = await SharedPreferences.getInstance();
+    _archetype = prefs.getString('selected_archetype_id') ?? 'sable';
     
     if (widget.entryId != null) {
       // Editing existing entry
@@ -301,16 +308,18 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Mood and tags bar
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  // Mood button
-                  GestureDetector(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                // Mood and tags bar
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      // Mood button
+                      GestureDetector(
                     onTap: _showMoodPicker,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -481,6 +490,26 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
           ],
         ),
       ),
-    );
+      
+      // Avatar overlay with privacy state
+      AvatarJournalOverlay(
+        isPrivate: _isPrivate,
+        archetype: _archetype,
+        onSparkTap: () {
+          // TODO: Implement AI prompt generation
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('✨ Spark: AI prompts coming soon!')),
+          );
+        },
+        onAvatarTap: () {
+          // TODO: Expand chat panel
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${_archetype[0].toUpperCase()}${_archetype.substring(1)} is ${_isPrivate ? "blind" : "observing"}')),
+          );
+        },
+      ),
+    ],
+  ),
+);
   }
 }

@@ -79,12 +79,15 @@ class _AppShellState extends State<AppShell> {
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
           navigationBarTheme: NavigationBarThemeData(
-            height: 50, // Reduced from default ~80
+            height: 60, // Increased for better spacing
             labelTextStyle: WidgetStateProperty.all(
               const TextStyle(fontSize: 10),
             ),
             iconTheme: WidgetStateProperty.all(
-              const IconThemeData(size: 20),
+              const IconThemeData(size: 18),
+            ),
+            indicatorShape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
         ),
@@ -107,7 +110,7 @@ class _AppShellState extends State<AppShell> {
             ),
             NavigationDestination(
               icon: Icon(LucideIcons.heartPulse),
-              label: 'Vital Balance',
+              label: 'Vitals',
             ),
             NavigationDestination(
               icon: Icon(LucideIcons.menu),

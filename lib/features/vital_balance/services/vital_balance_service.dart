@@ -89,28 +89,32 @@ class VitalBalanceService {
     HealthMetric(id: 'mood', name: 'Mood', unit: '/10', iconName: 'smile', minValue: 0, maxValue: 10, isDefault: true),
     HealthMetric(id: 'stress', name: 'Stress', unit: '/10', iconName: 'brain', minValue: 0, maxValue: 10, isDefault: true),
     HealthMetric(id: 'weight', name: 'Weight', unit: 'lbs', iconName: 'scale', isDefault: true),
-    HealthMetric(id: 'bp_sys', name: 'BP (Sys)', unit: 'mmHg', iconName: 'heart', isDefault: true),
-    HealthMetric(id: 'bp_dia', name: 'BP (Dia)', unit: 'mmHg', iconName: 'heart', isDefault: true),
-    HealthMetric(id: 'water', name: 'Water', unit: 'oz', iconName: 'droplet', isDefault: true),
-    HealthMetric(id: 'pain', name: 'Pain', unit: '/10', iconName: 'thermometer', minValue: 0, maxValue: 10, isDefault: true),
+    HealthMetric(id: 'bp_sys', name: 'BP (Sys)', unit: 'mmHg', iconName: 'heart_pulse', isDefault: true),
+    HealthMetric(id: 'bp_dia', name: 'BP (Dia)', unit: 'mmHg', iconName: 'heart_pulse', isDefault: true),
+    HealthMetric(id: 'water', name: 'Water', unit: 'oz', iconName: 'droplets', isDefault: true),
+    HealthMetric(id: 'pain', name: 'Pain', unit: '/10', iconName: 'flame', minValue: 0, maxValue: 10, isDefault: true),
     HealthMetric(id: 'steps', name: 'Steps', unit: 'steps', iconName: 'footprints', isDefault: true),
-    HealthMetric(id: 'heart_rate', name: 'Heart Rate', unit: 'bpm', iconName: 'heart', isDefault: true),
-    HealthMetric(id: 'meditation', name: 'Meditation', unit: 'min', iconName: 'flower', isDefault: true),
+    HealthMetric(id: 'heart_rate', name: 'Heart Rate', unit: 'bpm', iconName: 'heart_pulse', isDefault: true),
+    HealthMetric(id: 'meditation', name: 'Meditation', unit: 'min', iconName: 'sparkles', isDefault: true),
   ];
 
-  /// Get icon data from string name
+  /// Get icon data from string name - Premium, distinctive icons
   static IconData getIconData(String name) {
     switch (name) {
-      case 'moon': return LucideIcons.moon;
-      case 'zap': return LucideIcons.zap;
-      case 'smile': return LucideIcons.smile;
-      case 'brain': return LucideIcons.brain;
-      case 'scale': return LucideIcons.scale;
-      case 'droplet': return LucideIcons.droplet;
-      case 'thermometer': return LucideIcons.thermometer; 
-      case 'footprints': return LucideIcons.footprints;
-      case 'heart': return LucideIcons.heart; // Note: using heart where activity implies generic
-      case 'flower': return LucideIcons.flower;
+      case 'moon': return LucideIcons.bedDouble; // Sleep icon - bed for sleep
+      case 'zap': return LucideIcons.battery; // Energy as battery
+      case 'smile': return LucideIcons.smile; // Classic smile for mood
+      case 'brain': return LucideIcons.brain; // Simple brain for stress
+      case 'scale': return LucideIcons.scale; // Weight scale
+      case 'droplet': return LucideIcons.glassWater; // Glass of water
+      case 'droplets': return LucideIcons.glassWater;
+      case 'thermometer': return LucideIcons.activity; // Pain as pulse
+      case 'flame': return LucideIcons.activity;
+      case 'footprints': return LucideIcons.footprints; // Steps
+      case 'heart': return LucideIcons.heartPulse; // Heart rate
+      case 'heart_pulse': return LucideIcons.heartPulse;
+      case 'flower': return LucideIcons.wind; // Meditation as breath
+      case 'sparkles': return LucideIcons.wind;
       default: return LucideIcons.activity;
     }
   }

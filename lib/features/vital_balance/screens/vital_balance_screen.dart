@@ -8,6 +8,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 import 'package:sable/features/safety/screens/emergency_screen.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
@@ -19,6 +20,7 @@ import 'package:sable/src/pages/chat/chat_page.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sable/core/memory/unified_memory_service.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
+import 'package:sable/core/ai/providers/openai_provider.dart';
 import 'package:sable/features/journal/services/journal_storage_service.dart';
 
 /// Vital Balance Screen - Health & Wellness Tracking
@@ -61,10 +63,14 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
   // Inline Chat State
   List<Map<String, String>> _chatMessages = []; // {role: 'user'|'ai', text: '...'}
   bool _isAiThinking = false;
+  bool _hideChatMessages = false; // Hides messages without deleting
+  final ScrollController _chatScrollController = ScrollController();
   
-  // Dynamic AI-Generated Prompts based on user context
-  List<Map<String, dynamic>> _dynamicPrompts = [];
-  bool _isLoadingPrompts = true;
+  // Dynamic AI-Generated Focus Items
+  List<Map<String, dynamic>> _aiFocusItems = []; // {title, description, icon, metricId, enabled}
+  bool _isLoadingFocus = true;
+  int _daysSinceUpdate = 0; // Days since last wellness metric update
+  Set<String> _disabledFocusItems = {}; // User-disabled items by metricId
   
   // AI Services
   final UnifiedMemoryService _memoryService = UnifiedMemoryService();
@@ -109,6 +115,18 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
     // Load Profile
     final profile = await VitalBalanceService.getProfile();
     
+    // Calculate days since last wellness update
+    int daysSince = 0;
+    final lastWellnessUpdate = prefs.getString('last_wellness_update_date');
+    if (lastWellnessUpdate != null) {
+      try {
+        final lastDate = DateTime.parse(lastWellnessUpdate);
+        daysSince = DateTime.now().difference(lastDate).inDays;
+      } catch (_) {}
+    } else {
+      daysSince = 999; // Never updated
+    }
+    
     if (_disposed || !mounted) return;
     setState(() {
       _avatarUrl = stateService.avatarUrl;
@@ -119,6 +137,7 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
       _profile = profile;
       _weatherTemp = weatherTemp;
       _weatherHighLow = weatherHighLow;
+      _daysSinceUpdate = daysSince;
       _isLoadingMetrics = false;
     });
   }
@@ -139,96 +158,521 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
   
   /// Load AI-personalized prompts based on user's mental state, chat history, and journal entries
   Future<void> _loadDynamicPrompts() async {
+    if (_disposed || !mounted) return; // Early exit if disposed
+    
+    // Load disabled items from preferences
+    final prefs = await SharedPreferences.getInstance();
+    if (_disposed || !mounted) return; // Check again after async
+    
+    _disabledFocusItems = (prefs.getStringList('disabled_focus_items') ?? []).toSet();
+    
     try {
-      // Gather context from various sources
-      final chatHistory = _memoryService.getAllChatMessages();
-      final recentChats = chatHistory.take(20).map((m) => '${m.isUser ? "User" : "AI"}: ${m.message}').join('\n');
+      // Analyze which metrics are missing or need attention
+      final missingMetrics = <Map<String, dynamic>>[];
+      final lowPriorityMetrics = <Map<String, dynamic>>[];
       
-      // Get journal entries
-      final buckets = await JournalStorageService.getAllBuckets();
-      final recentJournals = <String>[];
-      for (final bucket in buckets.take(3)) {
-        final entries = await JournalStorageService.getEntriesForBucket(bucket.id);
-        for (final entry in entries.take(3)) {
-          final textContent = entry.plainText.length > 100 ? entry.plainText.substring(0, 100) : entry.plainText;
-          recentJournals.add('${entry.timestamp.toString().split(' ')[0]}: $textContent');
+      for (final metric in _metrics) {
+        if (_disabledFocusItems.contains(metric.id)) continue; // Skip disabled
+        
+        final value = _latestValues[metric.name];
+        final hasValue = value != null && !value.startsWith('--');
+        
+        if (!hasValue) {
+          // Missing data - high priority
+          missingMetrics.add({
+            'title': _getFocusTitle(metric.id),
+            'description': _getFocusDescription(metric.id, hasData: false),
+            'icon': VitalBalanceService.getIconData(metric.iconName),
+            'metricId': metric.id,
+          });
+        } else {
+          // Has data - could still suggest action
+          lowPriorityMetrics.add({
+            'title': _getFocusTitle(metric.id),
+            'description': _getFocusDescription(metric.id, hasData: true),
+            'icon': VitalBalanceService.getIconData(metric.iconName),
+            'metricId': metric.id,
+          });
         }
       }
       
-      // Get health metrics
-      final metricsContext = _latestValues.entries
-        .map((e) => '${e.key}: ${e.value}')
-        .join(', ');
-      
-      // Build context for AI
-      final contextPrompt = '''Based on the user's recent activity, suggest 4 personalized wellness check-in prompts.
-
-Recent chat snippets:
-$recentChats
-
-Recent journal entries:
-${recentJournals.join('\n')}
-
-Current health metrics:
-$metricsContext
-
-Generate exactly 4 short, caring wellness prompts (2-5 words each) that would be helpful for this user right now.
-Format: One prompt per line, just the text, no numbering or bullets.
-Examples: "How's your sleep?", "Need stress relief?", "Energy check", "Let's reflect"''';
-
-      final response = await _orchestrator.routeRequest(
-        prompt: contextPrompt,
-        taskType: AiTaskType.agentic,
-      );
-      
       if (_disposed || !mounted) return;
       
-      // Parse the response into prompts
-      final lines = response.split('\n')
-        .map((l) => l.trim())
-        .where((l) => l.isNotEmpty && l.length < 30)
-        .take(4)
-        .toList();
+      // Prioritize missing data, then add some with data for variety
+      final focusItems = <Map<String, dynamic>>[];
+      focusItems.addAll(missingMetrics.take(2)); // Up to 2 missing
+      focusItems.addAll(lowPriorityMetrics.take(2 - focusItems.length.clamp(0, 2))); // Fill to 2-4 items
       
-      // Assign icons based on content
-      final prompts = lines.map((text) {
-        IconData icon = LucideIcons.sparkles;
-        if (text.toLowerCase().contains('sleep')) icon = LucideIcons.moon;
-        else if (text.toLowerCase().contains('energy')) icon = LucideIcons.zap;
-        else if (text.toLowerCase().contains('stress')) icon = LucideIcons.heart;
-        else if (text.toLowerCase().contains('mood')) icon = LucideIcons.smile;
-        else if (text.toLowerCase().contains('reflect')) icon = LucideIcons.brainCircuit;
-        else if (text.toLowerCase().contains('water') || text.toLowerCase().contains('hydrat')) icon = LucideIcons.droplets;
-        
-        return {'text': text, 'icon': icon};
-      }).toList();
-      
-      if (mounted && prompts.isNotEmpty) {
-        setState(() {
-          _dynamicPrompts = prompts;
-          _isLoadingPrompts = false;
-        });
-      } else {
-        _setDefaultPrompts();
-      }
+      setState(() {
+        _aiFocusItems = focusItems.isEmpty ? _getDefaultFocusItems() : focusItems;
+        _isLoadingFocus = false;
+      });
     } catch (e) {
-      debugPrint('Error loading dynamic prompts: $e');
-      _setDefaultPrompts();
+      debugPrint('Error loading AI focus: $e');
+      _setDefaultFocusItems();
     }
   }
   
-  void _setDefaultPrompts() {
+  String _getFocusTitle(String metricId) {
+    switch (metricId) {
+      case 'sleep': return 'Rest';
+      case 'energy': return 'Energy';
+      case 'mood': return 'Reflect';
+      case 'stress': return 'Calm';
+      case 'weight': return 'Weigh In';
+      case 'water': return 'Hydrate';
+      case 'steps': return 'Move';
+      case 'pain': return 'Pain Check';
+      case 'heart_rate': return 'Heart';
+      case 'meditation': return 'Breathe';
+      case 'bp_sys':
+      case 'bp_dia': return 'BP Check';
+      default: return 'Track';
+    }
+  }
+  
+  String _getFocusDescription(String metricId, {required bool hasData}) {
+    if (!hasData) {
+      switch (metricId) {
+        case 'sleep': return 'Log last night\'s sleep';
+        case 'energy': return 'Rate your energy';
+        case 'mood': return 'Log your mood';
+        case 'stress': return 'Rate stress level';
+        case 'weight': return 'Log your weight';
+        case 'water': return 'Track water intake';
+        case 'steps': return 'Log your steps';
+        case 'pain': return 'Rate pain level';
+        case 'heart_rate': return 'Check heart rate';
+        case 'meditation': return 'Log meditation';
+        case 'bp_sys':
+        case 'bp_dia': return 'Check blood pressure';
+        default: return 'Log this metric';
+      }
+    } else {
+      switch (metricId) {
+        case 'sleep': return 'Review sleep trends';
+        case 'energy': return 'Boost your energy';
+        case 'mood': return 'Update your mood';
+        case 'stress': return 'Try stress relief';
+        case 'weight': return 'Check progress';
+        case 'water': return 'Add more water';
+        case 'steps': return 'Take a 10m walk';
+        case 'pain': return 'Update pain level';
+        case 'heart_rate': return 'Monitor heart';
+        case 'meditation': return 'Meditate now';
+        case 'bp_sys':
+        case 'bp_dia': return 'Monitor BP';
+        default: return 'Update metric';
+      }
+    }
+  }
+  
+  List<Map<String, dynamic>> _getDefaultFocusItems() {
+    return [
+      {'title': 'Move', 'description': 'Take a 10m walk', 'icon': LucideIcons.footprints, 'metricId': 'steps'},
+      {'title': 'Reflect', 'description': 'Log your mood', 'icon': LucideIcons.brainCircuit, 'metricId': 'mood'},
+    ];
+  }
+  
+  void _setDefaultFocusItems() {
     if (mounted) {
       setState(() {
-        _dynamicPrompts = [
-          {'text': 'How\'s my energy?', 'icon': LucideIcons.zap},
-          {'text': 'Sleep tips', 'icon': LucideIcons.moon},
-          {'text': 'Stress relief', 'icon': LucideIcons.heart},
-          {'text': 'Mood boost', 'icon': LucideIcons.smile},
-        ];
-        _isLoadingPrompts = false;
+        _aiFocusItems = _getDefaultFocusItems();
+        _isLoadingFocus = false;
       });
     }
+  }
+  
+  Future<void> _toggleFocusItem(String metricId, bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      if (enabled) {
+        _disabledFocusItems.remove(metricId);
+      } else {
+        _disabledFocusItems.add(metricId);
+      }
+    });
+    await prefs.setStringList('disabled_focus_items', _disabledFocusItems.toList());
+    _loadDynamicPrompts(); // Refresh
+  }
+  
+  /// Show dialog to edit AI Focus items - toggle which ones appear daily
+  void _showEditFocusItemsDialog() {
+    // Available focus items that can be toggled
+    final focusOptions = [
+      {'id': 'steps', 'title': 'Move', 'description': 'Take a 10m walk', 'icon': LucideIcons.footprints},
+      {'id': 'mood', 'title': 'Reflect', 'description': 'Log your mood', 'icon': LucideIcons.smile},
+      {'id': 'sleep', 'title': 'Rest', 'description': 'Log your sleep', 'icon': LucideIcons.moon},
+      {'id': 'water', 'title': 'Hydrate', 'description': 'Track water intake', 'icon': LucideIcons.glassWater},
+      {'id': 'stress', 'title': 'Breathe', 'description': 'Check stress level', 'icon': LucideIcons.brain},
+      {'id': 'meditation', 'title': 'Meditate', 'description': 'Log meditation time', 'icon': LucideIcons.wind},
+      {'id': 'energy', 'title': 'Energy', 'description': 'Rate your energy', 'icon': LucideIcons.battery},
+      {'id': 'pain', 'title': 'Pain Check', 'description': 'Log pain level', 'icon': LucideIcons.activity},
+    ];
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF15202B),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Container(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.5),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Icon(LucideIcons.sparkles, color: _accentLavender, size: 18),
+                  const SizedBox(width: 8),
+                  Text('Edit Daily Focus', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(LucideIcons.x, color: Colors.white38, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text('Toggle items on/off. Disabled items are hidden from your daily list but data is preserved.', 
+                style: GoogleFonts.inter(color: Colors.white38, fontSize: 10)),
+              const SizedBox(height: 12),
+              // Scrollable items - compact size
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: focusOptions.map((item) {
+                    final isEnabled = !_disabledFocusItems.contains(item['id']);
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isEnabled ? _accentLavender.withOpacity(0.08) : Colors.white.withOpacity(0.02),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: isEnabled ? _accentLavender.withOpacity(0.2) : Colors.white10),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(item['icon'] as IconData, color: isEnabled ? _accentLavender : Colors.white24, size: 16),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(item['title'] as String, style: GoogleFonts.inter(color: isEnabled ? Colors.white : Colors.white38, fontSize: 12, fontWeight: FontWeight.w600)),
+                                  Text(item['description'] as String, style: GoogleFonts.inter(color: Colors.white30, fontSize: 9)),
+                                ],
+                              ),
+                            ),
+                            Transform.scale(
+                              scale: 0.7,
+                              child: Switch(
+                                value: isEnabled,
+                                onChanged: (val) {
+                                  setSheetState(() {
+                                    if (val) {
+                                      _disabledFocusItems.remove(item['id']);
+                                    } else {
+                                      _disabledFocusItems.add(item['id'] as String);
+                                    }
+                                  });
+                                  _toggleFocusItem(item['id'] as String, val);
+                                },
+                                activeColor: _accentLavender,
+                                activeTrackColor: _accentLavender.withOpacity(0.3),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  /// Show sheet to add/manage metrics from pre-populated list
+  void _showAddMetricSheet() {
+    final availableMetrics = [
+      {'id': 'sleep', 'name': 'Sleep Hours', 'icon': LucideIcons.moonStar, 'category': 'Rest'},
+      {'id': 'energy', 'name': 'Energy Level', 'icon': LucideIcons.zap, 'category': 'Wellness'},
+      {'id': 'mood', 'name': 'Mood', 'icon': LucideIcons.smilePlus, 'category': 'Mental'},
+      {'id': 'stress', 'name': 'Stress Level', 'icon': LucideIcons.brainCircuit, 'category': 'Mental'},
+      {'id': 'weight', 'name': 'Weight', 'icon': LucideIcons.scale3d, 'category': 'Body'},
+      {'id': 'water', 'name': 'Water Intake', 'icon': LucideIcons.droplets, 'category': 'Nutrition'},
+      {'id': 'steps', 'name': 'Steps/Activity', 'icon': LucideIcons.footprints, 'category': 'Activity'},
+      {'id': 'pain', 'name': 'Pain Level', 'icon': LucideIcons.flame, 'category': 'Health'},
+      {'id': 'heart_rate', 'name': 'Heart Rate', 'icon': LucideIcons.heartPulse, 'category': 'Vitals'},
+      {'id': 'bp_sys', 'name': 'Blood Pressure', 'icon': LucideIcons.heartPulse, 'category': 'Vitals'},
+      {'id': 'meditation', 'name': 'Meditation', 'icon': LucideIcons.sparkles, 'category': 'Mental'},
+      // Additional medical tests
+      {'id': 'blood_glucose', 'name': 'Blood Glucose', 'icon': LucideIcons.droplet, 'category': 'Lab Tests'},
+      {'id': 'a1c', 'name': 'HbA1c', 'icon': LucideIcons.testTubes, 'category': 'Lab Tests'},
+      {'id': 'cholesterol', 'name': 'Cholesterol', 'icon': LucideIcons.testTube, 'category': 'Lab Tests'},
+      {'id': 'vitamin_d', 'name': 'Vitamin D', 'icon': LucideIcons.sun, 'category': 'Lab Tests'},
+      {'id': 'iron', 'name': 'Iron/Ferritin', 'icon': LucideIcons.pill, 'category': 'Lab Tests'},
+      {'id': 'thyroid', 'name': 'Thyroid (TSH)', 'icon': LucideIcons.activity, 'category': 'Lab Tests'},
+      {'id': 'oxygen', 'name': 'Oxygen (SpO2)', 'icon': LucideIcons.wind, 'category': 'Vitals'},
+      {'id': 'temperature', 'name': 'Temperature', 'icon': LucideIcons.thermometer, 'category': 'Vitals'},
+      {'id': 'medications', 'name': 'Medication Adherence', 'icon': LucideIcons.pill, 'category': 'Health'},
+    ];
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF15202B),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (context, scrollController) => StatefulBuilder(
+          builder: (context, setSheetState) => Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.listPlus, color: _accentTeal, size: 20),
+                    const SizedBox(width: 8),
+                    Text('Manage Health Metrics', style: GoogleFonts.inter(
+                      color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(Icons.close, color: Colors.white54, size: 20),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(color: Colors.white.withOpacity(0.1), height: 1),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: availableMetrics.length,
+                  itemBuilder: (context, index) {
+                    final metric = availableMetrics[index];
+                    final isDisabled = _disabledFocusItems.contains(metric['id']);
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: isDisabled 
+                              ? Colors.white.withOpacity(0.05) 
+                              : _accentTeal.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          metric['icon'] as IconData,
+                          color: isDisabled ? Colors.white30 : _accentTeal,
+                          size: 18,
+                        ),
+                      ),
+                      title: Text(
+                        metric['name'] as String,
+                        style: GoogleFonts.inter(
+                          color: isDisabled ? Colors.white30 : Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                      subtitle: Text(
+                        metric['category'] as String,
+                        style: GoogleFonts.inter(color: Colors.white38, fontSize: 11),
+                      ),
+                      trailing: Switch.adaptive(
+                        value: !isDisabled,
+                        onChanged: (enabled) {
+                          _toggleFocusItem(metric['id'] as String, enabled);
+                          setSheetState(() {});
+                        },
+                        activeColor: _accentTeal,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  /// Show comprehensive summary of all metrics in one readable view
+  void _showAllMetricsSummary() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0D1821),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(LucideIcons.layoutDashboard, color: _accentTeal, size: 22),
+                  const SizedBox(width: 10),
+                  Text('All Health Metrics', style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                  const Spacer(),
+                  Text(
+                    DateFormat('MMM d, yyyy').format(DateTime.now()),
+                    style: GoogleFonts.inter(color: Colors.white38, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: Colors.white.withOpacity(0.1), height: 1),
+            // Metrics List
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                padding: const EdgeInsets.all(16),
+                itemCount: _metrics.length,
+                itemBuilder: (context, index) {
+                  final metric = _metrics[index];
+                  final value = _latestValues[metric.name] ?? '-- ${metric.unit}';
+                  final hasData = !value.startsWith('--');
+                  
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: hasData 
+                          ? _accentTeal.withOpacity(0.08) 
+                          : Colors.white.withOpacity(0.03),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: hasData 
+                            ? _accentTeal.withOpacity(0.2) 
+                            : Colors.white.withOpacity(0.05),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Icon
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: hasData 
+                                ? _accentTeal.withOpacity(0.15) 
+                                : Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            VitalBalanceService.getIconData(metric.iconName),
+                            color: hasData ? _accentTeal : Colors.white30,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        // Name & Value
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                metric.name.toUpperCase(),
+                                style: GoogleFonts.inter(
+                                  color: Colors.white54,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                value,
+                                style: GoogleFonts.spaceGrotesk(
+                                  color: hasData ? Colors.white : Colors.white38,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Add button if no data
+                        if (!hasData)
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showMetricDetailsDialog(metric);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _accentTeal.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(LucideIcons.plus, color: _accentTeal, size: 14),
+                                  const SizedBox(width: 4),
+                                  Text('Add', style: GoogleFonts.inter(color: _accentTeal, fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showMetricDetailsDialog(metric);
+                            },
+                            child: Icon(LucideIcons.chevronRight, color: Colors.white38, size: 20),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
   
   /// Send a message and get inline AI response
@@ -241,23 +685,95 @@ Examples: "How's your sleep?", "Need stress relief?", "Energy check", "Let's ref
     });
     
     try {
-      // Build wellness-focused context
+      // Get user identity and preferences
+      final prefs = await SharedPreferences.getInstance();
+      final avatarName = prefs.getString('selectedArchetypeName') ?? 'Sable';
+      final userName = prefs.getString('user_name') ?? 'there';
+      
+      // Load FULL user context - chat history, journals, memories
+      await _memoryService.initialize();
+      
+      // Get recent chat history (last 20 messages for context)
+      final chatHistory = await _memoryService.getAllChatMessages();
+      final recentChats = chatHistory.take(20).map((m) => 
+        '${m.isUser ? userName : avatarName}: ${m.message}'
+      ).join('\n');
+      
+      // Get journal entries (last 5 for deeper insight)
+      await JournalStorageService.initialize();
+      final buckets = await JournalStorageService.getAllBuckets();
+      final recentJournals = <String>[];
+      for (final bucket in buckets.take(5)) {
+        final entries = await JournalStorageService.getEntriesForBucket(bucket.id);
+        for (final entry in entries.take(3)) {
+          final textPreview = entry.plainText.length > 200 
+              ? entry.plainText.substring(0, 200) 
+              : entry.plainText;
+          recentJournals.add('${entry.timestamp.toString().split(' ')[0]}: $textPreview');
+        }
+      }
+      final journalContext = recentJournals.take(8).join('\n');
+      
+      // Get extracted memories (key facts about user)
+      final memories = await _memoryService.getAllMemories();
+      final memoryContext = memories.map((m) => 
+        '${m.category}: ${m.content}'
+      ).join('\n');
+      
+      // Health profile
+      final age = prefs.getString('health_age') ?? '';
+      final sex = prefs.getString('health_sex') ?? '';
+      final height = prefs.getString('health_height') ?? '';
+      
+      // Build wellness-focused context with FULL user knowledge
       final metricsContext = _latestValues.entries
         .map((e) => '${e.key}: ${e.value}')
         .join(', ');
       
-      final wellnessPrompt = '''You are a caring Wellness Coach in "Vitality Strategist" mode.
-The user's current health metrics: $metricsContext
+      final wellnessPrompt = '''User asks: "$text"
 
-User asks: "$text"
+CURRENT HEALTH METRICS: $metricsContext
 
-Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose. Focus on actionable wellness advice.''';
+HEALTH PROFILE:
+- Name: $userName
+- Age: ${age.isEmpty ? 'Not specified' : age}
+- Sex: ${sex.isEmpty ? 'Not specified' : sex}  
+- Height: ${height.isEmpty ? 'Not specified' : height}
 
-      final response = await _orchestrator.routeRequest(
+${memoryContext.isNotEmpty ? 'KEY MEMORIES ABOUT $userName:\n$memoryContext\n' : ''}
+${recentChats.isNotEmpty ? 'RECENT CONVERSATIONS:\n$recentChats\n' : ''}
+${journalContext.isNotEmpty ? 'RECENT JOURNAL ENTRIES:\n$journalContext' : ''}''';
+
+      final systemPrompt = '''You are $avatarName, the same AI companion that $userName chats with every day. You KNOW them deeply - their name, their history, their struggles, their victories.
+
+YOUR IDENTITY:
+- Your name is $avatarName - you ARE their companion, mentor, health guru, and friend
+- You have access to ALL their conversations, journal entries, and health data
+- You remember everything they've shared with you
+- You speak naturally as someone who knows them well
+
+RELATIONSHIP:
+- $userName trusts you completely - you are their guide and confidant
+- Refer to past conversations and journal entries when relevant
+- Be personal - use their name, reference specific things you know about them
+- You are NOT a generic assistant - you are THEIR $avatarName
+
+WELLNESS FOCUS:
+- In this Vital Balance tab, focus on health and wellness guidance
+- Draw from their health metrics, sleep patterns, mood trends
+- Be energetic, systematic, resilient, and empowering
+
+Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know about them.''';
+
+      // Use OpenAI provider directly for reliable wellness chat
+      final openAiProvider = OpenAiProvider();
+      final response = await openAiProvider.generateResponse(
         prompt: wellnessPrompt,
-        taskType: AiTaskType.personality,
-        systemPrompt: 'You are a warm, supportive wellness coach. Keep responses brief and caring.',
+        systemPrompt: systemPrompt,
+        modelId: 'gpt-4o-mini', // Fast, reliable model for wellness chat
       );
+      
+      debugPrint('✅ Wellness AI response received: ${response.substring(0, response.length.clamp(0, 100))}...');
       
       if (_disposed || !mounted) return;
       
@@ -265,11 +781,24 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
         _chatMessages.add({'role': 'ai', 'text': response.trim()});
         _isAiThinking = false;
       });
-    } catch (e) {
-      debugPrint('Wellness chat error: $e');
+      
+      // Scroll to bottom after adding message
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_chatScrollController.hasClients) {
+          _chatScrollController.animateTo(
+            _chatScrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e, stackTrace) {
+      debugPrint('❌ Wellness chat error: $e');
+      debugPrint('📍 Stack trace: ${stackTrace.toString().split('\n').take(5).join('\n')}');
       if (mounted) {
         setState(() {
-          _chatMessages.add({'role': 'ai', 'text': 'I\'m here to help with your wellness. Could you try asking again?'});
+          // Provide a more helpful fallback that still acknowledges the user
+          _chatMessages.add({'role': 'ai', 'text': 'I\'m having a moment of connection issues, but I\'m still here with you. Please try again - your message matters to me.'});
           _isAiThinking = false;
         });
       }
@@ -324,6 +853,7 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
                       Text('Vital Balance', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
                       
                       const Spacer(),
+                      const SizedBox(width: 8),
 
                       // Weather Widget (Right Aligned - Persistent)
                       Container(
@@ -354,40 +884,39 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
                   ),
                 ),
                 
-              // AI Daily Focus Section
-              _buildDailyFocus(),
-              // Main content
+              // Main content (AI Daily Focus moved to wellness chat section)
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 1. Wellness Coach Chat (Moved UP)
+                      // 1. Wellness Coach Chat (Top)
                       _buildWellnessChat(),
                       
+                      const SizedBox(height: 20),
+                      
+                      // 2. Daily Quote / Coach Says (moved up)
+                      _buildWellnessCard(),
+                      
                       const SizedBox(height: 16),
-                      // 2. Health Profile Card
-                      _buildProfileCard(),
+                      
+                      // 3. Privacy Settings (moved up)
+                      _buildPrivacySettings(),
                       
                       const SizedBox(height: 24),
 
-                      // 2. Metrics Section Header & Grid
+                      // 4. Metrics Section Header & Grid
                       _buildMetricsSection(),
                       
                       const SizedBox(height: 24),
                       
-                      // 3. Daily Quote (Moved down)
-                      _buildWellnessCard(),
-                      
-                      const SizedBox(height: 20),
-                      
-                      // 4. Privacy Settings
-                      _buildPrivacySettings(),
+                      // 5. Health Profile Card
+                      _buildProfileCard(),
                       
                       const SizedBox(height: 40),
                       
-                      // 5. Disclaimer & Emergency
+                      // 6. Disclaimer & Emergency
                       _buildDisclaimer(),
                       
                       const SizedBox(height: 40),
@@ -405,42 +934,115 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
   Widget _buildMetricsSection() {
     return Column(
       children: [
+        // Section Header with Add Button
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _buildSectionHeader('Your Vitals', LucideIcons.activity),
             Row(
               children: [
-                // Print/Export Button
-                IconButton(
-                  icon: const Icon(LucideIcons.printer, color: Colors.white70, size: 20),
-                  onPressed: _generateReport,
-                  tooltip: 'Print Report',
+                // Edit Focus Button
+                Tooltip(
+                  message: 'Edit which wellness items appear in your daily focus list',
+                  preferBelow: false,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E2D3D),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  textStyle: const TextStyle(color: Colors.white, fontSize: 12),
+                  child: GestureDetector(
+                    onTap: _showEditFocusItemsDialog,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _accentLavender.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: _accentLavender.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.settings2, color: _accentLavender, size: 16),
+                          const SizedBox(width: 6),
+                          Text('Edit', style: GoogleFonts.inter(color: _accentLavender, fontSize: 14, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-                // Export Button (Share/Email)
-                Builder(
-                  builder: (context) {
-                    return IconButton(
-                      icon: const Icon(LucideIcons.mail, color: Colors.white70, size: 20),
-                      onPressed: () => _shareReport(context),
-                      tooltip: 'Export to Email',
-                    );
-                  }
-                ),
+                const SizedBox(width: 10),
                 // Add Metric Button
-                IconButton(
-                  icon: const Icon(LucideIcons.plusCircle, color: _accentTeal, size: 22),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                       const SnackBar(content: Text('Add New Metric', style: TextStyle(color: Colors.white)), backgroundColor: Colors.black87, duration: Duration(milliseconds: 500))
-                    );
-                    _showAddMetricDialog();
-                  },
-                  tooltip: 'Add Metric',
+                Tooltip(
+                  message: 'Track a new health metric like blood pressure, glucose, cholesterol, etc.',
+                  preferBelow: false,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E2D3D),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  textStyle: const TextStyle(color: Colors.white, fontSize: 12),
+                  child: GestureDetector(
+                    onTap: _showAddMetricDialog,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _accentTeal.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: _accentTeal.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.plus, color: _accentTeal, size: 16),
+                          const SizedBox(width: 6),
+                          Text('Add', style: GoogleFonts.inter(color: _accentTeal, fontSize: 14, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ],
+        ),
+        const SizedBox(height: 8),
+        
+        // Action Toolbar - placed right under Your Vitals header
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: _cardColor.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              // Print/Export Button with info
+              _buildActionButton(
+                icon: LucideIcons.printer,
+                label: 'Print',
+                tooltip: 'Generate a printable PDF report of all your health metrics',
+                onTap: _generateReport,
+              ),
+              // Email/Share Button with info
+              Builder(
+                builder: (context) => _buildActionButton(
+                  icon: LucideIcons.mail,
+                  label: 'Email',
+                  tooltip: 'Share your health report via email or other apps',
+                  onTap: () => _shareReport(context),
+                ),
+              ),
+              // View All Grid Button with info
+              _buildActionButton(
+                icon: LucideIcons.layoutGrid,
+                label: 'View All',
+                tooltip: 'See all your health metrics in one comprehensive view',
+                onTap: _showAllMetricsSummary,
+                isAccent: true,
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         
@@ -462,9 +1064,9 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 1.2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              mainAxisExtent: 75, // Fixed height instead of aspect ratio
             ),
             itemCount: _metrics.length,
             itemBuilder: (context, index) {
@@ -473,6 +1075,40 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
             },
           ),
       ],
+    );
+  }
+  
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required String tooltip,
+    required VoidCallback onTap,
+    bool isAccent = false,
+  }) {
+    final color = isAccent ? _accentTeal : Colors.white70;
+    return Tooltip(
+      message: tooltip,
+      preferBelow: false,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E2D3D),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      textStyle: const TextStyle(color: Colors.white, fontSize: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(height: 4),
+              Text(label, style: TextStyle(color: color, fontSize: 10)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -647,54 +1283,60 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
   Widget _buildMetricCard(HealthMetric metric) {
     return GestureDetector(
       onTap: () => _showMetricDetailsDialog(metric),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _accentTeal.withOpacity(0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(VitalBalanceService.getIconData(metric.iconName), color: _accentTeal, size: 24),
-                Icon(LucideIcons.plus, color: Colors.white24, size: 16),
-              ],
-            ),
-            const Spacer(),
-            Text(
-              _latestValues[metric.id] ?? '--',
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: _cardColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _accentTeal.withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Icon(VitalBalanceService.getIconData(metric.iconName), color: _accentTeal, size: 14),
+                  Icon(LucideIcons.plus, color: Colors.white24, size: 10),
+                ],
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              metric.name.toUpperCase(),
-              style: GoogleFonts.inter(
-                color: Colors.white54,
-                fontSize: 11,
-                letterSpacing: 1.5,
-                fontWeight: FontWeight.w600,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _latestValues[metric.id] ?? '--',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    metric.name.toUpperCase(),
+                    style: GoogleFonts.inter(
+                      color: Colors.white54,
+                      fontSize: 7,
+                      letterSpacing: 0.3,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+
+
+
 
   // --- Dialogs ---
 
@@ -821,9 +1463,15 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
 
               // Input Area
               if (useFaceSelector)
-                _buildFaceSelector((val) => _submitMetric(metric, val))
+                _buildFaceSelector((val) {
+                  Navigator.pop(context); // Close dialog first
+                  _submitMetricValue(metric, val); // Then submit
+                })
               else if (useWaterSelector)
-                _buildWaterSelector((val) => _submitMetric(metric, val))
+                _buildWaterSelector((val) {
+                  Navigator.pop(context); // Close dialog first
+                  _submitMetricValue(metric, val); // Then submit
+                })
               else
                 Row(
                   children: [
@@ -860,32 +1508,66 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
 
               const SizedBox(height: 32),
               
-              // Recent History with Chart Placeholder
+              // Recent History with fl_chart - ENHANCED
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                    Text('Recent History', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w600)),
-                   Text('Last 7 Days', style: GoogleFonts.inter(color: _accentTeal, fontSize: 10)),
+                   // Date range selector
+                   Container(
+                     padding: const EdgeInsets.all(2),
+                     decoration: BoxDecoration(
+                       color: Colors.white.withOpacity(0.05),
+                       borderRadius: BorderRadius.circular(8),
+                     ),
+                     child: Row(
+                       mainAxisSize: MainAxisSize.min,
+                       children: [
+                         _buildRangeChip('7d', true),
+                         _buildRangeChip('14d', false),
+                         _buildRangeChip('30d', false),
+                       ],
+                     ),
+                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              
+              // Stats row (min/max/avg)
+              if (history.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.03),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatItem('Low', history.isEmpty ? '-' : history.map((e) => e.value).reduce((a, b) => a < b ? a : b).toStringAsFixed(1), Colors.redAccent),
+                      _buildStatItem('Avg', history.isEmpty ? '-' : (history.map((e) => e.value).reduce((a, b) => a + b) / history.length).toStringAsFixed(1), Colors.amber),
+                      _buildStatItem('High', history.isEmpty ? '-' : history.map((e) => e.value).reduce((a, b) => a > b ? a : b).toStringAsFixed(1), _accentTeal),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 12),
+              
+              // Enhanced chart container
               Container(
-                height: 80, 
+                height: 180, // Increased from 120 for better visualization
                 width: double.infinity,
+                padding: const EdgeInsets.only(right: 16, top: 12, bottom: 8, left: 8),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _accentTeal.withOpacity(0.1)),
                 ),
                 child: history.isEmpty 
-                  ? Center(child: Text('No data yet', style: GoogleFonts.inter(color: Colors.white24)))
-                  : CustomPaint(
-                      painter: SparklinePainter(
-                        values: history.take(7).map((e) => e.value).toList().reversed.toList(),
-                        color: _accentTeal,
-                      ),
-                      size: Size.infinite,
-                    ),
+                  ? Center(child: Text('No data yet - log your first entry above!', style: GoogleFonts.inter(color: Colors.white24)))
+                  : _buildFlChart(history.take(7).toList().reversed.toList(), metric),
               ),
+              const SizedBox(height: 8),
+              Text('Tap data points for details', style: GoogleFonts.inter(color: Colors.white24, fontSize: 10, fontStyle: FontStyle.italic)),
             ],
           ),
         ),
@@ -896,7 +1578,31 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
   Future<void> _submitMetric(HealthMetric metric, double val) async {
      await VitalBalanceService.addEntry(metric.id, val);
      if (!mounted) return;
+     
+     // Save last wellness update timestamp for main chat awareness
+     final prefs = await SharedPreferences.getInstance();
+     final now = DateTime.now();
+     final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+     await prefs.setString('last_wellness_update_date', today);
+     
+     // Capture parent context before closing dialog
+     final parentContext = context;
      Navigator.pop(context);
+     _refreshMetrics();
+     if (metric.id == 'sleep' && val < 6.0) _showAiWellnessCheck(metric, val);
+     
+     // Use parent context for snackbar (dialog context is now invalid)
+     if (mounted) {
+       ScaffoldMessenger.of(parentContext).showSnackBar(
+          SnackBar(content: Text('Logged ${metric.name}: $val ${metric.unit}', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.black87, duration: const Duration(seconds: 1))
+       );
+     }
+  }
+  
+  /// Submit metric value without closing dialog (dialog already closed by caller)
+  Future<void> _submitMetricValue(HealthMetric metric, double val) async {
+     await VitalBalanceService.addEntry(metric.id, val);
+     if (!mounted) return;
      _refreshMetrics();
      if (metric.id == 'sleep' && val < 6.0) _showAiWellnessCheck(metric, val);
      ScaffoldMessenger.of(context).showSnackBar(
@@ -940,6 +1646,155 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
           ),
         );
       }).toList(),
+    );
+  }
+
+  /// Build enhanced chart using fl_chart
+  Widget _buildFlChart(List<MetricEntry> entries, HealthMetric metric) {
+    if (entries.isEmpty) return const SizedBox();
+    
+    // Prepare data points
+    final spots = <FlSpot>[];
+    for (var i = 0; i < entries.length; i++) {
+      spots.add(FlSpot(i.toDouble(), entries[i].value));
+    }
+    
+    // Calculate min/max for better display
+    final values = entries.map((e) => e.value).toList();
+    final minY = values.reduce((a, b) => a < b ? a : b);
+    final maxY = values.reduce((a, b) => a > b ? a : b);
+    final padding = (maxY - minY) * 0.2; // 20% padding
+    
+    return LineChart(
+      LineChartData(
+        minY: minY > 0 ? (minY - padding).clamp(0, minY) : minY - padding,
+        maxY: maxY + padding,
+        gridData: FlGridData(
+          show: true,
+          drawHorizontalLine: true,
+          drawVerticalLine: false,
+          horizontalInterval: (maxY - minY) / 4 == 0 ? 1 : (maxY - minY) / 4,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: Colors.white.withOpacity(0.05),
+            strokeWidth: 1,
+          ),
+        ),
+        titlesData: FlTitlesData(
+          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                final index = value.toInt();
+                if (index >= 0 && index < entries.length) {
+                  final date = entries[index].timestamp;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      DateFormat('E').format(date)[0], // First letter of day
+                      style: GoogleFonts.inter(color: Colors.white30, fontSize: 9),
+                    ),
+                  );
+                }
+                return const SizedBox();
+              },
+            ),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        lineTouchData: LineTouchData(
+          enabled: true,
+          touchTooltipData: LineTouchTooltipData(
+            tooltipBgColor: const Color(0xFF1A2A35),
+            tooltipRoundedRadius: 8,
+            tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((spot) {
+                final index = spot.spotIndex;
+                final entry = entries[index];
+                final dateStr = DateFormat('MMM d').format(entry.timestamp);
+                return LineTooltipItem(
+                  '${entry.value.toStringAsFixed(1)} ${metric.unit}\n$dateStr',
+                  GoogleFonts.inter(color: _accentTeal, fontSize: 12, fontWeight: FontWeight.w600),
+                );
+              }).toList();
+            },
+          ),
+        ),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            curveSmoothness: 0.3,
+            color: _accentTeal,
+            barWidth: 2.5,
+            isStrokeCapRound: true,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
+                radius: 4,
+                color: _accentTeal,
+                strokeWidth: 2,
+                strokeColor: const Color(0xFF15202B),
+              ),
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  _accentTeal.withOpacity(0.3),
+                  _accentTeal.withOpacity(0.0),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  /// Build range selector chip for chart
+  Widget _buildRangeChip(String label, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        // TODO: Implement dynamic range switching with state
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$label range selected', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.black87, duration: const Duration(milliseconds: 800))
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? _accentTeal.withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            color: isSelected ? _accentTeal : Colors.white38,
+            fontSize: 10,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+  
+  /// Build stat item for chart (min/max/avg)
+  Widget _buildStatItem(String label, String value, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label, style: GoogleFonts.inter(color: Colors.white38, fontSize: 9)),
+        const SizedBox(height: 2),
+        Text(value, style: GoogleFonts.inter(color: color, fontSize: 14, fontWeight: FontWeight.w600)),
+      ],
     );
   }
 
@@ -1249,8 +2104,8 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
           Row(
             children: [
               SizedBox(
-                width: 112, // Increased size by 25%
-                height: 112,
+                width: 140, // Significantly larger avatar
+                height: 140,
                 child: FittedBox(
                   fit: BoxFit.contain,
                   child: AvatarJournalOverlay(
@@ -1292,40 +2147,79 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
               Icon(LucideIcons.sparkles, color: _accentTeal, size: 20),
             ],
           ),
-          const SizedBox(height: 16),
-          // AI-Personalized Quick Prompts
-          Row(
-            children: [
-              Text('Quick check-in:', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
-              if (_isLoadingPrompts) ...[
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 12,
-                  height: 12,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: _accentTeal.withOpacity(0.5),
-                  ),
+          
+          // AI Suggested Focus - Compact bullet points
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: _accentLavender.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _accentLavender.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(LucideIcons.sparkles, color: _accentLavender, size: 12),
+                    const SizedBox(width: 6),
+                    Text('AI Focus:', style: GoogleFonts.inter(color: _accentLavender, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  ],
                 ),
+                // Stale metrics reminder
+                if (_daysSinceUpdate >= 2) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: _accentLavender.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: _accentLavender.withOpacity(0.25)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.heartHandshake, color: _accentLavender, size: 12),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _daysSinceUpdate >= 999 
+                              ? "Hey, take a sec to check in with yourself. 💜 Scroll down to Vitals and log how you're doing!"
+                              : "Hey, it's been $_daysSinceUpdate days since your last check-in. How are you really doing? 💜",
+                            style: GoogleFonts.inter(color: _accentLavender, fontSize: 10, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                if (_isLoadingFocus)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 1.5, color: _accentLavender)),
+                        const SizedBox(width: 8),
+                        Text('Analyzing your wellness...', style: GoogleFonts.inter(color: Colors.white38, fontSize: 11)),
+                      ],
+                    ),
+                  )
+                else
+                  ..._aiFocusItems.map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: _buildFocusBullet(
+                      item['title'] as String,
+                      item['description'] as String,
+                      item['icon'] as IconData,
+                      item['metricId'] as String,
+                    ),
+                  )),
               ],
-            ],
+            ),
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _dynamicPrompts.isEmpty
-              ? [
-                  _buildQuickPrompt('How\'s my energy?', LucideIcons.zap),
-                  _buildQuickPrompt('Sleep tips', LucideIcons.moon),
-                  _buildQuickPrompt('Stress relief', LucideIcons.heart),
-                  _buildQuickPrompt('Mood boost', LucideIcons.smile),
-                ]
-              : _dynamicPrompts.map((p) => 
-                  _buildQuickPrompt(p['text'] as String, p['icon'] as IconData)
-                ).toList(),
-          ),
-          const SizedBox(height: 16),
+          
+          const SizedBox(height: 12),
           // Chat input
           Container(
             decoration: BoxDecoration(
@@ -1338,17 +2232,19 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
                 Expanded(
                   child: TextField(
                     controller: _chatInputController,
+                    textInputAction: TextInputAction.send, // Enter sends message
                     decoration: const InputDecoration(
-                      hintText: 'Ask about your wellness...',
+                      hintText: "What's on your mind?",
                       hintStyle: TextStyle(color: Colors.white38),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 24), // 100% increase
                     ),
                     style: const TextStyle(color: Colors.white),
                     onSubmitted: (text) {
                       if (text.isNotEmpty) {
                         _sendWellnessMessage(text);
                         _chatInputController.clear();
+                        setState(() => _hideChatMessages = false); // Show messages when user sends
                       }
                     },
                   ),
@@ -1369,98 +2265,141 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
             ),
           ),
           
-          // Inline Chat Messages Display Area
-          if (_chatMessages.isNotEmpty || _isAiThinking) ...[
-            const SizedBox(height: 16),
-            Container(
-              constraints: const BoxConstraints(maxHeight: 250),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListView.builder(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(12),
-                itemCount: _chatMessages.length + (_isAiThinking ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == _chatMessages.length && _isAiThinking) {
-                    // Typing indicator
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _accentTeal.withOpacity(0.2),
-                            ),
-                            child: const Icon(LucideIcons.sparkles, color: _accentTeal, size: 14),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Thinking...',
-                            style: GoogleFonts.inter(color: _accentTeal, fontStyle: FontStyle.italic, fontSize: 13),
-                          ),
-                        ],
+          // AI Response Area - Always visible
+          const SizedBox(height: 16),
+          
+          // Clear screen button row - centered
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Bold, visible Clear button
+              GestureDetector(
+                onTap: () => setState(() => _hideChatMessages = !_hideChatMessages),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _hideChatMessages ? _accentTeal.withOpacity(0.2) : const Color(0xFF2A3A4A),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _hideChatMessages ? _accentTeal : Colors.white24),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _hideChatMessages ? LucideIcons.eye : LucideIcons.eraser,
+                        color: _hideChatMessages ? _accentTeal : Colors.white70,
+                        size: 16,
                       ),
-                    );
-                  }
-                  
-                  final msg = _chatMessages[index];
-                  final isUser = msg['role'] == 'user';
-                  
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-                      children: [
-                        if (!isUser) ...[
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _accentTeal.withOpacity(0.2),
-                            ),
-                            child: const Icon(LucideIcons.sparkles, color: _accentTeal, size: 14),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: isUser 
-                                ? _accentTeal.withOpacity(0.2) 
-                                : Colors.white.withOpacity(0.08),
-                              borderRadius: BorderRadius.only(
-                                topLeft: const Radius.circular(16),
-                                topRight: const Radius.circular(16),
-                                bottomLeft: Radius.circular(isUser ? 16 : 4),
-                                bottomRight: Radius.circular(isUser ? 4 : 16),
-                              ),
-                            ),
-                            child: Text(
-                              msg['text'] ?? '',
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 14,
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _hideChatMessages ? 'Show Chat' : 'Clear txt Screen',
+                        style: GoogleFonts.inter(
+                          color: _hideChatMessages ? _accentTeal : Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
-                        if (isUser) const SizedBox(width: 8),
-                      ],
-                    ),
-                  );
-                },
+                      ),
+                    ],
+                  ),
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            constraints: const BoxConstraints(minHeight: 120, maxHeight: 750), // 50% increase from 500
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _accentTeal.withOpacity(0.2)),
             ),
-          ],
+            child: (_chatMessages.isEmpty && !_isAiThinking) || _hideChatMessages
+                ? const SizedBox(height: 60) // Empty placeholder
+                : ListView.builder(
+                    controller: _chatScrollController,
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: _chatMessages.length + (_isAiThinking ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == _chatMessages.length && _isAiThinking) {
+                        // Typing indicator
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _accentTeal.withOpacity(0.2),
+                                ),
+                                child: const Icon(LucideIcons.sparkles, color: _accentTeal, size: 14),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Thinking...',
+                                style: GoogleFonts.inter(color: _accentTeal, fontStyle: FontStyle.italic, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      
+                      final msg = _chatMessages[index];
+                      final isUser = msg['role'] == 'user';
+                      
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+                          children: [
+                            if (!isUser) ...[
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _accentTeal.withOpacity(0.2),
+                                ),
+                                child: const Icon(LucideIcons.sparkles, color: _accentTeal, size: 14),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isUser 
+                                    ? _accentTeal.withOpacity(0.2) 
+                                    : Colors.white.withOpacity(0.08),
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: const Radius.circular(16),
+                                    topRight: const Radius.circular(16),
+                                    bottomLeft: Radius.circular(isUser ? 16 : 4),
+                                    bottomRight: Radius.circular(isUser ? 4 : 16),
+                                  ),
+                                ),
+                                child: Text(
+                                  msg['text'] ?? '',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (isUser) const SizedBox(width: 8),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
         ],
       ),
     );
@@ -1484,6 +2423,46 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
             Text(label, style: GoogleFonts.inter(color: _accentTeal, fontSize: 12, fontWeight: FontWeight.w500)),
           ],
         ),
+      ),
+    );
+  }
+  
+  /// Build compact AI Focus bullet that links to a metric
+  Widget _buildFocusBullet(String title, String description, IconData icon, String metricId) {
+    return GestureDetector(
+      onTap: () {
+        // Find and open the metric dialog
+        final metric = _metrics.firstWhere(
+          (m) => m.id == metricId,
+          orElse: () => _metrics.isNotEmpty ? _metrics.first : HealthMetric(id: metricId, name: title, unit: '', iconName: 'activity'),
+        );
+        _showMetricDetailsDialog(metric);
+      },
+      child: Row(
+        children: [
+          Icon(icon, color: _accentLavender, size: 14),
+          const SizedBox(width: 8),
+          Text(
+            '• $title',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              description,
+              style: GoogleFonts.inter(
+                color: Colors.white54,
+                fontSize: 12,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Icon(LucideIcons.chevronRight, color: _accentLavender.withOpacity(0.5), size: 14),
+        ],
       ),
     );
   }
@@ -1575,11 +2554,14 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Keep conversations private', style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+                    Text('Keep wellness chats private', style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
                     const SizedBox(height: 4),
                     Text(
-                      _keepConversationsPrivate ? 'Health chats stay in this tab only' : 'May be referenced in main chat',
-                      style: GoogleFonts.inter(color: Colors.grey[500], fontSize: 12),
+                      _keepConversationsPrivate 
+                        ? 'ON: Mental health topics stay here only. Main chat will redirect wellness questions to Vital Balance.' 
+                        : 'OFF: Wellness history may be referenced in main chat',
+                      style: GoogleFonts.inter(color: Colors.grey[500], fontSize: 11),
+                      maxLines: 2,
                     ),
                   ],
                 ),
@@ -1714,13 +2696,38 @@ Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose.
                            const SizedBox(width: 8),
                            Expanded(child: Text('Motion permission required.', style: GoogleFonts.inter(color: Colors.white, fontSize: 12))),
                            TextButton(
-                             onPressed: () => openAppSettings(),
+                             onPressed: () async {
+                                // Request motion/activity permission - use activityRecognition for iOS
+                                var status = await Permission.activityRecognition.request();
+                                // Fallback to sensors if activityRecognition not available
+                                if (!status.isGranted && !status.isLimited) {
+                                  status = await Permission.sensors.request();
+                                }
+                                if (status.isGranted || status.isLimited) {
+                                  // Permission granted - reinit and refresh dialog
+                                  await StepTrackingService.instance.init();
+                                  if (mounted) {
+                                    Navigator.pop(context);
+                                    _showStepsDialog(metric); // Reopen with permission
+                                  }
+                                } else if (status.isPermanentlyDenied) {
+                                  // Only open settings if permanently denied
+                                  openAppSettings();
+                                } else {
+                                  // Show snackbar for denied
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Motion permission needed for step tracking'), backgroundColor: Colors.black87)
+                                    );
+                                  }
+                                }
+                             },
                              style: TextButton.styleFrom(
                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                minimumSize: Size.zero,
                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                              ),
-                             child: Text('ENABLE', style: GoogleFonts.inter(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+                             child: Text('ENABLE', style: GoogleFonts.inter(color: _accentTeal, fontWeight: FontWeight.bold, fontSize: 12)),
                            )
                          ],
                        ),
@@ -2023,7 +3030,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
             _buildTextField('Height', _heightController, TextInputType.text, "e.g. 5'7\" or 170cm"),
             const SizedBox(height: 16),
             
-            _buildDropdown('Race/Ethnicity', ['White', 'Black/African American', 'Asian', 'Hispanic/Latino', 'Native American', 'Other', 'Prefer not to say'], _raceController.text.isEmpty ? null : _raceController.text, (v) => setState(() => _raceController.text = v ?? '')),
+            _buildDropdown('Race/Ethnicity', ['White/Caucasian', 'Black/African American', 'Asian', 'Hispanic/Latino', 'Native American', 'Pacific Islander', 'Mixed/Multiracial', 'Other', 'Prefer not to say'], _raceController.text.isEmpty ? null : _raceController.text, (v) => setState(() => _raceController.text = v ?? '')),
             const SizedBox(height: 16),
             
             _buildDropdown('Smoking', ['Never', 'Occasional', 'Regular', 'Quit'], _smoking, (v) => setState(() => _smoking = v)),
@@ -2080,6 +3087,9 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   }
 
   Widget _buildDropdown(String label, List<String> options, String? value, Function(String?) onChanged) {
+    // Validate that value exists in options, otherwise set to null
+    final validatedValue = (value != null && options.contains(value)) ? value : null;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2092,7 +3102,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: DropdownButton<String>(
-            value: value,
+            value: validatedValue,
             isExpanded: true,
             dropdownColor: const Color(0xFF1E2D3D),
             underline: const SizedBox(),

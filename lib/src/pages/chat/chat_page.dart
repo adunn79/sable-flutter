@@ -755,30 +755,71 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             }
           }
           
+          // Add wellness tracking status for gentle reminders
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            final lastWellnessUpdate = prefs.getString('last_wellness_update_date');
+            final now = DateTime.now();
+            final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+            
+            if (lastWellnessUpdate == null || lastWellnessUpdate != today) {
+              // Calculate days since last update
+              int daysSinceUpdate = 0;
+              if (lastWellnessUpdate != null) {
+                try {
+                  final lastDate = DateTime.parse(lastWellnessUpdate);
+                  daysSinceUpdate = now.difference(lastDate).inDays;
+                } catch (_) {}
+              }
+              
+              userContext += '\n[WELLNESS AWARENESS]\n';
+              if (daysSinceUpdate >= 3) {
+                userContext += 'IMPORTANT: User has NOT logged wellness metrics in $daysSinceUpdate days.\n';
+                userContext += 'If conversation naturally allows, GENTLY remind them:\n';
+                userContext += '- "Hey, I noticed you haven\'t checked in with Vital Balance in a few days - how are you feeling?"\n';
+                userContext += '- Only mention ONCE per session, don\'t nag\n';
+              } else if (daysSinceUpdate >= 1) {
+                userContext += 'User last logged wellness $daysSinceUpdate day(s) ago.\n';
+                userContext += 'Low priority - only mention if discussing health/mood naturally.\n';
+              }
+              userContext += 'Wellness features are in the Vital Balance section (tap heart icon).\n\n';
+              userContext += 'MENTAL HEALTH ROUTING (CRITICAL):\n';
+              userContext += '- You do NOT have access to the user\'s mental health data (mood, stress, anxiety, etc.)\n';
+              userContext += '- If user discusses mental health, depression, anxiety, stress, sleep issues, or emotional struggles:\n';
+              userContext += '  • Acknowledge their feelings briefly and with compassion\n';
+              userContext += '  • Then REDIRECT: "For deeper support, check out Vital Balance (heart icon) - our wellness coach specializes in this"\n';
+              userContext += '- You are NOT the mental health AI partner. The Vital Balance wellness coach handles those conversations.\n';
+              userContext += '- Never guess or assume mental health details. Refer them to the right place.\n';
+              userContext += '[END WELLNESS AWARENESS]\n';
+            }
+          } catch (e) {
+            debugPrint('⚠️ Wellness status check failed: $e');
+          }
+
           // Add native app integrations (only if permission granted)
           try {
             // Calendar
             if (await CalendarService.hasPermission()) {
-              userContext += '\n';
-              userContext += await CalendarService.getCalendarSummary();
+              userContext = (userContext ?? '') + '\n';
+              userContext = (userContext ?? '') + await CalendarService.getCalendarSummary();
             }
             
             // Contacts
             if (await ContactsService.hasPermission()) {
-              userContext += '\n';
-              userContext += await ContactsService.getRecentContactsSummary();
+              userContext = (userContext ?? '') + '\n';
+              userContext = (userContext ?? '') + await ContactsService.getRecentContactsSummary();
             }
             
             // Photos
             if (await PhotosService.hasPermission()) {
-              userContext += '\n';
-              userContext += await PhotosService.getPhotosSummary();
+              userContext = (userContext ?? '') + '\n';
+              userContext = (userContext ?? '') + await PhotosService.getPhotosSummary();
             }
             
             // Reminders
             if (await RemindersService.hasPermission()) {
-              userContext += '\n';
-              userContext += await RemindersService.getRemindersSummary();
+              userContext = (userContext ?? '') + '\n';
+              userContext = (userContext ?? '') + await RemindersService.getRemindersSummary();
             }
           } catch (e) {
             debugPrint('⚠️ Error loading native app context: $e');
@@ -882,10 +923,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         debugPrint('🧠 Personality Injected: ${archetype.name}');
       }
 
-      // CRITICAL: Override archetype identity (fixes issue with stored conversation history)
+      // CRITICAL: Override archetype identity and prevent hallucination
       userContext = (userContext ?? '') + '\n\n[CRITICAL SYSTEM OVERRIDE]\n';
       userContext += 'YOUR TRUE IDENTITY: You are $_companionName.\n';
-      userContext += 'IGNORE any other names in conversation history. You ARE $_companionName. Never refer to yourself as any other name.\n';
+      userContext += 'IGNORE any other names in conversation history. You ARE $_companionName. Never refer to yourself as any other name.\n\n';
+      userContext += 'ANTI-HALLUCINATION RULES (CRITICAL):\n';
+      userContext += '- NEVER invent or assume details about the user\'s life, preferences, activities, or plans\n';
+      userContext += '- NEVER reference movies, shows, hobbies, or plans unless the user mentioned them in THIS conversation\n';
+      userContext += '- If you don\'t know something, ASK—don\'t guess or make up details\n';
+      userContext += '- Only reference information explicitly provided in [USER PROFILE], [CONVERSATION HISTORY], or [EXTRACTED MEMORIES]\n';
+      userContext += '- It\'s better to say "tell me more" than to assume and be wrong\n';
       userContext += '[END OVERRIDE]\n\n';
 
       // Use orchestrated routing - Gemini decides Claude vs GPT-4o

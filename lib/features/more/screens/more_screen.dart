@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/widgets/restart_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// More screen - provides access to Settings and other options
 class MoreScreen extends StatelessWidget {
@@ -63,6 +65,7 @@ class MoreScreen extends StatelessWidget {
             onTap: () {},
           ),
           const SizedBox(height: 12),
+          const SizedBox(height: 12),
           _buildMenuItem(
             context,
             icon: LucideIcons.info,
@@ -70,10 +73,48 @@ class MoreScreen extends StatelessWidget {
             subtitle: 'App version and credits',
             onTap: () {},
           ),
+          
+          const SizedBox(height: 32),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              'DEBUG OPTIONS',
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white38,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          _buildMenuItem(
+            context,
+            icon: LucideIcons.refreshCw,
+            title: 'Restart App',
+            subtitle: 'Reload the application',
+            onTap: () => RestartWidget.restartApp(context),
+          ),
+          const SizedBox(height: 12),
+          _buildMenuItem(
+            context,
+            icon: LucideIcons.rotateCcw,
+            title: 'Reset to Onboarding',
+            subtitle: 'Go to setup (keeps memory)',
+            onTap: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('onboarding_complete', false);
+              if (context.mounted) {
+                // Navigate to onboarding
+                context.go('/onboarding');
+              }
+            },
+          ),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
+
 
   Widget _buildMenuItem(
     BuildContext context, {

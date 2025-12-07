@@ -140,6 +140,16 @@ class SettingsControlService {
       keywords: ['clock', 'face', 'digital'],
     ),
 
+    // APP LAUNCH
+    const SettingDefinition(
+      key: 'start_on_last_tab',
+      title: 'Resume Last Session',
+      subtitle: 'Open app to the last visited screen',
+      section: 'APP EXPERIENCE',
+      type: SettingType.toggle,
+      keywords: ['start', 'launch', 'open', 'resume', 'tab'],
+    ),
+
     // VOICE
     const SettingDefinition(
       key: 'auto_speak',

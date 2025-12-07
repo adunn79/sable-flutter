@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:sable/core/services/settings_control_service.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
 
 import 'package:google_fonts/google_fonts.dart';
@@ -140,6 +142,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final TextEditingController controller = TextEditingController(); // Location controller
   String _manualLocation = '';
 
+  bool _startOnLastTab = false;
+  
   // Local Vibe Settings
   LocalVibeSettings _localVibeSettings = const LocalVibeSettings();
   bool _showAllVibeCategories = false;
@@ -193,6 +197,77 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   // News Settings (Custom)
   List<String> _customNewsTopics = [];
+  bool _showNewsOptions = false;
+  TimeOfDay _briefingTime = const TimeOfDay(hour: 8, minute: 0);
+
+
+  Future<void> _selectBriefingTime() async {
+    // Premium Cupertino-style picker
+    showCupertinoModalPopup(
+      context: context,
+      builder: (modalContext) => Container(
+        height: 250,
+        color: AurealColors.carbon,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54)),
+                  onPressed: () => Navigator.of(modalContext).pop(),
+                ),
+                CupertinoButton(
+                  child: Text('Done', style: GoogleFonts.inter(color: AurealColors.hyperGold, fontWeight: FontWeight.bold)),
+                  onPressed: () => Navigator.of(modalContext).pop(),
+                ),
+              ],
+            ),
+            Expanded(
+              child: CupertinoTheme(
+                data: CupertinoThemeData(
+                  textTheme: CupertinoTextThemeData(
+                    dateTimePickerTextStyle: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.time,
+                  initialDateTime: DateTime(2022, 1, 1, _briefingTime.hour, _briefingTime.minute),
+                  onDateTimeChanged: (DateTime newTime) {
+                    if (mounted) {
+                      setState(() {
+                        _briefingTime = TimeOfDay(hour: newTime.hour, minute: newTime.minute);
+                      });
+                    }
+                  },
+                  backgroundColor: AurealColors.carbon,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+     // Note: Saving happens in real-time in the picker or could be moved to 'Done'
+     // Just ensuring the state is updated is enough for the UI to reflect it.
+     // Actual persistence can happen here if needed:
+     final stateService = await OnboardingStateService.create();
+     // stateService.setBriefingTime(_briefingTime.format(context));
+  }
+
+  void _addCustomTopic() {
+    final topic = _topicController.text.trim();
+    if (topic.isNotEmpty && _customNewsTopics.length < 5 && !_customNewsTopics.contains(topic)) {
+      setState(() {
+        _customNewsTopics.add(topic);
+        _topicController.clear();
+      });
+      // Save logic would go here
+    }
+  }
   
   // Voice Settings
   final VoiceService _voiceService = VoiceService();
@@ -527,88 +602,275 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   if (_newsEnabled) ...[
                      SettingsTile(
                        icon: LucideIcons.clock,
-                       title: 'Briefing Time',
-                       value: '08:00 AM', 
-                       onTap: () {},
+                       title: 'Import Time',
+                       subtitle: 'Set when news is imported for AI availability',
+                       value: _briefingTime.format(context), 
+                       onTap: _selectBriefingTime,
+                     ),
+                     SettingsTile(
+                        icon: LucideIcons.sliders,
+                        title: 'Customize Content',
+                        subtitle: '${_selectedCategories.length + _customNewsTopics.length} topics selected',
+                        trailing: Icon(
+                          _showNewsOptions ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                          color: Colors.white54,
+                          size: 20,
+                        ),
+                        onTap: () => setState(() => _showNewsOptions = !_showNewsOptions),
+                     ),
+                     if (_showNewsOptions)
+                     Padding(
+                        padding: const EdgeInsets.only(left: 16, right: 16, top: 0, bottom: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 12),
+                            Text(
+                              'Scope & Reach',
+                              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              children: [
+                                _buildScopeChip('World', _selectedCategories.contains('World')),
+                                _buildScopeChip('National', _selectedCategories.contains('National')),
+                                _buildScopeChip('Regional', _selectedCategories.contains('Local')), 
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Content Focus',
+                              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _allNewsCategories
+                                .where((c) => !['World', 'National', 'Local'].contains(c))
+                                .map((category) {
+                                final isSelected = _selectedCategories.contains(category);
+                                return GestureDetector(
+                                  onTap: () => _toggleCategory(category),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? AurealColors.hyperGold.withOpacity(0.2) : AurealColors.obsidian,
+                                      border: Border.all(
+                                        color: isSelected ? AurealColors.hyperGold : Colors.white24,
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Text(
+                                      category,
+                                      style: GoogleFonts.inter(
+                                        color: isSelected ? AurealColors.hyperGold : Colors.white70,
+                                        fontSize: 12,
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              'Custom Topics (${_customNewsTopics.length}/5)',
+                              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 8),
+                            if (_customNewsTopics.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _customNewsTopics.map((topic) => Chip(
+                                    label: Text(topic, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
+                                    backgroundColor: AurealColors.hyperGold.withOpacity(0.2),
+                                    deleteIcon: const Icon(LucideIcons.x, size: 14, color: AurealColors.hyperGold),
+                                    onDeleted: () {
+                                      setState(() {
+                                        _customNewsTopics.remove(topic);
+                                      });
+                                    },
+                                    side: const BorderSide(color: AurealColors.hyperGold),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  )).toList(),
+                                ),
+                              ),
+                            if (_customNewsTopics.length < 5)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: AurealColors.obsidian,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.white24),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      alignment: Alignment.centerLeft,
+                                      child: TextField(
+                                        controller: _topicController,
+                                        style: GoogleFonts.inter(color: Colors.white),
+                                        decoration: InputDecoration(
+                                          hintText: 'Add topic (e.g. SpaceX)',
+                                          hintStyle: GoogleFonts.inter(color: Colors.white30),
+                                          border: InputBorder.none,
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.zero,
+                                        ),
+                                        onSubmitted: (_) => _addCustomTopic(),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(LucideIcons.plusCircle, color: AurealColors.hyperGold),
+                                    onPressed: _addCustomTopic,
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: AurealColors.obsidian,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      side: const BorderSide(color: Colors.white24),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                             const SizedBox(height: 12),
+                              Center(
+                                child: TextButton(
+                                  onPressed: () => setState(() => _showNewsOptions = false),
+                                  child: Text('CLOSE OPTIONS', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+                                ),
+                              ),
+                          ],
+                        ),
                      ),
                   ],
                   SettingsTile(
-                    icon: LucideIcons.mapPin, 
-                    title: 'Local Vibe',
-                    subtitle: _manualLocation.isNotEmpty ? _manualLocation : 'Current Location',
-                    onTap: () {
-                      _showManualLocationDialog();
-                    },
-                  ),
-               ],
-             ),
-             
-             // 4. App Experience
-             SettingsSection(
-               title: 'App Experience',
-               children: [
-                  SettingsTile(
-                    icon: LucideIcons.lock,
-                    title: 'Persistent Memory',
-                    subtitle: 'Allow Sable to remember context',
-                    trailing: Switch(
-                      value: _persistentMemoryEnabled,
-                      onChanged: _togglePersistentMemory,
-                      activeColor: AurealColors.hyperGold,
-                    ),
-                  ),
-                  SettingsTile(
-                    icon: LucideIcons.vibrate,
-                    title: 'Haptics',
-                    trailing: Switch(
-                      value: _hapticsEnabled,
-                      onChanged: (v) => setState(() => _hapticsEnabled = v), 
-                      activeColor: AurealColors.hyperGold,
-                    ),
-                  ),
-                  SettingsTile(
-                    icon: LucideIcons.volume2, 
-                    title: 'Sounds',
-                    trailing: Switch(
-                      value: _soundsEnabled,
-                      onChanged: (v) => setState(() => _soundsEnabled = v), 
-                      activeColor: AurealColors.hyperGold,
-                    ),
-                  ),
-               ],
-             ),
-
-             // 5. Account
-             SettingsSection(
-                title: 'Account',
-                children: [
-                  if (!_isPremium)
-                  SettingsTile(
-                    icon: LucideIcons.crown,
-                    title: 'Upgrade to Sable+',
-                    subtitle: 'Unlock unlimited voices & features',
-                    iconColor: Colors.purpleAccent,
-                    onTap: () {
-                       Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
-                    },
-                  ),
-                  SettingsTile(
-                    icon: LucideIcons.shieldAlert, 
-                    title: 'Emergency SOS',
-                    iconColor: Colors.red,
-                    onTap: () {
-                       Navigator.push(context, MaterialPageRoute(builder: (_) => const EmergencyScreen())); 
-                    },
-                  ),
-                  SettingsTile(
-                     icon: LucideIcons.trash2,
-                     title: 'Delete Account',
-                     isDestructive: true,
+                     icon: LucideIcons.mapPin, 
+                     title: 'Local Vibe',
+                     subtitle: _localVibeSettings.useCurrentLocation 
+                         ? 'Current Location (${_localVibeSettings.radiusMiles.toInt()}mi)' 
+                         : (_localVibeSettings.targetCities.isNotEmpty 
+                             ? _localVibeSettings.targetCities.join(', ') 
+                             : 'Not Configured'),
                      onTap: () {
-                        _showDeleteAccountConfirmation();
+                        if (_localVibeService != null) {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => LocalVibeSettingsScreen(service: _localVibeService!)));
+                        }
                      },
-                  ),
+                   ),
                 ],
+              ),
+              
+              // 4. App Experience
+              SettingsSection(
+                title: 'App Experience',
+                children: [
+                   SettingsTile(
+                     icon: LucideIcons.logIn,
+                     title: 'Resume Last Session',
+                     subtitle: 'Open app to the last visited screen',
+                     trailing: Switch(
+                       value: _startOnLastTab,
+                       onChanged: (val) {
+                         setState(() => _startOnLastTab = val);
+                         SettingsControlService.updateSetting('start_on_last_tab', val);
+                       },
+                       activeColor: AurealColors.hyperGold,
+                     ),
+                   ),
+                   SettingsTile(
+                     icon: LucideIcons.lock,
+                     title: 'Persistent Memory',
+                     subtitle: 'Allow Sable to remember context',
+                     trailing: Switch(
+                       value: _persistentMemoryEnabled,
+                       onChanged: _togglePersistentMemory,
+                       activeColor: AurealColors.hyperGold,
+                     ),
+                   ),
+                   SettingsTile(
+                     icon: LucideIcons.vibrate,
+                     title: 'Haptics',
+                     trailing: Switch(
+                       value: _hapticsEnabled,
+                       onChanged: (v) => setState(() => _hapticsEnabled = v), 
+                       activeColor: AurealColors.hyperGold,
+                     ),
+                   ),
+                   SettingsTile(
+                     icon: LucideIcons.volume2, 
+                     title: 'Sounds',
+                     trailing: Switch(
+                       value: _soundsEnabled,
+                       onChanged: (v) => setState(() => _soundsEnabled = v), 
+                       activeColor: AurealColors.hyperGold,
+                     ),
+                   ),
+                ],
+              ),
+ 
+              // 5. Account
+              SettingsSection(
+                 title: 'Account',
+                 children: [
+                   if (!_isPremium)
+                   SettingsTile(
+                     icon: LucideIcons.crown,
+                     title: 'Upgrade to Sable+',
+                     subtitle: 'Unlock unlimited voices & features',
+                     iconColor: Colors.purpleAccent,
+                     onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
+                     },
+                   ),
+                   SettingsTile(
+                     icon: LucideIcons.shieldAlert, 
+                     title: 'Emergency SOS',
+                     iconColor: Colors.red,
+                     onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const EmergencyScreen())); 
+                     },
+                   ),
+                   SettingsTile(
+                      icon: LucideIcons.trash2,
+                      title: 'Delete Account',
+                      isDestructive: true,
+                      onTap: () {
+                         _showDeleteAccountConfirmation();
+                      },
+                   ),
+                 ],
+              ),
+
+             // 6. Debug / Advanced
+             SettingsSection(
+               title: 'Advanced',
+               children: [
+                 SettingsTile(
+                   icon: LucideIcons.refreshCw,
+                   title: 'Restart App',
+                   subtitle: 'Reload the application',
+                   onTap: () => RestartWidget.restartApp(context),
+                 ),
+                 SettingsTile(
+                   icon: LucideIcons.rotateCcw,
+                   title: 'Reset to Onboarding',
+                   subtitle: 'Go to setup (keeps memory)',
+                   onTap: () async {
+                     final prefs = await SharedPreferences.getInstance();
+                     await prefs.setBool('onboarding_complete', false);
+                     if (context.mounted) {
+                       context.go('/onboarding');
+                     }
+                   },
+                 ),
+               ],
              ),
              
              // Version
@@ -620,6 +882,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                ),
              ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScopeChip(String label, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        // Map 'Regional' label to 'Local' category tag
+        final category = label == 'Regional' ? 'Local' : label;
+        _toggleCategory(category);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AurealColors.hyperGold.withOpacity(0.2) : AurealColors.obsidian,
+          border: Border.all(
+            color: isSelected ? AurealColors.hyperGold : Colors.white24,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            color: isSelected ? AurealColors.hyperGold : Colors.white70,
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );
@@ -2014,6 +2304,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
+
 
   void _addCity() {
     final city = _cityController.text.trim();

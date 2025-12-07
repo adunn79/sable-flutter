@@ -16,6 +16,7 @@ import 'package:sable/features/vital_balance/services/step_tracking_service.dart
 import 'package:sable/features/journal/widgets/avatar_journal_overlay.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:sable/src/pages/chat/chat_page.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// Vital Balance Screen - Health & Wellness Tracking
 /// Uses the "Vitality Strategist" personality for AI interactions
@@ -86,8 +87,8 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
     }
     
     // Load Weather
-    final weatherTemp = prefs.getString('daily_weather_temp');
-    final weatherHighLow = prefs.getString('daily_weather_high_low');
+    final weatherTemp = prefs.getString('cached_weather_temp');
+    final weatherHighLow = prefs.getString('cached_weather_condition'); // Using condition as subtitle/extra if needed
     
     // Load Profile
     final profile = await VitalBalanceService.getProfile();
@@ -171,17 +172,26 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
 
                       // Weather Widget (Right Aligned - Persistent)
                       Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(24),
                             border: Border.all(color: Colors.white10),
                           ),
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(LucideIcons.cloudSun, color: _accentTeal, size: 18),
+                              const Icon(LucideIcons.cloudSun, color: _accentTeal, size: 24),
                               const SizedBox(width: 8),
-                              Text(_weatherTemp ?? '--', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text((_weatherTemp ?? '--').split(' ').first, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                                  if (_weatherHighLow != null && _weatherHighLow!.isNotEmpty)
+                                    Text(_weatherHighLow!, style: GoogleFonts.inter(color: Colors.white70, fontSize: 10)),
+                                ],
+                              ),
                             ],
                           ),
                         ),
@@ -1393,153 +1403,211 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
 
     await showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final isWalking = StepTrackingService.instance.isWalking;
+      builder: (context) {
+        bool isDistanceMode = false;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final isWalking = StepTrackingService.instance.isWalking;
 
-          return AlertDialog(
-            backgroundColor: const Color(0xFF15202B),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            contentPadding: EdgeInsets.zero,
-            content: Container(
-              width: double.maxFinite,
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                   // Header
-                   Row(
-                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                     children: [
-                        Row(
-                          children: [
-                            Icon(LucideIcons.footprints, color: _accentTeal),
-                            const SizedBox(width: 12),
-                            Text('Walk Session', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18)),
-                          ],
-                        ),
-                        IconButton(
-                          icon: const Icon(LucideIcons.x, color: Colors.white38),
-                          onPressed: () => Navigator.pop(context),
-                        )
-                     ],
-                   ),
-                   const SizedBox(height: 24),
-                   
-                   // Permission Status
-                   if (!hasPerm)
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1A1F2C),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                         Row(
+                           children: [
+                             Icon(LucideIcons.footprints, color: _accentTeal),
+                             const SizedBox(width: 12),
+                             Text('Walk Session', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18)),
+                           ],
+                         ),
+                         IconButton(
+                           icon: const Icon(LucideIcons.x, color: Colors.white38),
+                           onPressed: () => Navigator.pop(context),
+                         )
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Permission Status
+                    if (!hasPerm)
                      Container(
-                       padding: const EdgeInsets.all(12),
+                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                        margin: const EdgeInsets.only(bottom: 16),
                        decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
                        child: Row(
                          children: [
                            const Icon(LucideIcons.alertTriangle, color: Colors.red, size: 16),
                            const SizedBox(width: 8),
-                           Expanded(child: Text('Motion permission required for auto-tracking.', style: GoogleFonts.inter(color: Colors.white, fontSize: 12))),
+                           Expanded(child: Text('Motion permission required.', style: GoogleFonts.inter(color: Colors.white, fontSize: 12))),
+                           TextButton(
+                             onPressed: () => openAppSettings(),
+                             style: TextButton.styleFrom(
+                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                               minimumSize: Size.zero,
+                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                             ),
+                             child: Text('ENABLE', style: GoogleFonts.inter(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+                           )
                          ],
                        ),
                      ),
 
-                   // Live Counter
-                   StreamBuilder<int>(
-                     stream: StepTrackingService.instance.sessionStepsStream,
-                     initialData: 0,
-                     builder: (context, snapshot) {
-                       final steps = snapshot.data ?? 0;
-                       return Column(
-                         children: [
-                            Text(
-                              isWalking ? '$steps' : 'Ready',
-                              style: GoogleFonts.spaceGrotesk(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.white),
+                    // Live Counter
+                    StreamBuilder<int>(
+                      stream: StepTrackingService.instance.sessionStepsStream,
+                      initialData: 0,
+                      builder: (context, snapshot) {
+                        final steps = snapshot.data ?? 0;
+                        return Column(
+                          children: [
+                             Text(
+                               isWalking ? '$steps' : 'Ready',
+                               style: GoogleFonts.spaceGrotesk(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.white),
+                             ),
+                             Text(isWalking ? 'STEPS' : 'Start your walk', style: GoogleFonts.inter(fontSize: 12, color: Colors.white54, letterSpacing: 2)),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    // Action Button
+                    GestureDetector(
+                      onTap: () {
+                         if (isWalking) {
+                           final total = StepTrackingService.instance.stopWalk();
+                           // Save
+                           _submitMetric(metric, total.toDouble());
+                           setDialogState(() {}); // Update UI to "Ready"
+                           // Maybe verify with user?
+                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Walk logged: $total steps!'), backgroundColor: Colors.black87));
+                           Navigator.pop(context);
+                         } else {
+                           StepTrackingService.instance.startWalk();
+                           setDialogState(() {});
+                         }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                        decoration: BoxDecoration(
+                          color: isWalking ? Colors.red.withOpacity(0.2) : _accentTeal,
+                          borderRadius: BorderRadius.circular(50),
+                          border: isWalking ? Border.all(color: Colors.red) : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(isWalking ? LucideIcons.square : LucideIcons.play, color: isWalking ? Colors.red : Colors.black87),
+                            const SizedBox(width: 8),
+                            Text(isWalking ? 'STOP WALK' : 'START WALK', style: GoogleFonts.spaceGrotesk(color: isWalking ? Colors.red : Colors.black87, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    const Divider(color: Colors.white10),
+                    const SizedBox(height: 16),
+                    
+                    // Manual Fallback Header & Toggle
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Manual Entry:', style: GoogleFonts.inter(color: Colors.white38, fontSize: 12)),
+                        // Toggle
+                        Container(
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () => setDialogState(() => isDistanceMode = false),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: !isDistanceMode ? Colors.white.withOpacity(0.1) : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Text('Steps', style: GoogleFonts.inter(fontSize: 10, color: !isDistanceMode ? Colors.white : Colors.white38, fontWeight: !isDistanceMode ? FontWeight.bold : FontWeight.normal)),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => setDialogState(() => isDistanceMode = true),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isDistanceMode ? Colors.white.withOpacity(0.1) : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Text('Distance', style: GoogleFonts.inter(fontSize: 10, color: isDistanceMode ? Colors.white : Colors.white38, fontWeight: isDistanceMode ? FontWeight.bold : FontWeight.normal)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Input Field
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: manualController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              hintText: isDistanceMode ? 'e.g. 1.2 miles' : 'e.g. 2000 steps',
+                              hintStyle: const TextStyle(color: Colors.white24),
+                              fillColor: Colors.white.withOpacity(0.05),
+                              filled: true,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                             ),
-                            Text(isWalking ? 'STEPS' : 'Start your walk', style: GoogleFonts.inter(fontSize: 12, color: Colors.white54, letterSpacing: 2)),
-                         ],
-                       );
-                     },
-                   ),
-                   const SizedBox(height: 32),
-                   
-                   // Action Button
-                   GestureDetector(
-                     onTap: () {
-                        if (isWalking) {
-                          final total = StepTrackingService.instance.stopWalk();
-                          // Save
-                          _submitMetric(metric, total.toDouble());
-                          setDialogState(() {}); // Update UI to "Ready"
-                          // Maybe verify with user?
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Walk logged: $total steps!'), backgroundColor: Colors.black87));
-                          Navigator.pop(context);
-                        } else {
-                          StepTrackingService.instance.startWalk();
-                          setDialogState(() {});
-                        }
-                     },
-                     child: Container(
-                       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                       decoration: BoxDecoration(
-                         color: isWalking ? Colors.red.withOpacity(0.2) : _accentTeal,
-                         borderRadius: BorderRadius.circular(50),
-                         border: isWalking ? Border.all(color: Colors.red) : null,
-                       ),
-                       child: Row(
-                         mainAxisSize: MainAxisSize.min,
-                         children: [
-                           Icon(isWalking ? LucideIcons.square : LucideIcons.play, color: isWalking ? Colors.red : Colors.black87),
-                           const SizedBox(width: 8),
-                           Text(isWalking ? 'STOP WALK' : 'START WALK', style: GoogleFonts.spaceGrotesk(color: isWalking ? Colors.red : Colors.black87, fontWeight: FontWeight.bold)),
-                         ],
-                       ),
-                     ),
-                   ),
-                   
-                   const SizedBox(height: 24),
-                   const Divider(color: Colors.white10),
-                   const SizedBox(height: 16),
-                   
-                   // Manual Fallback
-                   Text('Manual Entry:', style: GoogleFonts.inter(color: Colors.white38, fontSize: 12)),
-                   const SizedBox(height: 8),
-                   Row(
-                     children: [
-                       Expanded(
-                         child: TextField(
-                           controller: manualController,
-                           keyboardType: TextInputType.number,
-                           style: const TextStyle(color: Colors.white),
-                           decoration: InputDecoration(
-                             hintText: 'e.g. 2000',
-                             hintStyle: const TextStyle(color: Colors.white24),
-                             fillColor: Colors.white.withOpacity(0.05),
-                             filled: true,
-                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                             contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                           ),
-                         ),
-                       ),
-                       const SizedBox(width: 8),
-                       IconButton(
-                         icon: const Icon(LucideIcons.checkCircle, color: _accentTeal),
-                         onPressed: () {
-                            final val = double.tryParse(manualController.text);
-                            if (val != null) {
-                               _submitMetric(metric, val);
-                               Navigator.pop(context);
-                            }
-                         },
-                       )
-                     ],
-                   ),
-                   const SizedBox(height: 8),
-                   // Approx Calculation
-                   Text('~2,000 steps = 1 mile', style: GoogleFonts.inter(color: Colors.white30, fontSize: 10, fontStyle: FontStyle.italic)),
-                ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(LucideIcons.checkCircle, color: _accentTeal),
+                          onPressed: () {
+                             final input = manualController.text;
+                             final val = double.tryParse(input);
+                             if (val != null) {
+                                final steps = isDistanceMode ? (val * 2000).round().toDouble() : val;
+                                _submitMetric(metric, steps);
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                  content: Text(isDistanceMode ? 'Logged ${val}mi (~${steps.toInt()} steps)' : 'Logged ${steps.toInt()} steps'),
+                                  backgroundColor: Colors.black87
+                                ));
+                                Navigator.pop(context);
+                             }
+                          },
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Approx Calculation
+                    Text(
+                      isDistanceMode ? '~2,000 steps = 1 mile' : '~1 mile = 2,000 steps', 
+                      style: GoogleFonts.inter(color: Colors.white30, fontSize: 10, fontStyle: FontStyle.italic)
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      ),
+            );
+          },
+        );
+      },
     );
   }
 }

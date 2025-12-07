@@ -13,8 +13,12 @@ import 'core/widgets/restart_widget.dart';
 import 'features/journal/services/journal_storage_service.dart';
 import 'features/journal/screens/journal_timeline_screen.dart';
 import 'core/memory/unified_memory_service.dart';
+import 'core/services/settings_control_service.dart'; // Import SettingsControlService
+import 'package:sable/src/router.dart'; // Import router for provider access
 
 void main() async {
+  String initialRoute = '/chat'; // Define outside try block for scope visibility
+  
   try {
     WidgetsFlutterBinding.ensureInitialized();
     
@@ -36,29 +40,54 @@ void main() async {
     await UnifiedMemoryService().initialize();
     debugPrint('✅ Unified memory service initialized');
     
-    // Save ElevenLabs API key to SharedPreferences for VoiceService
+    // Check for startup route
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Keep existing ElevenLabs logic
     if (AppConfig.elevenLabsKey.isNotEmpty) {
-      final prefs = await SharedPreferences.getInstance();
       await prefs.setString('eleven_labs_api_key', AppConfig.elevenLabsKey);
       await prefs.setString('voice_engine_type', 'eleven_labs');
       debugPrint('✅ ElevenLabs API key loaded from .env and saved to preferences');
     }
+    
+    // New: Check for last tab resume
+    // Note: SettingsControlService needs to be imported
+    final shouldResume = prefs.getBool('start_on_last_tab') ?? false; 
+    
+    if (shouldResume) {
+      final lastRoute = prefs.getString('last_visited_route');
+      if (lastRoute != null && lastRoute.isNotEmpty) {
+        initialRoute = lastRoute;
+        debugPrint('🏁 Resuming session at: $initialRoute');
+      }
+    }
   } catch (e, stackTrace) {
     debugPrint('Initialization Error: $e\n$stackTrace');
   }
+  
   runApp(
-    const ProviderScope(
+    ProviderScope(
       child: RestartWidget(
-        child: AurealApp(),
+        child: _AppLoader(initialRoute: initialRoute), 
       ),
     ),
   );
 }
 
-// Inline RestartWidget removed (moved to shared file)
+class _AppLoader extends StatelessWidget {
+  final String initialRoute;
+  const _AppLoader({required this.initialRoute});
+
+  @override
+  Widget build(BuildContext context) {
+    return AurealApp(initialRoute: initialRoute);
+  }
+}
 
 class AurealApp extends StatelessWidget {
-  const AurealApp({super.key});
+  final String initialRoute;
+  
+  const AurealApp({super.key, this.initialRoute = '/chat'});
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +103,12 @@ class AurealApp extends StatelessWidget {
                 Navigator.of(context).pushReplacementNamed('/home');
               },
             ),
-        '/home': (context) => const legacy.SableApp(), // Temporary - use existing chat app
+        '/home': (context) => ProviderScope(
+            overrides: [
+              routerProvider.overrideWithValue(createAppRouter(initialRoute)),
+            ],
+            child: const legacy.SableApp(),
+        ),
         '/access-denied': (context) => const AccessDeniedScreen(),
         '/debug': (context) => const DebugDashboard(),
         '/settings': (context) => const SettingsScreen(),

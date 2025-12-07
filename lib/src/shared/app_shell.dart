@@ -1,12 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sable/src/shared/weather_widget.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends StatefulWidget {
   final Widget child;
 
   const AppShell({super.key, required this.child});
+
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  
+  @override
+  void didUpdateWidget(covariant AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _saveCurrentRoute();
+  }
+  
+  @override
+  void initState() {
+    super.initState();
+    // Save initial route after first frame to ensure context is valid for GoRouter
+    WidgetsBinding.instance.addPostFrameCallback((_) => _saveCurrentRoute());
+  }
+
+  Future<void> _saveCurrentRoute() async {
+    if (!mounted) return;
+    try {
+      final String location = GoRouterState.of(context).uri.toString();
+      final prefs = await SharedPreferences.getInstance();
+      // Only save main routes we want to restore
+      if (location.startsWith('/chat') || 
+          location.startsWith('/today') || 
+          location.startsWith('/journal') || 
+          location.startsWith('/vital-balance') || 
+          location.startsWith('/more') ||
+          location.startsWith('/settings')) {
+        await prefs.setString('last_visited_route', location);
+      }
+    } catch (e) {
+      debugPrint('Error saving route: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +59,7 @@ class AppShell extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          child,
+          widget.child,
           // Weather widget - only show on Today and Vital Balance screens
           if (!isChatPage && !isSettingsPage && !isJournalPage && !isMorePage && !location.startsWith('/vital-balance'))
             Positioned(

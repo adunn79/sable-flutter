@@ -12,9 +12,10 @@ import 'package:sable/features/vital_balance/widgets/vital_balance_lock_screen.d
 
 import 'package:sable/features/onboarding/onboarding_flow.dart';
 
-final routerProvider = Provider<GoRouter>((ref) {
+// Export a factory function to create the router with a specific initial location
+GoRouter createAppRouter(String initialLocation) {
   return GoRouter(
-    initialLocation: '/chat',
+    initialLocation: initialLocation,
     routes: [
       ShellRoute(
         builder: (context, state, child) {
@@ -50,4 +51,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+}
+
+final initialRouteProvider = StateProvider<String>((ref) => '/chat');
+
+final routerProvider = Provider<GoRouter>((ref) {
+  final initialRoute = ref.watch(initialRouteProvider);
+  return createAppRouter(initialRoute);
 });

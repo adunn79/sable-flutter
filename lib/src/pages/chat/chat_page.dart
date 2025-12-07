@@ -46,7 +46,8 @@ import 'package:sable/core/widgets/interactive_button.dart';
 
 
 class ChatPage extends ConsumerStatefulWidget {
-  const ChatPage({super.key});
+  final String? initialPrompt;
+  const ChatPage({super.key, this.initialPrompt});
 
   @override
   ConsumerState<ChatPage> createState() => _ChatPageState();
@@ -90,15 +91,41 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   
   // Voice mute toggle
   bool _isMuted = false;
+  bool _isAvatarSettingsLoaded = false;
   
   final List<Map<String, dynamic>> _messages = [];
 
   @override
   void initState() {
     super.initState();
+    // Handle initial prompt if provided
+    if (widget.initialPrompt != null && widget.initialPrompt!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _controller.text = widget.initialPrompt!;
+        _sendMessage();
+      });
+    }
     _loadStateService();
     // _controller = TextEditingController(); // This line is commented out because _controller is a final field and initialized at declaration. Re-initializing it here would cause an error.
     _localVibeService = null;
+
+    // Fast-load avatar settings to prevent flash of wrong image
+    SharedPreferences.getInstance().then((prefs) {
+      if (mounted) {
+        final savedAvatarUrl = prefs.getString('avatar_url');
+        final savedArchetypeId = prefs.getString('selected_archetype_id');
+          if (savedAvatarUrl != null || savedArchetypeId != null) {
+            setState(() {
+              if (savedAvatarUrl != null) _avatarUrl = savedAvatarUrl;
+              if (savedArchetypeId != null) _archetypeId = savedArchetypeId.toLowerCase();
+              _isAvatarSettingsLoaded = true;
+            });
+          } else {
+            // No custom settings found, mark as loaded with defaults
+            setState(() => _isAvatarSettingsLoaded = true);
+          }
+      }
+    });
 
     // Load avatar display settings
     final avatarSettings = AvatarDisplaySettings();
@@ -1077,9 +1104,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             // 1. Background - Conditional based on avatar display mode
             if (_avatarDisplayMode == AvatarDisplaySettings.modeFullscreen)
               // Full screen avatar background
-              CinematicBackground(
-                imagePath: _stateService?.avatarUrl ?? 'assets/images/archetypes/$_archetypeId.png',
-              )
+              _isAvatarSettingsLoaded
+                  ? CinematicBackground(
+                      imagePath: _stateService?.avatarUrl ?? 'assets/images/archetypes/$_archetypeId.png',
+                    )
+                  : const SizedBox()
             else if (_avatarDisplayMode == AvatarDisplaySettings.modeOrb)
               // Magic orb mode - orb at top 20% of screen
               Container(
@@ -1120,15 +1149,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     Container(
                       height: MediaQuery.of(context).size.height * 0.32,
                       width: double.infinity,
-                      decoration: BoxDecoration(
-                        image: DecorationImage(
-                          image: (_stateService?.avatarUrl != null && _stateService!.avatarUrl!.startsWith('http'))
-                              ? NetworkImage(_stateService!.avatarUrl!) as ImageProvider
-                              : AssetImage(_stateService?.avatarUrl ?? 'assets/images/archetypes/$_archetypeId.png'),
-                          fit: BoxFit.cover,
-                          alignment: Alignment.topCenter,
-                        ),
-                      ),
+                      decoration: _isAvatarSettingsLoaded
+                          ? BoxDecoration(
+                              image: DecorationImage(
+                                image: (_stateService?.avatarUrl != null &&
+                                        _stateService!.avatarUrl!.startsWith('http'))
+                                    ? NetworkImage(_stateService!.avatarUrl!) as ImageProvider
+                                    : AssetImage(_stateService?.avatarUrl ??
+                                        'assets/images/archetypes/$_archetypeId.png'),
+                                fit: BoxFit.cover,
+                                alignment: Alignment.topCenter,
+                              ),
+                            )
+                          : null,
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(

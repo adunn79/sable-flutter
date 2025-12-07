@@ -63,5 +63,7 @@
 		<string>Sable can save photos and images for you.</string>
 		<key>NSRemindersUsageDescription</key>
 		<string>Sable creates and manages reminders based on your conversations.</string>
+		<key>NSMotionUsageDescription</key>
+		<string>Vital Balance uses motion data to track your daily steps automatically.</string>
 	</dict>
 </plist>

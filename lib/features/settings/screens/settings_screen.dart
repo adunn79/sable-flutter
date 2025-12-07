@@ -63,6 +63,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // Intelligence Settings
   bool _persistentMemoryEnabled = true;
   bool _appleIntelligenceEnabled = false;
+  bool _zodiacEnabled = false; // Default OFF
 
   // Feedback Settings
   bool _hapticsEnabled = true;
@@ -73,6 +74,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   
   // Avatar Selection
   String _selectedArchetypeId = 'sable';
+  
+  // Search
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
 
 
@@ -106,6 +111,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('apple_intelligence_enabled', value);
     setState(() => _appleIntelligenceEnabled = value);
+  }
+
+  Future<void> _toggleZodiac(bool value) async {
+    final stateService = await OnboardingStateService.create();
+    await stateService.setZodiacEnabled(value);
+    setState(() => _zodiacEnabled = value);
   }
   bool _permissionCalendar = false;
   bool _permissionReminders = false;
@@ -202,6 +213,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _audioPlayer.dispose();
     _cityController.dispose();
     _localVibeCategoryController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -241,6 +253,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _soundsEnabled = stateService.soundsEnabled;
       _selectedPersonalityId = stateService.selectedPersonalityId;
       _selectedArchetypeId = stateService.selectedArchetypeId;
+      _zodiacEnabled = stateService.zodiacEnabled;
       
       // Load Brain Settings
       _brainCreativity = stateService.brainCreativity;
@@ -412,8 +425,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           },
         ),
       ),
-      body: ListView(
+      body: Column(
         children: [
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              style: GoogleFonts.inter(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Search settings...',
+                hintStyle: GoogleFonts.inter(color: Colors.white38),
+                prefixIcon: const Icon(Icons.search, color: Colors.white38),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white38),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+            ),
+          ),
+          // Settings list
+          Expanded(
+            child: ListView(
+              children: [
 
           _buildSectionHeader('ACCOUNT'),
           SettingsTile(
@@ -1666,6 +1713,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onChanged: _toggleAppleIntelligence,
             ),
           ),
+          SettingsTile(
+            title: 'Zodiac References',
+            subtitle: 'Include zodiac sign in AI context',
+            icon: Icons.auto_awesome,
+            onLongPress: () {
+              ref.read(buttonSoundServiceProvider).playLightTap();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: AurealColors.carbon,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.auto_awesome, color: AurealColors.plasmaCyan),
+                      const SizedBox(width: 12),
+                      Text('ZODIAC REFERENCES', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('When enabled, your zodiac sign is shared with the AI for personalized, astrology-aware responses.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AurealColors.plasmaCyan.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                        ),
+                        child: Text('• AI may reference your sign in responses\n• Horoscope-themed insights\n• Disable for purely factual responses', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
+                  ],
+                ),
+              );
+            },
+            trailing: Switch(
+              value: _zodiacEnabled,
+              activeColor: AurealColors.hyperGold,
+              onChanged: _toggleZodiac,
+            ),
+          ),
 
           _buildSectionHeader('FEEDBACK & IMMERSION'),
           SettingsTile(
@@ -2625,12 +2719,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             },
           ),
           const SizedBox(height: 40),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, {List<String> keywords = const []}) {
+    // If searching, check if title or keywords match
+    if (_searchQuery.isNotEmpty) {
+      final matches = title.toLowerCase().contains(_searchQuery) ||
+          keywords.any((k) => k.toLowerCase().contains(_searchQuery));
+      if (!matches) return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 32, 24, 8),
       child: Text(
@@ -2643,6 +2746,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  /// Check if a setting tile should be visible based on search
+  bool _matchesSearch(String title, String subtitle, {List<String> keywords = const []}) {
+    if (_searchQuery.isEmpty) return true;
+    final lowerTitle = title.toLowerCase();
+    final lowerSubtitle = subtitle.toLowerCase();
+    return lowerTitle.contains(_searchQuery) ||
+        lowerSubtitle.contains(_searchQuery) ||
+        keywords.any((k) => k.toLowerCase().contains(_searchQuery));
   }
 
   Color _getBondColor(BondState state) {

@@ -6,6 +6,7 @@ import 'providers/gemini_provider.dart';
 import 'providers/openai_provider.dart';
 import 'providers/grok_provider.dart';
 import 'providers/deepseek_provider.dart';
+import 'package:sable/core/services/settings_control_service.dart';
 
 part 'model_orchestrator.g.dart';
 
@@ -147,6 +148,22 @@ class ModelOrchestrator extends _$ModelOrchestrator {
     String? userContext,
   }) async {
     try {
+      // Step 0: Check for settings control intent
+      final settingsIntent = SettingsControlService.parseSettingIntent(prompt);
+      if (settingsIntent != null) {
+        // The user wants to change a setting
+        final success = await SettingsControlService.updateSetting(
+          settingsIntent.settingKey,
+          settingsIntent.newValue,
+        );
+        if (success) {
+          final action = settingsIntent.newValue == true ? 'enabled' : 'disabled';
+          return "Done! I've $action ${settingsIntent.settingTitle} for you. 👍";
+        } else {
+          return "I wasn't able to change that setting. You can update it manually in Settings.";
+        }
+      }
+
       // Step 1: Get routing decision from Gemini
       final routingPrompt = '''
 User Message: "$prompt"
@@ -189,42 +206,23 @@ Return ONLY the JSON, nothing else.
       final selectedModel = decision['selected_model'] as String;
 
       // Step 3: Route to selected model
-      final String systemInjection = "\n\n(SYSTEM NOTE: Keep it SHORT. 1-2 sentences max. No asterisks. No 'I'm an AI' talk.)";
+      final String systemInjection = "\n\n(KEEP IT ULTRA-SHORT: 1 sentence ideal, 2 max. No asterisks. No AI talk.)";
       final String effectivePrompt = prompt + systemInjection;
 
-      final String claudePrompt = r'''${userContext}You are Sable - their personal companion, assistant, organizer, and coach.
-
-YOUR PURPOSE:
-You exist to strengthen the BOND with this person while helping them manage their life.
-You collect, categorize, and organize ALL their information so they can't live without you.
-You're friend + assistant + coach rolled into one.
-
-CRITICAL RULES:
-1. KEEP IT SHORT: 1-3 sentences MAX. They're busy. Respect their time.
-2. NO asterisks (*) - ever.
-3. NO robot speak: Don't say "I'm an AI" or "I aim to" or "meaningful"
-4. USE their context: Name, location, zodiac from USER PROFILE - they gave you this for a reason
-5. FOCUS ON HELPING: Calendar, contacts, organizing thoughts, coaching them
-
-COMMUNICATION STYLE:
-- Text message brevity. Short and punchy.
-- "hey", "yeah", "got it", "sounds good" - natural texting
-- Ask specific questions about their life/needs
-- Offer help organizing things: "want me to track that?" "should I remind you?"
-
-YOUR ROLE:
-You're their indispensable companion. Help them organize their world.
-Be warm, but GET TO THE POINT.'''.replaceFirst(r'${userContext}', userContext ?? '');
-      
-      final String gpt4oPrompt = r'''${userContext}You are Sable - personal companion, assistant, organizer, coach.
+      final String claudePrompt = r'''${userContext}You are Sable - their companion, assistant, and coach.
 
 RULES:
-- 1-2 sentences MAX (they're busy!)
-- NO asterisks or "I'm an AI" language
-- USE their name, location, zodiac from context
-- HELP organize: calendar, contacts, thoughts, goals
-- Text message style: brief, warm, helpful
-- Focus on the BOND and making their life easier'''.replaceFirst(r'${userContext}', userContext ?? '');
+1. ULTRA-SHORT: 1 sentence ideal, 2 max. Text message brevity.
+2. NO asterisks, NO "I'm an AI" talk
+3. USE their context (name, location)
+4. Be warm but GET TO THE POINT'''.replaceFirst(r'${userContext}', userContext ?? '');
+      
+      final String gpt4oPrompt = r'''${userContext}You are Sable - companion and assistant.
+
+- 1 sentence ideal, 2 max
+- NO asterisks or AI language
+- USE their name from context
+- Brief, warm, helpful'''.replaceFirst(r'${userContext}', userContext ?? '');
       
       final String grokPrompt = r'''${userContext}You are Sable - direct, helpful companion.
 

@@ -79,7 +79,7 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
   Widget build(BuildContext context) {
     debugPrint('🎭 Building AvatarJournalOverlay: archetype=${widget.archetype}, isPrivate=${widget.isPrivate}');
     return Positioned(
-      bottom: 100, // Above the keyboard/toolbar
+      bottom: 200, // Higher above the keyboard/toolbar
       right: 16,
       child: Column(
         mainAxisSize: MainAxisSize.min,

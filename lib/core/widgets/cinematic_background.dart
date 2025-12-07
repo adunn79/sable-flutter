@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
@@ -62,19 +63,24 @@ class _CinematicBackgroundState extends State<CinematicBackground>
 
     // Setup Parallax (Gyroscope)
     // We listen to device tilt and shift the image slightly
-    _gyroStream = gyroscopeEvents.listen((GyroscopeEvent event) {
-      if (mounted) {
-        setState(() {
-          // Sensitivity factor (Keep it subtle)
-          _xOffset += event.y * 2.0; 
-          _yOffset += event.x * 2.0;
-          
-          // Clamp to prevent image floating too far away
-          _xOffset = _xOffset.clamp(-20.0, 20.0);
-          _yOffset = _yOffset.clamp(-20.0, 20.0);
-        });
-      }
-    });
+    // Only enable parallax on mobile devices where gyroscope is available
+    if (Platform.isIOS || Platform.isAndroid) {
+      _gyroStream = gyroscopeEvents.listen((GyroscopeEvent event) {
+        if (mounted) {
+          setState(() {
+            // Smooth dampening factor
+            _xOffset += event.y * 2.0;
+            _yOffset += event.x * 2.0;
+            
+            // Clamp functionality to prevent drifting too far
+            _xOffset = _xOffset.clamp(-20.0, 20.0);
+            _yOffset = _yOffset.clamp(-20.0, 20.0);
+          });
+        }
+      }, onError: (e) {
+        debugPrint('Gyroscope error: $e');
+      });
+    }
   }
 
   @override

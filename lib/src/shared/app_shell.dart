@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:sable/src/shared/weather_widget.dart';
 
 class AppShell extends StatelessWidget {
   final Widget child;
@@ -9,8 +10,28 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Check if we're on the chat page (don't show weather there - it has its own header)
+    final String location = GoRouterState.of(context).uri.toString();
+    final bool isChatPage = location.startsWith('/chat');
+    final bool isSettingsPage = location.contains('settings');
+    final bool isJournalPage = location.startsWith('/journal');
+    final bool isMorePage = location.startsWith('/more');
+    
     return Scaffold(
-      body: child,
+      body: Stack(
+        children: [
+          child,
+          // Weather widget - only show on Today and Vital Balance screens
+          if (!isChatPage && !isSettingsPage && !isJournalPage && !isMorePage)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              left: 16,
+              child: const SafeArea(
+                child: WeatherWidget(),
+              ),
+            ),
+        ],
+      ),
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
           navigationBarTheme: NavigationBarThemeData(

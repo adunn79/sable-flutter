@@ -46,7 +46,7 @@ class WeatherService {
       final lat = geoData['results'][0]['latitude'];
       final lon = geoData['results'][0]['longitude'];
       
-      // Now fetch weather
+      // Now fetch weather with daily forecast for high/low
       final url = Uri.https(
         _baseUrl,
         '/v1/forecast',
@@ -54,6 +54,8 @@ class WeatherService {
           'latitude': '$lat',
           'longitude': '$lon',
           'current': 'temperature_2m,weather_code,relative_humidity_2m',
+          'daily': 'temperature_2m_max,temperature_2m_min,weather_code',
+          'timezone': 'auto',
           'temperature_unit': 'fahrenheit',
         },
       );
@@ -63,16 +65,27 @@ class WeatherService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final current = data['current'];
+        final daily = data['daily'];
         
         final temp = (current['temperature_2m'] as num).toDouble();
         final humidity = (current['relative_humidity_2m'] as num).toInt();
         final code = current['weather_code'] as int;
+        
+        // Get today's high/low
+        double? tempHigh;
+        double? tempLow;
+        if (daily != null && daily['temperature_2m_max'] != null) {
+          tempHigh = (daily['temperature_2m_max'][0] as num?)?.toDouble();
+          tempLow = (daily['temperature_2m_min'][0] as num?)?.toDouble();
+        }
         
         return WeatherCondition(
           condition: _mapWmoCode(code),
           temperature: temp,
           humidity: humidity,
           description: _getWmoDescription(code),
+          tempHigh: tempHigh,
+          tempLow: tempLow,
         );
       }
       
@@ -81,6 +94,7 @@ class WeatherService {
       return null;
     }
   }
+
 
   /// Map WMO Weather Code to WeatherType
   static WeatherType _mapWmoCode(int code) {
@@ -209,14 +223,21 @@ class WeatherCondition {
   final double temperature; // in Fahrenheit
   final int humidity; // percentage
   final String description;
+  final double? tempHigh; // Daily high temp
+  final double? tempLow; // Daily low temp
+  final String? alert; // Weather alert (if any)
 
   WeatherCondition({
     required this.condition,
     required this.temperature,
     required this.humidity,
     required this.description,
+    this.tempHigh,
+    this.tempLow,
+    this.alert,
   });
 }
+
 
 /// Types of weather conditions
 enum WeatherType {

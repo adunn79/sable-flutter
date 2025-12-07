@@ -82,6 +82,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   // Weather display in header
   String? _weatherTemp;
   String? _weatherCondition;
+  String? _weatherHighLow;
   
   // Voice mute toggle
   bool _isMuted = false;
@@ -124,23 +125,42 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   /// Fetch current weather for header display
   Future<void> _fetchWeather() async {
     try {
-      // Get current location
-      final apiKey = AppConfig.googleMapsApiKey;
-      if (apiKey.isEmpty) return;
+      String? location;
       
-      final location = await LocationService.getCurrentLocationName(apiKey);
-      if (location == null || !mounted) return;
+      // Try GPS location first
+      final apiKey = AppConfig.googleMapsApiKey;
+      if (apiKey.isNotEmpty) {
+        location = await LocationService.getCurrentLocationName(apiKey);
+        debugPrint('📍 Weather: Got GPS location: $location');
+      }
+      
+      // Fallback to saved userLocation
+      if (location == null && _stateService != null) {
+        location = _stateService!.userLocation;
+        debugPrint('📍 Weather: Using saved location: $location');
+      }
+      
+      if (location == null || !mounted) {
+        debugPrint('⚠️ Weather: No location available');
+        return;
+      }
       
       // Fetch weather for location
       final weather = await WeatherService.getWeather(location);
       if (weather != null && mounted) {
+        debugPrint('🌤️ Weather: ${weather.temperature}° ${weather.description}');
         setState(() {
           _weatherTemp = '${weather.temperature.round()}°';
           _weatherCondition = weather.description;
+          if (weather.tempHigh != null && weather.tempLow != null) {
+            _weatherHighLow = 'H:${weather.tempHigh!.round()}° L:${weather.tempLow!.round()}°';
+          }
         });
+      } else {
+        debugPrint('⚠️ Weather: Fetch returned null');
       }
     } catch (e) {
-      debugPrint('Weather fetch error: $e');
+      debugPrint('❌ Weather fetch error: $e');
     }
   }
 
@@ -361,11 +381,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         if (name != null) userContext += 'Name: $name\n';
         if (dob != null) {
           final age = DateTime.now().difference(dob).inDays ~/ 365;
-          final zodiac = _getZodiacSign(dob);
           final birthplace = _stateService!.userLocation;
           userContext += 'Date of Birth: ${dob.toIso8601String().split('T')[0]}\n';
           userContext += 'Age: $age\n';
-          userContext += 'Zodiac Sign: $zodiac\n';
+          // Only include zodiac if enabled in settings
+          if (_stateService!.zodiacEnabled) {
+            final zodiac = _getZodiacSign(dob);
+            userContext += 'Zodiac Sign: $zodiac\n';
+          }
           if (birthplace != null) userContext += 'Birthplace: $birthplace\n';
         }
         if (location != null) userContext += 'Current Location: $location\n';
@@ -557,11 +580,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           if (name != null) userContext += 'Name: $name\n';
           if (dob != null) {
             final age = DateTime.now().difference(dob).inDays ~/ 365;
-            final zodiac = _getZodiacSign(dob);
             final birthplace = _stateService!.userLocation; // Birth location
             userContext += 'Date of Birth: ${dob.toIso8601String().split('T')[0]}\n';
             userContext += 'Age: $age years old\n';
-            userContext += 'Zodiac Sign: $zodiac\n';
+            // Only include zodiac if enabled in settings
+            if (_stateService!.zodiacEnabled) {
+              final zodiac = _getZodiacSign(dob);
+              userContext += 'Zodiac Sign: $zodiac\n';
+            }
             if (birthplace != null) userContext += 'Birthplace: $birthplace\n';
           }
           if (location != null) userContext += 'Current Location: $location\n';
@@ -999,7 +1025,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             if (_avatarDisplayMode == AvatarDisplaySettings.modeFullscreen)
               // Full screen avatar background
               CinematicBackground(
-                imagePath: _avatarUrl ?? 'assets/images/archetypes/sable.png',
+                imagePath: 'assets/images/archetypes/$_archetypeId.png',
               )
             else if (_avatarDisplayMode == AvatarDisplaySettings.modeOrb)
               // Magic orb mode - orb at top 20% of screen
@@ -1327,6 +1353,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                             ),
                                           ),
                                         ],
+                                        if (_weatherHighLow != null) ...[
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _weatherHighLow!,
+                                            style: GoogleFonts.inter(
+                                              color: Colors.white.withOpacity(0.6),
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
@@ -1336,11 +1372,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                           const SizedBox(height: 8),
                           // Messages
                           Expanded(
-                            child: ListView.builder(
-                              controller: _scrollController,
-                              reverse: true,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              itemCount: _messages.length > 25 ? 25 : _messages.length,
+                            child: Padding(
+                              // Only Orb mode needs top padding to keep text below the orb
+                              // Fullscreen mode: text can overlay the avatar face
+                              padding: EdgeInsets.only(
+                                top: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
+                                    ? 160 // Keep text below the orb
+                                    : 0, // No padding for fullscreen - text can go to top
+                              ),
+                              child: ListView.builder(
+                                controller: _scrollController,
+                                reverse: true,
+                                // Internal padding: bottom for input area, top small
+                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 120),
+                                itemCount: _messages.length > 25 ? 25 : _messages.length,
                               itemBuilder: (context, index) {
                                 final messageIndex = _messages.length - 1 - index;
                                 final msg = _messages[messageIndex];
@@ -1407,6 +1452,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                               },
                             ),
                           ),
+                        ),
                           // Typing indicator removed - shown in input box instead
                           // Remove input from here - it will be full width
                         ],
@@ -1444,10 +1490,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   const SizedBox(height: 60), // Added manual spacing for header
                   _buildHeader(),
                   Expanded(
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      reverse: true, // Start at bottom like a proper chat app
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    child: Padding(
+                      // Only Orb mode needs top padding to keep text below the orb
+                      padding: EdgeInsets.only(
+                        top: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
+                            ? 160 // Keep text below the orb
+                            : 0, // No padding for fullscreen
+                      ),
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        reverse: true, // Start at bottom like a proper chat app
+                        // Internal padding: bottom for input area, top small
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                       // Only show the most recent 25 messages for better performance
                       itemCount: _messages.length > 25 ? 25 : _messages.length,
                       itemBuilder: (context, index) {
@@ -1461,6 +1515,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       },
                     ),
                   ),
+                ),
 
                   if (_isTyping)
                   Padding(
@@ -1525,12 +1580,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Brain button removed
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          // Left side: Name + Weather
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Avatar name
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(LucideIcons.triangle, color: AurealColors.hyperGold, size: 16),
                   const SizedBox(width: 8),
@@ -1545,41 +1601,46 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ),
                 ],
               ),
-              // Weather under companion name
-              if (_weatherTemp != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 0, top: 4),
+              // Weather next to name
+              if (_weatherTemp != null) ...[
+                const SizedBox(width: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         LucideIcons.cloudSun,
                         color: Colors.white.withOpacity(0.8),
-                        size: 16,
+                        size: 14,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       Text(
                         _weatherTemp!,
                         style: GoogleFonts.inter(
                           color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      if (_weatherCondition != null) ...[
+                      if (_weatherHighLow != null) ...[
                         const SizedBox(width: 6),
                         Text(
-                          _weatherCondition!.split(' ').first,
+                          _weatherHighLow!,
                           style: GoogleFonts.inter(
-                            color: Colors.white.withOpacity(0.75),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 11,
                           ),
                         ),
                       ],
                     ],
                   ),
                 ),
+              ],
             ],
           ),
           Row(
@@ -2550,104 +2611,109 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
 
   Widget _buildInputArea() {
-    // FIX: Calculate isDark based on actual background settings, not inherited Theme
-    // This ensures icons adapt correctly even if parent Theme context is mismatched
-    final isLightBackground = (_avatarDisplayMode == AvatarDisplaySettings.modeIcon || 
-                               _avatarDisplayMode == AvatarDisplaySettings.modeOrb ||
-                               _avatarDisplayMode == AvatarDisplaySettings.modePortrait) && 
-                              _backgroundColor == AvatarDisplaySettings.colorWhite;
-    final isDark = !isLightBackground;
-    
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(
-                color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+  // FIX: Calculate isDark based on actual background settings, not inherited Theme
+  // This ensures icons adapt correctly even if parent Theme context is mismatched
+  final isLightBackground = (_avatarDisplayMode == AvatarDisplaySettings.modeIcon || 
+                             _avatarDisplayMode == AvatarDisplaySettings.modeOrb ||
+                             _avatarDisplayMode == AvatarDisplaySettings.modePortrait) && 
+                            _backgroundColor == AvatarDisplaySettings.colorWhite;
+  final isDark = !isLightBackground;
+  
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Text field - now full width
+              TextField(
+                controller: _controller,
+                enabled: true,
+                style: GoogleFonts.inter(color: isDark ? Colors.white : Colors.black),
+                cursorColor: isDark ? Colors.white : Colors.black,
+                minLines: 1,
+                maxLines: 5,
+                textInputAction: TextInputAction.send,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  hintText: _isTyping ? '$_companionName is thinking...' : 'Type a message...',
+                  hintStyle: GoogleFonts.inter(
+                    color: isDark ? Colors.white.withOpacity(0.3) : Colors.black.withOpacity(0.3),
+                  ),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                ),
+                onSubmitted: (_) => _sendMessage(),
               ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    enabled: true, // Always enabled
-                    style: GoogleFonts.inter(color: isDark ? Colors.white : Colors.black),
-                    cursorColor: isDark ? Colors.white : Colors.black, // Match text color
-                    minLines: 1,
-                    maxLines: 5,
-                    textInputAction: TextInputAction.send,
-                    decoration: InputDecoration(
-                      filled: true, // Force filled to override theme
-                      fillColor: Colors.transparent, // Transparent to show container color
-                      hintText: _isTyping ? '$_companionName is thinking...' : 'Type a message...',
-                      hintStyle: GoogleFonts.inter(
-                        color: isDark ? Colors.white.withOpacity(0.3) : Colors.black.withOpacity(0.3),
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
+              const SizedBox(height: 8),
+              // Icons row - now below text field
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Rewrite button (Apple Intelligence)
+                  GestureDetector(
+                    onTap: _handleRewrite,
+                    child: Icon(
+                      LucideIcons.wand2,
+                      color: _controller.text.isNotEmpty 
+                          ? AurealColors.hyperGold 
+                          : (isDark ? Colors.white70 : Colors.grey[700]),
+                      size: 22,
                     ),
-                    onSubmitted: (_) => _sendMessage(),
                   ),
-                ),
-                const SizedBox(width: 12),
-                // Rewrite button (Apple Intelligence)
-                GestureDetector(
-                  onTap: _handleRewrite,
-                  child: Icon(
-                    LucideIcons.wand2,
-                    color: _controller.text.isNotEmpty 
-                        ? AurealColors.hyperGold 
-                        : (isDark ? Colors.white70 : Colors.grey[700]), // Reverted to semi-transparent/grey
-                    size: 20, // Reverted to standard size
+                  const SizedBox(width: 24),
+                  // Microphone button
+                  GestureDetector(
+                    onTap: _handleVoiceInput,
+                    child: Icon(
+                      _isListening ? LucideIcons.micOff : LucideIcons.mic,
+                      color: _isListening 
+                          ? AurealColors.plasmaCyan 
+                          : (isDark ? Colors.white70 : Colors.grey[700]),
+                      size: 22,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                // Microphone button
-                GestureDetector(
-                  onTap: _handleVoiceInput,
-                  child: Icon(
-                    _isListening ? LucideIcons.micOff : LucideIcons.mic,
-                    color: _isListening 
-                        ? AurealColors.plasmaCyan 
-                        : (isDark ? Colors.white70 : Colors.grey[700]), // Reverted to semi-transparent/grey
-                    size: 20, // Reverted to standard size
+                  const SizedBox(width: 24),
+                  // Mute button
+                  GestureDetector(
+                    onTap: () {
+                      setState(() => _isMuted = !_isMuted);
+                    },
+                    child: Icon(
+                      _isMuted ? LucideIcons.volumeX : LucideIcons.volume2,
+                      color: _isMuted 
+                          ? Colors.red 
+                          : (isDark ? Colors.white70 : Colors.grey[700]),
+                      size: 22,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // Mute button
-                GestureDetector(
-                  onTap: () {
-                    setState(() => _isMuted = !_isMuted);
-                  },
-                  child: Icon(
-                    _isMuted ? LucideIcons.volumeX : LucideIcons.volume2,
-                    color: _isMuted 
-                        ? Colors.red 
-                        : (isDark ? Colors.white70 : Colors.grey[700]),
-                    size: 20,
+                  const SizedBox(width: 24),
+                  // Send button
+                  GestureDetector(
+                    onTap: _sendMessage,
+                    child: const Icon(LucideIcons.sparkles, color: AurealColors.plasmaCyan, size: 22),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // Send button
-                GestureDetector(
-                  onTap: _sendMessage,
-                  child: const Icon(LucideIcons.sparkles, color: AurealColors.plasmaCyan, size: 20),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }
-
-
+}

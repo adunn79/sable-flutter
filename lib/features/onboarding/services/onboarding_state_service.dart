@@ -348,6 +348,7 @@ class OnboardingStateService {
   static const String _keyPermissionGps = 'permission_gps';
   static const String _keyPermissionMic = 'permission_mic';
   static const String _keyPermissionCamera = 'permission_camera';
+  static const String _keyZodiacEnabled = 'zodiac_enabled';
 
   /// Get GPS permission status (Default: true)
   bool get permissionGps => _prefs.getBool(_keyPermissionGps) ?? true;
@@ -371,6 +372,14 @@ class OnboardingStateService {
   /// Set Camera permission status
   Future<void> setPermissionCamera(bool enabled) async {
     await _prefs.setBool(_keyPermissionCamera, enabled);
+  }
+
+  /// Get zodiac sign enabled status (Default: false - OFF)
+  bool get zodiacEnabled => _prefs.getBool(_keyZodiacEnabled) ?? false;
+
+  /// Set zodiac sign enabled status
+  Future<void> setZodiacEnabled(bool enabled) async {
+    await _prefs.setBool(_keyZodiacEnabled, enabled);
   }
 
   /// Save daily news content

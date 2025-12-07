@@ -22,7 +22,7 @@ class AppShell extends StatelessWidget {
         children: [
           child,
           // Weather widget - only show on Today and Vital Balance screens
-          if (!isChatPage && !isSettingsPage && !isJournalPage && !isMorePage)
+          if (!isChatPage && !isSettingsPage && !isJournalPage && !isMorePage && !location.startsWith('/vital-balance'))
             Positioned(
               top: MediaQuery.of(context).padding.top + 8,
               left: 16,

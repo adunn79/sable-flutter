@@ -19,6 +19,9 @@ class VitalBalanceLockScreen extends StatefulWidget {
 class _VitalBalanceLockScreenState extends State<VitalBalanceLockScreen> {
   final _localAuth = LocalAuthentication();
   
+  // Track disposal to prevent setState after dispose
+  bool _disposed = false;
+  
   // Soothing color palette (matching Vital Balance)
   static const Color _backgroundStart = Color(0xFF0D1B2A);
   static const Color _accentTeal = Color(0xFF5DD9C1);
@@ -48,8 +51,16 @@ class _VitalBalanceLockScreenState extends State<VitalBalanceLockScreen> {
     _loadSettings();
   }
   
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+  
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    if (_disposed) return;
+    
     _savedPin = prefs.getString(_keyPin) ?? '';
     _pinEnabled = prefs.getBool(_keyPinEnabled) ?? false;
     _biometricEnabled = prefs.getBool(_keyBiometricEnabled) ?? false;
@@ -57,28 +68,29 @@ class _VitalBalanceLockScreenState extends State<VitalBalanceLockScreen> {
     
     // Check if device supports biometrics
     try {
-      _canUseBiometric = await _localAuth.canCheckBiometrics || 
-                         await _localAuth.isDeviceSupported();
+      if (!_disposed) {
+        _canUseBiometric = await _localAuth.canCheckBiometrics || 
+                           await _localAuth.isDeviceSupported();
+      }
     } catch (e) {
       _canUseBiometric = false;
     }
     
-    if (!mounted) return;
+    if (_disposed || !mounted) return;
     setState(() {});
     
     // If PIN not enabled, go straight to content
     if (!_pinEnabled) {
-      if (mounted) setState(() => _isUnlocked = true);
+      if (!_disposed && mounted) setState(() => _isUnlocked = true);
       return;
     }
     
-    // Try biometric first if enabled
-    if (_biometricEnabled && _canUseBiometric) {
-      await _authenticateWithBiometric();
-    }
+    // Don't auto-trigger biometric on init - let user tap button instead
+    // This prevents crashes when navigating away during auth
   }
   
   Future<void> _authenticateWithBiometric() async {
+    if (_disposed) return;
     try {
       final authenticated = await _localAuth.authenticate(
         localizedReason: 'Unlock your Vital Balance',
@@ -87,16 +99,21 @@ class _VitalBalanceLockScreenState extends State<VitalBalanceLockScreen> {
           stickyAuth: true,
         ),
       );
-      if (authenticated && mounted) {
+      if (!_disposed && authenticated && mounted) {
         setState(() => _isUnlocked = true);
       }
     } catch (e) {
-      debugPrint('Biometric auth error: $e');
+      // Ignore errors if widget was disposed during auth
+      if (!_disposed) {
+        debugPrint('Biometric auth error: $e');
+      }
     }
   }
   
   void _onKeyPress(String key) {
+    if (_disposed) return;
     HapticFeedback.lightImpact();
+    if (!mounted) return;
     setState(() => _error = null);
     
     if (key == 'delete') {
@@ -146,16 +163,17 @@ class _VitalBalanceLockScreenState extends State<VitalBalanceLockScreen> {
   
   Future<void> _savePin(String pin) async {
     final prefs = await SharedPreferences.getInstance();
+    if (_disposed) return;
     await prefs.setString(_keyPin, pin);
     await prefs.setBool(_keyPinEnabled, true);
-    if (!mounted) return;
+    if (_disposed || !mounted) return;
     setState(() {
       _savedPin = pin;
       _pinEnabled = true;
       _isSettingPin = false;
       _isUnlocked = true;
     });
-    if (mounted) {
+    if (!_disposed && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('✅ Vital Balance PIN set!')),
       );
@@ -164,10 +182,11 @@ class _VitalBalanceLockScreenState extends State<VitalBalanceLockScreen> {
   
   Future<void> _enableBiometric() async {
     final prefs = await SharedPreferences.getInstance();
+    if (_disposed) return;
     await prefs.setBool(_keyBiometricEnabled, true);
-    if (!mounted) return;
+    if (_disposed || !mounted) return;
     setState(() => _biometricEnabled = true);
-    if (mounted) {
+    if (!_disposed && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('✅ Biometric unlock enabled!')),
       );

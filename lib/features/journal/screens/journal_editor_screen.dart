@@ -834,21 +834,25 @@ No hashtags, no explanations, just the tags.''',
       ), // End SafeArea
       
       // Avatar overlay with privacy state
-      AvatarJournalOverlay(
-        isPrivate: _isPrivate,
-        archetype: _archetype,
-        onSparkTap: null, // Removed - using avatar tap instead
-        onAvatarTap: _isPrivate 
-            ? () {
-                // When private, just show status
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${_archetype[0].toUpperCase()}${_archetype.substring(1)} can\'t see this entry (private mode)'),
-                    backgroundColor: Colors.grey[800],
-                  ),
-                );
-              }
-            : _generateSparkPrompt, // When observing, trigger AI prompt
+      Positioned(
+        left: 16,
+        bottom: 16,
+        child: AvatarJournalOverlay(
+          isPrivate: _isPrivate,
+          archetype: _archetype,
+          onSparkTap: null, // Removed - using avatar tap instead
+          onAvatarTap: _isPrivate 
+              ? () {
+                  // When private, just show status
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${_archetype[0].toUpperCase()}${_archetype.substring(1)} can\'t see this entry (private mode)'),
+                      backgroundColor: Colors.grey[800],
+                    ),
+                  );
+                }
+              : _generateSparkPrompt, // When observing, trigger AI prompt
+        ),
       ),
     ],
   ),

@@ -3,25 +3,27 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
 
 class SettingsTile extends StatelessWidget {
+  final IconData icon;
   final String title;
   final String? subtitle;
-  final IconData icon;
+  final String? value; // Text shown on right, e.g. "On"
+  final Widget? trailing; // Custom widget, overrides value/chevron
   final VoidCallback? onTap;
-  final VoidCallback? onLongPress;
-  final Widget? trailing;
-  final bool isDestructive;
   final Color? iconColor;
+  final bool isDestructive;
+  final bool showChevron;
 
   const SettingsTile({
     super.key,
-    required this.title,
     required this.icon,
+    required this.title,
     this.subtitle,
-    this.onTap,
-    this.onLongPress,
+    this.value,
     this.trailing,
-    this.isDestructive = false,
+    this.onTap,
     this.iconColor,
+    this.isDestructive = false,
+    this.showChevron = true,
   });
 
   @override
@@ -30,31 +32,26 @@ class SettingsTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        onLongPress: onLongPress,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
+              // Icon
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: isDestructive
-                      ? Colors.red.withOpacity(0.1)
-                      : AurealColors.carbon,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isDestructive
-                        ? Colors.red.withOpacity(0.3)
-                        : AurealColors.obsidian,
-                  ),
+                  color: (iconColor ?? AurealColors.hyperGold).withOpacity(0.15),
+                  shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
                   size: 20,
-                  color: iconColor ?? (isDestructive ? Colors.red : AurealColors.stardust),
+                  color: iconColor ?? AurealColors.hyperGold,
                 ),
               ),
               const SizedBox(width: 16),
+              
+              // Text
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,31 +59,42 @@ class SettingsTile extends StatelessWidget {
                     Text(
                       title,
                       style: GoogleFonts.inter(
-                        color: isDestructive ? Colors.red : Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
+                        color: isDestructive ? Colors.red : AurealColors.stardust,
                       ),
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         subtitle!,
                         style: GoogleFonts.inter(
+                          fontSize: 13,
                           color: AurealColors.ghost,
-                          fontSize: 12,
                         ),
                       ),
                     ],
                   ],
                 ),
               ),
-              if (trailing != null) trailing!,
-              if (trailing == null && onTap != null)
-                Icon(
-                  Icons.chevron_right,
-                  color: AurealColors.ghost.withOpacity(0.5),
-                  size: 20,
-                ),
+              
+              // Trailing
+              if (trailing != null) 
+                trailing!
+              else ...[
+                if (value != null)
+                  Text(
+                    value!,
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      color: AurealColors.ghost.withOpacity(0.8),
+                    ),
+                  ),
+                if (showChevron && onTap != null) ...[
+                   const SizedBox(width: 8),
+                   const Icon(Icons.chevron_right, color: Colors.white24, size: 20),
+                ]
+              ],
             ],
           ),
         ),

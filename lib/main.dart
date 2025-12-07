@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/widgets/restart_widget.dart';
 import 'features/journal/services/journal_storage_service.dart';
 import 'features/journal/screens/journal_timeline_screen.dart';
+import 'core/memory/unified_memory_service.dart';
 
 void main() async {
   try {
@@ -30,6 +31,10 @@ void main() async {
     await JournalStorageService.initialize();
     await JournalStorageService.createDefaultBuckets();
     debugPrint('✅ Journal storage initialized');
+    
+    // Initialize unified memory service (chat, memories, health)
+    await UnifiedMemoryService().initialize();
+    debugPrint('✅ Unified memory service initialized');
     
     // Save ElevenLabs API key to SharedPreferences for VoiceService
     if (AppConfig.elevenLabsKey.isNotEmpty) {

@@ -7,6 +7,8 @@ import 'package:sable/features/settings/screens/settings_screen.dart';
 import 'package:sable/features/more/screens/more_screen.dart';
 import 'package:sable/features/journal/screens/journal_timeline_screen.dart';
 import 'package:sable/features/journal/widgets/journal_lock_screen.dart';
+import 'package:sable/features/vital_balance/screens/vital_balance_screen.dart';
+import 'package:sable/features/vital_balance/widgets/vital_balance_lock_screen.dart';
 
 import 'package:sable/features/onboarding/onboarding_flow.dart';
 
@@ -29,7 +31,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/chat', builder: (context, state) => const ChatPage()),
           GoRoute(path: '/today', builder: (context, state) => const PlaceholderPage(title: 'Today')),
           GoRoute(path: '/journal', builder: (context, state) => const JournalLockScreen(child: JournalTimelineScreen())),
-          GoRoute(path: '/vital-balance', builder: (context, state) => const PlaceholderPage(title: 'Vital Balance')),
+          GoRoute(path: '/vital-balance', builder: (context, state) => const VitalBalanceLockScreen(child: VitalBalanceScreen())),
           GoRoute(path: '/more', builder: (context, state) => const MoreScreen()),
           GoRoute(path: '/memory', builder: (context, state) => const PlaceholderPage(title: 'Memory')),
           GoRoute(path: '/share', builder: (context, state) => const PlaceholderPage(title: 'Share')),

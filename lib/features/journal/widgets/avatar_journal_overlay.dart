@@ -1,28 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'dart:math' as math;
+import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 
-/// Avatar overlay widget for journal screens
-/// Shows privacy state (observing/blind) and can expand to chat panel
 class AvatarJournalOverlay extends StatefulWidget {
-  /// Whether the current entry is private (Avatar is blind)
   final bool isPrivate;
-  
-  /// Callback when "Spark" prompt button is tapped
-  final VoidCallback? onSparkTap;
-  
-  /// Callback when avatar is tapped (expand chat)
-  final VoidCallback? onAvatarTap;
-  
-  /// Current avatar archetype (sable, kai, echo)
   final String archetype;
-  
+  final VoidCallback? onSparkTap;
+  final VoidCallback? onAvatarTap;
+
   const AvatarJournalOverlay({
     super.key,
-    this.isPrivate = false,
+    required this.isPrivate,
+    required this.archetype,
     this.onSparkTap,
     this.onAvatarTap,
-    this.archetype = 'sable',
   });
 
   @override
@@ -33,6 +25,7 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  String? _customAvatarUrl;
   
   @override
   void initState() {
@@ -45,131 +38,126 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    
+    _loadCustomAvatar();
   }
   
+  Future<void> _loadCustomAvatar() async {
+    final service = await OnboardingStateService.create();
+    if (mounted) {
+      setState(() {
+        _customAvatarUrl = service.avatarUrl;
+      });
+    }
+  }
+
+  Color get _avatarColor {
+    switch (widget.archetype.toLowerCase()) {
+      case 'kai': return Colors.blueAccent; 
+      case 'echo': return AurealColors.plasmaCyan;
+      case 'sable': default: return AurealColors.hyperGold;
+    }
+  }
+
+  String get _avatarImagePath {
+    final arch = widget.archetype.toLowerCase();
+    final safeArch = (arch.isEmpty) ? 'sable' : arch;
+    return 'assets/images/archetypes/$safeArch.png';
+  }
+
   @override
   void dispose() {
     _pulseController.dispose();
     super.dispose();
   }
-  
-  Color get _avatarColor {
-    switch (widget.archetype.toLowerCase()) {
-      case 'kai':
-        return const Color(0xFF3B82F6); // Blue
-      case 'echo':
-        return const Color(0xFF10B981); // Green
-      default:
-        return const Color(0xFF8B5CF6); // Purple for Sable
-    }
-  }
-  
-  String get _avatarImagePath {
-    switch (widget.archetype.toLowerCase()) {
-      case 'kai':
-        return 'assets/images/archetypes/kai.png';
-      case 'echo':
-        return 'assets/images/archetypes/echo.png';
-      default:
-        return 'assets/images/archetypes/sable.png';
-    }
-  }
-  
+
   @override
   Widget build(BuildContext context) {
-    debugPrint('🎭 Building AvatarJournalOverlay: archetype=${widget.archetype}, isPrivate=${widget.isPrivate}');
-    return Positioned(
-      bottom: 200, // Higher above the keyboard/toolbar
-      right: 16,
-      child: Column(
+    return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Spark button (AI prompt suggestion)
-          if (widget.onSparkTap != null && !widget.isPrivate)
-            GestureDetector(
-              onTap: widget.onSparkTap,
-              child: Container(
-                width: 44,
-                height: 44,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.9),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.amber.withOpacity(0.3),
-                      blurRadius: 12,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(LucideIcons.sparkles, color: Colors.black87, size: 22),
-                ),
-              ),
-            ),
-          
-          // Avatar with privacy state
-          GestureDetector(
-            onTap: widget.onAvatarTap,
-            child: AnimatedBuilder(
-              animation: _pulseAnimation,
-              builder: (context, child) {
-                return Transform.scale(
-                  scale: widget.isPrivate ? 1.0 : _pulseAnimation.value,
-                  child: child,
-                );
-              },
-              child: Stack(
-                children: [
-                  // Main avatar circle with actual image
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
+          // Stack with avatar + pulse + privacy eye
+          SizedBox(
+            width: 80,
+            height: 80,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                   // Pulse animation
+                  ScaleTransition(
+                    scale: _pulseAnimation,
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
                         color: widget.isPrivate 
-                            ? Colors.grey 
-                            : _avatarColor,
-                        width: 3,
+                            ? Colors.grey.withOpacity(0.1)
+                            : _avatarColor.withOpacity(0.2),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: widget.isPrivate 
-                              ? Colors.grey.withOpacity(0.2)
-                              : _avatarColor.withOpacity(0.4),
-                          blurRadius: 16,
-                          spreadRadius: 2,
-                        ),
-                      ],
                     ),
-                    child: ClipOval(
-                      child: ColorFiltered(
-                        colorFilter: widget.isPrivate
-                            ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
-                            : const ColorFilter.mode(Colors.transparent, BlendMode.overlay),
-                        child: Image.asset(
-                          _avatarImagePath,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stack) {
-                            // Fallback to colored circle with initial
-                            return Container(
-                              color: _avatarColor,
-                              child: Center(
-                                child: Text(
-                                  widget.archetype.isNotEmpty 
-                                      ? widget.archetype[0].toUpperCase() 
-                                      : 'S',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                  ),
+
+                  // Main avatar circle with actual image
+                  GestureDetector(
+                    onTap: widget.onAvatarTap,
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: widget.isPrivate 
+                              ? Colors.grey 
+                              : _avatarColor,
+                          width: 3,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.isPrivate 
+                                ? Colors.grey.withOpacity(0.2)
+                                : _avatarColor.withOpacity(0.4),
+                            blurRadius: 16,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: ColorFiltered(
+                          colorFilter: widget.isPrivate
+                              ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
+                              : const ColorFilter.mode(Colors.transparent, BlendMode.overlay),
+                          child: (_customAvatarUrl != null && _customAvatarUrl!.startsWith('http'))
+                            ? Image.network(
+                                _customAvatarUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stack) => Image.asset(
+                                  _avatarImagePath,
+                                  fit: BoxFit.cover,
                                 ),
+                              )
+                            : Image.asset(
+                                _avatarImagePath,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stack) {
+                                  // Fallback to colored circle with initial
+                                  return Container(
+                                    color: _avatarColor,
+                                    child: Center(
+                                      child: Text(
+                                        widget.archetype.isNotEmpty 
+                                            ? widget.archetype[0].toUpperCase() 
+                                            : 'S',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
                         ),
                       ),
                     ),
@@ -199,8 +187,7 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
                       ),
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
           ),
           
@@ -217,7 +204,6 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
             ),
           ),
         ],
-      ),
     );
   }
 }

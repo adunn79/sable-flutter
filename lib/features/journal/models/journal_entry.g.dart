@@ -34,7 +34,7 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       embeddingRef: fields[14] as String?,
       isSynced: fields[15] as bool,
       firestoreId: fields[16] as String?,
-      isHidden: fields[17] as bool? ?? false,
+      isHidden: fields[17] as bool,
     );
   }
 

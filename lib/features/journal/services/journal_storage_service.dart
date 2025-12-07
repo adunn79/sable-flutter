@@ -24,9 +24,18 @@ class JournalStorageService {
       Hive.registerAdapter(JournalBucketAdapter());
     }
     
-    // Open boxes
-    await Hive.openBox<JournalEntry>(_entriesBoxName);
-    await Hive.openBox<JournalBucket>(_bucketsBoxName);
+    // Open boxes with error handling for data migration issues
+    try {
+      await Hive.openBox<JournalEntry>(_entriesBoxName);
+      await Hive.openBox<JournalBucket>(_bucketsBoxName);
+    } catch (e) {
+      print('⚠️ Journal data migration issue, resetting boxes: $e');
+      // Delete corrupted boxes and recreate
+      await Hive.deleteBoxFromDisk(_entriesBoxName);
+      await Hive.deleteBoxFromDisk(_bucketsBoxName);
+      await Hive.openBox<JournalEntry>(_entriesBoxName);
+      await Hive.openBox<JournalBucket>(_bucketsBoxName);
+    }
     
     _isInitialized = true;
   }

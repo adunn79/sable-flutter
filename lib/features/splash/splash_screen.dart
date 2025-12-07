@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 import '../../core/theme/aureal_theme.dart';
@@ -28,7 +29,7 @@ class _AurealSplashScreenState extends State<AurealSplashScreen> {
 
     // Check onboarding status
     final stateService = await OnboardingStateService.create();
-    final isComplete = stateService.isOnboardingComplete;
+    final isComplete = stateService.isOnboardingComplete;  
     
     debugPrint('Onboarding complete: $isComplete');
     debugPrint('User name: ${stateService.userName}');

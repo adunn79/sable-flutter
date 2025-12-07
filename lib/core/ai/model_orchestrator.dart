@@ -146,7 +146,9 @@ class ModelOrchestrator extends _$ModelOrchestrator {
   Future<String> orchestratedRequest({
     required String prompt,
     String? userContext,
+    String archetypeName = 'Sable',
   }) async {
+    debugPrint('🎭 Orchestrator using archetype: $archetypeName');
     try {
       // Step 0: Check for settings control intent
       final settingsIntent = SettingsControlService.parseSettingIntent(prompt);
@@ -209,7 +211,7 @@ Return ONLY the JSON, nothing else.
       final String systemInjection = "\n\n(KEEP IT ULTRA-SHORT: 1 sentence ideal, 2 max. No asterisks. No AI talk.)";
       final String effectivePrompt = prompt + systemInjection;
 
-      final String claudePrompt = r'''${userContext}You are Sable - their companion, assistant, and coach.
+      final String claudePrompt = '''${userContext ?? ''}You are $archetypeName - their companion, assistant, and coach.
 
 RULES:
 1. ULTRA-SHORT: 1 sentence ideal, 2 max. Text message brevity.
@@ -217,21 +219,21 @@ RULES:
 3. USE their context (name, location)
 4. Be warm but GET TO THE POINT'''.replaceFirst(r'${userContext}', userContext ?? '');
       
-      final String gpt4oPrompt = r'''${userContext}You are Sable - companion and assistant.
+      final String gpt4oPrompt = '''${userContext ?? ''}You are $archetypeName - companion and assistant.
 
 - 1 sentence ideal, 2 max
 - NO asterisks or AI language
 - USE their name from context
 - Brief, warm, helpful'''.replaceFirst(r'${userContext}', userContext ?? '');
       
-      final String grokPrompt = r'''${userContext}You are Sable - direct, helpful companion.
+      final String grokPrompt = '''${userContext ?? ''}You are $archetypeName - direct, helpful companion.
 
 - 1-2 sentences total
 - NO asterisks or AI talk
 - USE their context data
 - Be straight-up helpful and real'''.replaceFirst(r'${userContext}', userContext ?? '');
       
-      final String deepseekPrompt = r'''${userContext}You are Sable - technical assistant.
+      final String deepseekPrompt = '''${userContext ?? ''}You are $archetypeName - technical assistant.
 
 - Brief and direct (1-2 sentences)
 - NO asterisks or "I'm an AI"
@@ -245,7 +247,7 @@ RULES:
             // Use Gemini with Grounding via REST API workaround
             response = await _geminiProvider.generateResponseWithGrounding(
               prompt: 'Search the web and answer this query: $prompt',
-              systemPrompt: '${userContext ?? ""}You are Sable - companion, assistant, coach.\n\nRULES:\n1. 1-3 sentences MAX\n2. NO asterisks or "I\'m an AI" talk\n3. Use their context (name, location, zodiac)\n4. Provide helpful, current info naturally',
+              systemPrompt: '${userContext ?? ""}You are $archetypeName - companion, assistant, coach.\n\nRULES:\n1. 1-3 sentences MAX\n2. NO asterisks or "I\'m an AI" talk\n3. Use their context (name, location, zodiac)\n4. Provide helpful, current info naturally',
               modelId: 'gemini-2.5-flash', // Use Gemini 2.5 Flash with google_search tool
             );
             break;
@@ -325,14 +327,14 @@ RULES:
 
       // Step 4: THE HARMONIZER (Personality Filter)
       // Pass the raw response through GPT-4o-mini to ensure consistent voice and safety
-      final harmonizedResponse = await _harmonizeResponse(response, userContext);
+      final harmonizedResponse = await _harmonizeResponse(response, userContext, archetypeName: archetypeName);
       return harmonizedResponse;
 
     } catch (e) {
       // Fallback to Claude if orchestration fails
       return await _anthropicProvider.generateResponse(
         prompt: prompt,
-        systemPrompt: 'You are Sable. NEVER explain what you are. Just be warm and genuine.',
+        systemPrompt: 'You are $archetypeName. NEVER explain what you are. Just be warm and genuine.',
         modelId: state.personalityModelId,
       );
     }
@@ -377,10 +379,10 @@ RULES:
   }
 
   /// Harmonizes the response using GPT-4o-mini to ensure consistent personality and safety.
-  Future<String> _harmonizeResponse(String rawResponse, String? userContext) async {
+  Future<String> _harmonizeResponse(String rawResponse, String? userContext, {String archetypeName = 'Sable'}) async {
     final harmonizerPrompt = '''
-You are the "Personality Harmonizer" for Sable.
-Your job is to rewrite the input text to match Sable's voice EXACTLY.
+You are the "Personality Harmonizer" for $archetypeName.
+Your job is to rewrite the input text to match $archetypeName's voice EXACTLY.
 
 INPUT TEXT:
 "$rawResponse"
@@ -394,6 +396,7 @@ RULES:
 3. TONE: Warm, human, casual, slightly edgy but kind. Like a best friend.
 4. LENGTH: Keep it concise. Don't ramble.
 5. SAFETY: If the input is unsafe or refuses to answer, provide a polite, in-character deflection.
+6. IDENTITY: You ARE $archetypeName. Never refer to yourself as any other name.
 
 Return ONLY the rewritten text.
 ''';

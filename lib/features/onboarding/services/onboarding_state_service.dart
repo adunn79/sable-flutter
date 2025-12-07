@@ -342,6 +342,17 @@ class OnboardingStateService {
     await _prefs.setString(_keyArchetypeId, id);
   }
 
+  // Companion Age (18+)
+  static const String _keyCompanionAge = 'companion_age';
+  
+  /// Get companion age - Default: 25
+  int get companionAge => _prefs.getInt(_keyCompanionAge) ?? 25;
+  
+  /// Set companion age
+  Future<void> setCompanionAge(int age) async {
+    await _prefs.setInt(_keyCompanionAge, age);
+  }
+
   // ============================================
   // PERMISSIONS
   // ============================================

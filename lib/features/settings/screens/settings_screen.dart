@@ -36,6 +36,11 @@ import 'package:sable/core/widgets/restart_widget.dart';
 import 'package:flutter/services.dart'; // For Haptics
 import 'package:sable/core/audio/button_sound_service.dart';
 import 'package:sable/features/settings/services/avatar_display_settings.dart';
+import 'package:sable/features/settings/widgets/settings_header.dart';
+import 'package:sable/features/settings/widgets/settings_section.dart';
+import 'package:sable/features/settings/widgets/settings_tile.dart';
+import 'package:sable/core/personality/personality_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -46,6 +51,10 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  String _userName = '';
+  // Subscription check
+  bool _isPremium = false; // TODO: Hook up to real subscription state
+
   bool _newsEnabled = true;
   bool _gpsEnabled = false;
   String _avatarDisplayMode = AvatarDisplaySettings.modeFullscreen;
@@ -74,6 +83,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   
   // Avatar Selection
   String _selectedArchetypeId = 'sable';
+  int _companionAge = 25; // Default age, range 18-65+
+  String? _userPhotoUrl; // User's uploaded profile photo
   
   // Search
   final TextEditingController _searchController = TextEditingController();
@@ -196,9 +207,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   double _brainCreativity = 0.7;
   double _brainEmpathy = 0.8;
   double _brainHumor = 0.6;
+  double _userBond = 0.5; // 0=Cooled, 0.5=Neutral, 1.0=Warm
+  double _brainIntelligence = 0.5; // Default baseline, can go up to 1.0 for genius level
   
   // Local Vibe Service handle
   LocalVibeService? _localVibeService;
+  
+  // Custom Avatar Handling
+  String? _customAvatarUrl;
+  String? _savedAvatarArchetype;
 
   @override
   void initState() {
@@ -223,11 +240,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     
     setState(() {
+      _userName = prefs.getString('user_name') ?? '';
+      _isPremium = prefs.getBool('is_premium') ?? false; 
       _manualLocation = stateService.userCurrentLocation ?? '';
       _voiceEngine = prefs.getString('voice_engine') ?? 'eleven_labs';
       _apiKeyController.text = prefs.getString('eleven_labs_api_key') ?? '';
       _selectedVoiceId = prefs.getString('selected_voice_id');
       
+      // Load Custom Avatar Info
+      _customAvatarUrl = stateService.avatarUrl;
+      // We assume the stored archetype at load time is the one the avatar belongs to
+      _savedAvatarArchetype = stateService.selectedArchetypeId;
+
       // Load Intelligence Settings
       _persistentMemoryEnabled = prefs.getBool('persistent_memory_enabled') ?? true;
       _appleIntelligenceEnabled = prefs.getBool('apple_intelligence_enabled') ?? false;
@@ -253,12 +277,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _soundsEnabled = stateService.soundsEnabled;
       _selectedPersonalityId = stateService.selectedPersonalityId;
       _selectedArchetypeId = stateService.selectedArchetypeId;
+      _companionAge = stateService.companionAge;
       _zodiacEnabled = stateService.zodiacEnabled;
+      
+      // Load user photo path
+      _userPhotoUrl = prefs.getString('user_photo_path');
       
       // Load Brain Settings
       _brainCreativity = stateService.brainCreativity;
       _brainEmpathy = stateService.brainEmpathy;
       _brainHumor = stateService.brainHumor;
+      
+      // Load Bond value
+      _userBond = prefs.getDouble('user_bond') ?? 0.5;
+      
+      // Load Intelligence value
+      _brainIntelligence = prefs.getDouble('brain_intelligence') ?? 0.5;
     });
 
     // Load Local Vibe Settings
@@ -402,2327 +436,711 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
   @override
   Widget build(BuildContext context) {
-    debugPrint('Building SettingsScreen'); // Debug print
-    final bondState = ref.watch(bondEngineProvider);
-
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
-      appBar: AppBar(
-        backgroundColor: AurealColors.obsidian,
-        title: Text(
-          'SETTINGS',
-          style: GoogleFonts.spaceGrotesk(
-            color: Colors.white,
-            letterSpacing: 2,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            // Navigate to More screen (parent) or Chat as fallback
-            context.go('/more');
-          },
+      backgroundColor: AurealColors.obsidian, 
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 40),
+        child: Column(
+          children: [
+             // 1. Header
+             SettingsHeader(
+               userName: _userName,
+               avatarUrl: _customAvatarUrl,
+               userPhotoUrl: _userPhotoUrl,
+               archetypeId: _selectedArchetypeId, 
+               isPremium: _isPremium,
+               onEditProfile: _showProfileDialog,
+               onUserPhotoTap: _pickUserPhoto,
+             ),
+             
+             // 2. Intelligence
+             SettingsSection(
+               title: 'Companion Intelligence',
+               children: [
+                 SettingsTile(
+                   icon: LucideIcons.sparkles,
+                   title: 'Archetype',
+                   value: PersonalityService.getById(_selectedArchetypeId).name,
+                   onTap: _showArchetypeSelector,
+                 ),
+                 SettingsTile(
+                   icon: LucideIcons.mic,
+                   title: 'Voice',
+                   value: _selectedVoiceName ?? 'Default',
+                   onTap: _showVoiceSelector,
+                 ),
+                 SettingsTile(
+                   icon: LucideIcons.cake,
+                   title: 'Companion Age',
+                   value: _companionAge >= 65 ? '65+' : '$_companionAge',
+                   onTap: _showAgePicker,
+                 ),
+               ],
+             ),
+             
+             // Personality Tuning
+              Padding(
+               padding: const EdgeInsets.only(left: 16, top: 24, bottom: 8),
+               child: Align(
+                 alignment: Alignment.centerLeft,
+                 child: Text(
+                    'PERSONALITY TUNING',
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AurealColors.ghost),
+                 ),
+               ),
+             ),
+             SettingsSection(
+                children: [
+                   _buildSliderRow('Creativity', _brainCreativity, (v) {
+                       setState(() => _brainCreativity = v);
+                       OnboardingStateService.create().then((s) => s.setBrainCreativity(v));
+                   }),
+                   _buildSliderRow('Empathy', _brainEmpathy, (v) {
+                       setState(() => _brainEmpathy = v);
+                       OnboardingStateService.create().then((s) => s.setBrainEmpathy(v));
+                   }),
+                    _buildSliderRow('Humor', _brainHumor, (v) {
+                       setState(() => _brainHumor = v);
+                       OnboardingStateService.create().then((s) => s.setBrainHumor(v));
+                   }),
+                   _buildBondSliderRow(),
+                   _buildIntelligenceSliderRow(),
+                ]
+             ),
+             
+             // 3. Daily Life
+             SettingsSection(
+               title: 'Daily Life',
+               children: [
+                 SettingsTile(
+                   icon: LucideIcons.sun,
+                   title: 'Daily Briefing',
+                   trailing: Switch(
+                     value: _newsEnabled,
+                     onChanged: (val) {
+                       setState(() => _newsEnabled = val);
+                       OnboardingStateService.create().then((s) => s.setNewsEnabled(val));
+                     },
+                     activeColor: AurealColors.hyperGold,
+                   ),
+                 ),
+                  if (_newsEnabled) ...[
+                     SettingsTile(
+                       icon: LucideIcons.clock,
+                       title: 'Briefing Time',
+                       value: '08:00 AM', 
+                       onTap: () {},
+                     ),
+                  ],
+                  SettingsTile(
+                    icon: LucideIcons.mapPin, 
+                    title: 'Local Vibe',
+                    subtitle: _manualLocation.isNotEmpty ? _manualLocation : 'Current Location',
+                    onTap: () {
+                      _showManualLocationDialog();
+                    },
+                  ),
+               ],
+             ),
+             
+             // 4. App Experience
+             SettingsSection(
+               title: 'App Experience',
+               children: [
+                  SettingsTile(
+                    icon: LucideIcons.lock,
+                    title: 'Persistent Memory',
+                    subtitle: 'Allow Sable to remember context',
+                    trailing: Switch(
+                      value: _persistentMemoryEnabled,
+                      onChanged: _togglePersistentMemory,
+                      activeColor: AurealColors.hyperGold,
+                    ),
+                  ),
+                  SettingsTile(
+                    icon: LucideIcons.vibrate,
+                    title: 'Haptics',
+                    trailing: Switch(
+                      value: _hapticsEnabled,
+                      onChanged: (v) => setState(() => _hapticsEnabled = v), 
+                      activeColor: AurealColors.hyperGold,
+                    ),
+                  ),
+                  SettingsTile(
+                    icon: LucideIcons.volume2, 
+                    title: 'Sounds',
+                    trailing: Switch(
+                      value: _soundsEnabled,
+                      onChanged: (v) => setState(() => _soundsEnabled = v), 
+                      activeColor: AurealColors.hyperGold,
+                    ),
+                  ),
+               ],
+             ),
+
+             // 5. Account
+             SettingsSection(
+                title: 'Account',
+                children: [
+                  if (!_isPremium)
+                  SettingsTile(
+                    icon: LucideIcons.crown,
+                    title: 'Upgrade to Sable+',
+                    subtitle: 'Unlock unlimited voices & features',
+                    iconColor: Colors.purpleAccent,
+                    onTap: () {
+                       Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
+                    },
+                  ),
+                  SettingsTile(
+                    icon: LucideIcons.shieldAlert, 
+                    title: 'Emergency SOS',
+                    iconColor: Colors.red,
+                    onTap: () {
+                       Navigator.push(context, MaterialPageRoute(builder: (_) => const EmergencyScreen())); 
+                    },
+                  ),
+                  SettingsTile(
+                     icon: LucideIcons.trash2,
+                     title: 'Delete Account',
+                     isDestructive: true,
+                     onTap: () {
+                        _showDeleteAccountConfirmation();
+                     },
+                  ),
+                ],
+             ),
+             
+             // Version
+             const SizedBox(height: 32),
+             Center(
+               child: Text(
+                 'Sable v1.0.0 (Build 142)',
+                 style: GoogleFonts.inter(color: Colors.white24, fontSize: 12),
+               ),
+             ),
+          ],
         ),
       ),
-      body: Column(
+    );
+  }
+
+  Widget _buildSliderRow(String label, double value, Function(double) onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              style: GoogleFonts.inter(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Search settings...',
-                hintStyle: GoogleFonts.inter(color: Colors.white38),
-                prefixIcon: const Icon(Icons.search, color: Colors.white38),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white38),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
-            ),
-          ),
-          // Settings list
-          Expanded(
-            child: ListView(
-              children: [
-
-          _buildSectionHeader('ACCOUNT'),
-          SettingsTile(
-            title: 'Profile',
-            subtitle: 'Manage your identity',
-            icon: Icons.person_outline,
-            onTap: () {
-              ref.read(buttonSoundServiceProvider).playMediumTap();
-              _showProfileDialog();
-            },
-            onLongPress: () {
-              ref.read(buttonSoundServiceProvider).playLightTap();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AurealColors.carbon,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Row(
-                    children: [
-                      const Icon(Icons.person_outline, color: AurealColors.plasmaCyan),
-                      const SizedBox(width: 12),
-                      Text('PROFILE', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Manage your identity and how Sable knows you.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AurealColors.plasmaCyan.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                        ),
-                        child: Text('• Your name and personal details\n• How Sable addresses you\n• Identity preferences', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                  ],
-                ),
-              );
-            },
-          ),
-          SettingsTile(
-            title: 'Subscription',
-            subtitle: 'Aureal Pro Active',
-            icon: Icons.diamond_outlined,
-            onTap: () {
-              ref.read(buttonSoundServiceProvider).playMediumTap();
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
-            },
-            onLongPress: () {
-              ref.read(buttonSoundServiceProvider).playLightTap();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AurealColors.carbon,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Row(
-                    children: [
-                      const Icon(Icons.diamond_outlined, color: AurealColors.hyperGold),
-                      const SizedBox(width: 12),
-                      Text('SUBSCRIPTION', style: GoogleFonts.spaceGrotesk(color: AurealColors.hyperGold, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Manage your Aureal subscription and unlock premium features.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AurealColors.hyperGold.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AurealColors.hyperGold.withOpacity(0.3)),
-                        ),
-                        child: Text('• View current plan and benefits\n• Upgrade or change subscription\n• Manage billing', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                  ],
-                ),
-              );
-            },
-          ),
-
-
-
-          // Privacy Fortress - Collapsible Section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Theme(
-              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                initiallyExpanded: false,
-                tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                backgroundColor: AurealColors.carbon,
-                collapsedBackgroundColor: AurealColors.carbon,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                leading: const Icon(Icons.lock_outline, color: AurealColors.plasmaCyan),
-                title: Text(
-                  'PRIVACY FORTRESS',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: AurealColors.plasmaCyan,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                subtitle: Text(
-                  'Tap to manage privacy & data',
-                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 11),
-                ),
-                children: [
-                  SettingsTile(
-                    title: 'The Vault',
-                    subtitle: 'Zero-Knowledge Zone',
-                    icon: Icons.lock_outline,
-                    onTap: () {
-                      ref.read(buttonSoundServiceProvider).playMediumTap();
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const VaultScreen()));
-                    },
-                  ),
-                  SettingsTile(
-                    title: 'How we use your info',
-                    subtitle: 'Data usage & protection policy',
-                    icon: Icons.shield_outlined,
-                    onTap: () {
-                      ref.read(buttonSoundServiceProvider).playMediumTap();
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          backgroundColor: AurealColors.carbon,
-                          title: Text('Data Privacy', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
-                          content: Text(
-                            'Your data is encrypted locally. We do not sell your personal information. '
-                            'Conversations are processed for response generation only and are not stored permanently on our servers without your consent.',
-                            style: GoogleFonts.inter(color: AurealColors.stardust),
-                          ),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  SettingsTile(
-                    title: 'Forget Last Interaction',
-                    subtitle: 'Remove from short-term memory',
-                    icon: Icons.history,
-                    onTap: () {
-                      ref.read(buttonSoundServiceProvider).playMediumTap();
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Memory shredded.')));
-                    },
-                    onLongPress: () {
-                      ref.read(buttonSoundServiceProvider).playLightTap();
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          backgroundColor: AurealColors.carbon,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          title: Row(
-                            children: [
-                              const Icon(Icons.history, color: AurealColors.plasmaCyan),
-                              const SizedBox(width: 12),
-                              Text('FORGET LAST INTERACTION', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                            ],
-                          ),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Removes only the most recent conversation exchange from short-term memory.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: AurealColors.plasmaCyan.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                                ),
-                                child: Text('• Clears last interaction only\\n• Preserves all other conversations\\n• Bond and personality data untouched\\n• Useful for correcting mistakes', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  SettingsTile(
-                    title: 'Clear Chat History',
-                    subtitle: 'Remove all conversation messages',
-                    icon: Icons.chat_bubble_outline,
-                    onTap: () async {
-                      ref.read(buttonSoundServiceProvider).playMediumTap();
-                      try {
-                        final memoryService = await ConversationMemoryService.create();
-                        await memoryService.clearHistory();
-                        if (context.mounted) {
-                          Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/home', (route) => false);
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error clearing: $e')));
-                        }
-                      }
-                    },
-                    onLongPress: () {
-                      ref.read(buttonSoundServiceProvider).playLightTap();
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          backgroundColor: AurealColors.carbon,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          title: Row(
-                            children: [
-                              const Icon(Icons.chat_bubble_outline, color: AurealColors.plasmaCyan),
-                              const SizedBox(width: 12),
-                              Text('CLEAR CHAT HISTORY', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                            ],
-                          ),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Removes all visible conversation messages from your chat history.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: AurealColors.plasmaCyan.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                                ),
-                                child: Text('• Deletes all conversation messages\\n• Preserves bond and personality data\\n• Returns you to chat with fresh greeting\\n• Profile and settings remain intact', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  SettingsTile(
-                    title: 'Reset Onboarding',
-                    subtitle: 'Return to onboarding (keeps data)',
-                    icon: Icons.refresh,
-                    onTap: () async {
-                      ref.read(buttonSoundServiceProvider).playMediumTap();
-                      try {
-                        final stateService = await OnboardingStateService.create();
-                        await stateService.clearOnboardingData();
-                        final memoryService = await ConversationMemoryService.create();
-                        await memoryService.clearHistory();
-                        if (context.mounted) {
-                          await Future.delayed(Duration.zero);
-                          if (context.mounted) {
-                            Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil('/onboarding', (route) => false);
-                          }
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error resetting: $e')));
-                        }
-                      }
-                    },
-                    onLongPress: () {
-                      ref.read(buttonSoundServiceProvider).playLightTap();
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          backgroundColor: AurealColors.carbon,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          title: Row(
-                            children: [
-                              const Icon(Icons.refresh, color: AurealColors.plasmaCyan),
-                              const SizedBox(width: 12),
-                              Text('RESET ONBOARDING', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                            ],
-                          ),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Returns you to the initial setup flow while preserving your existing data.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: AurealColors.plasmaCyan.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                                ),
-                                child: Text('• Restarts onboarding screens\\n• Clears chat history\\n• Keeps your profile data\\n• Useful for re-customizing experience', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  SettingsTile(
-                    title: 'Wipe Memory',
-                    subtitle: 'Reset Bond Graph completely',
-                    icon: Icons.delete_forever,
-                    isDestructive: true,
-                    onTap: () async {
-                      ref.read(buttonSoundServiceProvider).playHeavyTap();
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          backgroundColor: AurealColors.carbon,
-                          title: Text('Wipe All Data?', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
-                          content: Text(
-                            'This will completely reset the app and return you to onboarding. All conversation history, profile data, and preferences will be lost.',
-                            style: GoogleFonts.inter(color: AurealColors.stardust),
-                          ),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(true),
-                              style: TextButton.styleFrom(foregroundColor: Colors.red),
-                              child: const Text('Wipe Everything'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirm == true) {
-                        final service = await OnboardingStateService.create();
-                        await service.clearOnboardingData();
-                        final memoryService = await ConversationMemoryService.create();
-                        await memoryService.clearHistory();
-                        if (context.mounted) {
-                          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-                        }
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Chat Appearance Section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Theme(
-              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                initiallyExpanded: false,
-                tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                backgroundColor: AurealColors.carbon,
-                collapsedBackgroundColor: AurealColors.carbon,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                leading: const Icon(Icons.palette_outlined, color: AurealColors.hyperGold),
-                title: Text(
-                  'CHAT APPEARANCE',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: AurealColors.hyperGold,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                subtitle: Text(
-                  'Customize avatar and background',
-                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 11),
-                ),
-                children: [
-                  // Avatar Selection (Sable, Kai, Echo)
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AurealColors.obsidian,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Avatar',
-                          style: GoogleFonts.spaceGrotesk(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            // Sable (Female)
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  ref.read(buttonSoundServiceProvider).playMediumTap();
-                                  final stateService = await OnboardingStateService.create();
-                                  final previousArchetype = _selectedArchetypeId.toLowerCase();
-                                  await stateService.setArchetypeId('sable');
-                                  // Only change voice when switching FROM male (Kai) to female
-                                  if (previousArchetype == 'kai') {
-                                    final aiOrigin = stateService.aiOrigin ?? 'United States';
-                                    final femaleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'female');
-                                    if (femaleVoice != null) {
-                                      await _voiceService.setVoice(femaleVoice);
-                                      setState(() {
-                                        _selectedArchetypeId = 'sable';
-                                        _selectedVoiceId = femaleVoice;
-                                      });
-                                      return;
-                                    }
-                                  }
-                                  setState(() {
-                                    _selectedArchetypeId = 'sable';
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _selectedArchetypeId.toLowerCase() == 'sable'
-                                        ? AurealColors.hyperGold.withOpacity(0.2)
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: _selectedArchetypeId.toLowerCase() == 'sable'
-                                          ? AurealColors.hyperGold
-                                          : Colors.white24,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(20),
-                                        child: Image.asset(
-                                          'assets/images/archetypes/sable.png',
-                                          width: 40,
-                                          height: 40,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Sable',
-                                        style: GoogleFonts.inter(
-                                          color: _selectedArchetypeId.toLowerCase() == 'sable'
-                                              ? AurealColors.hyperGold
-                                              : Colors.white70,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            // Kai
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  ref.read(buttonSoundServiceProvider).playMediumTap();
-                                  final stateService = await OnboardingStateService.create();
-                                  final previousArchetype = _selectedArchetypeId.toLowerCase();
-                                  await stateService.setArchetypeId('kai');
-                                  // Only change voice when switching FROM female (Sable/Echo) to male
-                                  if (previousArchetype == 'sable' || previousArchetype == 'echo') {
-                                    final aiOrigin = stateService.aiOrigin ?? 'United States';
-                                    final maleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'male');
-                                    if (maleVoice != null) {
-                                      await _voiceService.setVoice(maleVoice);
-                                      setState(() {
-                                        _selectedArchetypeId = 'kai';
-                                        _selectedVoiceId = maleVoice;
-                                      });
-                                      return;
-                                    }
-                                  }
-                                  setState(() {
-                                    _selectedArchetypeId = 'kai';
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _selectedArchetypeId.toLowerCase() == 'kai'
-                                        ? AurealColors.hyperGold.withOpacity(0.2)
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: _selectedArchetypeId.toLowerCase() == 'kai'
-                                          ? AurealColors.hyperGold
-                                          : Colors.white24,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(20),
-                                        child: Image.asset(
-                                          'assets/images/archetypes/kai.png',
-                                          width: 40,
-                                          height: 40,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Kai',
-                                        style: GoogleFonts.inter(
-                                          color: _selectedArchetypeId.toLowerCase() == 'kai'
-                                              ? AurealColors.hyperGold
-                                              : Colors.white70,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            // Echo (Female)
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  ref.read(buttonSoundServiceProvider).playMediumTap();
-                                  final stateService = await OnboardingStateService.create();
-                                  final previousArchetype = _selectedArchetypeId.toLowerCase();
-                                  await stateService.setArchetypeId('echo');
-                                  // Only change voice when switching FROM male (Kai) to female
-                                  if (previousArchetype == 'kai') {
-                                    final aiOrigin = stateService.aiOrigin ?? 'United States';
-                                    final femaleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'female');
-                                    if (femaleVoice != null) {
-                                      await _voiceService.setVoice(femaleVoice);
-                                      setState(() {
-                                        _selectedArchetypeId = 'echo';
-                                        _selectedVoiceId = femaleVoice;
-                                      });
-                                      return;
-                                    }
-                                  }
-                                  setState(() {
-                                    _selectedArchetypeId = 'echo';
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _selectedArchetypeId.toLowerCase() == 'echo'
-                                        ? AurealColors.hyperGold.withOpacity(0.2)
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: _selectedArchetypeId.toLowerCase() == 'echo'
-                                          ? AurealColors.hyperGold
-                                          : Colors.white24,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(20),
-                                        child: Image.asset(
-                                          'assets/images/archetypes/echo.png',
-                                          width: 40,
-                                          height: 40,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Echo',
-                                        style: GoogleFonts.inter(
-                                          color: _selectedArchetypeId.toLowerCase() == 'echo'
-                                              ? AurealColors.hyperGold
-                                              : Colors.white70,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Avatar Display Mode Toggle
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AurealColors.obsidian,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Avatar Display Mode',
-                          style: GoogleFonts.spaceGrotesk(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Row 1: Full Screen, Icon, Orb
-                        Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  ref.read(buttonSoundServiceProvider).playMediumTap();
-                                  final avatarSettings = AvatarDisplaySettings();
-                                  await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeFullscreen);
-                                  setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeFullscreen);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _avatarDisplayMode == AvatarDisplaySettings.modeFullscreen
-                                        ? AurealColors.hyperGold.withOpacity(0.2)
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: _avatarDisplayMode == AvatarDisplaySettings.modeFullscreen
-                                          ? AurealColors.hyperGold
-                                          : Colors.white24,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'Full Screen',
-                                      style: GoogleFonts.inter(
-                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeFullscreen
-                                            ? AurealColors.hyperGold
-                                            : Colors.white70,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  ref.read(buttonSoundServiceProvider).playMediumTap();
-                                  final avatarSettings = AvatarDisplaySettings();
-                                  await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeIcon);
-                                  setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeIcon);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
-                                        ? AurealColors.hyperGold.withOpacity(0.2)
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
-                                          ? AurealColors.hyperGold
-                                          : Colors.white24,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'Icon',
-                                      style: GoogleFonts.inter(
-                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
-                                            ? AurealColors.hyperGold
-                                            : Colors.white70,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  ref.read(buttonSoundServiceProvider).playMediumTap();
-                                  final avatarSettings = AvatarDisplaySettings();
-                                  await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeOrb);
-                                  setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeOrb);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
-                                        ? AurealColors.hyperGold.withOpacity(0.2)
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
-                                          ? AurealColors.hyperGold
-                                          : Colors.white24,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'Orb',
-                                      style: GoogleFonts.inter(
-                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
-                                            ? AurealColors.hyperGold
-                                            : Colors.white70,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        // Row 2: Portrait, Clock
-                        Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  ref.read(buttonSoundServiceProvider).playMediumTap();
-                                  final avatarSettings = AvatarDisplaySettings();
-                                  await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modePortrait);
-                                  setState(() => _avatarDisplayMode = AvatarDisplaySettings.modePortrait);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _avatarDisplayMode == AvatarDisplaySettings.modePortrait
-                                        ? AurealColors.hyperGold.withOpacity(0.2)
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: _avatarDisplayMode == AvatarDisplaySettings.modePortrait
-                                          ? AurealColors.hyperGold
-                                          : Colors.white24,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'Portrait',
-                                      style: GoogleFonts.inter(
-                                        color: _avatarDisplayMode == AvatarDisplaySettings.modePortrait
-                                            ? AurealColors.hyperGold
-                                            : Colors.white70,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  ref.read(buttonSoundServiceProvider).playMediumTap();
-                                  final avatarSettings = AvatarDisplaySettings();
-                                  await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeClock);
-                                  setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeClock);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
-                                        ? AurealColors.hyperGold.withOpacity(0.2)
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
-                                          ? AurealColors.hyperGold
-                                          : Colors.white24,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'Clock',
-                                      style: GoogleFonts.inter(
-                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
-                                            ? AurealColors.hyperGold
-                                            : Colors.white70,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  ref.read(buttonSoundServiceProvider).playMediumTap();
-                                  final avatarSettings = AvatarDisplaySettings();
-                                  await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeConversation);
-                                  setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeConversation);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _avatarDisplayMode == AvatarDisplaySettings.modeConversation
-                                        ? AurealColors.hyperGold.withOpacity(0.2)
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: _avatarDisplayMode == AvatarDisplaySettings.modeConversation
-                                          ? AurealColors.hyperGold
-                                          : Colors.white24,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'Chat',
-                                      style: GoogleFonts.inter(
-                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeConversation
-                                            ? AurealColors.hyperGold
-                                            : Colors.white70,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Background Color Selector (shown in Icon, Orb, and Portrait modes)
-                  if (_avatarDisplayMode == AvatarDisplaySettings.modeIcon ||
-                      _avatarDisplayMode == AvatarDisplaySettings.modeOrb ||
-                      _avatarDisplayMode == AvatarDisplaySettings.modePortrait)
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AurealColors.obsidian,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Background Color',
-                            style: GoogleFonts.spaceGrotesk(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () async {
-                                    ref.read(buttonSoundServiceProvider).playMediumTap();
-                                    final avatarSettings = AvatarDisplaySettings();
-                                    await avatarSettings.setBackgroundColor(AvatarDisplaySettings.colorBlack);
-                                    setState(() => _backgroundColor = AvatarDisplaySettings.colorBlack);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black,
-                                      border: Border.all(
-                                        color: _backgroundColor == AvatarDisplaySettings.colorBlack
-                                            ? AurealColors.hyperGold
-                                            : Colors.white24,
-                                        width: 2,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        'Black',
-                                        style: GoogleFonts.inter(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () async {
-                                    ref.read(buttonSoundServiceProvider).playMediumTap();
-                                    final avatarSettings = AvatarDisplaySettings();
-                                    await avatarSettings.setBackgroundColor(AvatarDisplaySettings.colorWhite);
-                                    setState(() => _backgroundColor = AvatarDisplaySettings.colorWhite);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      border: Border.all(
-                                        color: _backgroundColor == AvatarDisplaySettings.colorWhite
-                                            ? AurealColors.hyperGold
-                                            : Colors.black26,
-                                        width: 2,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        'White',
-                                        style: GoogleFonts.inter(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  // Clock Settings (shown only in Clock mode)
-                  if (_avatarDisplayMode == AvatarDisplaySettings.modeClock)
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AurealColors.obsidian,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Clock Settings',
-                            style: GoogleFonts.spaceGrotesk(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          // 12hr / 24hr toggle
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Time Format',
-                                style: GoogleFonts.inter(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () async {
-                                      ref.read(buttonSoundServiceProvider).playMediumTap();
-                                      final prefs = await SharedPreferences.getInstance();
-                                      await prefs.setBool('clock_use_24hour', false);
-                                      setState(() => _clockUse24Hour = false);
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: !_clockUse24Hour
-                                            ? AurealColors.hyperGold.withOpacity(0.2)
-                                            : Colors.transparent,
-                                        border: Border.all(
-                                          color: !_clockUse24Hour
-                                              ? AurealColors.hyperGold
-                                              : Colors.white24,
-                                        ),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        '12hr',
-                                        style: GoogleFonts.inter(
-                                          color: !_clockUse24Hour ? AurealColors.hyperGold : Colors.white54,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: () async {
-                                      ref.read(buttonSoundServiceProvider).playMediumTap();
-                                      final prefs = await SharedPreferences.getInstance();
-                                      await prefs.setBool('clock_use_24hour', true);
-                                      setState(() => _clockUse24Hour = true);
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: _clockUse24Hour
-                                            ? AurealColors.hyperGold.withOpacity(0.2)
-                                            : Colors.transparent,
-                                        border: Border.all(
-                                          color: _clockUse24Hour
-                                              ? AurealColors.hyperGold
-                                              : Colors.white24,
-                                        ),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        '24hr',
-                                        style: GoogleFonts.inter(
-                                          color: _clockUse24Hour ? AurealColors.hyperGold : Colors.white54,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // Digital / Analog toggle
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Clock Style',
-                                style: GoogleFonts.inter(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () async {
-                                      ref.read(buttonSoundServiceProvider).playMediumTap();
-                                      final prefs = await SharedPreferences.getInstance();
-                                      await prefs.setBool('clock_is_analog', false);
-                                      setState(() => _clockIsAnalog = false);
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: !_clockIsAnalog
-                                            ? AurealColors.hyperGold.withOpacity(0.2)
-                                            : Colors.transparent,
-                                        border: Border.all(
-                                          color: !_clockIsAnalog
-                                              ? AurealColors.hyperGold
-                                              : Colors.white24,
-                                        ),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        'Digital',
-                                        style: GoogleFonts.inter(
-                                          color: !_clockIsAnalog ? AurealColors.hyperGold : Colors.white54,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: () async {
-                                      ref.read(buttonSoundServiceProvider).playMediumTap();
-                                      final prefs = await SharedPreferences.getInstance();
-                                      await prefs.setBool('clock_is_analog', true);
-                                      setState(() => _clockIsAnalog = true);
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: _clockIsAnalog
-                                            ? AurealColors.hyperGold.withOpacity(0.2)
-                                            : Colors.transparent,
-                                        border: Border.all(
-                                          color: _clockIsAnalog
-                                              ? AurealColors.hyperGold
-                                              : Colors.white24,
-                                        ),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        'Analog',
-                                        style: GoogleFonts.inter(
-                                          color: _clockIsAnalog ? AurealColors.hyperGold : Colors.white54,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-
-          _buildSectionHeader('INTELLIGENCE & MEMORY'),
-          SettingsTile(
-            title: 'Persistent Memory',
-            subtitle: 'Remember conversations forever',
-            icon: Icons.memory_outlined,
-            onLongPress: () {
-              ref.read(buttonSoundServiceProvider).playLightTap();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AurealColors.carbon,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Row(
-                    children: [
-                      const Icon(Icons.memory_outlined, color: AurealColors.plasmaCyan),
-                      const SizedBox(width: 12),
-                      Text('PERSISTENT MEMORY', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Enables long-term memory of your conversations and context.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AurealColors.plasmaCyan.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                        ),
-                        child: Text('• Remembers across sessions\n• Builds deeper understanding\n• Personalized responses\n• Disable to prevent learning', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                  ],
-                ),
-              );
-            },
-            trailing: Switch(
-              value: _persistentMemoryEnabled,
-              activeColor: AurealColors.hyperGold,
-              onChanged: _togglePersistentMemory,
-            ),
-          ),
-          SettingsTile(
-            title: 'Apple Intelligence',
-            subtitle: 'On-device AI (Siri, Writing Tools)',
-            icon: Icons.apple,
-            onLongPress: () {
-              ref.read(buttonSoundServiceProvider).playLightTap();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AurealColors.carbon,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Row(
-                    children: [
-                      const Icon(Icons.apple, color: AurealColors.plasmaCyan),
-                      const SizedBox(width: 12),
-                      Text('APPLE INTELLIGENCE', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Integrates with Apple\'s on-device AI features like Siri and Writing Tools.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AurealColors.plasmaCyan.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                        ),
-                        child: Text('• 100% on-device processing\n• Privacy-focused\n• Requires iOS 18.1+\n• Limited to supported devices', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                  ],
-                ),
-              );
-            },
-            trailing: Switch(
-              value: _appleIntelligenceEnabled,
-              activeColor: AurealColors.hyperGold,
-              onChanged: _toggleAppleIntelligence,
-            ),
-          ),
-          SettingsTile(
-            title: 'Zodiac References',
-            subtitle: 'Include zodiac sign in AI context',
-            icon: Icons.auto_awesome,
-            onLongPress: () {
-              ref.read(buttonSoundServiceProvider).playLightTap();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AurealColors.carbon,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Row(
-                    children: [
-                      const Icon(Icons.auto_awesome, color: AurealColors.plasmaCyan),
-                      const SizedBox(width: 12),
-                      Text('ZODIAC REFERENCES', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('When enabled, your zodiac sign is shared with the AI for personalized, astrology-aware responses.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AurealColors.plasmaCyan.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                        ),
-                        child: Text('• AI may reference your sign in responses\n• Horoscope-themed insights\n• Disable for purely factual responses', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                  ],
-                ),
-              );
-            },
-            trailing: Switch(
-              value: _zodiacEnabled,
-              activeColor: AurealColors.hyperGold,
-              onChanged: _toggleZodiac,
-            ),
-          ),
-
-          _buildSectionHeader('FEEDBACK & IMMERSION'),
-          SettingsTile(
-            title: 'Haptic Feedback',
-            subtitle: 'Vibrations on interaction',
-            icon: Icons.vibration,
-            onLongPress: () {
-              ref.read(buttonSoundServiceProvider).playLightTap();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AurealColors.carbon,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Row(
-                    children: [
-                      const Icon(Icons.vibration, color: AurealColors.plasmaCyan),
-                      const SizedBox(width: 12),
-                      Text('HAPTIC FEEDBACK', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Physical vibration feedback when interacting with buttons and controls.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AurealColors.plasmaCyan.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                        ),
-                        child: Text('• Tactile confirmation\n• Enhanced immersion\n• Different levels per action\n• Disable to save battery', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                  ],
-                ),
-              );
-            },
-            trailing: Switch(
-              value: _hapticsEnabled,
-              activeColor: AurealColors.hyperGold,
-              onChanged: (val) async {
-                setState(() => _hapticsEnabled = val);
-                final state = await OnboardingStateService.create();
-                await state.setHapticsEnabled(val);
-                ref.read(feedbackServiceProvider).reloadSettings();
-                if (val) ref.read(feedbackServiceProvider).medium();
-              },
-            ),
-          ),
-          SettingsTile(
-            title: 'UI Sounds',
-            subtitle: 'Clicks and effects',
-            icon: Icons.volume_up_outlined,
-            onLongPress: () {
-              ref.read(buttonSoundServiceProvider).playLightTap();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AurealColors.carbon,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Row(
-                    children: [
-                      const Icon(Icons.volume_up_outlined, color: AurealColors.plasmaCyan),
-                      const SizedBox(width: 12),
-                      Text('UI SOUNDS', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Audio feedback for button taps and UI interactions.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AurealColors.plasmaCyan.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                        ),
-                        child: Text('• Click sounds on tap\n• Auditory confirmation\n• Enhances user experience\n• Disable for silent mode', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                  ],
-                ),
-              );
-            },
-            trailing: Switch(
-              value: _soundsEnabled,
-              activeColor: AurealColors.hyperGold,
-              onChanged: (val) async {
-                setState(() => _soundsEnabled = val);
-                final state = await OnboardingStateService.create();
-                await state.setSoundsEnabled(val);
-                ref.read(feedbackServiceProvider).reloadSettings();
-                if (val) ref.read(feedbackServiceProvider).tap();
-              },
-            ),
-          ),
-
-          _buildSectionHeader('PERMISSIONS & ACCESS'),
-          SettingsTile(
-            title: 'Location Services',
-            subtitle: _manualLocation != null ? 'Manual: $_manualLocation' : 'GPS & location-aware features',
-            icon: Icons.location_on_outlined,
-            trailing: Switch(
-              value: _permissionGps,
-              activeColor: AurealColors.hyperGold,
-              onChanged: (val) async {
-                setState(() => _permissionGps = val);
-                final state = await OnboardingStateService.create();
-                await state.setPermissionGps(val);
-              },
-            ),
-          ),
-          if (_permissionGps)
-            Padding(
-              padding: const EdgeInsets.only(left: 60, right: 24, bottom: 12),
-              child: GestureDetector(
-                onTap: _showManualLocationDialog,
-                child: Text(
-                  _manualLocation != null ? 'Change Manual Location' : 'Set Manual Location (Simulator Fix)',
-                  style: GoogleFonts.inter(
-                    color: AurealColors.plasmaCyan,
-                    fontSize: 12,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ),
-          SettingsTile(
-            title: 'Microphone',
-            subtitle: 'Voice input & commands',
-            icon: Icons.mic_outlined,
-            trailing: Switch(
-              value: _permissionMic,
-              activeColor: AurealColors.hyperGold,
-              onChanged: (val) async {
-                setState(() => _permissionMic = val);
-                final state = await OnboardingStateService.create();
-                await state.setPermissionMic(val);
-              },
-            ),
-          ),
-          SettingsTile(
-            title: 'Camera',
-            subtitle: 'Visual recognition (Future)',
-            icon: Icons.camera_alt_outlined,
-            trailing: Switch(
-              value: _permissionCamera,
-              activeColor: AurealColors.hyperGold,
-              onChanged: (val) async {
-                setState(() => _permissionCamera = val);
-                final state = await OnboardingStateService.create();
-                await state.setPermissionCamera(val);
-              },
-            ),
-          ),
-          SettingsTile(
-            title: 'Contacts',
-            subtitle: 'Relationship awareness',
-            icon: Icons.contacts_outlined,
-            trailing: FutureBuilder<bool>(
-              future: ContactsService.hasPermission(),
-              builder: (context, snapshot) {
-                final hasPermission = snapshot.data ?? false;
-                return Switch(
-                  value: hasPermission || _permissionContacts,
-                  activeColor: AurealColors.hyperGold,
-                  onChanged: (val) async {
-                    if (val) {
-                      final granted = await ContactsService.requestPermission();
-                      setState(() => _permissionContacts = granted);
-                    } else {
-                      // Show message: can't revoke, must go to Settings
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('To revoke permission, go to iOS Settings')),
-                        );
-                      }
-                    }
-                  },
-                );
-              },
-            ),
-          ),
-          SettingsTile(
-            title: 'Photos',
-            subtitle: 'Photo library access',
-            icon: Icons.photo_library_outlined,
-            trailing: FutureBuilder<bool>(
-              future: PhotosService.hasPermission(),
-              builder: (context, snapshot) {
-                final hasPermission = snapshot.data ?? false;
-                return Switch(
-                  value: hasPermission || _permissionNotes,
-                  activeColor: AurealColors.hyperGold,
-                  onChanged: (val) async {
-                    if (val) {
-                      final granted = await PhotosService.requestPermission();
-                      setState(() => _permissionNotes = granted);
-                    } else {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('To revoke permission, go to iOS Settings')),
-                        );
-                      }
-                    }
-                  },
-                );
-              },
-            ),
-          ),
-          SettingsTile(
-            title: 'Calendar',
-            subtitle: 'Schedule integration',
-            icon: Icons.calendar_today_outlined,
-            trailing: FutureBuilder<bool>(
-              future: CalendarService.hasPermission(),
-              builder: (context, snapshot) {
-                final hasPermission = snapshot.data ?? false;
-                return Switch(
-                  value: hasPermission || _permissionCalendar,
-                  activeColor: AurealColors.hyperGold,
-                  onChanged: (val) async {
-                    if (val) {
-                      final granted = await CalendarService.requestPermission();
-                      setState(() => _permissionCalendar = granted);
-                    } else {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('To revoke permission, go to iOS Settings')),
-                        );
-                      }
-                    }
-                  },
-                );
-              },
-            ),
-          ),
-          SettingsTile(
-            title: 'Reminders',
-            subtitle: 'Task management',
-            icon: Icons.alarm_outlined,
-            trailing: FutureBuilder<bool>(
-              future: RemindersService.hasPermission(),
-              builder: (context, snapshot) {
-                final hasPermission = snapshot.data ?? false;
-                return Switch(
-                  value: hasPermission || _permissionReminders,
-                  activeColor: AurealColors.hyperGold,
-                  onChanged: (val) async {
-                    if (val) {
-                      final granted = await RemindersService.requestPermission();
-                      setState(() => _permissionReminders = granted);
-                    } else {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('To revoke permission, go to iOS Settings')),
-                        );
-                      }
-                    }
-                  },
-                );
-              },
-            ),
-          ),
-
-          _buildSectionHeader('VOICE & PERSONALITY'),
-          SettingsTile(
-            title: 'Voice Engine',
-            subtitle: _voiceEngine == 'eleven_labs' ? 'ElevenLabs (High Quality)' : 'System Default',
-            icon: Icons.record_voice_over,
-            onTap: () async {
-              // Toggle engine
-              final newEngine = _voiceEngine == 'system' ? 'eleven_labs' : 'system';
-              await _voiceService.setVoiceEngine(newEngine);
-              setState(() => _voiceEngine = newEngine);
-              _loadVoices(); // Reload voices for new engine
-            },
-            trailing: Switch(
-              value: _voiceEngine == 'eleven_labs',
-              activeColor: AurealColors.hyperGold,
-              onChanged: (val) async {
-                final newEngine = val ? 'eleven_labs' : 'system';
-                await _voiceService.setVoiceEngine(newEngine);
-                setState(() => _voiceEngine = newEngine);
-                _loadVoices();
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Text(
-              'NOTE: Text-to-Voice is a premium feature requiring our highest level plans. Free for limited use during initial preview (timeframe TBD).',
-              style: GoogleFonts.inter(
-                color: AurealColors.hyperGold,
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-          
-          if (_voiceEngine == 'eleven_labs') ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: TextField(
-                controller: _apiKeyController,
-                style: GoogleFonts.inter(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'ElevenLabs API Key',
-                  labelStyle: GoogleFonts.inter(color: AurealColors.stardust),
-                  hintText: 'Enter your API key',
-                  hintStyle: GoogleFonts.inter(color: Colors.white24),
-                  filled: true,
-                  fillColor: AurealColors.carbon,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.save, color: AurealColors.plasmaCyan),
-                    onPressed: () async {
-                      await _voiceService.setElevenLabsApiKey(_apiKeyController.text);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('API Key saved!')),
-                      );
-                      _loadVoices();
-                    },
-                  ),
-                ),
-                obscureText: true,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-              child: Text(
-                'Get a key at elevenlabs.io. Free tier available.',
-                style: GoogleFonts.inter(color: Colors.white38, fontSize: 12),
-              ),
-            ),
-          ],
-
-          SettingsTile(
-            title: 'Voice Selection',
-            subtitle: _selectedVoiceName ?? 'Select a voice',
-            icon: Icons.graphic_eq,
-            onTap: () {
-              _showVoiceSelector();
-            },
-          ),
-          
-          SettingsTile(
-            title: 'Clear Voice Cache',
-            subtitle: 'Refresh voice library from server',
-            icon: Icons.refresh,
-            onTap: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('elevenlabs_voices_cache');
-              await prefs.remove('elevenlabs_voices_cache_timestamp');
-              
-              // Reload voices
-              await _loadVoices();
-              
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('✅ Voice cache cleared! Voices refreshed.'),
-                    backgroundColor: AurealColors.plasmaCyan,
-                  ),
-                );
-              }
-            },
-          ),
-
-          _buildSectionHeader('REAL-WORLD AWARENESS'),
-          SettingsTile(
-            title: 'Local Vibe',
-            subtitle: 'Location & Preferences',
-            icon: Icons.location_on_outlined,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Switch(
-                  value: _gpsEnabled,
-                  activeColor: AurealColors.hyperGold,
-                  onChanged: (val) async {
-                    setState(() => _gpsEnabled = val);
-                    final state = await OnboardingStateService.create();
-                    await state.setPermissionGps(val);
-                  },
-                ),
-              ],
-            ),
-          ),
-          
-          if (_gpsEnabled) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader('LOCATION MODE'),
-                  const SizedBox(height: 16),
-                  _buildLocationToggle(),
-                  
-                  if (_localVibeSettings.useCurrentLocation)
-                    _buildRadiusSlider()
-                  else
-                    _buildCityInput(),
-                  
-                  const SizedBox(height: 32),
-                  _buildSectionHeader('CATEGORIES'),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Select what you want to track locally.',
-                    style: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildCategoryChips(),
-                  
-                  const SizedBox(height: 24),
-                  _buildCustomCategoryInput(),
-                ],
-              ),
-            ),
-          ],
-          SettingsTile(
-            title: 'Daily Briefing',
-            subtitle: _newsEnabled ? 'Active' : 'Disabled',
-            icon: Icons.newspaper,
-            trailing: Switch(
-              value: _newsEnabled,
-              activeColor: AurealColors.hyperGold,
-              onChanged: (val) async {
-                setState(() => _newsEnabled = val);
-                final stateService = await OnboardingStateService.create();
-                await stateService.setNewsEnabled(val);
-              },
-            ),
-          ),
-          
-          if (_newsEnabled) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'NEWS TIMING',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: AurealColors.plasmaCyan,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTimingChip('First Interaction', _newsTimingFirstInteraction, () async {
-                          setState(() {
-                            _newsTimingFirstInteraction = true;
-                            // _newsTimingOnDemand = false; // Allow both? User request implies preference. Let's keep them independent or toggle?
-                            // "First interaction, On-demand, Both" implies they are independent checkboxes essentially.
-                          });
-                          final stateService = await OnboardingStateService.create();
-                          await stateService.setNewsTimingFirstInteraction(true);
-                        }),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildTimingChip('On Demand', _newsTimingOnDemand, () async {
-                          setState(() {
-                            _newsTimingOnDemand = !_newsTimingOnDemand;
-                          });
-                          final stateService = await OnboardingStateService.create();
-                          await stateService.setNewsTimingOnDemand(_newsTimingOnDemand);
-                        }),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'NEWS CATEGORIES',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: AurealColors.plasmaCyan,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      ...(_showAllCategories ? _allNewsCategories : _allNewsCategories.take(8)).map(
-                        (category) => _buildCategoryChip(
-                          category,
-                          _selectedCategories.contains(category),
-                          () => _toggleCategory(category),
-                        ),
-                      ),
-                      // Show More Button
-                      GestureDetector(
-                        onTap: () => setState(() => _showAllCategories = !_showAllCategories),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white24),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _showAllCategories ? 'Show Less' : 'Show More',
-                                style: GoogleFonts.inter(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                _showAllCategories ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                                color: Colors.white70,
-                                size: 16,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          
-          // Custom Topics
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Custom Topics', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: AurealColors.carbon,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        alignment: Alignment.centerLeft,
-                        child: TextField(
-                          style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
-                          decoration: InputDecoration(
-                            hintText: 'Add topic (e.g. "Crypto", "Gardening")',
-                            hintStyle: TextStyle(color: Colors.white30),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                          onSubmitted: (value) {
-                            if (value.isNotEmpty && !_customNewsTopics.contains(value)) {
-                              setState(() {
-                                _customNewsTopics.add(value);
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (_customNewsTopics.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _customNewsTopics.map((topic) => Chip(
-                        label: Text(topic, style: GoogleFonts.inter(color: Colors.white, fontSize: 11)),
-                        backgroundColor: AurealColors.plasmaCyan.withOpacity(0.2),
-                        deleteIcon: Icon(Icons.close, size: 14, color: AurealColors.plasmaCyan),
-                        onDeleted: () => setState(() => _customNewsTopics.remove(topic)),
-                        side: BorderSide(color: AurealColors.plasmaCyan),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      )).toList(),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // End of News Section
-          ],
-          
-
-
-          // Bond Engine with Info Icon
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildSectionHeader('BOND ENGINE'),
-                GestureDetector(
-                  onTap: () {
-                    ref.read(feedbackServiceProvider).tap();
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: AurealColors.carbon,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: Row(
-                          children: [
-                            const Icon(Icons.favorite, color: AurealColors.plasmaCyan),
-                            const SizedBox(width: 12),
-                            Text('BOND ENGINE', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                          ],
-                        ),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('The Bond Engine dynamically adjusts how your AI companion responds to you based on emotional connection.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                            const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AurealColors.plasmaCyan.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                              ),
-                              child: Text(
-                                '• COOLED: Respectful, professional distance\n'
-                                '• NEUTRAL: Balanced, friendly tone\n'
-                                '• WARM: Close, intimate connection',
-                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5),
-                              ),
-                            ),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                        ],
-                      ),
-                    );
-                  },
-                  child: const Icon(Icons.info_outline, size: 18, color: Colors.white54),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: _buildBondEngineSection(bondState.name),
-          ),
-          
-          
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildSectionHeader('PERSONALITY CORE'),
-                Padding(
-                  padding: const EdgeInsets.only(top: 24, right: 8),
-                  child: Row(
-                    children: [
-                      Text('Swipe to explore', style: GoogleFonts.inter(fontSize: 10, color: Colors.white30)),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.arrow_forward, size: 12, color: Colors.white30),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          _buildPersonalitySection(),
-
-          // Brain Configuration with Info Icon
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildSectionHeader('BRAIN CONFIGURATION'),
-                GestureDetector(
-                  onTap: () {
-                    ref.read(feedbackServiceProvider).tap();
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: AurealColors.carbon,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: Row(
-                          children: [
-                            const Icon(LucideIcons.brainCircuit, color: AurealColors.plasmaCyan),
-                            const SizedBox(width: 12),
-                            Text('BRAIN CONFIGURATION', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                          ],
-                        ),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Fine-tune your AI companion\'s neural parameters to customize response style and behavior.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                            const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AurealColors.plasmaCyan.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                              ),
-                              child: Text(
-                                '• CREATIVITY: Controls randomness vs consistency\n'
-                                '• FOCUS: Balances detailed vs concise responses\n'
-                                '• MEMORY DEPTH: How much context to recall\n'
-                                '• EMPATHY: Emotional awareness in responses',
-                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5),
-                              ),
-                            ),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                        ],
-                      ),
-                    );
-                  },
-                  child: const Icon(Icons.info_outline, size: 18, color: Colors.white54),
-                ),
-              ],
-            ),
-          ),
-          _buildBrainSliders(),
-
-          _buildSectionHeader('SUPPORT & SAFETY'),
-          SettingsTile(
-            title: 'Contact Us',
-            subtitle: 'support@aureal.ai',
-            icon: Icons.mail_outline,
-            onTap: () {
-              ref.read(buttonSoundServiceProvider).playMediumTap();
-              // TODO: Open email client
-            },
-            onLongPress: () {
-              ref.read(buttonSoundServiceProvider).playLightTap();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AurealColors.carbon,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Row(
-                    children: [
-                      const Icon(Icons.mail_outline, color: AurealColors.plasmaCyan),
-                      const SizedBox(width: 12),
-                      Text('CONTACT SUPPORT', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Get help from our support team at support@aureal.ai', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AurealColors.plasmaCyan.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                        ),
-                        child: Text('• Response time: 24-48 hours\n• Include app version and device\n• Attach screenshots if helpful', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                  ],
-                ),
-              );
-            },
-          ),
-          SettingsTile(
-            title: 'Help Center',
-            subtitle: 'FAQ & Guides',
-            icon: Icons.help_outline,
-            onTap: () {
-              ref.read(buttonSoundServiceProvider).playMediumTap();
-              // TODO: Open help center
-            },
-            onLongPress: () {
-              ref.read(buttonSoundServiceProvider).playLightTap();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AurealColors.carbon,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Row(
-                    children: [
-                      const Icon(Icons.help_outline, color: AurealColors.plasmaCyan),
-                      const SizedBox(width: 12),
-                      Text('HELP CENTER', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Access frequently asked questions and user guides.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AurealColors.plasmaCyan.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                        ),
-                        child: Text('• Getting started guides\n• Feature tutorials\n• Troubleshooting tips\n• Privacy and security info', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                  ],
-                ),
-              );
-            },
-          ),
-          
-          // Emergency Services (Moved to bottom of support)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: _buildEmergencyTile(),
-          ),
-
-          _buildSectionHeader('ABOUT'),
-          SettingsTile(
-            title: 'Version',
-            subtitle: '1.0.0 (Build 102)',
-            icon: Icons.info_outline,
-            onTap: () {
-              ref.read(buttonSoundServiceProvider).playLightTap();
-            },
-            onLongPress: () {
-              ref.read(buttonSoundServiceProvider).playLightTap();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AurealColors.carbon,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Row(
-                    children: [
-                      const Icon(Icons.info_outline, color: AurealColors.plasmaCyan),
-                      const SizedBox(width: 12),
-                      Text('APP VERSION', style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Current version and build information for troubleshooting.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AurealColors.plasmaCyan.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
-                        ),
-                        child: Text('• Version: 1.0.0\n• Build: 102\n• Include this info when contacting support', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                  ],
-                ),
-              );
-            },
-          ),
-          
-          SettingsTile(
-            title: 'Restart App',
-            subtitle: 'Reload interface & state',
-            icon: Icons.refresh,
-            iconColor: AurealColors.hyperGold,
-            onTap: () {
-              ref.read(buttonSoundServiceProvider).playMediumTap();
-              RestartWidget.restartApp(context);
-            },
-            onLongPress: () {
-              ref.read(buttonSoundServiceProvider).playLightTap();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: AurealColors.carbon,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Row(
-                    children: [
-                      const Icon(Icons.refresh, color: AurealColors.hyperGold),
-                      const SizedBox(width: 12),
-                      Text('RESTART APP', style: GoogleFonts.spaceGrotesk(color: AurealColors.hyperGold, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Restarts the app to reload the interface and refresh all services.', style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AurealColors.hyperGold.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AurealColors.hyperGold.withOpacity(0.3)),
-                        ),
-                        child: Text('• Reloads UI and state\n• Does NOT delete data\n• Useful for fixing display issues\n• Returns to home screen', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.5)),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: Text('GOT IT', style: GoogleFonts.inter(color: Colors.white54))),
-                  ],
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 40),
-              ],
-            ),
-          ),
+           Row(
+             children: [
+               Text(label, style: GoogleFonts.inter(color: AurealColors.stardust, fontSize: 15, fontWeight: FontWeight.w500)),
+               const Spacer(),
+               Text('${(value * 100).toInt()}%', style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 13)),
+             ],
+           ),
+           SliderTheme(
+             data: SliderThemeData(
+               trackHeight: 2,
+               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+               overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+               activeTrackColor: AurealColors.hyperGold,
+               inactiveTrackColor: Colors.white10,
+               thumbColor: Colors.white,
+             ),
+             child: Slider(
+               value: value,
+               onChanged: onChanged,
+             ),
+           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBondSliderRow() {
+    String bondLabel = _userBond < 0.33 ? 'Cooled' : (_userBond > 0.66 ? 'Warm' : 'Neutral');
+    Color bondColor = _userBond < 0.33 
+        ? Colors.blue[300]! 
+        : (_userBond > 0.66 ? Colors.orange[300]! : Colors.grey);
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           Row(
+             children: [
+               Text('User Bond', style: GoogleFonts.inter(color: AurealColors.stardust, fontSize: 15, fontWeight: FontWeight.w500)),
+               const Spacer(),
+               Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                 decoration: BoxDecoration(
+                   color: bondColor.withOpacity(0.2),
+                   borderRadius: BorderRadius.circular(8),
+                 ),
+                 child: Text(
+                   bondLabel.toUpperCase(),
+                   style: GoogleFonts.inter(color: bondColor, fontSize: 11, fontWeight: FontWeight.bold),
+                 ),
+               ),
+             ],
+           ),
+           SliderTheme(
+             data: SliderThemeData(
+               trackHeight: 2,
+               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+               overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+               activeTrackColor: bondColor,
+               inactiveTrackColor: Colors.white10,
+               thumbColor: Colors.white,
+             ),
+             child: Slider(
+               value: _userBond,
+               onChanged: (v) async {
+                 setState(() => _userBond = v);
+                 final prefs = await SharedPreferences.getInstance();
+                 await prefs.setDouble('user_bond', v);
+               },
+             ),
+           ),
+           Row(
+             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+             children: [
+               Text('Cooled', style: GoogleFonts.inter(color: Colors.blue[200], fontSize: 10)),
+               Text('Neutral', style: GoogleFonts.inter(color: Colors.grey, fontSize: 10)),
+               Text('Warm', style: GoogleFonts.inter(color: Colors.orange[200], fontSize: 10)),
+             ],
+           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIntelligenceSliderRow() {
+    // Intelligence ranges from 0.5 (baseline) to 1.0 (genius)
+    // Display as percentage where 0.5 = 50% (Average) and 1.0 = 100% (Genius)
+    int displayPercent = ((_brainIntelligence - 0.5) * 200).round(); // 0-100% based on range
+    String levelLabel = displayPercent < 25 ? 'Average' 
+        : (displayPercent < 50 ? 'Sharp' 
+        : (displayPercent < 75 ? 'Brilliant' : 'Genius'));
+    Color levelColor = displayPercent < 25 ? Colors.grey 
+        : (displayPercent < 50 ? Colors.green[300]! 
+        : (displayPercent < 75 ? Colors.purple[300]! : AurealColors.hyperGold));
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           Row(
+             children: [
+               Text('Intelligence', style: GoogleFonts.inter(color: AurealColors.stardust, fontSize: 15, fontWeight: FontWeight.w500)),
+               const Spacer(),
+               Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                 decoration: BoxDecoration(
+                   color: levelColor.withOpacity(0.2),
+                   borderRadius: BorderRadius.circular(8),
+                 ),
+                 child: Row(
+                   mainAxisSize: MainAxisSize.min,
+                   children: [
+                     Icon(LucideIcons.brain, size: 12, color: levelColor),
+                     const SizedBox(width: 4),
+                     Text(
+                       levelLabel.toUpperCase(),
+                       style: GoogleFonts.inter(color: levelColor, fontSize: 11, fontWeight: FontWeight.bold),
+                     ),
+                   ],
+                 ),
+               ),
+             ],
+           ),
+           SliderTheme(
+             data: SliderThemeData(
+               trackHeight: 2,
+               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+               overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+               activeTrackColor: levelColor,
+               inactiveTrackColor: Colors.white10,
+               thumbColor: Colors.white,
+             ),
+             child: Slider(
+               value: _brainIntelligence,
+               min: 0.5,
+               max: 1.0,
+               onChanged: (v) async {
+                 setState(() => _brainIntelligence = v);
+                 final prefs = await SharedPreferences.getInstance();
+                 await prefs.setDouble('brain_intelligence', v);
+               },
+             ),
+           ),
+           Row(
+             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+             children: [
+               Text('Average', style: GoogleFonts.inter(color: Colors.grey, fontSize: 10)),
+               Text('Genius', style: GoogleFonts.inter(color: AurealColors.hyperGold, fontSize: 10)),
+             ],
+           ),
+           // Warning for high intelligence settings
+           if (_brainIntelligence > 0.75)
+             Padding(
+               padding: const EdgeInsets.only(top: 8),
+               child: Row(
+                 children: [
+                   Icon(LucideIcons.alertTriangle, size: 12, color: Colors.orange[300]),
+                   const SizedBox(width: 6),
+                   Expanded(
+                     child: Text(
+                       'Higher intelligence may add thinking time to responses',
+                       style: GoogleFonts.inter(color: Colors.orange[300], fontSize: 11, fontStyle: FontStyle.italic),
+                     ),
+                   ),
+                 ],
+               ),
+             ),
+        ],
+      ),
+    );
+  }
+
+  void _pickUserPhoto() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AurealColors.carbon,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Update Profile Photo',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AurealColors.plasmaCyan.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(LucideIcons.camera, color: AurealColors.plasmaCyan),
+              ),
+              title: Text('Take Photo', style: GoogleFonts.inter(color: Colors.white)),
+              subtitle: Text('Use camera', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+              onTap: () async {
+                Navigator.pop(context);
+                final picker = ImagePicker();
+                final XFile? image = await picker.pickImage(source: ImageSource.camera);
+                if (image != null && mounted) {
+                  setState(() => _userPhotoUrl = image.path);
+                  // Save to preferences
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setString('user_photo_path', image.path);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('✅ Profile photo updated!')),
+                    );
+                  }
+                }
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AurealColors.hyperGold.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(LucideIcons.image, color: AurealColors.hyperGold),
+              ),
+              title: Text('Choose from Library', style: GoogleFonts.inter(color: Colors.white)),
+              subtitle: Text('Select existing photo', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+              onTap: () async {
+                Navigator.pop(context);
+                final picker = ImagePicker();
+                final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                if (image != null && mounted) {
+                  setState(() => _userPhotoUrl = image.path);
+                  // Save to preferences
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setString('user_photo_path', image.path);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('✅ Profile photo updated!')),
+                    );
+                  }
+                }
+              },
+            ),
+            if (_userPhotoUrl != null) ...[
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(LucideIcons.trash2, color: Colors.red),
+                ),
+                title: Text('Remove Photo', style: GoogleFonts.inter(color: Colors.white)),
+                subtitle: Text('Use initials instead', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+                onTap: () {
+                  setState(() => _userPhotoUrl = null);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAgePicker() {
+    int tempAge = _companionAge;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AurealColors.carbon,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Companion Age',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Set your companion\'s apparent age (18+)',
+                style: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                tempAge >= 65 ? '65+' : '$tempAge',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold,
+                  color: AurealColors.plasmaCyan,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Slider(
+                value: tempAge.toDouble(),
+                min: 18,
+                max: 65,
+                divisions: 47,
+                activeColor: AurealColors.plasmaCyan,
+                inactiveColor: Colors.white12,
+                label: tempAge >= 65 ? '65+' : '$tempAge',
+                onChanged: (value) {
+                  setModalState(() => tempAge = value.round());
+                },
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('18', style: GoogleFonts.inter(color: Colors.white54)),
+                  Text('65+', style: GoogleFonts.inter(color: Colors.white54)),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final stateService = await OnboardingStateService.create();
+                    await stateService.setCompanionAge(tempAge);
+                    setState(() => _companionAge = tempAge);
+                    if (mounted) Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AurealColors.plasmaCyan,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(
+                    'Save',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showArchetypeSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AurealColors.carbon,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Text(
+              'Choose Archetype',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Select your companion\'s personality',
+              style: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: PersonalityService.archetypes.length,
+                itemBuilder: (context, index) {
+                  final archetype = PersonalityService.archetypes[index];
+                  final isSelected = archetype.id.toLowerCase() == _selectedArchetypeId.toLowerCase();
+                  return GestureDetector(
+                    onTap: () async {
+                      final stateService = await OnboardingStateService.create();
+                      await stateService.setArchetypeId(archetype.id);
+                      setState(() {
+                        _selectedArchetypeId = archetype.id;
+                      });
+                      if (mounted) Navigator.pop(context);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AurealColors.plasmaCyan.withOpacity(0.15) : Colors.black26,
+                        border: Border.all(
+                          color: isSelected ? AurealColors.plasmaCyan : Colors.white12,
+                          width: isSelected ? 2 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: isSelected ? [
+                          BoxShadow(
+                            color: AurealColors.plasmaCyan.withOpacity(0.3),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ] : null,
+                      ),
+                      child: Row(
+                        children: [
+                          // Checkmark indicator
+                          if (isSelected) ...[
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AurealColors.plasmaCyan,
+                              ),
+                              child: const Icon(LucideIcons.check, color: Colors.white, size: 16),
+                            ),
+                            const SizedBox(width: 12),
+                          ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  archetype.name,
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: isSelected ? AurealColors.plasmaCyan : Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  archetype.subtitle,
+                                  style: GoogleFonts.inter(
+                                    color: AurealColors.plasmaCyan,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  archetype.vibe,
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -3017,6 +1435,98 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const SnackBar(content: Text('Bond reset to Neutral.')),
       );
     }
+  }
+
+  void _showDeleteAccountConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AurealColors.carbon,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(LucideIcons.alertTriangle, color: Colors.red[400], size: 24),
+            const SizedBox(width: 12),
+            Text(
+              'Delete Account',
+              style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This action is PERMANENT and cannot be undone.',
+              style: GoogleFonts.inter(color: Colors.red[300], fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Deleting your account will:',
+              style: GoogleFonts.inter(color: Colors.white70),
+            ),
+            const SizedBox(height: 8),
+            Text('• Erase all conversation history', style: GoogleFonts.inter(color: Colors.white54, fontSize: 13)),
+            Text('• Remove all stored memories', style: GoogleFonts.inter(color: Colors.white54, fontSize: 13)),
+            Text('• Delete your journal entries', style: GoogleFonts.inter(color: Colors.white54, fontSize: 13)),
+            Text('• Clear all preferences and settings', style: GoogleFonts.inter(color: Colors.white54, fontSize: 13)),
+            const SizedBox(height: 16),
+            Text(
+              'Your emergency contacts and health data will also be deleted.',
+              style: GoogleFonts.inter(color: Colors.orange[300], fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white70)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _confirmDeleteAccount();
+            },
+            child: Text('Continue', style: GoogleFonts.inter(color: Colors.red[400], fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteAccount() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AurealColors.carbon,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Are you absolutely sure?',
+          style: GoogleFonts.spaceGrotesk(color: Colors.red[400], fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Type "DELETE" to confirm permanent account deletion.',
+          style: GoogleFonts.inter(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white70)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              // TODO: Implement actual account deletion
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Account deletion is not yet implemented.')),
+              );
+            },
+            child: Text('DELETE MY ACCOUNT', style: GoogleFonts.inter(color: Colors.red[400], fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSettingRow({
@@ -3739,6 +2249,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Widget _buildDayChip(String day, bool isActive) {
+    return GestureDetector(
+      onTap: () {
+        ref.read(buttonSoundServiceProvider).playMediumTap();
+        // TODO: Toggle day active state
+      },
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: isActive ? AurealColors.hyperGold.withOpacity(0.2) : Colors.transparent,
+          border: Border.all(
+            color: isActive ? AurealColors.hyperGold : Colors.white24,
+            width: 1.5,
+          ),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            day,
+            style: GoogleFonts.inter(
+              color: isActive ? AurealColors.hyperGold : Colors.white54,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildEmergencyTile() {
     return Container(

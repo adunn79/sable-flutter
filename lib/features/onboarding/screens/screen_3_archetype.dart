@@ -90,7 +90,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'You can keep or change the appearance on the next screen.',
+                              'You can customize Race, Gender, and Appearance for any archetype on the next screen.',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: AurealColors.plasmaCyan,

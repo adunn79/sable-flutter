@@ -31,6 +31,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   int _apparentAge = 25;
   String _origin = 'United States, California';
   String _race = 'Sable (Synthetic Human)';
+  String _gender = 'Female'; // Default
   String _build = 'Athletic';
   String _skinTone = 'Golden/Tan';
   String _eyeColor = 'Amber/Honey';
@@ -48,8 +49,39 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   @override
   void initState() {
     super.initState();
+    _initGender();
+    _initRace();
     _initServices();
     _initVoice();
+  }
+
+  void _initGender() {
+    switch (widget.archetype) {
+      case 'Sable':
+        _gender = 'Female';
+        break;
+      case 'Kai':
+        _gender = 'Male';
+        break;
+      case 'Echo':
+        _gender = 'Non-binary';
+        break;
+      default:
+        _gender = 'Female';
+    }
+  }
+
+  void _initRace() {
+    switch (widget.archetype) {
+      case 'Kai':
+        _race = 'Black / African American';
+        break;
+      case 'Custom':
+        _race = 'Sable (Synthetic Human)'; // Or whatever default
+        break;
+      default:
+        _race = 'Sable (Synthetic Human)';
+    }
   }
 
   Future<void> _initVoice() async {
@@ -136,6 +168,23 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
   Future<void> _initServices() async {
     _stateService = await OnboardingStateService.create();
+    
+    // Calculate initial smart age based on User DOB
+    final dob = _stateService?.userDob;
+    if (dob != null) {
+      final now = DateTime.now();
+      int userAge = now.year - dob.year;
+      if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) {
+        userAge--;
+      }
+      
+      // Formula: User Age - 15, but never below 18
+      int targetAvatarAge = userAge - 15;
+      if (targetAvatarAge < 18) targetAvatarAge = 18;
+      
+      _apparentAge = targetAvatarAge;
+    }
+
     // Auto-show customization for "Custom" archetype
     if (widget.archetype == 'Custom') {
       _showCustomization = true;
@@ -145,11 +194,39 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   }
 
   void _handleUseAsIs() {
-    // Create default avatar config for the selected archetype
-    // Create default avatar config for the selected archetype
+    // Check if the user selected a race that REQUIRES generation
+    // Sable Default: 'Sable (Synthetic Human)' or 'Caucasian'
+    // Kai Default: 'Black / African American' (New Default) or 'Caucasian' (Old) - Let's stick to the new identity
+    // Echo Default: Any (Echo is neutral, but let's assume 'Caucasian' or 'Sable' is default asset)
+    
+    bool isDefaultRace = false;
+    
+    if (widget.archetype == 'Sable') {
+      if (_race == 'Sable (Synthetic Human)' || _race.contains('Caucasian') || _race.contains('White')) {
+        isDefaultRace = true;
+      }
+    } else if (widget.archetype == 'Kai') {
+      // Since we just updated Kai to be African American, that IS his default now.
+      if (_race.contains('Black') || _race.contains('African')) {
+        isDefaultRace = true;
+      }
+    } else if (widget.archetype == 'Echo') {
+       // Echo is usually depicted as white/synthetic in assets
+       if (_race == 'Sable (Synthetic Human)' || _race.contains('Caucasian') || _race.contains('White')) {
+         isDefaultRace = true;
+       }
+    }
+
+    // If they changed the race, we MUST generate a new image
+    if (!isDefaultRace) {
+      _handleManifest();
+      return;
+    }
+
+    // Otherwise, use the pre-baked asset
     final config = AvatarConfig(
       archetype: widget.archetype,
-      gender: _getGender(),
+      gender: _gender,
       apparentAge: _apparentAge,
       origin: _origin,
       race: _race,
@@ -188,7 +265,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
     try {
       final config = AvatarConfig(
         archetype: widget.archetype,
-        gender: _getGender(),
+        gender: _gender,
         apparentAge: _apparentAge,
         origin: _origin,
         race: _race,
@@ -287,22 +364,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
     );
   }
 
-  String _getGender() {
-    switch (widget.archetype) {
-      case 'Sable':
-        return 'Female';
-      case 'Kai':
-        return 'Male';
-      case 'Echo':
-        return 'Non-binary';
-      case 'Custom':
-        // For custom, we default to Female for now as we don't have a selector yet
-        // Ideally we should add a gender selector for Custom archetype
-        return 'Female';
-      default:
-        return 'Female';
-    }
-  }
+
 
   void _showUpsellDialog() {
     showDialog(
@@ -326,7 +388,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
               Navigator.pop(context);
               final config = AvatarConfig(
                 archetype: widget.archetype,
-                gender: _getGender(),
+                gender: _gender,
                 apparentAge: _apparentAge,
                 origin: _origin,
                 race: _race,
@@ -402,18 +464,80 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
               
               const SizedBox(height: 48),
               
-              // Use Default Appearance Button
+              // Basic Customization: Race Selection
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AurealColors.carbon,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AurealColors.ghost.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'RACE / ETHNICITY (BASIC INCLUDED)',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AurealColors.ghost,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _race,
+                        isExpanded: true,
+                        dropdownColor: AurealColors.carbon,
+                        style: GoogleFonts.inter(color: AurealColors.stardust, fontSize: 16),
+                        icon: const Icon(Icons.keyboard_arrow_down, color: AurealColors.plasmaCyan),
+                        items: [
+                          'Sable (Synthetic Human)',
+                          'Caucasian / White',
+                          'Black / African American',
+                          'Asian',
+                          'Latino / Hispanic',
+                          'Native American / Indigenous',
+                          'Middle Eastern',
+                          'South Asian (Indian)',
+                          'Pacific Islander',
+                          'Mixed Heritage',
+                        ].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _race = newValue;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ).animate(delay: 300.ms).fadeIn(duration: 600.ms),
+
+              const SizedBox(height: 24),
+              
+              // Use / Generate Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _handleUseAsIs,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 20),
+                    backgroundColor: AurealColors.plasmaCyan,
+                    foregroundColor: Colors.black,
                   ),
                   child: Column(
                     children: [
                       Text(
-                        'USE ${widget.archetype.toUpperCase()} AS-IS',
+                        'CONTINUE WITH SELECTED RACE',
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -422,10 +546,10 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Keep the default appearance',
+                        'Updates appearance while keeping the vibe',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: AurealColors.ghost,
+                          color: Colors.black87,
                         ),
                       ),
                     ],
@@ -433,40 +557,64 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                 ),
               ).animate(delay: 400.ms).fadeIn(duration: 600.ms).slideY(begin: 0.1, end: 0),
               
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
+
+              Divider(color: AurealColors.ghost.withOpacity(0.2)),
               
-              // Customize Appearance Button
+              const SizedBox(height: 24),
+              
+              // Premium Full Customization Button
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: _handleCustomize,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 20),
-                    side: const BorderSide(color: AurealColors.plasmaCyan),
+                    side: const BorderSide(color: AurealColors.hyperGold),
                   ),
-                  child: Column(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'CUSTOMIZE APPEARANCE',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AurealColors.plasmaCyan,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Design your own look',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AurealColors.ghost,
-                        ),
+                      const Icon(Icons.star, color: AurealColors.hyperGold, size: 20),
+                      const SizedBox(width: 8),
+                      Column(
+                        children: [
+                          Text(
+                            'DESIGN FROM SCRATCH (PREMIUM)',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AurealColors.hyperGold,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Full control over every specific detail',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AurealColors.hyperGold.withOpacity(0.8),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ).animate(delay: 500.ms).fadeIn(duration: 600.ms).slideY(begin: 0.1, end: 0),
+
+              const SizedBox(height: 16),
+
+              // Note
+              Text(
+                'Upgrade to Premium to design your own avatar. You can always change this later in settings.',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AurealColors.ghost,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ).animate(delay: 600.ms).fadeIn(duration: 600.ms),
             ],
           ),
         ),
@@ -660,21 +808,42 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
                     const SizedBox(height: 24),
 
+                    // Gender
+                    _buildSectionLabel('Gender Identity'),
+                    const SizedBox(height: 8),
+                    _buildDropdown(
+                      value: _gender,
+                      items: [
+                        'Female',
+                        'Male',
+                        'Non-binary',
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _gender = value;
+                          });
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+
                     // Race
-                    _buildSectionLabel('Race'),
+                    _buildSectionLabel('Race / Ethnicity'),
                     const SizedBox(height: 8),
                     _buildDropdown(
                       value: _race,
                       items: [
                         'Sable (Synthetic Human)',
-                        'Caucasian',
+                        'Caucasian / White',
+                        'Black / African American',
                         'Asian',
-                        'Black/African Descent',
-                        'Latino/Hispanic',
+                        'Latino / Hispanic',
+                        'Native American / Indigenous',
                         'Middle Eastern',
-                        'South Asian',
+                        'South Asian (Indian)',
                         'Pacific Islander',
-                        'Indigenous',
                         'Mixed Heritage',
                       ],
                       onChanged: (value) {

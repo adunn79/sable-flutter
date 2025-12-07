@@ -95,10 +95,13 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     final phoneController = TextEditingController();
     final emailController = TextEditingController();
     final relationshipController = TextEditingController();
+    
+    // Store parent ScaffoldMessenger before entering dialog
+    final parentMessenger = ScaffoldMessenger.of(context);
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AurealColors.carbon,
         title: Text('Add Emergency Contact', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
         content: SingleChildScrollView(
@@ -151,19 +154,15 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () async {
-                  // Store context before async operations
-                  final dialogContext = context;
-                  
+                  // Use parentMessenger (captured before dialog) for snackbars
                   try {
                     final hasPermission = await ContactsService.hasPermission();
                     if (!hasPermission) {
                       final granted = await ContactsService.requestPermission();
                       if (!granted) {
-                        if (dialogContext.mounted) {
-                          ScaffoldMessenger.of(dialogContext).showSnackBar(
-                            const SnackBar(content: Text('Permission denied. Cannot access contacts.')),
-                          );
-                        }
+                        parentMessenger.showSnackBar(
+                          const SnackBar(content: Text('Permission denied. Cannot access contacts.')),
+                        );
                         return;
                       }
                     }
@@ -175,19 +174,15 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                       emailController.text = contact['email'] ?? '';
                     } else {
                       // Show message that contact picker isn't available yet
-                      if (dialogContext.mounted) {
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                          const SnackBar(content: Text('Contact picker not yet available. Please enter manually.')),
-                        );
-                      }
+                      parentMessenger.showSnackBar(
+                        const SnackBar(content: Text('Contact picker not yet available. Please enter manually.')),
+                      );
                     }
                   } catch (e) {
                     debugPrint('Error picking contact: $e');
-                    if (dialogContext.mounted) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(content: Text('Error: $e')),
-                      );
-                    }
+                    parentMessenger.showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
                   }
                 },
                 icon: const Icon(LucideIcons.users, size: 16),
@@ -202,7 +197,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
@@ -216,7 +211,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                     'relationship': relationshipController.text.isNotEmpty ? relationshipController.text : 'Contact',
                   });
                 });
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
               }
             },
             style: ElevatedButton.styleFrom(
@@ -224,6 +219,102 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
               foregroundColor: AurealColors.obsidian,
             ),
             child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSosConfirmation() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AurealColors.carbon,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(LucideIcons.alertTriangle, color: Colors.red[400], size: 28),
+            const SizedBox(width: 12),
+            Text(
+              'Emergency SOS',
+              style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This will immediately:',
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(LucideIcons.phone, color: Colors.red[400], size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Call 911 (Emergency Services)',
+                    style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            if (_emergencyContacts.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(LucideIcons.messageCircle, color: Colors.orange[400], size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Notify ${_emergencyContacts.length} emergency contact${_emergencyContacts.length > 1 ? 's' : ''}',
+                      style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (_shareLocation) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(LucideIcons.mapPin, color: Colors.green[400], size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Share your GPS location',
+                      style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 16),
+            Text(
+              'Only use this in a real emergency.',
+              style: GoogleFonts.inter(color: Colors.orange[300], fontSize: 12, fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _activateEmergencyProtocol();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('CONFIRM SOS', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -377,7 +468,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: _isSosActive ? null : _activateEmergencyProtocol,
+                    onPressed: _isSosActive ? null : _showSosConfirmation,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,

@@ -17,6 +17,9 @@ import 'package:sable/features/journal/widgets/avatar_journal_overlay.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:sable/src/pages/chat/chat_page.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:sable/core/memory/unified_memory_service.dart';
+import 'package:sable/core/ai/model_orchestrator.dart';
+import 'package:sable/features/journal/services/journal_storage_service.dart';
 
 /// Vital Balance Screen - Health & Wellness Tracking
 /// Uses the "Vitality Strategist" personality for AI interactions
@@ -55,6 +58,18 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
   String? _weatherTemp;
   String? _weatherHighLow;
   
+  // Inline Chat State
+  List<Map<String, String>> _chatMessages = []; // {role: 'user'|'ai', text: '...'}
+  bool _isAiThinking = false;
+  
+  // Dynamic AI-Generated Prompts based on user context
+  List<Map<String, dynamic>> _dynamicPrompts = [];
+  bool _isLoadingPrompts = true;
+  
+  // AI Services
+  final UnifiedMemoryService _memoryService = UnifiedMemoryService();
+  final ModelOrchestrator _orchestrator = ModelOrchestrator();
+  
   static const _keyPrivateConversations = 'vital_balance_private_conversations';
 
   final TextEditingController _chatInputController = TextEditingController();
@@ -63,6 +78,7 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
   void initState() {
     super.initState();
     _loadAllData();
+    _loadDynamicPrompts(); // Load AI-personalized prompts
     // Delay check to allow build to finish
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkProfile());
   }
@@ -120,6 +136,145 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
       });
     }
   }
+  
+  /// Load AI-personalized prompts based on user's mental state, chat history, and journal entries
+  Future<void> _loadDynamicPrompts() async {
+    try {
+      // Gather context from various sources
+      final chatHistory = _memoryService.getAllChatMessages();
+      final recentChats = chatHistory.take(20).map((m) => '${m.isUser ? "User" : "AI"}: ${m.message}').join('\n');
+      
+      // Get journal entries
+      final buckets = await JournalStorageService.getAllBuckets();
+      final recentJournals = <String>[];
+      for (final bucket in buckets.take(3)) {
+        final entries = await JournalStorageService.getEntriesForBucket(bucket.id);
+        for (final entry in entries.take(3)) {
+          final textContent = entry.plainText.length > 100 ? entry.plainText.substring(0, 100) : entry.plainText;
+          recentJournals.add('${entry.timestamp.toString().split(' ')[0]}: $textContent');
+        }
+      }
+      
+      // Get health metrics
+      final metricsContext = _latestValues.entries
+        .map((e) => '${e.key}: ${e.value}')
+        .join(', ');
+      
+      // Build context for AI
+      final contextPrompt = '''Based on the user's recent activity, suggest 4 personalized wellness check-in prompts.
+
+Recent chat snippets:
+$recentChats
+
+Recent journal entries:
+${recentJournals.join('\n')}
+
+Current health metrics:
+$metricsContext
+
+Generate exactly 4 short, caring wellness prompts (2-5 words each) that would be helpful for this user right now.
+Format: One prompt per line, just the text, no numbering or bullets.
+Examples: "How's your sleep?", "Need stress relief?", "Energy check", "Let's reflect"''';
+
+      final response = await _orchestrator.routeRequest(
+        prompt: contextPrompt,
+        taskType: AiTaskType.agentic,
+      );
+      
+      if (_disposed || !mounted) return;
+      
+      // Parse the response into prompts
+      final lines = response.split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty && l.length < 30)
+        .take(4)
+        .toList();
+      
+      // Assign icons based on content
+      final prompts = lines.map((text) {
+        IconData icon = LucideIcons.sparkles;
+        if (text.toLowerCase().contains('sleep')) icon = LucideIcons.moon;
+        else if (text.toLowerCase().contains('energy')) icon = LucideIcons.zap;
+        else if (text.toLowerCase().contains('stress')) icon = LucideIcons.heart;
+        else if (text.toLowerCase().contains('mood')) icon = LucideIcons.smile;
+        else if (text.toLowerCase().contains('reflect')) icon = LucideIcons.brainCircuit;
+        else if (text.toLowerCase().contains('water') || text.toLowerCase().contains('hydrat')) icon = LucideIcons.droplets;
+        
+        return {'text': text, 'icon': icon};
+      }).toList();
+      
+      if (mounted && prompts.isNotEmpty) {
+        setState(() {
+          _dynamicPrompts = prompts;
+          _isLoadingPrompts = false;
+        });
+      } else {
+        _setDefaultPrompts();
+      }
+    } catch (e) {
+      debugPrint('Error loading dynamic prompts: $e');
+      _setDefaultPrompts();
+    }
+  }
+  
+  void _setDefaultPrompts() {
+    if (mounted) {
+      setState(() {
+        _dynamicPrompts = [
+          {'text': 'How\'s my energy?', 'icon': LucideIcons.zap},
+          {'text': 'Sleep tips', 'icon': LucideIcons.moon},
+          {'text': 'Stress relief', 'icon': LucideIcons.heart},
+          {'text': 'Mood boost', 'icon': LucideIcons.smile},
+        ];
+        _isLoadingPrompts = false;
+      });
+    }
+  }
+  
+  /// Send a message and get inline AI response
+  Future<void> _sendWellnessMessage(String text) async {
+    if (text.trim().isEmpty) return;
+    
+    setState(() {
+      _chatMessages.add({'role': 'user', 'text': text});
+      _isAiThinking = true;
+    });
+    
+    try {
+      // Build wellness-focused context
+      final metricsContext = _latestValues.entries
+        .map((e) => '${e.key}: ${e.value}')
+        .join(', ');
+      
+      final wellnessPrompt = '''You are a caring Wellness Coach in "Vitality Strategist" mode.
+The user's current health metrics: $metricsContext
+
+User asks: "$text"
+
+Respond warmly and helpfully in 2-3 sentences. Be supportive but don't diagnose. Focus on actionable wellness advice.''';
+
+      final response = await _orchestrator.routeRequest(
+        prompt: wellnessPrompt,
+        taskType: AiTaskType.personality,
+        systemPrompt: 'You are a warm, supportive wellness coach. Keep responses brief and caring.',
+      );
+      
+      if (_disposed || !mounted) return;
+      
+      setState(() {
+        _chatMessages.add({'role': 'ai', 'text': response.trim()});
+        _isAiThinking = false;
+      });
+    } catch (e) {
+      debugPrint('Wellness chat error: $e');
+      if (mounted) {
+        setState(() {
+          _chatMessages.add({'role': 'ai', 'text': 'I\'m here to help with your wellness. Could you try asking again?'});
+          _isAiThinking = false;
+        });
+      }
+    }
+  }
 
   Future<void> _togglePrivacy(bool value) async {
     final prefs = await SharedPreferences.getInstance();
@@ -157,7 +312,7 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
                     children: [
                       // Back Button
                       InkWell(
-                        onTap: () => context.go('/home'),
+                        onTap: () => context.go('/chat'),
                         borderRadius: BorderRadius.circular(50),
                         child: Container(
                           padding: const EdgeInsets.all(8),
@@ -1094,8 +1249,8 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
           Row(
             children: [
               SizedBox(
-                width: 90, // Increased size again
-                height: 90,
+                width: 112, // Increased size by 25%
+                height: 112,
                 child: FittedBox(
                   fit: BoxFit.contain,
                   child: AvatarJournalOverlay(
@@ -1138,18 +1293,37 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Quick prompts
-          Text('Quick check-in:', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
+          // AI-Personalized Quick Prompts
+          Row(
+            children: [
+              Text('Quick check-in:', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
+              if (_isLoadingPrompts) ...[
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: _accentTeal.withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ],
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [
-              _buildQuickPrompt('How\'s my energy?', LucideIcons.zap),
-              _buildQuickPrompt('Sleep tips', LucideIcons.moon),
-              _buildQuickPrompt('Stress relief', LucideIcons.heart),
-              _buildQuickPrompt('Mood boost', LucideIcons.smile),
-            ],
+            children: _dynamicPrompts.isEmpty
+              ? [
+                  _buildQuickPrompt('How\'s my energy?', LucideIcons.zap),
+                  _buildQuickPrompt('Sleep tips', LucideIcons.moon),
+                  _buildQuickPrompt('Stress relief', LucideIcons.heart),
+                  _buildQuickPrompt('Mood boost', LucideIcons.smile),
+                ]
+              : _dynamicPrompts.map((p) => 
+                  _buildQuickPrompt(p['text'] as String, p['icon'] as IconData)
+                ).toList(),
           ),
           const SizedBox(height: 16),
           // Chat input
@@ -1173,7 +1347,7 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
                     style: const TextStyle(color: Colors.white),
                     onSubmitted: (text) {
                       if (text.isNotEmpty) {
-                        _startWellnessChat(text);
+                        _sendWellnessMessage(text);
                         _chatInputController.clear();
                       }
                     },
@@ -1183,10 +1357,10 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
                   onPressed: () {
                      final text = _chatInputController.text;
                      if (text.isNotEmpty) {
-                       _startWellnessChat(text);
+                       _sendWellnessMessage(text);
                        _chatInputController.clear();
                      } else {
-                       _startWellnessChat('General wellness check');
+                       _sendWellnessMessage('General wellness check');
                      }
                   },
                   icon: const Icon(LucideIcons.send, color: _accentTeal),
@@ -1194,6 +1368,99 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
               ],
             ),
           ),
+          
+          // Inline Chat Messages Display Area
+          if (_chatMessages.isNotEmpty || _isAiThinking) ...[
+            const SizedBox(height: 16),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 250),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(12),
+                itemCount: _chatMessages.length + (_isAiThinking ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == _chatMessages.length && _isAiThinking) {
+                    // Typing indicator
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _accentTeal.withOpacity(0.2),
+                            ),
+                            child: const Icon(LucideIcons.sparkles, color: _accentTeal, size: 14),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Thinking...',
+                            style: GoogleFonts.inter(color: _accentTeal, fontStyle: FontStyle.italic, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  
+                  final msg = _chatMessages[index];
+                  final isUser = msg['role'] == 'user';
+                  
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+                      children: [
+                        if (!isUser) ...[
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _accentTeal.withOpacity(0.2),
+                            ),
+                            child: const Icon(LucideIcons.sparkles, color: _accentTeal, size: 14),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isUser 
+                                ? _accentTeal.withOpacity(0.2) 
+                                : Colors.white.withOpacity(0.08),
+                              borderRadius: BorderRadius.only(
+                                topLeft: const Radius.circular(16),
+                                topRight: const Radius.circular(16),
+                                bottomLeft: Radius.circular(isUser ? 16 : 4),
+                                bottomRight: Radius.circular(isUser ? 4 : 16),
+                              ),
+                            ),
+                            child: Text(
+                              msg['text'] ?? '',
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 14,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (isUser) const SizedBox(width: 8),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1201,7 +1468,7 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
 
     Widget _buildQuickPrompt(String label, IconData icon) {
     return GestureDetector(
-      onTap: () => _startWellnessChat(label),
+      onTap: () => _sendWellnessMessage(label),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(

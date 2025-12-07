@@ -198,6 +198,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // News Settings (Custom)
   List<String> _customNewsTopics = [];
   bool _showNewsOptions = false;
+  String _briefingTrigger = 'time'; // 'time', 'launch', 'overnight'
   TimeOfDay _briefingTime = const TimeOfDay(hour: 8, minute: 0);
 
 
@@ -256,6 +257,91 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
      // Actual persistence can happen here if needed:
      final stateService = await OnboardingStateService.create();
      // stateService.setBriefingTime(_briefingTime.format(context));
+  }
+
+
+
+  void _showTriggerModeSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AurealColors.carbon,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Briefing Schedule', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _buildTriggerOption(
+              'Specific Time', 
+              'Choose a specific time of day for the briefing to be ready.',
+              'time',
+              LucideIcons.clock,
+            ),
+            _buildTriggerOption(
+              'First Launch', 
+              'Generate briefing immediately when you first open the app each day.',
+              'launch',
+              LucideIcons.zap,
+            ),
+            _buildTriggerOption(
+              'Overnight', 
+              'Silent generation at 4:00 AM so it\'s ready when you wake up.',
+              'overnight',
+              LucideIcons.moon,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTriggerOption(String title, String subtitle, String value, IconData icon) {
+    final isSelected = _briefingTrigger == value;
+    return InkWell(
+      onTap: () async {
+        setState(() => _briefingTrigger = value);
+        await SettingsControlService.updateSetting('daily_briefing_trigger', value);
+        if (mounted) Navigator.pop(context);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? AurealColors.hyperGold.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isSelected ? AurealColors.hyperGold : Colors.white10),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isSelected ? AurealColors.hyperGold : Colors.white10,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: isSelected ? Colors.black : Colors.white, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(LucideIcons.check, color: AurealColors.hyperGold),
+          ],
+        ),
+      ),
+    );
   }
 
   void _addCustomTopic() {
@@ -342,11 +428,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       
       _newsTimingOnDemand = stateService.newsTimingOnDemand;
       
-      // Load permissions (mocked for now)
-      _permissionGps = stateService.permissionGps;
-      _permissionMic = stateService.permissionMic;
       _permissionCamera = stateService.permissionCamera;
+      _newsEnabled = stateService.newsEnabled;
       
+    });
+
+    final briefingTrigger = await SettingsControlService.getSettingValue('daily_briefing_trigger');
+    
+    if (!mounted) return;
+    setState(() {
+      _briefingTrigger = briefingTrigger is String ? briefingTrigger : 'time';
+    
       // Load Feedback Settings
       _hapticsEnabled = stateService.hapticsEnabled;
       _soundsEnabled = stateService.soundsEnabled;
@@ -512,7 +604,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian, 
+      backgroundColor: AurealColors.obsidian,
+      appBar: AppBar(
+        backgroundColor: AurealColors.obsidian,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
+          onPressed: () => context.go('/more'),
+        ),
+        title: Text(
+          'Settings',
+          style: GoogleFonts.spaceGrotesk(
+            color: AurealColors.hyperGold,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 40),
         child: Column(
@@ -601,12 +709,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                  ),
                   if (_newsEnabled) ...[
                      SettingsTile(
-                       icon: LucideIcons.clock,
-                       title: 'Import Time',
-                       subtitle: 'Set when news is imported for AI availability',
-                       value: _briefingTime.format(context), 
-                       onTap: _selectBriefingTime,
+                       icon: LucideIcons.calendarClock,
+                       title: 'Schedule Mode',
+                       subtitle: 'When to generate daily briefing',
+                       value: _briefingTrigger == 'launch' ? 'First Launch' 
+                            : (_briefingTrigger == 'overnight' ? 'Overnight (4 AM)' : 'Specific Time'),
+                       onTap: _showTriggerModeSelector,
                      ),
+                     if (_briefingTrigger == 'time')
+                      SettingsTile(
+                        icon: LucideIcons.clock,
+                        title: 'Import Time',
+                        subtitle: 'Set when news is imported for AI availability',
+                        value: _briefingTime.format(context), 
+                        onTap: _selectBriefingTime,
+                      ),
                      SettingsTile(
                         icon: LucideIcons.sliders,
                         title: 'Customize Content',
@@ -829,14 +946,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
                      },
                    ),
-                   SettingsTile(
-                     icon: LucideIcons.shieldAlert, 
-                     title: 'Emergency SOS',
-                     iconColor: Colors.red,
-                     onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const EmergencyScreen())); 
-                     },
-                   ),
+                     // Emergency Tile Removed (Moved to More > Emergency)
                    SettingsTile(
                       icon: LucideIcons.trash2,
                       title: 'Delete Account',
@@ -2571,47 +2681,5 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildEmergencyTile() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A1010), // Dark Red
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.withOpacity(0.3)),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.2),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(LucideIcons.alertTriangle, color: Colors.red),
-        ),
-        title: Text(
-          'Emergency Services',
-          style: GoogleFonts.inter(
-            color: Colors.red[100],
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Text(
-          'Get help immediately',
-          style: GoogleFonts.inter(
-            color: Colors.red[200]!.withOpacity(0.6),
-            fontSize: 12,
-          ),
-        ),
-        trailing: Icon(Icons.chevron_right, color: Colors.red[200]),
-        onTap: () {
-           Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const EmergencyScreen()),
-          );
-        },
-      ),
-    );
-  }
+
 }
-
-

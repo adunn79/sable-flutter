@@ -12,6 +12,8 @@ import 'package:sable/features/vital_balance/widgets/vital_balance_lock_screen.d
 
 import 'package:sable/features/onboarding/onboarding_flow.dart';
 
+import 'package:sable/features/safety/screens/emergency_screen.dart';
+
 // Export a factory function to create the router with a specific initial location
 GoRouter createAppRouter(String initialLocation) {
   return GoRouter(
@@ -46,7 +48,7 @@ GoRouter createAppRouter(String initialLocation) {
           GoRoute(path: '/calendar', builder: (context, state) => const PlaceholderPage(title: 'Calendar')),
           GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
           GoRoute(path: '/certificate', builder: (context, state) => const PlaceholderPage(title: 'Certificate')),
-          GoRoute(path: '/emergency', builder: (context, state) => const PlaceholderPage(title: 'Emergency')),
+          GoRoute(path: '/emergency', builder: (context, state) => const EmergencyScreen()),
         ],
       ),
     ],

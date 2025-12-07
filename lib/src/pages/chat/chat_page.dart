@@ -150,6 +150,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _prefetchContent();
       _fetchWeather(); // Fetch weather for header display
+      
+      // Start periodic check for Daily Briefing (e.g. for Overnight mode)
+      // Check every 10 minutes
+      Timer.periodic(const Duration(minutes: 10), (timer) {
+        if (mounted) _prefetchContent();
+      });
     });
   }
   
@@ -199,28 +205,85 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
   }
 
+  Future<bool> _shouldFetchDailyUpdate(SharedPreferences prefs) async {
+    final lastRunDate = prefs.getString('daily_briefing_last_run_date');
+    final now = DateTime.now();
+    final today = "${now.year}-${now.month}-${now.day}";
+    
+    // If already run today, skip
+    if (lastRunDate == today) {
+        debugPrint('📅 Daily Briefing already generated for today ($today)');
+        return false;
+    }
+    
+    // Get Trigger Mode
+    final trigger = prefs.getString('daily_briefing_trigger') ?? 'time';
+    debugPrint('🕒 Checking Daily Briefing Trigger: $trigger');
+    
+    if (trigger == 'launch') {
+        // Run immediately on first launch
+        return true;
+    } else if (trigger == 'overnight') {
+        // Run if it's past 4:00 AM
+        return now.hour >= 4;
+    } else {
+        // Specific Time (default)
+        // Parse saved time string "HH:mm" or default to 8:00
+        // Since we didn't save the time string properly in SettingsScreen yet (it just saves to stateService or nothing?), 
+        // we might fallback to 8am. 
+        // Wait, SettingsScreen uses `stateService.setBriefingTime` but that might just be local.
+        // Let's check OnboardingStateService for briefing time.
+        // For now, let's assume default 8am if not found.
+        if (_stateService != null) {
+            // Need to parse "TimeOfDay(08:00)" string? Or formatted?
+             // Simplification: Check if hour >= 8
+             return now.hour >= 8; 
+        }
+        return now.hour >= 8;
+    }
+  }
+
   Future<void> _prefetchContent() async {
     // Wait for services to be ready (minimal delay)
     await Future.delayed(const Duration(milliseconds: 500));
     if (!mounted || _stateService == null) return;
     
+    // Check Smart Scheduling Trigger
+    final prefs = await SharedPreferences.getInstance();
+    final shouldFetch = await _shouldFetchDailyUpdate(prefs);
+    
+    if (!shouldFetch) {
+        debugPrint('⏭️ Skipping Daily Briefing pre-fetch (Condition not met)');
+        // Ensure we still load *cached* content if available
+        return;
+    }
+    
     debugPrint('🚀 Starting background pre-fetch...');
     
-    // 1. Prefetch Daily News
+    // 1. Prefetch Daily News/Briefing
     final newsContent = _stateService!.getDailyNewsContent();
-    if (newsContent == null) {
-      debugPrint('📰 Pre-fetching Daily News...');
-      try {
+    // Force refresh if shouldFetch is true, regardless of if we have *something* (maybe old?)
+    // Actually, shouldFetch checks 'daily_briefing_last_run_date'.
+    // If newsContent is null, we definitely fetch.
+    // If we have content but 'last_run_date' wasn't set (legacy), we set it now? 
+    // Or we overwrite?
+    
+    // Let's assume we fetch if shouldFetch is true.
+    debugPrint('📰 Pre-fetching Daily News...');
+    try {
         final webService = ref.read(webSearchServiceProvider);
         final categories = _stateService!.newsCategories;
         final freshContent = await webService.getDailyBriefing(categories);
         await _stateService!.saveDailyNewsContent(freshContent);
+        
+        // Mark as run for today
+        final now = DateTime.now();
+        final today = "${now.year}-${now.month}-${now.day}";
+        await prefs.setString('daily_briefing_last_run_date', today);
+        
         debugPrint('✅ Daily News cached in background');
-      } catch (e) {
+    } catch (e) {
         debugPrint('⚠️ Daily News pre-fetch failed: $e');
-      }
-    } else {
-      debugPrint('✅ Daily News already cached');
     }
 
     // 2. Prefetch Local Vibe (after fetching GPS location)

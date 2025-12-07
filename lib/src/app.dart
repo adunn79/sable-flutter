@@ -10,11 +10,14 @@ void main() {
 }
 
 class SableApp extends ConsumerWidget {
-  const SableApp({super.key});
+  final String initialRoute;
+  
+  const SableApp({super.key, this.initialRoute = '/chat'});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(routerProvider);
+    // Create router with the provided initial route
+    final router = createAppRouter(initialRoute);
 
     return MaterialApp.router(
       title: 'Aureal',

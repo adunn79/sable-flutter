@@ -92,6 +92,14 @@ class SettingsControlService {
       type: SettingType.toggle,
       keywords: ['daily', 'briefing', 'updates', 'headlines'],
     ),
+    const SettingDefinition(
+      key: 'daily_briefing_trigger',
+      title: 'Briefing Schedule',
+      subtitle: 'When to show your daily summary',
+      section: 'NEWS',
+      type: SettingType.selection,
+      keywords: ['time', 'schedule', 'when', 'trigger', 'launch', 'morning'],
+    ),
 
     // PERMISSIONS
     const SettingDefinition(
@@ -210,6 +218,8 @@ class SettingsControlService {
         return prefs.getBool('clock_is_analog') ?? false;
       case 'auto_speak':
         return prefs.getBool('auto_speak') ?? true;
+      case 'daily_briefing_trigger':
+        return prefs.getString('daily_briefing_trigger') ?? 'time';
       default:
         return null;
     }
@@ -267,6 +277,12 @@ class SettingsControlService {
           break;
         case 'auto_speak':
           await prefs.setBool('auto_speak', value as bool);
+          break;
+        case 'daily_briefing_trigger':
+          await prefs.setString('daily_briefing_trigger', value as String);
+          break;
+        case 'start_on_last_tab':
+          await prefs.setBool('start_on_last_tab', value as bool);
           break;
         default:
           debugPrint('Unhandled setting update: $key');

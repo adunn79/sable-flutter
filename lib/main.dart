@@ -13,8 +13,6 @@ import 'core/widgets/restart_widget.dart';
 import 'features/journal/services/journal_storage_service.dart';
 import 'features/journal/screens/journal_timeline_screen.dart';
 import 'core/memory/unified_memory_service.dart';
-import 'core/services/settings_control_service.dart'; // Import SettingsControlService
-import 'package:sable/src/router.dart'; // Import router for provider access
 
 void main() async {
   String initialRoute = '/chat'; // Define outside try block for scope visibility
@@ -51,15 +49,16 @@ void main() async {
     }
     
     // New: Check for last tab resume
-    // Note: SettingsControlService needs to be imported
-    final shouldResume = prefs.getBool('start_on_last_tab') ?? false; 
+    final shouldResume = prefs.getBool('start_on_last_tab') ?? false;
+    final lastRoute = prefs.getString('last_visited_route');
     
-    if (shouldResume) {
-      final lastRoute = prefs.getString('last_visited_route');
-      if (lastRoute != null && lastRoute.isNotEmpty) {
-        initialRoute = lastRoute;
-        debugPrint('🏁 Resuming session at: $initialRoute');
-      }
+    debugPrint('🔍 Resume Check: start_on_last_tab=$shouldResume, last_visited_route=$lastRoute');
+    
+    if (shouldResume && lastRoute != null && lastRoute.isNotEmpty) {
+      initialRoute = lastRoute;
+      debugPrint('🏁 Resuming session at: $initialRoute');
+    } else {
+      debugPrint('⏭️ Not resuming: shouldResume=$shouldResume, lastRoute=$lastRoute');
     }
   } catch (e, stackTrace) {
     debugPrint('Initialization Error: $e\n$stackTrace');
@@ -103,12 +102,7 @@ class AurealApp extends StatelessWidget {
                 Navigator.of(context).pushReplacementNamed('/home');
               },
             ),
-        '/home': (context) => ProviderScope(
-            overrides: [
-              routerProvider.overrideWithValue(createAppRouter(initialRoute)),
-            ],
-            child: const legacy.SableApp(),
-        ),
+        '/home': (context) => legacy.SableApp(initialRoute: initialRoute),
         '/access-denied': (context) => const AccessDeniedScreen(),
         '/debug': (context) => const DebugDashboard(),
         '/settings': (context) => const SettingsScreen(),

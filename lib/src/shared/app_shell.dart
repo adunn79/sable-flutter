@@ -28,10 +28,10 @@ class _AppShellState extends State<AppShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _saveCurrentRoute());
   }
 
-  Future<void> _saveCurrentRoute() async {
+  Future<void> _saveCurrentRoute([String? locationArg]) async {
     if (!mounted) return;
     try {
-      final String location = GoRouterState.of(context).uri.toString();
+      final String location = locationArg ?? GoRouterState.of(context).uri.toString();
       final prefs = await SharedPreferences.getInstance();
       // Only save main routes we want to restore
       if (location.startsWith('/chat') || 
@@ -51,6 +51,11 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     // Check if we're on the chat page (don't show weather there - it has its own header)
     final String location = GoRouterState.of(context).uri.toString();
+    
+    // Save current route persistently for resume functionality
+    // We do this in build (with post frame callback) to catch every navigation change
+    WidgetsBinding.instance.addPostFrameCallback((_) => _saveCurrentRoute(location));
+
     final bool isChatPage = location.startsWith('/chat');
     final bool isSettingsPage = location.contains('settings');
     final bool isJournalPage = location.startsWith('/journal');
@@ -125,22 +130,30 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _onItemTapped(int index, BuildContext context) {
+    String route = '/chat';
     switch (index) {
       case 0:
-        context.go('/chat');
+        route = '/chat';
         break;
       case 1:
-        context.go('/today');
+        route = '/today';
         break;
       case 2:
-        context.go('/journal');
+        route = '/journal';
         break;
       case 3:
-        context.go('/vital-balance');
+        route = '/vital-balance';
         break;
       case 4:
-        context.go('/more');
+        route = '/more';
         break;
     }
+    
+    // Explicitly save the route we are going to
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('last_visited_route', route);
+    });
+    
+    context.go(route);
   }
 }

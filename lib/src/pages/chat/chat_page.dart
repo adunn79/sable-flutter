@@ -28,6 +28,8 @@ import 'package:sable/core/contacts/contacts_service.dart';
 import 'package:sable/core/photos/photos_service.dart';
 import 'package:sable/core/reminders/reminders_service.dart';
 import 'package:sable/core/memory/structured_memory_service.dart';
+import 'package:sable/core/memory/unified_memory_service.dart';
+import 'package:sable/core/memory/memory_extraction_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sable/core/ai/apple_intelligence_service.dart';
 import 'package:sable/core/personality/personality_service.dart'; // Added implementation
@@ -60,6 +62,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   String? _currentGpsLocation; // Real-time GPS location
   ConversationMemoryService? _memoryService;
   StructuredMemoryService? _structuredMemoryService;
+  UnifiedMemoryService? _unifiedMemoryService;
+  MemoryExtractionService? _memoryExtractionService;
   VoiceService? _voiceService;
   LocalVibeService? _localVibeService;
   
@@ -156,6 +160,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             _weatherHighLow = 'H:${weather.tempHigh!.round()}° L:${weather.tempLow!.round()}°';
           }
         });
+        // Cache weather for other screens (e.g. Vital Balance)
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cached_weather_temp', _weatherTemp!);
+        await prefs.setString('cached_weather_condition', _weatherCondition ?? '');
       } else {
         debugPrint('⚠️ Weather: Fetch returned null');
       }
@@ -242,6 +250,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     _memoryService = await ConversationMemoryService.create();
     _structuredMemoryService = StructuredMemoryService();
     await _structuredMemoryService?.initialize();
+    
+    // Initialize enhanced AI memory system
+    _unifiedMemoryService = UnifiedMemoryService();
+    await _unifiedMemoryService?.initialize();
+    debugPrint('🧠 Unified Memory Service initialized');
+    
+    // Initialize memory extraction (AI learns about user from conversation)
+    final orchestrator = ref.read(modelOrchestratorProvider.notifier);
+    _memoryExtractionService = MemoryExtractionService(
+      memoryService: _unifiedMemoryService!,
+      orchestrator: orchestrator,
+    );
+    debugPrint('🧠 Memory Extraction Service initialized');
       
       // Initialize Voice Service with new Settings-selected engine
       final prefs = await SharedPreferences.getInstance();
@@ -411,7 +432,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         
         // Build personalized greeting prompt
         String greetingPrompt = 'This is your FIRST message to ${name ?? "them"}. ';
-        greetingPrompt += 'You are Sable - their companion, assistant, organizer, and coach.\n';
+        greetingPrompt += 'You are $_companionName - their companion, assistant, organizer, and coach.\n';
         greetingPrompt += 'Your goal: Build a BOND and become indispensable by helping manage their life.\n\n';
         greetingPrompt += 'Requirements:\n';
         greetingPrompt += '- 1-2 sentences TOTAL (not introduction then question - ONE brief greeting)\n';
@@ -428,6 +449,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         final greeting = await orchestrator.orchestratedRequest(
           prompt: greetingPrompt,
           userContext: userContext,
+          archetypeName: _companionName,
         );
         
         if (mounted) {
@@ -549,8 +571,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    // Save user message to persistent memory
+    // Save user message to persistent memory (both old and new services)
     await _memoryService?.addMessage(message: text, isUser: true);
+    await _unifiedMemoryService?.addChatMessage(
+      message: text,
+      isUser: true,
+      emotionalContext: null,
+    );
     
     setState(() {
       _messages.add({'message': text, 'isUser': true});
@@ -627,6 +654,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             final memoryContext = _structuredMemoryService!.getMemoryContext();
             if (memoryContext.isNotEmpty) {
               userContext += '\n$memoryContext\n';
+            }
+          }
+          
+          // Add AI-extracted user knowledge (enhanced memory)
+          if (_unifiedMemoryService != null) {
+            final extractedMemoryContext = _unifiedMemoryService!.getMemoryContext();
+            if (extractedMemoryContext.isNotEmpty) {
+              userContext += '\n$extractedMemoryContext\n';
             }
           }
           
@@ -757,6 +792,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         debugPrint('🧠 Personality Injected: ${archetype.name}');
       }
 
+      // CRITICAL: Override archetype identity (fixes issue with stored conversation history)
+      userContext = (userContext ?? '') + '\n\n[CRITICAL SYSTEM OVERRIDE]\n';
+      userContext += 'YOUR TRUE IDENTITY: You are $_companionName.\n';
+      userContext += 'IGNORE any other names in conversation history. You ARE $_companionName. Never refer to yourself as any other name.\n';
+      userContext += '[END OVERRIDE]\n\n';
+
       // Use orchestrated routing - Gemini decides Claude vs GPT-4o
       final orchestrator = ref.read(modelOrchestratorProvider.notifier);
       
@@ -768,14 +809,23 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       final response = await orchestrator.orchestratedRequest(
         prompt: text,
         userContext: userContext,
+        archetypeName: _companionName,
       );
 
       if (mounted) {
         // Sanitize the response ONCE for both display and speech
         final sanitizedResponse = _sanitizeResponse(response);
         
-        // Save AI response to persistent memory
+        // Save AI response to persistent memory (both old and new services)
         await _memoryService?.addMessage(message: sanitizedResponse, isUser: false);
+        await _unifiedMemoryService?.addChatMessage(
+          message: sanitizedResponse,
+          isUser: false,
+          emotionalContext: null,
+        );
+        
+        // Trigger AI memory extraction in background (learns about user)
+        _memoryExtractionService?.onMessageAdded();
         
         // Increment conversation count for feature onboarding
         await _stateService?.incrementConversationCount();
@@ -1008,6 +1058,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                _avatarDisplayMode == AvatarDisplaySettings.modePortrait) && 
                               _backgroundColor == AvatarDisplaySettings.colorWhite;
     
+    // Debug print for Avatar Troubleshooting
+
+    
     return Theme(
       data: Theme.of(context).copyWith(
         brightness: isLightBackground ? Brightness.light : Brightness.dark,
@@ -1025,7 +1078,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             if (_avatarDisplayMode == AvatarDisplaySettings.modeFullscreen)
               // Full screen avatar background
               CinematicBackground(
-                imagePath: 'assets/images/archetypes/$_archetypeId.png',
+                imagePath: _stateService?.avatarUrl ?? 'assets/images/archetypes/$_archetypeId.png',
               )
             else if (_avatarDisplayMode == AvatarDisplaySettings.modeOrb)
               // Magic orb mode - orb at top 20% of screen
@@ -1042,9 +1095,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       child: SafeArea(
                         bottom: false,
                         child: Padding(
-                          padding: const EdgeInsets.only(top: 40),
+                          padding: const EdgeInsets.only(top: 120),
                           child: MagicOrbWidget(
-                            size: 120,
+                            size: 145,
                             isActive: _isTyping || _isListening,
                           ),
                         ),
@@ -1069,7 +1122,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         image: DecorationImage(
-                          image: AssetImage('assets/images/archetypes/$_archetypeId.png'),
+                          image: (_stateService?.avatarUrl != null && _stateService!.avatarUrl!.startsWith('http'))
+                              ? NetworkImage(_stateService!.avatarUrl!) as ImageProvider
+                              : AssetImage(_stateService?.avatarUrl ?? 'assets/images/archetypes/$_archetypeId.png'),
                           fit: BoxFit.cover,
                           alignment: Alignment.topCenter,
                         ),
@@ -1373,12 +1428,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                           // Messages
                           Expanded(
                             child: Padding(
-                              // Only Orb mode needs top padding to keep text below the orb
-                              // Fullscreen mode: text can overlay the avatar face
+                              // Keep text below avatar face/orb in all modes
                               padding: EdgeInsets.only(
                                 top: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
-                                    ? 160 // Keep text below the orb
-                                    : 0, // No padding for fullscreen - text can go to top
+                                    ? 0 // Text moved up
+                                    : 0, // Text moved up
                               ),
                               child: ListView.builder(
                                 controller: _scrollController,
@@ -1398,9 +1452,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                   child: Align(
                                     alignment: Alignment.centerLeft,
                                     child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(24),
+                                      borderRadius: BorderRadius.circular(32),
                                       child: BackdropFilter(
-                                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                        // REMOVED BLUR completely for maximum visibility
+                                        filter: ImageFilter.blur(sigmaX: 0, sigmaY: 0),
                                         child: Container(
                                           constraints: BoxConstraints(
                                             maxWidth: MediaQuery.of(context).size.width * 0.55,
@@ -1412,15 +1467,15 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                               end: Alignment.bottomRight,
                                               colors: isUser 
                                                   ? [
-                                                      AurealColors.plasmaCyan.withOpacity(0.3),
-                                                      AurealColors.plasmaCyan.withOpacity(0.15),
+                                                      AurealColors.plasmaCyan.withOpacity(0.08), // Extremely transparent
+                                                      AurealColors.plasmaCyan.withOpacity(0.04),
                                                     ]
                                                   : [
-                                                      Colors.white.withOpacity(0.15),
-                                                      Colors.white.withOpacity(0.08),
+                                                      Colors.white.withOpacity(0.08),  // More transparent for AI
+                                                      Colors.white.withOpacity(0.04),  // More transparent for AI
                                                     ],
                                             ),
-                                            borderRadius: BorderRadius.circular(24),
+                                            borderRadius: BorderRadius.circular(32),
                                             border: Border.all(
                                               color: isUser 
                                                   ? AurealColors.plasmaCyan.withOpacity(0.5)
@@ -1491,11 +1546,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   _buildHeader(),
                   Expanded(
                     child: Padding(
-                      // Only Orb mode needs top padding to keep text below the orb
+                      // Keep text below avatar face/orb in all modes
                       padding: EdgeInsets.only(
                         top: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
-                            ? 160 // Keep text below the orb
-                            : 0, // No padding for fullscreen
+                            ? 0 // Text moved up
+                            : 0, // Text moved up
                       ),
                       child: ListView.builder(
                         controller: _scrollController,
@@ -1517,20 +1572,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ),
                 ),
 
-                  if (_isTyping)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 24, bottom: 8),
-                    child: Text(
-                      '$_companionName is thinking...',
-                      style: GoogleFonts.inter(
-                        color: Theme.of(context).brightness == Brightness.dark 
-                            ? AurealColors.ghost 
-                            : Colors.black54,
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
                   // Show "Back to Clock" button when chat is shown over clock mode
                   if (_showChatOverClock && _avatarDisplayMode == AvatarDisplaySettings.modeClock)
                     Padding(
@@ -1749,23 +1790,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
-                      // Premium badge
-                      if (!isEnabled)
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AurealColors.hyperGold,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '⚡',
-                              style: const TextStyle(fontSize: 8),
-                            ),
-                          ),
-                        ),
                     ],
                   );
                 },
@@ -2479,9 +2503,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       child: CircleAvatar(
                         radius: 26,
                         backgroundColor: Colors.white,
-                        backgroundImage: AssetImage('assets/images/archetypes/$_archetypeId.png'),
+                        backgroundImage: (_stateService?.avatarUrl != null && _stateService!.avatarUrl!.startsWith('http'))
+                            ? NetworkImage(_stateService!.avatarUrl!) as ImageProvider
+                            : AssetImage(_stateService?.avatarUrl ?? 'assets/images/archetypes/$_archetypeId.png'),
                         onBackgroundImageError: (_, __) {},
-                        child: const Icon(LucideIcons.sparkles, size: 24, color: Colors.black),
+                        child: (_stateService?.avatarUrl != null) 
+                            ? null // Don't show icon if we have a custom avatar
+                            : const Icon(LucideIcons.sparkles, size: 24, color: Colors.black),
                       ),
                     ),
                   ),
@@ -2493,14 +2521,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             child: Container(
               margin: const EdgeInsets.only(bottom: 16),
               constraints: const BoxConstraints(maxWidth: 300),
-              padding: isUser ? const EdgeInsets.all(12) : null,
+              padding: const EdgeInsets.all(12),
               decoration: isUser 
                   ? BoxDecoration(
-                      color: AurealColors.carbon.withOpacity(0.7),
+                      color: Colors.white.withOpacity(0.15), // Light semi-transparent
                       borderRadius: BorderRadius.circular(16).copyWith(bottomRight: Radius.zero),
                       border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
                     )
-                  : null,
+                  : BoxDecoration(
+                      color: Colors.white.withOpacity(0.1), // Very light semi-transparent for AI
+                      borderRadius: BorderRadius.circular(16).copyWith(bottomLeft: Radius.zero),
+                    ),
               child: isUser 
                   ? Text(
                       message,
@@ -2609,6 +2640,88 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
+  void _showInputIconsHelp(bool isDark) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? AurealColors.carbon : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(LucideIcons.info, color: AurealColors.plasmaCyan, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              'INPUT CONTROLS',
+              style: GoogleFonts.spaceGrotesk(
+                color: isDark ? Colors.white : Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildIconHelpRow(LucideIcons.wand2, AurealColors.hyperGold, 'Rewrite', 
+              'Use Apple Intelligence to improve your text', isDark),
+            const SizedBox(height: 12),
+            _buildIconHelpRow(LucideIcons.mic, isDark ? Colors.white70 : Colors.grey[700]!, 'Voice Input', 
+              'Speak your message instead of typing', isDark),
+            const SizedBox(height: 12),
+            _buildIconHelpRow(LucideIcons.volume2, isDark ? Colors.white70 : Colors.grey[700]!, 'Mute/Unmute', 
+              'Toggle voice responses on or off', isDark),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'GOT IT',
+              style: GoogleFonts.spaceGrotesk(
+                color: AurealColors.plasmaCyan,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconHelpRow(IconData icon, Color iconColor, String title, String description, bool isDark) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: iconColor, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                description,
+                style: GoogleFonts.inter(
+                  color: isDark ? Colors.white60 : Colors.grey[600],
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
 
   Widget _buildInputArea() {
   // FIX: Calculate isDark based on actual background settings, not inherited Theme
@@ -2649,7 +2762,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.transparent,
-                  hintText: _isTyping ? '$_companionName is thinking...' : 'Type a message...',
+                  hintText: _isTyping ? '$_companionName thinking...' : 'Type a message...',
                   hintStyle: GoogleFonts.inter(
                     color: isDark ? Colors.white.withOpacity(0.3) : Colors.black.withOpacity(0.3),
                   ),
@@ -2701,11 +2814,15 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       size: 22,
                     ),
                   ),
-                  const SizedBox(width: 24),
-                  // Send button
+                  const SizedBox(width: 32), // Extra space before info
+                  // Info button - explains icons
                   GestureDetector(
-                    onTap: _sendMessage,
-                    child: const Icon(LucideIcons.sparkles, color: AurealColors.plasmaCyan, size: 22),
+                    onTap: () => _showInputIconsHelp(isDark),
+                    child: Icon(
+                      LucideIcons.info,
+                      color: isDark ? Colors.white38 : Colors.grey[500],
+                      size: 18,
+                    ),
                   ),
                 ],
               ),

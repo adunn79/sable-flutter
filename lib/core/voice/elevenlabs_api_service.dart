@@ -281,6 +281,30 @@ class ElevenLabsApiService {
         labels: {'accent': 'australian', 'gender': 'male', 'region': 'australia'},
         previewUrl: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/IKne3meq5aSn9XLyUdCD/8f10ccaa-0c95-48d3-9c68-8a8c0143c5db.mp3',
       ),
+      VoiceWithMetadata(
+        voiceId: 'piTKgcLEGmPE4e6mEKli',
+        name: 'Nicole',
+        gender: 'female',
+        accents: ['Australian'],
+        labels: {'accent': 'australian', 'gender': 'female', 'region': 'australia'},
+        previewUrl: null,
+      ),
+      VoiceWithMetadata(
+        voiceId: 'LcfcDJNUP1GQjkzn1xUU',
+        name: 'Emily',
+        gender: 'female',
+        accents: ['Australian', 'European'],
+        labels: {'accent': 'australian', 'gender': 'female', 'region': 'australia'},
+        previewUrl: null,
+      ),
+      VoiceWithMetadata(
+        voiceId: 'XrExE9yKIg1WjnnlVkGX',
+        name: 'Matilda',
+        gender: 'female',
+        accents: ['Australian'],
+        labels: {'accent': 'australian', 'gender': 'female', 'region': 'australia'},
+        previewUrl: null,
+      ),
       
       // === IRISH VOICES ===
       VoiceWithMetadata(

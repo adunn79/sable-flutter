@@ -46,6 +46,7 @@ import 'package:sable/features/settings/widgets/settings_tile.dart';
 import 'package:sable/core/personality/personality_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sable/features/journal/screens/knowledge_center_screen.dart';
+import 'package:sable/features/settings/screens/avatar_gallery_screen.dart';
 import 'package:sable/core/memory/unified_memory_service.dart';
 
 
@@ -1369,6 +1370,60 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                          ),
                        ),
 
+                     // Avatar Gallery Button
+                     Container(
+                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                       child: GestureDetector(
+                         onTap: () {
+                           Navigator.push(
+                             context,
+                             MaterialPageRoute(builder: (_) => const AvatarGalleryScreen()),
+                           );
+                         },
+                         child: Container(
+                           padding: const EdgeInsets.all(16),
+                           decoration: BoxDecoration(
+                             color: AurealColors.obsidian,
+                             borderRadius: BorderRadius.circular(12),
+                             border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                           ),
+                           child: Row(
+                             children: [
+                               Container(
+                                 padding: const EdgeInsets.all(10),
+                                 decoration: BoxDecoration(
+                                   color: AurealColors.plasmaCyan.withOpacity(0.2),
+                                   borderRadius: BorderRadius.circular(10),
+                                 ),
+                                child: const Icon(LucideIcons.image, color: AurealColors.plasmaCyan, size: 20),
+                               ),
+                               const SizedBox(width: 16),
+                               Expanded(
+                                 child: Column(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     Text(
+                                       'Avatar Gallery',
+                                       style: GoogleFonts.spaceGrotesk(
+                                         color: Colors.white,
+                                         fontSize: 15,
+                                         fontWeight: FontWeight.w600,
+                                       ),
+                                     ),
+                                     const SizedBox(height: 2),
+                                     Text(
+                                       'View and manage saved avatars',
+                                       style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                               const Icon(LucideIcons.chevronRight, color: Colors.white38, size: 20),
+                             ],
+                           ),
+                         ),
+                       ),
+                     ),
                      // Clock Settings (shown only in Clock mode)
                      if (_avatarDisplayMode == AvatarDisplaySettings.modeClock)
                        Container(

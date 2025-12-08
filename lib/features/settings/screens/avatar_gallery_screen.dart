@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
-import 'package:sable/core/theme/aureal_colors.dart';
+import 'package:sable/core/theme/aureal_theme.dart';
 
 /// Gallery screen to view and manage all saved avatar images
 class AvatarGalleryScreen extends StatefulWidget {

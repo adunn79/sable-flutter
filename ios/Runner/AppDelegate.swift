@@ -91,6 +91,131 @@ import AppIntents
       }
     })
     
+    // iCloud CloudKit Channel
+    let cloudKitChannel = FlutterMethodChannel(name: "com.sable.cloudkit",
+                                               binaryMessenger: controller.binaryMessenger)
+    
+    cloudKitChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      
+      switch call.method {
+      case "isAvailable":
+        CloudKitManager.shared.isAvailable { available in
+          result(available)
+        }
+        
+      case "checkAccountStatus":
+        CloudKitManager.shared.checkAccountStatus { status, error in
+          if let error = error {
+            result(FlutterError(code: "CLOUDKIT_ERROR", message: error.localizedDescription, details: nil))
+          } else {
+            result(status.rawValue) // 0=couldNotDetermine, 1=available, 2=restricted, 3=noAccount, 4=temporarilyUnavailable
+          }
+        }
+        
+      case "backupJournalEntries":
+        guard let entries = call.arguments as? [[String: Any]] else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Expected array of entries", details: nil))
+          return
+        }
+        CloudKitManager.shared.backupJournalEntries(entries) { backupResult in
+          switch backupResult {
+          case .success(let count):
+            result(count)
+          case .failure(let error):
+            result(FlutterError(code: "BACKUP_ERROR", message: error.localizedDescription, details: nil))
+          }
+        }
+        
+      case "fetchAllJournalEntries":
+        CloudKitManager.shared.fetchAllJournalEntries { fetchResult in
+          switch fetchResult {
+          case .success(let entries):
+            result(entries)
+          case .failure(let error):
+            result(FlutterError(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
+          }
+        }
+        
+      case "backupGoals":
+        guard let goals = call.arguments as? [[String: Any]] else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Expected array of goals", details: nil))
+          return
+        }
+        CloudKitManager.shared.backupGoals(goals) { backupResult in
+          switch backupResult {
+          case .success(let count):
+            result(count)
+          case .failure(let error):
+            result(FlutterError(code: "BACKUP_ERROR", message: error.localizedDescription, details: nil))
+          }
+        }
+        
+      case "fetchAllGoals":
+        CloudKitManager.shared.fetchAllGoals { fetchResult in
+          switch fetchResult {
+          case .success(let goals):
+            result(goals)
+          case .failure(let error):
+            result(FlutterError(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
+          }
+        }
+        
+      case "backupChatMessages":
+        guard let messages = call.arguments as? [[String: Any]] else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Expected array of messages", details: nil))
+          return
+        }
+        CloudKitManager.shared.backupChatMessages(messages) { backupResult in
+          switch backupResult {
+          case .success(let count):
+            result(count)
+          case .failure(let error):
+            result(FlutterError(code: "BACKUP_ERROR", message: error.localizedDescription, details: nil))
+          }
+        }
+        
+      case "fetchAllChatMessages":
+        CloudKitManager.shared.fetchAllChatMessages { fetchResult in
+          switch fetchResult {
+          case .success(let messages):
+            result(messages)
+          case .failure(let error):
+            result(FlutterError(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
+          }
+        }
+        
+      case "savePreference":
+        guard let args = call.arguments as? [String: String],
+              let key = args["key"],
+              let value = args["value"] else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Expected key and value", details: nil))
+          return
+        }
+        CloudKitManager.shared.savePreference(key: key, value: value) { saveResult in
+          switch saveResult {
+          case .success:
+            result(true)
+          case .failure(let error):
+            result(FlutterError(code: "SAVE_ERROR", message: error.localizedDescription, details: nil))
+          }
+        }
+        
+      case "fetchAllPreferences":
+        CloudKitManager.shared.fetchAllPreferences { fetchResult in
+          switch fetchResult {
+          case .success(let prefs):
+            result(prefs)
+          case .failure(let error):
+            result(FlutterError(code: "FETCH_ERROR", message: error.localizedDescription, details: nil))
+          }
+        }
+        
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    })
+    
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
   

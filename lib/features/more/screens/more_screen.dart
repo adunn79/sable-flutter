@@ -41,15 +41,7 @@ class MoreScreen extends StatelessWidget {
             subtitle: 'Personalize your experience',
             onTap: () => context.go('/settings'),
           ),
-          const SizedBox(height: 12),
-          _buildMenuItem(
-            context,
-            icon: LucideIcons.award,
-            title: 'Origin Certificate',
-            subtitle: 'View your companion\'s birth certificate',
-            onTap: () => context.go('/certificate'),
-          ),
-          const SizedBox(height: 12),
+
           _buildMenuItem(
             context,
             icon: LucideIcons.sparkles,  // Using sparkles as mask/drama icon isn't available

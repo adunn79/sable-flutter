@@ -9,9 +9,6 @@ import 'screens/screen_2_protocol.dart';
 import 'screens/screen_3_archetype.dart';
 import 'screens/screen_4_customize.dart';
 
-import 'package:sable/features/certificate/models/certificate_data.dart';
-import 'package:sable/features/certificate/screens/certificate_screen.dart';
-import 'package:sable/features/certificate/services/genesis_service.dart';
 
 class OnboardingFlow extends StatefulWidget {
   final VoidCallback onComplete;
@@ -34,7 +31,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   String? _selectedArchetype;
   AvatarConfig? _avatarConfig;
   String? _avatarImageUrl;
-  CertificateData? _certificateData;
+
 
   @override
   void dispose() {
@@ -73,19 +70,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       _avatarImageUrl = imageUrl;
     });
 
-    // Generate Certificate Data using selected archetype
-    if (_selectedArchetype != null) {
-      final certificateData = await GenesisService.generateCertificate(
-        _selectedArchetype!,
-        imageUrl,
-        userLocation: _userProfile?.currentLocation,
-      );
-      
-      setState(() {
-        _certificateData = certificateData;
-      });
-    }
-
     // Save onboarding completion and user profile
     final stateService = await OnboardingStateService.create();
     
@@ -117,17 +101,14 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     
     await stateService.completeOnboarding();
 
-    // TODO: Save permissions and avatar config if needed
-
-    _nextPage();
-  }
-
-  void _handleCertificateComplete() {
+    // Go directly to main app after onboarding
     widget.onComplete();
   }
 
+
+
   void _nextPage() {
-    if (_currentPage < 5) { // Increased to 5 for certificate screen
+    if (_currentPage < 4) { // 5 screens total (0-4)
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -164,11 +145,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
               archetype: _selectedArchetype!,
               onComplete: _handleScreen4Complete,
             ),
-          if (_certificateData != null)
-             CertificateScreen(
-               data: _certificateData!,
-               onComplete: _handleCertificateComplete,
-             ),
+
         ],
       ),
     );

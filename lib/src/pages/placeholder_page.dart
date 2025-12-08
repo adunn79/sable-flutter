@@ -19,7 +19,7 @@ class PlaceholderPage extends StatelessWidget {
           icon: Icon(LucideIcons.arrowLeft, color: Colors.white.withOpacity(0.8)),
           onPressed: () {
             // Pages accessed from More menu go back to More
-            if (title == 'Certificate' || title == 'Emergency') {
+            if (title == 'Emergency') {
               context.go('/more');
             } else {
               context.go('/chat');

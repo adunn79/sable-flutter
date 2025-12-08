@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../../core/theme/aureal_theme.dart';
 import '../../../core/ai/providers/grok_provider.dart';
+import '../../../core/widgets/cinematic_background.dart';
 import '../../../features/settings/widgets/magic_orb_widget.dart';
 import '../services/private_storage_service.dart';
 import '../services/private_content_filter.dart';
@@ -452,29 +453,48 @@ Guidelines for MAXIMUM BONDING:
       ),
       body: Stack(
         children: [
-          // Full screen avatar backdrop (when in fullScreen mode)
+          // Full screen avatar backdrop (when in fullScreen mode) - matches main chat
           if (_displayMode == PrivateAvatarDisplayMode.fullScreen && avatar?.imagePath != null)
             Positioned.fill(
-              child: Opacity(
-                opacity: 0.35, // More visible backdrop
-                child: Image.asset(
-                  avatar!.imagePath!,
-                  fit: BoxFit.cover,
-                ),
+              child: CinematicBackground(
+                imagePath: avatar!.imagePath!,
               ),
             ),
             
-          // Side-by-side layout
+          // Side-by-side layout (conversation mode: chat left, avatar right)
           if (_displayMode == PrivateAvatarDisplayMode.sideBySide)
             Expanded(
               child: Row(
                 children: [
-                  // Avatar column on left
+                  // Chat column on left
+                  Expanded(
+                    child: Column(
+                      children: [
+                        if (_showInfoTip) _buildInfoTip(avatar),
+                        if (_showSettings) _buildSettingsPanel(),
+                        Expanded(
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(12),
+                            itemCount: _messages.length + (_isTyping ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == _messages.length && _isTyping) {
+                                return _buildTypingIndicator();
+                              }
+                              return _buildMessageBubble(_messages[index]);
+                            },
+                          ),
+                        ),
+                        _buildInputArea(),
+                      ],
+                    ),
+                  ),
+                  // Avatar column on right
                   Container(
                     width: 120,
                     decoration: BoxDecoration(
                       border: Border(
-                        right: BorderSide(color: AurealColors.carbon, width: 1),
+                        left: BorderSide(color: AurealColors.carbon, width: 1),
                       ),
                     ),
                     child: Column(
@@ -510,29 +530,6 @@ Guidelines for MAXIMUM BONDING:
                           ),
                         ),
                         const Spacer(),
-                      ],
-                    ),
-                  ),
-                  // Chat column on right
-                  Expanded(
-                    child: Column(
-                      children: [
-                        if (_showInfoTip) _buildInfoTip(avatar),
-                        if (_showSettings) _buildSettingsPanel(),
-                        Expanded(
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(12),
-                            itemCount: _messages.length + (_isTyping ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == _messages.length && _isTyping) {
-                                return _buildTypingIndicator();
-                              }
-                              return _buildMessageBubble(_messages[index]);
-                            },
-                          ),
-                        ),
-                        _buildInputArea(),
                       ],
                     ),
                   ),

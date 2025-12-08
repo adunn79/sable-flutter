@@ -51,6 +51,14 @@ class MoreScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _buildMenuItem(
             context,
+            icon: LucideIcons.drama,  // Mask icon
+            title: 'Private Space',
+            subtitle: 'Your premium sanctuary 🎭',
+            onTap: () => context.go('/private-space'),
+          ),
+          const SizedBox(height: 12),
+          _buildMenuItem(
+            context,
             icon: LucideIcons.alertCircle,
             title: 'Emergency',
             subtitle: 'Crisis resources and contacts',

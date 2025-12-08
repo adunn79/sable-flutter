@@ -86,4 +86,7 @@ class SubscriptionService extends ChangeNotifier {
         return ['Concierge Support', 'Exclusive Voices', 'Unlimited Memory', '2000 Voice Credits/mo', '200 Video Credits/mo', 'Smart Adjustments Included'];
     }
   }
+
+  /// Check if user has access to Private Space (Silver+ tier)
+  bool get hasPrivateSpaceAccess => currentTier != SubscriptionTier.free;
 }

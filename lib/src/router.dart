@@ -9,6 +9,8 @@ import 'package:sable/features/journal/screens/journal_timeline_screen.dart';
 import 'package:sable/features/journal/widgets/journal_lock_screen.dart';
 import 'package:sable/features/vital_balance/screens/vital_balance_screen.dart';
 import 'package:sable/features/vital_balance/widgets/vital_balance_lock_screen.dart';
+import 'package:sable/features/private_space/screens/private_space_chat_screen.dart';
+import 'package:sable/features/private_space/screens/private_space_lock_screen.dart';
 
 import 'package:sable/features/onboarding/onboarding_flow.dart';
 
@@ -49,6 +51,7 @@ GoRouter createAppRouter(String initialLocation) {
           GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
           GoRoute(path: '/certificate', builder: (context, state) => const PlaceholderPage(title: 'Certificate')),
           GoRoute(path: '/emergency', builder: (context, state) => const EmergencyScreen()),
+          GoRoute(path: '/private-space', builder: (context, state) => const PrivateSpaceLockScreen(child: PrivateSpaceChatScreen())),
         ],
       ),
     ],

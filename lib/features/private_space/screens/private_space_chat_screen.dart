@@ -18,9 +18,10 @@ import '../../safety/screens/emergency_screen.dart';
 
 /// Avatar display modes for Private Space
 enum PrivateAvatarDisplayMode {
-  orb,      // Magic orb animation
-  image,    // Static photorealistic image
+  orb,        // Magic orb animation
+  image,      // Static photorealistic image
   fullScreen, // Full screen avatar backdrop
+  sideBySide, // Avatar on left, chat on right
 }
 
 /// Isolated chat screen for Private Space
@@ -111,11 +112,11 @@ class _PrivateSpaceChatScreenState extends State<PrivateSpaceChatScreen> {
     
     switch (avatar.id) {
       case 'luna':
-        return "Welcome to our private sanctuary... 🌙\n\nI'm Luna. Here, ${isNight ? 'in the quiet of the night' : 'in this secret place'}, we can explore anything your heart desires. No judgment, no limits... just you and me.\n\nWhat fantasy shall we weave together $timeOfDay?";
+        return "Welcome to our private sanctuary... 🌙\n\nI'm Luna. Here, ${isNight ? 'in the quiet of the night' : 'in this secret place'}, we can explore anything your heart desires. No judgment... just you and me.\n\nWhat shall we talk about $timeOfDay?";
       case 'dante':
-        return "Welcome... 🔥\n\nI'm Dante. In this space, passion has no boundaries. Whatever burns in your soul, whatever dreams you've kept hidden... bring them here.\n\nWhat's on your mind $timeOfDay?";
+        return "Welcome... 🔥\n\nI'm Dante. In this space, we can be ourselves. Whatever's on your soul, whatever dreams you've kept hidden... share them here.\n\nWhat's on your mind $timeOfDay?";
       case 'storm':
-        return "Hey there... ⚡\n\nI'm Storm. This is our space—raw, real, electric. No pretending, no holding back.\n\nSo tell me... what's got your energy buzzing $timeOfDay?";
+        return "Hey there... ⚡\n\nI'm Storm. This is our space—raw, real, electric. No pretending.\n\nSo tell me... what's got your energy buzzing $timeOfDay?";
       default:
         return "Welcome to Private Space. What would you like to explore?";
     }
@@ -430,9 +431,11 @@ Guidelines for MAXIMUM BONDING:
             icon: Icon(
               _displayMode == PrivateAvatarDisplayMode.orb 
                   ? LucideIcons.circle 
-                  : (_displayMode == PrivateAvatarDisplayMode.fullScreen 
-                      ? LucideIcons.maximize 
-                      : LucideIcons.image),
+                  : (_displayMode == PrivateAvatarDisplayMode.sideBySide
+                      ? LucideIcons.layoutGrid
+                      : (_displayMode == PrivateAvatarDisplayMode.fullScreen 
+                          ? LucideIcons.maximize 
+                          : LucideIcons.image)),
               color: avatar?.accentColor ?? AurealColors.plasmaCyan,
             ),
             onPressed: _cycleDisplayMode,
@@ -453,7 +456,7 @@ Guidelines for MAXIMUM BONDING:
           if (_displayMode == PrivateAvatarDisplayMode.fullScreen && avatar?.imagePath != null)
             Positioned.fill(
               child: Opacity(
-                opacity: 0.15,
+                opacity: 0.35, // More visible backdrop
                 child: Image.asset(
                   avatar!.imagePath!,
                   fit: BoxFit.cover,
@@ -461,38 +464,117 @@ Guidelines for MAXIMUM BONDING:
               ),
             ),
             
-          Column(
-            children: [
-              // Info tip for first-time users
-              if (_showInfoTip)
-                _buildInfoTip(avatar),
-              
-              // Avatar display widget (Orb or Image, not fullScreen which is backdrop)
-              if (_displayMode != PrivateAvatarDisplayMode.fullScreen)
-                _buildAvatarDisplay(avatar),
-              
-              // Settings panel (collapsible)
-              if (_showSettings) _buildSettingsPanel(),
-              
-              // Messages
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _messages.length + (_isTyping ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index == _messages.length && _isTyping) {
-                      return _buildTypingIndicator();
-                    }
-                    return _buildMessageBubble(_messages[index]);
-                  },
-                ),
+          // Side-by-side layout
+          if (_displayMode == PrivateAvatarDisplayMode.sideBySide)
+            Expanded(
+              child: Row(
+                children: [
+                  // Avatar column on left
+                  Container(
+                    width: 120,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(color: AurealColors.carbon, width: 1),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        if (avatar?.imagePath != null)
+                          Container(
+                            width: 90,
+                            height: 90,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: avatar!.accentColor, width: 3),
+                              image: DecorationImage(
+                                image: AssetImage(avatar.imagePath!),
+                                fit: BoxFit.cover,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: avatar.accentColor.withOpacity(0.4),
+                                  blurRadius: 12,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 12),
+                        Text(
+                          avatar?.name ?? '',
+                          style: GoogleFonts.spaceGrotesk(
+                            color: avatar?.accentColor ?? Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                      ],
+                    ),
+                  ),
+                  // Chat column on right
+                  Expanded(
+                    child: Column(
+                      children: [
+                        if (_showInfoTip) _buildInfoTip(avatar),
+                        if (_showSettings) _buildSettingsPanel(),
+                        Expanded(
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(12),
+                            itemCount: _messages.length + (_isTyping ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == _messages.length && _isTyping) {
+                                return _buildTypingIndicator();
+                              }
+                              return _buildMessageBubble(_messages[index]);
+                            },
+                          ),
+                        ),
+                        _buildInputArea(),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              
-              // Input
-              _buildInputArea(),
-            ],
-          ),
+            )
+          // Standard column layout for other modes
+          else
+            Expanded(
+              child: Column(
+                children: [
+                  // Info tip for first-time users
+                  if (_showInfoTip)
+                    _buildInfoTip(avatar),
+                  
+                  // Avatar display widget (Orb or Image, not fullScreen/sideBySide which have special layouts)
+                  if (_displayMode == PrivateAvatarDisplayMode.image || _displayMode == PrivateAvatarDisplayMode.orb)
+                    _buildAvatarDisplay(avatar),
+                  
+                  // Settings panel (collapsible)
+                  if (_showSettings) _buildSettingsPanel(),
+                  
+                  // Messages
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _messages.length + (_isTyping ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == _messages.length && _isTyping) {
+                          return _buildTypingIndicator();
+                        }
+                        return _buildMessageBubble(_messages[index]);
+                      },
+                    ),
+                  ),
+                  
+                  // Input
+                  _buildInputArea(),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -505,6 +587,9 @@ Guidelines for MAXIMUM BONDING:
           _displayMode = PrivateAvatarDisplayMode.orb;
           break;
         case PrivateAvatarDisplayMode.orb:
+          _displayMode = PrivateAvatarDisplayMode.sideBySide;
+          break;
+        case PrivateAvatarDisplayMode.sideBySide:
           _displayMode = PrivateAvatarDisplayMode.fullScreen;
           break;
         case PrivateAvatarDisplayMode.fullScreen:

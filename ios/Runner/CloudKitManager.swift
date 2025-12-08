@@ -60,12 +60,29 @@ class CloudKitManager {
     func fetchAll(recordType: String, completion: @escaping (Result<[CKRecord], Error>) -> Void) {
         let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
         
-        privateDatabase.perform(query, inZoneID: nil) { records, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    completion(.failure(error))
-                } else {
-                    completion(.success(records ?? []))
+        if #available(iOS 15.0, *) {
+            privateDatabase.fetch(withQuery: query) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let queryResult):
+                        let records = queryResult.matchResults.compactMap { (_, recordResult) -> CKRecord? in
+                            try? recordResult.get()
+                        }
+                        completion(.success(records))
+                    case .failure(let error):
+                        completion(.failure(error))
+                    }
+                }
+            }
+        } else {
+            // Fallback for iOS < 15
+            privateDatabase.perform(query, inZoneWith: nil) { records, error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        completion(.failure(error))
+                    } else {
+                        completion(.success(records ?? []))
+                    }
                 }
             }
         }

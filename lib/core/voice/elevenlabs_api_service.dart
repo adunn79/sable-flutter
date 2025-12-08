@@ -315,6 +315,30 @@ class ElevenLabsApiService {
         labels: {'accent': 'irish', 'gender': 'male', 'region': 'ireland'},
         previewUrl: null,
       ),
+      VoiceWithMetadata(
+        voiceId: 'EePqrwT0ZlPfJoGQeL3H',
+        name: 'Moira',
+        gender: 'female',
+        accents: ['Irish', 'European'],
+        labels: {'accent': 'irish', 'gender': 'female', 'region': 'ireland'},
+        previewUrl: null,
+      ),
+      VoiceWithMetadata(
+        voiceId: 'M1lPfqT0tQ8eCpH3juR2',
+        name: 'Saoirse',
+        gender: 'female',
+        accents: ['Irish', 'European'],
+        labels: {'accent': 'irish', 'gender': 'female', 'region': 'ireland'},
+        previewUrl: null,
+      ),
+      VoiceWithMetadata(
+        voiceId: 'AZnzlk1XvdvUeBnXmlld',
+        name: 'Niamh',
+        gender: 'female',
+        accents: ['Irish', 'European'],
+        labels: {'accent': 'irish', 'gender': 'female', 'region': 'ireland'},
+        previewUrl: null,
+      ),
       
       // === RUSSIAN/SCANDINAVIAN VOICES ===
       VoiceWithMetadata(

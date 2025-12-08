@@ -92,8 +92,89 @@ class PrivateAvatarPicker extends StatelessWidget {
             color: Colors.white,
           ),
         ),
+        const SizedBox(height: 8),
+        Text(
+          'Select a companion or design your own (coming soon)',
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            color: Colors.white54,
+          ),
+        ),
         const SizedBox(height: 16),
         ...PrivateAvatar.all.map((avatar) => _buildAvatarCard(avatar)),
+        const SizedBox(height: 8),
+        // Design Your Own (Coming Soon)
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AurealColors.carbon.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white24,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white10,
+                  border: Border.all(color: Colors.white24, width: 2),
+                ),
+                child: Center(
+                  child: Icon(LucideIcons.plus, color: Colors.white38, size: 28),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Design Your Own',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white54,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AurealColors.hyperGold.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Coming Soon',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: AurealColors.hyperGold,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Create a custom companion with your own style preferences',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.white38,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

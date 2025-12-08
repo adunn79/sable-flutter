@@ -167,16 +167,18 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('private_space_pin', pin);
     await prefs.setBool('private_space_pin_enabled', true);
+    await prefs.setBool('private_space_age_confirmed', true);  // Save age confirmation
     setState(() {
       _savedPin = pin;
       _pinEnabled = true;
       _isSettingPin = false;
-      _isUnlocked = true;
+      // DON'T unlock yet - need avatar selection first!
+      // _isUnlocked = true;  <-- REMOVED: Let build flow continue to avatar selection
     });
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Private Space PIN set!'),
+          content: Text('✅ PIN set! Now choose your companion...'),
           backgroundColor: AurealColors.hyperGold.withOpacity(0.9),
         ),
       );
@@ -199,7 +201,10 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🔐 LockScreen build: isLoading=$_isLoading, isPremium=$_isPremium, ageConfirmed=$_ageConfirmed, isUnlocked=$_isUnlocked, isSettingPin=$_isSettingPin, pinEnabled=$_pinEnabled, avatarSelected=$_avatarSelected');
+    
     if (_isLoading) {
+      debugPrint('🔐 → Showing LOADING');
       return Scaffold(
         backgroundColor: AurealColors.obsidian,
         body: const Center(child: CircularProgressIndicator()),
@@ -208,11 +213,13 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
     
     // Premium check
     if (!_isPremium) {
+      debugPrint('🔐 → Showing PAYWALL');
       return _buildPaywall();
     }
     
     // Age gate check
     if (!_ageConfirmed) {
+      debugPrint('🔐 → Showing AGE GATE');
       return PrivateSpaceAgeGate(
         onConfirmed: () => setState(() => _ageConfirmed = true),
         onDeclined: () => context.go('/chat'),
@@ -221,25 +228,30 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
 
     // Unlocked - show content
     if (_isUnlocked) {
+      debugPrint('🔐 → UNLOCKED - showing child');
       return widget.child;
     }
 
     // Setting PIN - show PIN entry screen
     if (_isSettingPin) {
+      debugPrint('🔐 → Showing PIN ENTRY (setting)');
       return _buildPinEntryScreen();
     }
 
     // First time - PIN setup is REQUIRED (can disable in settings later)
     if (!_pinEnabled) {
+      debugPrint('🔐 → Showing PIN SETUP');
       return _buildSetupScreen();
     }
 
     // Avatar selection required after PIN setup
     if (!_avatarSelected) {
+      debugPrint('🔐 → Showing AVATAR SELECTION');
       return _buildAvatarOnboarding();
     }
 
     // Show PIN entry for existing PIN
+    debugPrint('🔐 → Showing PIN ENTRY (existing)');
     return _buildPinEntryScreen();
   }
 
@@ -429,7 +441,11 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
                 onSelect: (avatar) async {
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setString('private_space_avatar', avatar.id);
-                  setState(() => _avatarSelected = true);
+                  setState(() {
+                    _avatarSelected = true;
+                    // Auto-unlock since user just completed onboarding (already entered PIN)
+                    _isUnlocked = true;
+                  });
                   
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

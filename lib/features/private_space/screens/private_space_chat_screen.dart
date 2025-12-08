@@ -373,8 +373,25 @@ Guidelines for MAXIMUM BONDING:
         ),
         title: Row(
           children: [
-            Text(avatar?.emoji ?? '🎭', style: TextStyle(fontSize: 24)),
-            const SizedBox(width: 8),
+            // Show avatar image if available, otherwise emoji
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: avatar?.accentColor ?? AurealColors.hyperGold, width: 2),
+                image: avatar?.imagePath != null
+                    ? DecorationImage(
+                        image: AssetImage(avatar!.imagePath!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: avatar?.imagePath == null
+                  ? Center(child: Text(avatar?.emoji ?? '🎭', style: TextStyle(fontSize: 18)))
+                  : null,
+            ),
+            const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

@@ -219,12 +219,17 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
       return widget.child;
     }
 
-    // First time - set up PIN
+    // Setting PIN - show PIN entry screen
+    if (_isSettingPin) {
+      return _buildPinEntryScreen();
+    }
+
+    // First time - set up PIN (offer to set PIN or skip)
     if (!_pinEnabled) {
       return _buildSetupScreen();
     }
 
-    // Show PIN entry
+    // Show PIN entry for existing PIN
     return _buildPinEntryScreen();
   }
 
@@ -443,10 +448,69 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
               ),
               const SizedBox(height: 20),
             ],
+
+            // Forgot PIN recovery (only show if PIN is enabled and not setting new PIN)
+            if (_pinEnabled && !_isSettingPin && _canUseBiometric) ...[
+              TextButton(
+                onPressed: _recoverPin,
+                child: Text(
+                  'Forgot PIN? Verify with biometric',
+                  style: GoogleFonts.inter(color: Colors.white.withOpacity(0.4), fontSize: 12),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  /// PIN recovery using biometric authentication
+  Future<void> _recoverPin() async {
+    try {
+      final authenticated = await _localAuth.authenticate(
+        localizedReason: 'Verify your identity to reset PIN',
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+        ),
+      );
+      
+      if (authenticated) {
+        // Reset PIN and show setup screen
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('private_space_pin');
+        await prefs.setBool('private_space_pin_enabled', false);
+        
+        setState(() {
+          _savedPin = '';
+          _pinEnabled = false;
+          _isSettingPin = false;
+          _enteredPin = '';
+          _wrongAttempts = 0;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ PIN reset. Please set a new PIN.'),
+              backgroundColor: AurealColors.hyperGold.withOpacity(0.9),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Biometric recovery error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Biometric verification failed. Please try again.'),
+            backgroundColor: Colors.red.withOpacity(0.9),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildNumpad() {

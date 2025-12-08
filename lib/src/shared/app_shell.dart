@@ -60,13 +60,14 @@ class _AppShellState extends State<AppShell> {
     final bool isSettingsPage = location.contains('settings');
     final bool isJournalPage = location.startsWith('/journal');
     final bool isMorePage = location.startsWith('/more');
+    final bool isPrivateSpace = location.startsWith('/private-space');
     
     return Scaffold(
       body: Stack(
         children: [
           widget.child,
-          // Weather widget - only show on Today and Vital Balance screens
-          if (!isChatPage && !isSettingsPage && !isJournalPage && !isMorePage && !location.startsWith('/vital-balance'))
+          // Weather widget - only show on Today screens (hide everywhere else for cleaner UI)
+          if (!isChatPage && !isSettingsPage && !isJournalPage && !isMorePage && !isPrivateSpace && !location.startsWith('/vital-balance'))
             Positioned(
               top: MediaQuery.of(context).padding.top + 8,
               left: 16,

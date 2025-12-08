@@ -51,7 +51,7 @@ class MoreScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _buildMenuItem(
             context,
-            icon: LucideIcons.drama,  // Mask icon
+            icon: LucideIcons.sparkles,  // Using sparkles as mask/drama icon isn't available
             title: 'Private Space',
             subtitle: 'Your premium sanctuary 🎭',
             onTap: () => context.go('/private-space'),

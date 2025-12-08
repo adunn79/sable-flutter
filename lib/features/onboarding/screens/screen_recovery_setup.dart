@@ -206,7 +206,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
               
               // Subtitle
               Text(
-                'Add an email or phone so you can reset your PIN if you forget it.',
+                'Your email and phone will only be used to recover your PINs or passwords if you forget them. We will never send marketing or spam.',
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   color: Colors.white60,

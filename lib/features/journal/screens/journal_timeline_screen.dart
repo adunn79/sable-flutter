@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/journal_storage_service.dart';
+import '../services/journal_export_service.dart';
 import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
 import '../widgets/avatar_journal_overlay.dart';
@@ -713,9 +714,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                 trailing: const Icon(LucideIcons.chevronRight, color: Colors.white30),
                 onTap: () {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('📥 Export coming soon!')),
-                  );
+                  _showExportDialog();
                 },
               ),
               const SizedBox(height: 12),
@@ -776,6 +775,128 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
               },
             ),
             const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  void _showExportDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Icon(LucideIcons.download, color: Colors.green, size: 24),
+                const SizedBox(width: 12),
+                const Text(
+                  'Export Journal',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${_entries.length} entries will be exported',
+              style: TextStyle(color: Colors.grey[500], fontSize: 13),
+            ),
+            const SizedBox(height: 20),
+            // PDF option
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(LucideIcons.fileText, color: Colors.red, size: 20),
+              ),
+              title: const Text('PDF Document', style: TextStyle(color: Colors.white)),
+              subtitle: Text('Beautiful formatted export with cover page', 
+                style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+              trailing: const Icon(LucideIcons.chevronRight, color: Colors.white30),
+              onTap: () async {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Row(
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        ),
+                        SizedBox(width: 12),
+                        Text('Creating PDF...'),
+                      ],
+                    ),
+                    duration: Duration(seconds: 10),
+                  ),
+                );
+                try {
+                  await JournalExportService.exportToPdf(entries: _entries);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Export failed: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+            // Text option
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(LucideIcons.fileType, color: Colors.blue, size: 20),
+              ),
+              title: const Text('Plain Text', style: TextStyle(color: Colors.white)),
+              subtitle: Text('Simple text file format', 
+                style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+              trailing: const Icon(LucideIcons.chevronRight, color: Colors.white30),
+              onTap: () async {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Creating text export...')),
+                );
+                try {
+                  await JournalExportService.exportToText(entries: _entries);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Export failed: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+            ),
+            const SizedBox(height: 16),
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),

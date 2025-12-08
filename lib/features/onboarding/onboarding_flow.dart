@@ -8,7 +8,7 @@ import 'screens/screen_1.5_permissions.dart';
 import 'screens/screen_2_protocol.dart';
 import 'screens/screen_3_archetype.dart';
 import 'screens/screen_4_customize.dart';
-
+import 'screens/screen_recovery_setup.dart';
 
 class OnboardingFlow extends StatefulWidget {
   final VoidCallback onComplete;
@@ -101,14 +101,19 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     
     await stateService.completeOnboarding();
 
-    // Go directly to main app after onboarding
+    // Move to recovery setup screen
+    _nextPage();
+  }
+
+  void _handleRecoveryComplete() {
+    // Go to main app after recovery setup
     widget.onComplete();
   }
 
 
 
   void _nextPage() {
-    if (_currentPage < 4) { // 5 screens total (0-4)
+    if (_currentPage < 5) { // 6 screens total (0-5)
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -145,7 +150,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
               archetype: _selectedArchetype!,
               onComplete: _handleScreen4Complete,
             ),
-
+          ScreenRecoverySetup(
+            onComplete: _handleRecoveryComplete,
+          ),
         ],
       ),
     );

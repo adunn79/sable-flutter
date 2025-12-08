@@ -6,6 +6,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/aureal_theme.dart';
+import '../../../core/services/recovery_service.dart';
 import '../../../features/subscription/services/subscription_service.dart';
 import '../widgets/private_avatar_picker.dart';
 import 'private_space_age_gate.dart';
@@ -539,16 +540,16 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
               const SizedBox(height: 20),
             ],
 
-            // Forgot PIN recovery (only show if PIN is enabled and not setting new PIN)
-            if (_pinEnabled && !_isSettingPin && _canUseBiometric) ...[
+            // Forgot PIN recovery
+            if (_pinEnabled && !_isSettingPin) ...[
               TextButton(
-                onPressed: _recoverPin,
+                onPressed: _showForgotPinDialog,
                 child: Text(
-                  'Forgot PIN? Verify with biometric',
-                  style: GoogleFonts.inter(color: Colors.white.withOpacity(0.4), fontSize: 12),
+                  'Forgot PIN?',
+                  style: GoogleFonts.inter(color: Colors.white38, fontSize: 14),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
             ],
           ],
         ),
@@ -556,50 +557,183 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
     );
   }
 
-  /// PIN recovery using biometric authentication
-  Future<void> _recoverPin() async {
-    try {
-      final authenticated = await _localAuth.authenticate(
-        localizedReason: 'Verify your identity to reset PIN',
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          stickyAuth: true,
-        ),
-      );
-      
-      if (authenticated) {
-        // Reset PIN and show setup screen
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('private_space_pin');
-        await prefs.setBool('private_space_pin_enabled', false);
-        
-        setState(() {
-          _savedPin = '';
-          _pinEnabled = false;
-          _isSettingPin = false;
-          _enteredPin = '';
-          _wrongAttempts = 0;
-        });
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ PIN reset. Please set a new PIN.'),
-              backgroundColor: AurealColors.hyperGold.withOpacity(0.9),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('Biometric recovery error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Biometric verification failed. Please try again.'),
-            backgroundColor: Colors.red.withOpacity(0.9),
+  /// PIN recovery - tries biometric first, then email/phone
+  Future<void> _showForgotPinDialog() async {
+    // First, try biometric if available
+    if (_canUseBiometric) {
+      try {
+        final authenticated = await _localAuth.authenticate(
+          localizedReason: 'Verify your identity to reset PIN',
+          options: const AuthenticationOptions(
+            biometricOnly: true,
+            stickyAuth: true,
           ),
         );
+        
+        if (authenticated) {
+          await _resetPinAndRestart();
+          return;
+        }
+      } catch (e) {
+        debugPrint('Biometric recovery error: $e');
       }
+    }
+    
+    // Fall back to email/phone recovery
+    final recovery = await RecoveryService.create();
+    if (!recovery.hasVerifiedRecoveryMethod) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AurealColors.carbon,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(LucideIcons.alertTriangle, color: Colors.orange),
+              const SizedBox(width: 12),
+              Text('No Recovery Set', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            'You haven\'t set up a recovery method and biometric failed. Add recovery options in Settings.',
+            style: GoogleFonts.inter(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('OK', style: GoogleFonts.inter(color: AurealColors.hyperGold)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    
+    // Show email/phone recovery dialog
+    final emailController = TextEditingController();
+    final phoneController = TextEditingController();
+    
+    if (!mounted) return;
+    final verified = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AurealColors.carbon,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(LucideIcons.shieldCheck, color: AurealColors.hyperGold),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('Verify Identity', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter your recovery email or phone:',
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            if (recovery.isEmailVerified) ...[
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                style: GoogleFonts.inter(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Email',
+                  hintStyle: GoogleFonts.inter(color: Colors.white38),
+                  prefixIcon: Icon(LucideIcons.mail, color: AurealColors.hyperGold.withOpacity(0.7)),
+                  filled: true,
+                  fillColor: Colors.black26,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (recovery.isPhoneVerified) ...[
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                style: GoogleFonts.inter(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Phone',
+                  hintStyle: GoogleFonts.inter(color: Colors.white38),
+                  prefixIcon: Icon(LucideIcons.phone, color: AurealColors.hyperGold.withOpacity(0.7)),
+                  filled: true,
+                  fillColor: Colors.black26,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final isVerified = recovery.verifyIdentity(
+                email: emailController.text.trim().isNotEmpty ? emailController.text.trim() : null,
+                phone: phoneController.text.trim().isNotEmpty ? phoneController.text.trim() : null,
+              );
+              Navigator.pop(context, isVerified);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AurealColors.hyperGold,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text('Verify', style: GoogleFonts.inter(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+    
+    if (verified == true) {
+      await _resetPinAndRestart();
+    } else if (verified == false) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Verification failed. Email or phone does not match.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  Future<void> _resetPinAndRestart() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('private_space_pin');
+    await prefs.setBool('private_space_pin_enabled', false);
+    
+    setState(() {
+      _savedPin = '';
+      _pinEnabled = false;
+      _isSettingPin = false;
+      _enteredPin = '';
+      _wrongAttempts = 0;
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ PIN reset! Please set a new PIN.'),
+          backgroundColor: AurealColors.hyperGold.withOpacity(0.9),
+        ),
+      );
     }
   }
 

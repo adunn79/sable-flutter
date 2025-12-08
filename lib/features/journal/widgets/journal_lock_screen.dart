@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:local_auth/local_auth.dart';
-
+import 'package:google_fonts/google_fonts.dart';
+import '../../../core/services/recovery_service.dart';
 /// PIN lock screen for journal access
 class JournalLockScreen extends StatefulWidget {
   final Widget child; // The protected journal screen
@@ -154,6 +155,158 @@ class _JournalLockScreenState extends State<JournalLockScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('✅ Biometric unlock enabled!')),
     );
+  }
+  
+  Future<void> _showForgotPinDialog() async {
+    final recovery = await RecoveryService.create();
+    
+    if (!recovery.hasVerifiedRecoveryMethod) {
+      // No recovery method set
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(LucideIcons.alertTriangle, color: Colors.orange),
+              const SizedBox(width: 12),
+              Text('No Recovery Set', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            'You haven\'t set up a recovery method. Without it, you cannot reset your PIN.\n\nYou can add recovery options in Settings after resetting the app.',
+            style: GoogleFonts.inter(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('OK', style: GoogleFonts.inter(color: Colors.purple)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    
+    // Show recovery verification dialog
+    final emailController = TextEditingController();
+    final phoneController = TextEditingController();
+    
+    if (!mounted) return;
+    final verified = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(LucideIcons.shieldCheck, color: Colors.purple),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('Verify Identity', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter your recovery email or phone to reset your PIN:',
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            if (recovery.isEmailVerified) ...[
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                style: GoogleFonts.inter(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Email',
+                  hintStyle: GoogleFonts.inter(color: Colors.white38),
+                  prefixIcon: Icon(LucideIcons.mail, color: Colors.purple.withOpacity(0.7)),
+                  filled: true,
+                  fillColor: Colors.black26,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (recovery.isPhoneVerified) ...[
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                style: GoogleFonts.inter(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Phone',
+                  hintStyle: GoogleFonts.inter(color: Colors.white38),
+                  prefixIcon: Icon(LucideIcons.phone, color: Colors.purple.withOpacity(0.7)),
+                  filled: true,
+                  fillColor: Colors.black26,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final isVerified = recovery.verifyIdentity(
+                email: emailController.text.trim().isNotEmpty ? emailController.text.trim() : null,
+                phone: phoneController.text.trim().isNotEmpty ? phoneController.text.trim() : null,
+              );
+              Navigator.pop(context, isVerified);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text('Verify', style: GoogleFonts.inter(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    
+    if (verified == true) {
+      // Clear the PIN and allow resetting
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('journal_pin');
+      await prefs.setBool('journal_pin_enabled', false);
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ PIN reset! Set a new PIN to protect your journal.')),
+      );
+      
+      setState(() {
+        _savedPin = '';
+        _pinEnabled = false;
+        _enteredPin = '';
+        _isSettingPin = true;
+      });
+    } else if (verified == false) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Verification failed. Email or phone does not match.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
   
   @override
@@ -312,7 +465,19 @@ class _JournalLockScreenState extends State<JournalLockScreen> {
                 icon: const Icon(LucideIcons.fingerprint, color: Colors.grey),
                 label: Text('Enable biometric unlock', style: TextStyle(color: Colors.grey[400])),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
+            ],
+            
+            // Forgot PIN link
+            if (!_isSettingPin && _pinEnabled) ...[
+              TextButton(
+                onPressed: _showForgotPinDialog,
+                child: Text(
+                  'Forgot PIN?',
+                  style: GoogleFonts.inter(color: Colors.white38, fontSize: 14),
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
           ],
         ),

@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import '../../../core/services/recovery_service.dart';
 /// PIN lock screen for Vital Balance access
 /// Protects sensitive health data with password/biometric authentication
 class VitalBalanceLockScreen extends StatefulWidget {
@@ -193,6 +193,155 @@ class _VitalBalanceLockScreenState extends State<VitalBalanceLockScreen> {
     }
   }
   
+  Future<void> _showForgotPinDialog() async {
+    final recovery = await RecoveryService.create();
+    
+    if (!recovery.hasVerifiedRecoveryMethod) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(LucideIcons.alertTriangle, color: Colors.orange),
+              const SizedBox(width: 12),
+              Text('No Recovery Set', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            'You haven\'t set up a recovery method. Without it, you cannot reset your PIN.\n\nYou can add recovery options in Settings after resetting the app.',
+            style: GoogleFonts.inter(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('OK', style: GoogleFonts.inter(color: _accentTeal)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    
+    final emailController = TextEditingController();
+    final phoneController = TextEditingController();
+    
+    if (!mounted) return;
+    final verified = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(LucideIcons.shieldCheck, color: _accentTeal),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('Verify Identity', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter your recovery email or phone to reset your PIN:',
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            if (recovery.isEmailVerified) ...[
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                style: GoogleFonts.inter(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Email',
+                  hintStyle: GoogleFonts.inter(color: Colors.white38),
+                  prefixIcon: Icon(LucideIcons.mail, color: _accentTeal.withOpacity(0.7)),
+                  filled: true,
+                  fillColor: Colors.black26,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (recovery.isPhoneVerified) ...[
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                style: GoogleFonts.inter(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Phone',
+                  hintStyle: GoogleFonts.inter(color: Colors.white38),
+                  prefixIcon: Icon(LucideIcons.phone, color: _accentTeal.withOpacity(0.7)),
+                  filled: true,
+                  fillColor: Colors.black26,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final isVerified = recovery.verifyIdentity(
+                email: emailController.text.trim().isNotEmpty ? emailController.text.trim() : null,
+                phone: phoneController.text.trim().isNotEmpty ? phoneController.text.trim() : null,
+              );
+              Navigator.pop(context, isVerified);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _accentTeal,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text('Verify', style: GoogleFonts.inter(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    
+    if (verified == true) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_keyPin);
+      await prefs.setBool(_keyPinEnabled, false);
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ PIN reset! Set a new PIN to protect your health data.')),
+      );
+      
+      setState(() {
+        _savedPin = '';
+        _pinEnabled = false;
+        _enteredPin = '';
+        _isSettingPin = true;
+      });
+    } else if (verified == false) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Verification failed. Email or phone does not match.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     if (_isUnlocked) {
@@ -351,7 +500,19 @@ class _VitalBalanceLockScreenState extends State<VitalBalanceLockScreen> {
                 icon: const Icon(LucideIcons.fingerprint, color: Colors.grey),
                 label: Text('Enable biometric unlock', style: TextStyle(color: Colors.grey[400])),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
+            ],
+            
+            // Forgot PIN link
+            if (!_isSettingPin && _pinEnabled) ...[
+              TextButton(
+                onPressed: _showForgotPinDialog,
+                child: Text(
+                  'Forgot PIN?',
+                  style: GoogleFonts.inter(color: Colors.white38, fontSize: 14),
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
           ],
         ),

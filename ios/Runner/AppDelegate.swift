@@ -2,6 +2,7 @@ import Flutter
 import UIKit
 import EventKit
 import AppIntents
+import MediaPlayer
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -216,6 +217,21 @@ import AppIntents
       }
     })
     
+    // Now Playing Music Channel
+    let nowPlayingChannel = FlutterMethodChannel(name: "com.sable.nowplaying",
+                                                 binaryMessenger: controller.binaryMessenger)
+    
+    nowPlayingChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      
+      switch call.method {
+      case "getNowPlaying":
+        self.getNowPlayingInfo(result: result)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    })
+    
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
   
@@ -319,6 +335,38 @@ import AppIntents
       }
     } else {
       result(FlutterError(code: "NOT_FOUND", message: "Reminder not found", details: nil))
+    }
+  }
+  
+  // MARK: - Now Playing Methods
+  
+  private func getNowPlayingInfo(result: @escaping FlutterResult) {
+    // Access the system-wide now playing info
+    // Note: This works for music apps that properly set MPNowPlayingInfoCenter
+    let nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo
+    
+    if let info = nowPlayingInfo, 
+       let title = info[MPMediaItemPropertyTitle] as? String {
+      let artist = info[MPMediaItemPropertyArtist] as? String
+      let album = info[MPMediaItemPropertyAlbumTitle] as? String
+      
+      // Try to get artwork URL (if available)
+      var artworkUrlString: String? = nil
+      if let artwork = info[MPMediaItemPropertyArtwork] as? MPMediaItemArtwork {
+        // For now, we don't have a URL. Artwork is an image.
+        // Could save to temp file if needed in future
+        artworkUrlString = nil
+      }
+      
+      result([
+        "title": title,
+        "artist": artist ?? "Unknown Artist",
+        "album": album,
+        "artworkUrl": artworkUrlString,
+        "bundleId": "unknown" // Can't easily determine source app from MPNowPlayingInfoCenter
+      ])
+    } else {
+      result(nil)
     }
   }
 }

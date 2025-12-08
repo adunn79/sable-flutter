@@ -45,6 +45,8 @@ import 'package:sable/features/settings/widgets/settings_section.dart';
 import 'package:sable/features/settings/widgets/settings_tile.dart';
 import 'package:sable/core/personality/personality_service.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sable/features/journal/screens/knowledge_center_screen.dart';
+import 'package:sable/core/memory/unified_memory_service.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -912,6 +914,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                        onChanged: _togglePersistentMemory,
                        activeColor: AurealColors.hyperGold,
                      ),
+                   ),
+                   SettingsTile(
+                     icon: LucideIcons.brain,
+                     title: 'Knowledge Center',
+                     subtitle: 'View & manage what I remember about you',
+                     trailing: Builder(
+                       builder: (context) {
+                         final count = UnifiedMemoryService().getAllMemories().length;
+                         if (count == 0) {
+                           return Icon(LucideIcons.chevronRight, color: AurealColors.ghost, size: 18);
+                         }
+                         return Row(
+                           mainAxisSize: MainAxisSize.min,
+                           children: [
+                             Container(
+                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                               decoration: BoxDecoration(
+                                 color: AurealColors.hyperGold.withOpacity(0.2),
+                                 borderRadius: BorderRadius.circular(10),
+                               ),
+                               child: Text(
+                                 '$count',
+                                 style: GoogleFonts.inter(
+                                   fontSize: 12,
+                                   fontWeight: FontWeight.bold,
+                                   color: AurealColors.hyperGold,
+                                 ),
+                               ),
+                             ),
+                             const SizedBox(width: 8),
+                             Icon(LucideIcons.chevronRight, color: AurealColors.ghost, size: 18),
+                           ],
+                         );
+                       },
+                     ),
+                     onTap: () {
+                       Navigator.push(
+                         context, 
+                         MaterialPageRoute(
+                           builder: (_) => const KnowledgeCenterScreen(),
+                         ),
+                       );
+                     },
                    ),
                    SettingsTile(
                      icon: LucideIcons.vibrate,

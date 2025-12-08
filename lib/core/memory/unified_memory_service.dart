@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'dart:typed_data';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sable/core/memory/models/chat_message.dart';
 import 'package:sable/core/memory/models/extracted_memory.dart';
 import 'package:sable/core/memory/models/health_entry.dart';
+
 
 /// Unified Memory Service
 /// Manages all Hive boxes for persistent, searchable AI memory
@@ -67,19 +70,50 @@ class UnifiedMemoryService {
   
   /// Get or create encryption key for health data
   Future<Uint8List> _getOrCreateEncryptionKey() async {
-    const secureStorage = FlutterSecureStorage();
+    String? keyString;
     
-    String? keyString = await secureStorage.read(key: _encryptionKeyName);
+    // macOS and Linux may not have full secure storage support
+    final useFallback = Platform.isMacOS || Platform.isLinux;
     
-    if (keyString == null) {
-      // Generate new key
-      final key = Hive.generateSecureKey();
-      keyString = base64Encode(key);
-      await secureStorage.write(key: _encryptionKeyName, value: keyString);
+    if (useFallback) {
+      // Use SharedPreferences on macOS/Linux (less secure but functional)
+      final prefs = await SharedPreferences.getInstance();
+      keyString = prefs.getString(_encryptionKeyName);
+      
+      if (keyString == null) {
+        final key = Hive.generateSecureKey();
+        keyString = base64Encode(key);
+        await prefs.setString(_encryptionKeyName, keyString);
+      }
+    } else {
+      // Use FlutterSecureStorage on iOS/Android
+      const secureStorage = FlutterSecureStorage();
+      
+      try {
+        keyString = await secureStorage.read(key: _encryptionKeyName);
+        
+        if (keyString == null) {
+          final key = Hive.generateSecureKey();
+          keyString = base64Encode(key);
+          await secureStorage.write(key: _encryptionKeyName, value: keyString);
+        }
+      } catch (e) {
+        // Fallback if secure storage fails
+        print('⚠️ SecureStorage failed, using SharedPreferences fallback: $e');
+        final prefs = await SharedPreferences.getInstance();
+        keyString = prefs.getString(_encryptionKeyName);
+        
+        if (keyString == null) {
+          final key = Hive.generateSecureKey();
+          keyString = base64Encode(key);
+          await prefs.setString(_encryptionKeyName, keyString);
+        }
+      }
     }
     
     return base64Decode(keyString);
   }
+
   
   // ============= CHAT MESSAGES =============
   
@@ -142,13 +176,37 @@ class UnifiedMemoryService {
   
   // ============= EXTRACTED MEMORIES =============
   
-  /// Add an extracted memory
+  /// Add an extracted memory with rich contextual data
   Future<void> addMemory({
     required String content,
     required MemoryCategory category,
     String? sourceMessageId,
     List<String> tags = const [],
     int importance = 3,
+    // Location
+    String? locationName,
+    double? latitude,
+    double? longitude,
+    String? weather,
+    // Vibe
+    int? energyLevel,
+    String? vibeColor,
+    String? ambientDescription,
+    // Social
+    List<String> taggedPeople = const [],
+    bool isGroupActivity = false,
+    // Media
+    String? nowPlayingTrack,
+    String? nowPlayingService,
+    List<String> attachedPhotoPaths = const [],
+    // World
+    String? topHeadline,
+    String? onThisDay,
+    // Health
+    int? sleepHours,
+    int? stepCount,
+    // Summary
+    String? oneSentenceSummary,
   }) async {
     if (_memoryBox == null) await initialize();
     
@@ -167,6 +225,23 @@ class UnifiedMemoryService {
       sourceMessageId: sourceMessageId,
       tags: tags,
       importance: importance,
+      locationName: locationName,
+      latitude: latitude,
+      longitude: longitude,
+      weather: weather,
+      energyLevel: energyLevel,
+      vibeColor: vibeColor,
+      ambientDescription: ambientDescription,
+      taggedPeople: taggedPeople,
+      isGroupActivity: isGroupActivity,
+      nowPlayingTrack: nowPlayingTrack,
+      nowPlayingService: nowPlayingService,
+      attachedPhotoPaths: attachedPhotoPaths,
+      topHeadline: topHeadline,
+      onThisDay: onThisDay,
+      sleepHours: sleepHours,
+      stepCount: stepCount,
+      oneSentenceSummary: oneSentenceSummary,
     );
     
     await _memoryBox!.add(memory);
@@ -235,6 +310,119 @@ class UnifiedMemoryService {
   /// Clear all extracted memories
   Future<void> clearMemories() async {
     await _memoryBox?.clear();
+  }
+  
+  /// Update an existing memory
+  Future<bool> updateMemory({
+    required String id,
+    String? content,
+    MemoryCategory? category,
+    List<String>? tags,
+    int? importance,
+  }) async {
+    if (_memoryBox == null) await initialize();
+    
+    final memories = _memoryBox!.values.toList();
+    final index = memories.indexWhere((m) => m.id == id);
+    
+    if (index < 0) return false;
+    
+    final existing = memories[index];
+    final updated = ExtractedMemory(
+      id: existing.id,
+      content: content ?? existing.content,
+      category: category ?? existing.category,
+      extractedAt: existing.extractedAt,
+      sourceMessageId: existing.sourceMessageId,
+      tags: tags ?? existing.tags,
+      importance: importance ?? existing.importance,
+    );
+    
+    await _memoryBox!.putAt(index, updated);
+    print('✏️ Updated memory: ${updated.content}');
+    return true;
+  }
+  
+  /// Get detailed statistics per category for Knowledge Center
+  Map<String, dynamic> getMemoriesStats() {
+    final memories = getAllMemories();
+    
+    final categoryStats = <MemoryCategory, int>{};
+    for (var category in MemoryCategory.values) {
+      categoryStats[category] = memories.where((m) => m.category == category).length;
+    }
+    
+    // Calculate average importance
+    double avgImportance = 0;
+    if (memories.isNotEmpty) {
+      avgImportance = memories.map((m) => m.importance).reduce((a, b) => a + b) / memories.length;
+    }
+    
+    // Find most recent extraction
+    DateTime? lastExtracted;
+    if (memories.isNotEmpty) {
+      lastExtracted = memories.map((m) => m.extractedAt).reduce((a, b) => a.isAfter(b) ? a : b);
+    }
+    
+    return {
+      'total': memories.length,
+      'categoryStats': categoryStats,
+      'averageImportance': avgImportance,
+      'lastExtracted': lastExtracted,
+      'totalTags': memories.expand((m) => m.tags).toSet().length,
+    };
+  }
+  
+  /// Export all memories to JSON for backup
+  String exportAllMemoriesToJson() {
+    final memories = getAllMemories();
+    final export = {
+      'exportedAt': DateTime.now().toIso8601String(),
+      'version': '1.0',
+      'totalMemories': memories.length,
+      'memories': memories.map((m) => m.toJson()).toList(),
+    };
+    return const JsonEncoder.withIndent('  ').convert(export);
+  }
+  
+  /// Delete all memories in a specific category
+  Future<int> bulkDeleteByCategory(MemoryCategory category) async {
+    if (_memoryBox == null) await initialize();
+    
+    final toDelete = <int>[];
+    final memories = _memoryBox!.values.toList();
+    
+    for (var i = 0; i < memories.length; i++) {
+      if (memories[i].category == category) {
+        toDelete.add(i);
+      }
+    }
+    
+    // Delete in reverse order to maintain indices
+    for (var i = toDelete.length - 1; i >= 0; i--) {
+      await _memoryBox!.deleteAt(toDelete[i]);
+    }
+    
+    print('🗑️ Deleted ${toDelete.length} memories from ${category.name}');
+    return toDelete.length;
+  }
+  
+  /// Get human-readable category label (public version for UI)
+  String getCategoryLabel(MemoryCategory category) {
+    return _categoryLabel(category);
+  }
+  
+  /// Get category icon name for UI
+  String getCategoryIcon(MemoryCategory category) {
+    switch (category) {
+      case MemoryCategory.people: return 'users';
+      case MemoryCategory.preferences: return 'heart';
+      case MemoryCategory.dates: return 'calendar';
+      case MemoryCategory.life: return 'home';
+      case MemoryCategory.emotional: return 'smile';
+      case MemoryCategory.goals: return 'target';
+      case MemoryCategory.misc: return 'folder';
+    }
   }
   
   // ============= HEALTH DATA (ENCRYPTED) =============

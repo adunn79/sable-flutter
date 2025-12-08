@@ -11,6 +11,7 @@ import '../models/journal_bucket.dart';
 import '../widgets/avatar_journal_overlay.dart';
 import 'package:sable/core/voice/voice_service.dart';
 import 'package:sable/core/emotion/location_service.dart';
+import 'package:sable/core/emotion/weather_service.dart';
 import 'package:sable/core/ai/providers/gemini_provider.dart';
 import 'package:sable/src/config/app_config.dart';
 
@@ -250,6 +251,7 @@ Guidelines:
       // Auto-capture location for new entries
       Position? position;
       String? locationName;
+      String? weather;
       if (_existingEntry == null) {
         position = await LocationService.getCurrentPosition();
         // Get city name from coordinates using reverse geocoding
@@ -264,7 +266,23 @@ Guidelines:
           final prefs = await SharedPreferences.getInstance();
           locationName = prefs.getString('gps_location') ?? prefs.getString('manual_location');
         }
-        debugPrint('📍 Journal location: $locationName (${position?.latitude}, ${position?.longitude})');
+        
+        // Auto-capture weather using coordinates
+        if (position != null) {
+          try {
+            final weatherCondition = await WeatherService.getWeatherByCoords(
+              position.latitude, 
+              position.longitude,
+            );
+            if (weatherCondition != null) {
+              weather = '${weatherCondition.description}, ${weatherCondition.temperature.round()}°F';
+            }
+          } catch (e) {
+            debugPrint('🌤️ Weather capture failed: $e');
+          }
+        }
+        
+        debugPrint('📍 Journal: $locationName | 🌤️ $weather');
       }
       
       if (_existingEntry != null) {
@@ -279,7 +297,7 @@ Guidelines:
           ),
         );
       } else {
-        // Create new with location
+        // Create new with location and weather
         await JournalStorageService.createEntry(
           content: content,
           plainText: plainText,
@@ -290,6 +308,7 @@ Guidelines:
           location: locationName,
           latitude: position?.latitude,
           longitude: position?.longitude,
+          weather: weather,
         );
       }
       

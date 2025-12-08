@@ -24,13 +24,30 @@ class ExtractedMemoryAdapter extends TypeAdapter<ExtractedMemory> {
       sourceMessageId: fields[4] as String?,
       tags: (fields[5] as List).cast<String>(),
       importance: fields[6] as int,
+      locationName: fields[7] as String?,
+      latitude: fields[8] as double?,
+      longitude: fields[9] as double?,
+      weather: fields[10] as String?,
+      energyLevel: fields[11] as int?,
+      vibeColor: fields[12] as String?,
+      ambientDescription: fields[13] as String?,
+      taggedPeople: (fields[14] as List).cast<String>(),
+      isGroupActivity: fields[15] as bool,
+      nowPlayingTrack: fields[16] as String?,
+      nowPlayingService: fields[17] as String?,
+      attachedPhotoPaths: (fields[18] as List).cast<String>(),
+      topHeadline: fields[19] as String?,
+      onThisDay: fields[20] as String?,
+      sleepHours: fields[21] as int?,
+      stepCount: fields[22] as int?,
+      oneSentenceSummary: fields[23] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ExtractedMemory obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(24)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,7 +61,41 @@ class ExtractedMemoryAdapter extends TypeAdapter<ExtractedMemory> {
       ..writeByte(5)
       ..write(obj.tags)
       ..writeByte(6)
-      ..write(obj.importance);
+      ..write(obj.importance)
+      ..writeByte(7)
+      ..write(obj.locationName)
+      ..writeByte(8)
+      ..write(obj.latitude)
+      ..writeByte(9)
+      ..write(obj.longitude)
+      ..writeByte(10)
+      ..write(obj.weather)
+      ..writeByte(11)
+      ..write(obj.energyLevel)
+      ..writeByte(12)
+      ..write(obj.vibeColor)
+      ..writeByte(13)
+      ..write(obj.ambientDescription)
+      ..writeByte(14)
+      ..write(obj.taggedPeople)
+      ..writeByte(15)
+      ..write(obj.isGroupActivity)
+      ..writeByte(16)
+      ..write(obj.nowPlayingTrack)
+      ..writeByte(17)
+      ..write(obj.nowPlayingService)
+      ..writeByte(18)
+      ..write(obj.attachedPhotoPaths)
+      ..writeByte(19)
+      ..write(obj.topHeadline)
+      ..writeByte(20)
+      ..write(obj.onThisDay)
+      ..writeByte(21)
+      ..write(obj.sleepHours)
+      ..writeByte(22)
+      ..write(obj.stepCount)
+      ..writeByte(23)
+      ..write(obj.oneSentenceSummary);
   }
 
   @override

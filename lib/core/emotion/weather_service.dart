@@ -95,6 +95,56 @@ class WeatherService {
     }
   }
 
+  /// Get weather conditions directly by coordinates (faster, no geocoding needed)
+  static Future<WeatherCondition?> getWeatherByCoords(double lat, double lon) async {
+    try {
+      final url = Uri.https(
+        _baseUrl,
+        '/v1/forecast',
+        {
+          'latitude': '$lat',
+          'longitude': '$lon',
+          'current': 'temperature_2m,weather_code,relative_humidity_2m',
+          'daily': 'temperature_2m_max,temperature_2m_min,weather_code',
+          'timezone': 'auto',
+          'temperature_unit': 'fahrenheit',
+        },
+      );
+
+      final response = await http.get(url);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final current = data['current'];
+        final daily = data['daily'];
+        
+        final temp = (current['temperature_2m'] as num).toDouble();
+        final humidity = (current['relative_humidity_2m'] as num).toInt();
+        final code = current['weather_code'] as int;
+        
+        double? tempHigh;
+        double? tempLow;
+        if (daily != null && daily['temperature_2m_max'] != null) {
+          tempHigh = (daily['temperature_2m_max'][0] as num?)?.toDouble();
+          tempLow = (daily['temperature_2m_min'][0] as num?)?.toDouble();
+        }
+        
+        return WeatherCondition(
+          condition: _mapWmoCode(code),
+          temperature: temp,
+          humidity: humidity,
+          description: _getWmoDescription(code),
+          tempHigh: tempHigh,
+          tempLow: tempLow,
+        );
+      }
+      
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
 
   /// Map WMO Weather Code to WeatherType
   static WeatherType _mapWmoCode(int code) {

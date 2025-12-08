@@ -35,13 +35,18 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       isSynced: fields[15] as bool,
       firestoreId: fields[16] as String?,
       isHidden: fields[17] as bool,
+      stepCount: fields[18] as int?,
+      nowPlayingTrack: fields[19] as String?,
+      nowPlayingArtist: fields[20] as String?,
+      weightLbs: fields[21] as double?,
+      heartRate: fields[22] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, JournalEntry obj) {
     writer
-      ..writeByte(18)
+      ..writeByte(23)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -77,7 +82,17 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       ..writeByte(16)
       ..write(obj.firestoreId)
       ..writeByte(17)
-      ..write(obj.isHidden);
+      ..write(obj.isHidden)
+      ..writeByte(18)
+      ..write(obj.stepCount)
+      ..writeByte(19)
+      ..write(obj.nowPlayingTrack)
+      ..writeByte(20)
+      ..write(obj.nowPlayingArtist)
+      ..writeByte(21)
+      ..write(obj.weightLbs)
+      ..writeByte(22)
+      ..write(obj.heartRate);
   }
 
   @override

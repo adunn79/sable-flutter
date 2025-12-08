@@ -58,6 +58,21 @@ class JournalEntry extends HiveObject {
 
   @HiveField(17)
   bool isHidden; // Hidden from timeline view
+  
+  @HiveField(18)
+  int? stepCount; // Steps from device at time of entry
+  
+  @HiveField(19)
+  String? nowPlayingTrack; // Song playing when entry created
+  
+  @HiveField(20)
+  String? nowPlayingArtist; // Artist of song playing
+  
+  @HiveField(21)
+  double? weightLbs; // Weight if user tracking
+  
+  @HiveField(22)
+  int? heartRate; // Heart rate if available
 
   JournalEntry({
     required this.id,
@@ -78,6 +93,11 @@ class JournalEntry extends HiveObject {
     this.isSynced = false,
     this.firestoreId,
     this.isHidden = false,
+    this.stepCount,
+    this.nowPlayingTrack,
+    this.nowPlayingArtist,
+    this.weightLbs,
+    this.heartRate,
   });
 
   /// Create a copy with updated fields
@@ -100,6 +120,11 @@ class JournalEntry extends HiveObject {
     bool? isSynced,
     String? firestoreId,
     bool? isHidden,
+    int? stepCount,
+    String? nowPlayingTrack,
+    String? nowPlayingArtist,
+    double? weightLbs,
+    int? heartRate,
   }) {
     return JournalEntry(
       id: id ?? this.id,
@@ -120,6 +145,11 @@ class JournalEntry extends HiveObject {
       isSynced: isSynced ?? this.isSynced,
       firestoreId: firestoreId ?? this.firestoreId,
       isHidden: isHidden ?? this.isHidden,
+      stepCount: stepCount ?? this.stepCount,
+      nowPlayingTrack: nowPlayingTrack ?? this.nowPlayingTrack,
+      nowPlayingArtist: nowPlayingArtist ?? this.nowPlayingArtist,
+      weightLbs: weightLbs ?? this.weightLbs,
+      heartRate: heartRate ?? this.heartRate,
     );
   }
 
@@ -141,6 +171,11 @@ class JournalEntry extends HiveObject {
       'weather': weather,
       'mediaUrls': mediaUrls,
       'embeddingRef': embeddingRef,
+      'stepCount': stepCount,
+      'nowPlayingTrack': nowPlayingTrack,
+      'nowPlayingArtist': nowPlayingArtist,
+      'weightLbs': weightLbs,
+      'heartRate': heartRate,
     };
   }
 
@@ -164,6 +199,11 @@ class JournalEntry extends HiveObject {
       embeddingRef: data['embeddingRef'],
       isSynced: true,
       firestoreId: docId,
+      stepCount: data['stepCount'],
+      nowPlayingTrack: data['nowPlayingTrack'],
+      nowPlayingArtist: data['nowPlayingArtist'],
+      weightLbs: (data['weightLbs'] as num?)?.toDouble(),
+      heartRate: data['heartRate'],
     );
   }
 }

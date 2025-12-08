@@ -9,6 +9,7 @@ import '../../../core/theme/aureal_theme.dart';
 import '../../../features/subscription/services/subscription_service.dart';
 import '../widgets/private_avatar_picker.dart';
 import 'private_space_age_gate.dart';
+import 'private_avatar_customize_screen.dart';
 
 /// PIN/Biometric lock screen for Private Space
 /// Includes decoy mode: 3 wrong attempts → redirect to main chat silently
@@ -438,23 +439,29 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
               // Avatar picker
               PrivateAvatarPicker(
                 selectedAvatarId: null,
-                onSelect: (avatar) async {
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setString('private_space_avatar', avatar.id);
-                  setState(() {
-                    _avatarSelected = true;
-                    // Auto-unlock since user just completed onboarding (already entered PIN)
-                    _isUnlocked = true;
-                  });
-                  
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Welcome! You\'ll be chatting with ${avatar.name} ${avatar.emoji}'),
-                        backgroundColor: avatar.accentColor.withOpacity(0.9),
+                onSelect: (avatar) {
+                  // Navigate to customization screen BEFORE unlocking
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PrivateAvatarCustomizeScreen(
+                        selectedAvatar: avatar,
+                        onComplete: () async {
+                          // Save avatar and unlock after customization
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setString('private_space_avatar', avatar.id);
+                          
+                          if (mounted) {
+                            Navigator.pop(context); // Close customize screen
+                            setState(() {
+                              _avatarSelected = true;
+                              _isUnlocked = true;
+                            });
+                          }
+                        },
                       ),
-                    );
-                  }
+                    ),
+                  );
                 },
               ),
             ],

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/aureal_theme.dart';
 import '../../../features/subscription/services/subscription_service.dart';
+import '../widgets/private_avatar_picker.dart';
 import 'private_space_age_gate.dart';
 
 /// PIN/Biometric lock screen for Private Space
@@ -36,6 +37,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
   bool _ageConfirmed = false;
   bool _isPremium = false;
   bool _isLoading = true;
+  bool _avatarSelected = false;  // NEW: Track if avatar was selected
 
   @override
   void initState() {
@@ -55,6 +57,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
     _pinEnabled = prefs.getBool('private_space_pin_enabled') ?? false;
     _biometricEnabled = prefs.getBool('private_space_biometric_enabled') ?? false;
     _ageConfirmed = prefs.getBool('private_space_age_confirmed') ?? false;
+    _avatarSelected = prefs.getString('private_space_avatar') != null;  // Check if avatar selected
 
     // Check biometric capability
     try {
@@ -66,8 +69,8 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
 
     setState(() => _isLoading = false);
 
-    // If PIN not enabled, go straight to content (after age gate)
-    if (!_pinEnabled && _ageConfirmed && _isPremium) {
+    // If PIN not enabled AND avatar selected, go straight to content (after age gate)
+    if (!_pinEnabled && _ageConfirmed && _isPremium && _avatarSelected) {
       setState(() => _isUnlocked = true);
       return;
     }
@@ -224,9 +227,14 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
       return _buildPinEntryScreen();
     }
 
-    // First time - set up PIN (offer to set PIN or skip)
+    // First time - PIN setup is REQUIRED (can disable in settings later)
     if (!_pinEnabled) {
       return _buildSetupScreen();
+    }
+
+    // Avatar selection required after PIN setup
+    if (!_avatarSelected) {
+      return _buildAvatarOnboarding();
     }
 
     // Show PIN entry for existing PIN
@@ -357,24 +365,81 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                     minimumSize: const Size(200, 50),
                   ),
-                  child: Text('Set PIN', style: GoogleFonts.spaceGrotesk(fontSize: 16, fontWeight: FontWeight.w600)),
+                  child: Text('Create PIN', style: GoogleFonts.spaceGrotesk(fontSize: 16, fontWeight: FontWeight.w600)),
                 ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: () async {
-                    // Allow skipping PIN for now
-                    setState(() => _isUnlocked = true);
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.grey.withOpacity(0.5)),
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                    minimumSize: const Size(200, 50),
+                const SizedBox(height: 16),
+                Text(
+                  'A PIN is required to access Private Space',
+                  style: GoogleFonts.inter(
+                    color: Colors.white.withOpacity(0.4),
+                    fontSize: 12,
                   ),
-                  child: Text('Skip for Now', style: GoogleFonts.inter(color: Colors.grey[400], fontSize: 16)),
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatarOnboarding() {
+    return Scaffold(
+      backgroundColor: AurealColors.obsidian,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
+          onPressed: () => context.go('/chat'),
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text('🎭', style: const TextStyle(fontSize: 48)),
+              const SizedBox(height: 16),
+              Text(
+                'Choose Your Companion',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Select who you\'d like to explore this private sanctuary with',
+                style: GoogleFonts.inter(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              
+              // Avatar picker
+              PrivateAvatarPicker(
+                selectedAvatarId: null,
+                onSelect: (avatar) async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setString('private_space_avatar', avatar.id);
+                  setState(() => _avatarSelected = true);
+                  
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Welcome! You\'ll be chatting with ${avatar.name} ${avatar.emoji}'),
+                        backgroundColor: avatar.accentColor.withOpacity(0.9),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
           ),
         ),
       ),

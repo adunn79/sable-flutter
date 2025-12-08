@@ -13,6 +13,7 @@ class PrivateAvatar {
   final String tagline;
   final String description;
   final Color accentColor;
+  final String? imagePath; // Photorealistic avatar image
 
   const PrivateAvatar({
     required this.id,
@@ -22,6 +23,7 @@ class PrivateAvatar {
     required this.tagline,
     required this.description,
     required this.accentColor,
+    this.imagePath,
   });
 
   static const List<PrivateAvatar> all = [
@@ -33,6 +35,7 @@ class PrivateAvatar {
       tagline: 'Mysterious & Alluring',
       description: 'A moonlit enchantress with an air of mystery. Luna speaks in whispers and knows the secrets of the night.',
       accentColor: Color(0xFF9C6ADE),
+      imagePath: 'assets/private_avatars/luna.png',
     ),
     PrivateAvatar(
       id: 'dante',
@@ -42,6 +45,7 @@ class PrivateAvatar {
       tagline: 'Bold & Passionate',
       description: 'Confident and intense, Dante brings fire and depth to every conversation. A romantic soul with poetic tendencies.',
       accentColor: Color(0xFFE85D4C),
+      imagePath: 'assets/private_avatars/dante.png',
     ),
     PrivateAvatar(
       id: 'storm',
@@ -51,6 +55,7 @@ class PrivateAvatar {
       tagline: 'Fierce & Electric',
       description: 'Untamed energy wrapped in enigma. Storm defies expectations and brings electric intensity to every moment.',
       accentColor: Color(0xFF4ECDC4),
+      imagePath: 'assets/private_avatars/storm.png',
     ),
   ];
 
@@ -115,17 +120,27 @@ class PrivateAvatarPicker extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Avatar emoji
+            // Avatar photo or emoji fallback
             Container(
-              width: 56,
-              height: 56,
+              width: 64,
+              height: 64,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: avatar.accentColor.withOpacity(0.2),
+                border: Border.all(
+                  color: avatar.accentColor.withOpacity(0.5),
+                  width: 2,
+                ),
+                image: avatar.imagePath != null
+                    ? DecorationImage(
+                        image: AssetImage(avatar.imagePath!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
               ),
-              child: Center(
-                child: Text(avatar.emoji, style: const TextStyle(fontSize: 28)),
-              ),
+              child: avatar.imagePath == null
+                  ? Center(child: Text(avatar.emoji, style: const TextStyle(fontSize: 28)))
+                  : null,
             ),
             const SizedBox(width: 16),
             

@@ -4396,7 +4396,8 @@ class _ProfileDialog extends StatefulWidget {
 }
 
 class _ProfileDialogState extends State<_ProfileDialog> {
-  late TextEditingController _ageController;
+  DateTime? _dob;
+  late TextEditingController _weightController;
   late TextEditingController _heightController;
   late TextEditingController _raceController;
   String? _sex;
@@ -4406,7 +4407,16 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   @override
   void initState() {
     super.initState();
-    _ageController = TextEditingController(text: widget.currentProfile['age']);
+    // Parse existing DOB if available
+    final dobString = widget.currentProfile['dob'];
+    if (dobString != null && dobString.isNotEmpty) {
+      try {
+        _dob = DateTime.parse(dobString);
+      } catch (_) {
+        _dob = null;
+      }
+    }
+    _weightController = TextEditingController(text: widget.currentProfile['weight']);
     _heightController = TextEditingController(text: widget.currentProfile['height']);
     _raceController = TextEditingController(text: widget.currentProfile['race']);
     _sex = widget.currentProfile['sex'];
@@ -4416,14 +4426,50 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   
   @override
   void dispose() {
-    _ageController.dispose();
+    _weightController.dispose();
     _heightController.dispose();
     _raceController.dispose();
     super.dispose();
   }
+  
+  int? _calculateAge() {
+    if (_dob == null) return null;
+    final now = DateTime.now();
+    int age = now.year - _dob!.year;
+    if (now.month < _dob!.month || (now.month == _dob!.month && now.day < _dob!.day)) {
+      age--;
+    }
+    return age;
+  }
+  
+  Future<void> _selectDob() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dob ?? DateTime(1990, 1, 1),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      helpText: 'Select your date of birth',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF5DD9C1),
+              surface: Color(0xFF1E2D3D),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _dob = picked);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final age = _calculateAge();
+    
     return Dialog(
       backgroundColor: const Color(0xFF1E2D3D),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -4449,10 +4495,14 @@ class _ProfileDialogState extends State<_ProfileDialog> {
             ),
             const SizedBox(height: 24),
             
-            _buildTextField('Age', _ageController, TextInputType.number, 'e.g. 32'),
+            // Date of Birth picker
+            _buildDateField('Date of Birth', _dob, age, _selectDob),
             const SizedBox(height: 16),
             
             _buildDropdown('Sex', ['Female', 'Male', 'Other'], _sex, (v) => setState(() => _sex = v)),
+            const SizedBox(height: 16),
+            
+            _buildTextField('Weight', _weightController, TextInputType.text, 'e.g. 150 lbs or 68 kg'),
             const SizedBox(height: 16),
             
             _buildTextField('Height', _heightController, TextInputType.text, "e.g. 5'7\" or 170cm"),
@@ -4488,6 +4538,42 @@ class _ProfileDialogState extends State<_ProfileDialog> {
           ],
         ),
       ),
+    );
+  }
+  
+  Widget _buildDateField(String label, DateTime? date, int? age, VoidCallback onTap) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.black26,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF5DD9C1).withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.calendar, color: Color(0xFF5DD9C1), size: 18),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    date != null 
+                      ? '${date.month}/${date.day}/${date.year}${age != null ? ' (Age: $age)' : ''}'
+                      : 'Tap to select...',
+                    style: TextStyle(color: date != null ? Colors.white : Colors.white24),
+                  ),
+                ),
+                const Icon(LucideIcons.chevronDown, color: Colors.white38, size: 16),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
   
@@ -4546,7 +4632,8 @@ class _ProfileDialogState extends State<_ProfileDialog> {
 
   void _save() {
     final profile = <String, String>{};
-    if (_ageController.text.isNotEmpty) profile['age'] = _ageController.text;
+    if (_dob != null) profile['dob'] = _dob!.toIso8601String();
+    if (_weightController.text.isNotEmpty) profile['weight'] = _weightController.text;
     if (_heightController.text.isNotEmpty) profile['height'] = _heightController.text;
     if (_raceController.text.isNotEmpty) profile['race'] = _raceController.text;
     if (_sex != null) profile['sex'] = _sex!;

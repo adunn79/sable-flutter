@@ -105,6 +105,27 @@ class MoreScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _buildMenuItem(
             context,
+            icon: LucideIcons.trash2,
+            title: 'Reset Private Space',
+            subtitle: 'Clear data for fresh onboarding test',
+            onTap: () async {
+              final prefs = await SharedPreferences.getInstance();
+              // Clear all Private Space preferences
+              await prefs.remove('private_space_pin');
+              await prefs.remove('private_space_pin_enabled');
+              await prefs.remove('private_space_biometric_enabled');
+              await prefs.remove('private_space_age_confirmed');
+              await prefs.remove('private_space_avatar');
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('✅ Private Space reset! Go to Private Space to test fresh onboarding.')),
+                );
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildMenuItem(
+            context,
             icon: LucideIcons.rotateCcw,
             title: 'Reset to Onboarding',
             subtitle: 'Go to setup (keeps memory)',

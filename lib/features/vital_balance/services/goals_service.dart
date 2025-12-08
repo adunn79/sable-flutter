@@ -1,19 +1,58 @@
+import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/goal_model.dart';
 
-/// Service for managing user goals with Hive persistence
+/// Service for managing user goals with Hive persistence (encrypted)
 class GoalsService {
-  static const String _boxName = 'goals_box';
+  static const String _boxName = 'goals_box_encrypted';
   static const String _maxGoalsKey = 'max_goals_limit';
+  static const String _encryptionKeyName = 'goals_encryption_key';
   static const int _defaultMaxGoals = 6;
   
   static Box<Goal>? _box;
   static final _uuid = const Uuid();
 
-  /// Initialize Hive box for goals
+  /// Get or create encryption key
+  static Future<List<int>> _getOrCreateEncryptionKey() async {
+    String? keyString;
+    final useFallback = Platform.isMacOS || Platform.isLinux;
+    
+    if (useFallback) {
+      final prefs = await SharedPreferences.getInstance();
+      keyString = prefs.getString(_encryptionKeyName);
+      if (keyString == null) {
+        final key = Hive.generateSecureKey();
+        keyString = base64Encode(key);
+        await prefs.setString(_encryptionKeyName, keyString);
+      }
+    } else {
+      const secureStorage = FlutterSecureStorage();
+      try {
+        keyString = await secureStorage.read(key: _encryptionKeyName);
+        if (keyString == null) {
+          final key = Hive.generateSecureKey();
+          keyString = base64Encode(key);
+          await secureStorage.write(key: _encryptionKeyName, value: keyString);
+        }
+      } catch (e) {
+        final prefs = await SharedPreferences.getInstance();
+        keyString = prefs.getString(_encryptionKeyName);
+        if (keyString == null) {
+          final key = Hive.generateSecureKey();
+          keyString = base64Encode(key);
+          await prefs.setString(_encryptionKeyName, keyString);
+        }
+      }
+    }
+    return base64Decode(keyString!);
+  }
+
+  /// Initialize Hive box for goals (encrypted)
   static Future<void> init() async {
     if (_box != null && _box!.isOpen) return;
     
@@ -28,8 +67,12 @@ class GoalsService {
       Hive.registerAdapter(GoalAdapter());
     }
     
-    _box = await Hive.openBox<Goal>(_boxName);
-    debugPrint('✅ GoalsService initialized with ${_box!.length} goals');
+    final encryptionKey = await _getOrCreateEncryptionKey();
+    _box = await Hive.openBox<Goal>(
+      _boxName,
+      encryptionCipher: HiveAesCipher(encryptionKey),
+    );
+    debugPrint('✅ GoalsService initialized with ${_box!.length} goals (ENCRYPTED)');
   }
 
   /// Get maximum number of goals allowed (user-configurable)

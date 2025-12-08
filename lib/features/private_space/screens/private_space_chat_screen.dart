@@ -291,7 +291,7 @@ Communication Style:
       // Build conversation context as a prompt (use more messages for better memory)
       final contextBuilder = StringBuffer();
       contextBuilder.writeln('Previous conversation (for context):');
-      for (final msg in recentMessages.take(50)) {
+      for (final msg in recentMessages.take(100)) {
         final role = msg.isUser ? 'User' : avatar?.name ?? 'Luna';
         contextBuilder.writeln('$role: ${msg.content}');
       }

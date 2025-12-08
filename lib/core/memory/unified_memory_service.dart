@@ -12,12 +12,12 @@ import 'package:sable/core/memory/models/health_entry.dart';
 /// Unified Memory Service
 /// Manages all Hive boxes for persistent, searchable AI memory
 class UnifiedMemoryService {
-  static const String _chatBoxName = 'chat_history';
-  static const String _memoryBoxName = 'extracted_memories';
+  static const String _chatBoxName = 'chat_history_encrypted';
+  static const String _memoryBoxName = 'extracted_memories_encrypted';
   static const String _healthBoxName = 'health_data';
   static const String _encryptionKeyName = 'hive_encryption_key';
   
-  static const int _maxChatMessages = 500; // Increased from 100
+  static const int _maxChatMessages = 1000; // Increased from 500
   
   static final UnifiedMemoryService _instance = UnifiedMemoryService._internal();
   factory UnifiedMemoryService() => _instance;
@@ -51,18 +51,26 @@ class UnifiedMemoryService {
     }
     
     // Open regular boxes
-    _chatBox = await Hive.openBox<ChatMessage>(_chatBoxName);
-    _memoryBox = await Hive.openBox<ExtractedMemory>(_memoryBoxName);
-    
-    // Open encrypted box for health data
     final encryptionKey = await _getOrCreateEncryptionKey();
+    
+    // All boxes now encrypted for security
+    _chatBox = await Hive.openBox<ChatMessage>(
+      _chatBoxName,
+      encryptionCipher: HiveAesCipher(encryptionKey),
+    );
+    _memoryBox = await Hive.openBox<ExtractedMemory>(
+      _memoryBoxName,
+      encryptionCipher: HiveAesCipher(encryptionKey),
+    );
+    
+    // Health data also encrypted
     _healthBox = await Hive.openBox<HealthEntry>(
       _healthBoxName,
       encryptionCipher: HiveAesCipher(encryptionKey),
     );
     
     _initialized = true;
-    print('✅ UnifiedMemoryService initialized');
+    print('✅ UnifiedMemoryService initialized (ALL ENCRYPTED)');
     print('📂 Chat messages: ${_chatBox?.length ?? 0}');
     print('🧠 Extracted memories: ${_memoryBox?.length ?? 0}');
     print('🔐 Health entries: ${_healthBox?.length ?? 0}');
@@ -155,7 +163,7 @@ class UnifiedMemoryService {
   }
   
   /// Get conversation context string for AI
-  String getChatContext({int messageCount = 30}) {
+  String getChatContext({int messageCount = 100}) {
     final messages = getRecentChatMessages(messageCount);
     if (messages.isEmpty) return '';
     
@@ -475,7 +483,7 @@ class UnifiedMemoryService {
   // ============= GLOBAL OPERATIONS =============
   
   /// Get full context for AI (combines chat + memories)
-  String getFullAIContext({int chatMessageCount = 30}) {
+  String getFullAIContext({int chatMessageCount = 100}) {
     final chat = getChatContext(messageCount: chatMessageCount);
     final memories = getMemoryContext();
     

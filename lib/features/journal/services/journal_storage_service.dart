@@ -1,14 +1,54 @@
+import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
 
-/// Service for managing journal storage using Hive (offline-first)
+/// Service for managing journal storage using Hive (offline-first, encrypted)
 class JournalStorageService {
-  static const String _entriesBoxName = 'journal_entries';
-  static const String _bucketsBoxName = 'journal_buckets';
+  static const String _entriesBoxName = 'journal_entries_encrypted';
+  static const String _bucketsBoxName = 'journal_buckets_encrypted';
+  static const String _encryptionKeyName = 'journal_encryption_key';
   
   static bool _isInitialized = false;
+  
+  /// Get or create encryption key
+  static Future<List<int>> _getOrCreateEncryptionKey() async {
+    String? keyString;
+    final useFallback = Platform.isMacOS || Platform.isLinux;
+    
+    if (useFallback) {
+      final prefs = await SharedPreferences.getInstance();
+      keyString = prefs.getString(_encryptionKeyName);
+      if (keyString == null) {
+        final key = Hive.generateSecureKey();
+        keyString = base64Encode(key);
+        await prefs.setString(_encryptionKeyName, keyString);
+      }
+    } else {
+      const secureStorage = FlutterSecureStorage();
+      try {
+        keyString = await secureStorage.read(key: _encryptionKeyName);
+        if (keyString == null) {
+          final key = Hive.generateSecureKey();
+          keyString = base64Encode(key);
+          await secureStorage.write(key: _encryptionKeyName, value: keyString);
+        }
+      } catch (e) {
+        final prefs = await SharedPreferences.getInstance();
+        keyString = prefs.getString(_encryptionKeyName);
+        if (keyString == null) {
+          final key = Hive.generateSecureKey();
+          keyString = base64Encode(key);
+          await prefs.setString(_encryptionKeyName, keyString);
+        }
+      }
+    }
+    return base64Decode(keyString);
+  }
   
   /// Initialize Hive and register adapters
   static Future<void> initialize() async {
@@ -24,20 +64,35 @@ class JournalStorageService {
       Hive.registerAdapter(JournalBucketAdapter());
     }
     
-    // Open boxes with error handling for data migration issues
+    // Get encryption key
+    final encryptionKey = await _getOrCreateEncryptionKey();
+    
+    // Open encrypted boxes with error handling
     try {
-      await Hive.openBox<JournalEntry>(_entriesBoxName);
-      await Hive.openBox<JournalBucket>(_bucketsBoxName);
+      await Hive.openBox<JournalEntry>(
+        _entriesBoxName,
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      );
+      await Hive.openBox<JournalBucket>(
+        _bucketsBoxName,
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      );
     } catch (e) {
-      print('⚠️ Journal data migration issue, resetting boxes: $e');
-      // Delete corrupted boxes and recreate
+      print('\u26a0\ufe0f Journal data migration issue, resetting boxes: $e');
       await Hive.deleteBoxFromDisk(_entriesBoxName);
       await Hive.deleteBoxFromDisk(_bucketsBoxName);
-      await Hive.openBox<JournalEntry>(_entriesBoxName);
-      await Hive.openBox<JournalBucket>(_bucketsBoxName);
+      await Hive.openBox<JournalEntry>(
+        _entriesBoxName,
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      );
+      await Hive.openBox<JournalBucket>(
+        _bucketsBoxName,
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      );
     }
     
     _isInitialized = true;
+    print('\u2705 Journal storage initialized (ENCRYPTED)');
   }
   
   /// Get entries box

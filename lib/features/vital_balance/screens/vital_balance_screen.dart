@@ -22,6 +22,8 @@ import 'package:sable/core/memory/unified_memory_service.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
 import 'package:sable/core/ai/providers/openai_provider.dart';
 import 'package:sable/features/journal/services/journal_storage_service.dart';
+import 'package:sable/features/vital_balance/services/goals_service.dart';
+import 'package:sable/features/vital_balance/models/goal_model.dart';
 
 /// Vital Balance Screen - Health & Wellness Tracking
 /// Uses the "Vitality Strategist" personality for AI interactions
@@ -65,12 +67,17 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
   bool _isAiThinking = false;
   bool _hideChatMessages = false; // Hides messages without deleting
   final ScrollController _chatScrollController = ScrollController();
+  final GlobalKey _chatSectionKey = GlobalKey(); // Key for scrolling to chat
   
   // Dynamic AI-Generated Focus Items
   List<Map<String, dynamic>> _aiFocusItems = []; // {title, description, icon, metricId, enabled}
   bool _isLoadingFocus = true;
   int _daysSinceUpdate = 0; // Days since last wellness metric update
   Set<String> _disabledFocusItems = {}; // User-disabled items by metricId
+  
+  // Goals
+  List<Goal> _goals = [];
+  bool _isLoadingGoals = true;
   
   // AI Services
   final UnifiedMemoryService _memoryService = UnifiedMemoryService();
@@ -139,6 +146,14 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
       _weatherHighLow = weatherHighLow;
       _daysSinceUpdate = daysSince;
       _isLoadingMetrics = false;
+    });
+    
+    // Load Goals
+    await GoalsService.init();
+    if (_disposed || !mounted) return;
+    setState(() {
+      _goals = GoalsService.getActiveGoals();
+      _isLoadingGoals = false;
     });
   }
   
@@ -679,9 +694,98 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
   Future<void> _sendWellnessMessage(String text) async {
     if (text.trim().isEmpty) return;
     
+    // Check if user is confirming/requesting goal creation - use flexible matching
+    final lowerText = text.toLowerCase().trim();
+    
+    // Check for various confirmation patterns
+    bool isConfirmation = false;
+    
+    // Exact matches for short confirmations
+    final exactMatches = ['yes', 'yup', 'ok', 'okay', 'sure', 'perfect', 'yeah', 'yea', 'y', 'yep', 'absolutely', 'definitely'];
+    if (exactMatches.contains(lowerText) || exactMatches.any((m) => lowerText.startsWith('$m ') || lowerText.startsWith('$m!') || lowerText.startsWith('$m.'))) {
+      isConfirmation = true;
+    }
+    
+    // Pattern matches for goal creation requests (anywhere in the message)
+    final goalCreationPatterns = [
+      'create the goal',
+      'create this goal',
+      'create it',
+      'create goal',
+      'make the goal',
+      'make this goal',
+      'make it',
+      'add the goal',
+      'add this goal',
+      'add it',
+      'please create',
+      'go ahead',
+      'do it',
+      'sounds good',
+      'let\'s do it',
+      'let\'s go',
+      'save the goal',
+      'save it',
+      'set the goal',
+      'set it up',
+    ];
+    if (!isConfirmation && goalCreationPatterns.any((pattern) => lowerText.contains(pattern))) {
+      isConfirmation = true;
+    }
+    
+    debugPrint('🔍 User message: "$lowerText" - Is confirmation: $isConfirmation');
+    
+    if (isConfirmation) {
+      debugPrint('✅ Confirmation detected! Looking for proposed goal in ${_chatMessages.length} messages...');
+      
+      // Look for the most recent AI message with a proposed goal (including "Goal Created" responses that weren't actually saved)
+      final proposedGoalMessage = _chatMessages.reversed.firstWhere(
+        (m) => m['role'] == 'ai' && (
+          m['text']?.contains('Proposed Goal') == true || 
+          m['text']?.contains('**Title:**') == true || 
+          m['text']?.contains('Title:') == true ||
+          m['text']?.contains('Goal Created') == true
+        ),
+        orElse: () => {},
+      );
+      
+      debugPrint('📋 Found goal message: ${proposedGoalMessage.isNotEmpty}');
+      if (proposedGoalMessage.isNotEmpty) {
+        debugPrint('📋 Goal message preview: ${proposedGoalMessage['text']?.substring(0, (proposedGoalMessage['text']?.length ?? 0).clamp(0, 100))}...');
+      }
+      
+      if (proposedGoalMessage.isNotEmpty && proposedGoalMessage['text'] != null) {
+        final goalCreated = await _parseAndCreateGoalFromAI(proposedGoalMessage['text']!);
+        debugPrint('🎯 Goal creation result: $goalCreated');
+        if (goalCreated) {
+          setState(() {
+            _chatMessages.add({'role': 'user', 'text': text});
+            _chatMessages.add({'role': 'ai', 'text': '🎯 Awesome! Your goal has been created and added to your Goals section. I\'ll check in with you regularly to see how you\'re progressing. You\'ve got this! 💪'});
+          });
+          // Refresh goals list
+          final goals = GoalsService.getActiveGoals();
+          setState(() => _goals = goals);
+          return;
+        } else {
+          debugPrint('⚠️ Goal parsing failed, falling through to regular message flow');
+        }
+      } else {
+        debugPrint('⚠️ No proposed goal message found in chat history');
+      }
+    }
+    
     setState(() {
       _chatMessages.add({'role': 'user', 'text': text});
       _isAiThinking = true;
+    });
+    
+    // Scroll to show user's message immediately
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_chatScrollController.hasClients) {
+        _chatScrollController.jumpTo(
+          _chatScrollController.position.maxScrollExtent,
+        );
+      }
     });
     
     try {
@@ -730,10 +834,40 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
         .map((e) => '${e.key}: ${e.value}')
         .join(', ');
       
+      // Build goals context for AI awareness
+      String goalsContext = '';
+      if (_goals.isNotEmpty) {
+        final goalSummaries = _goals.map((g) {
+          final status = g.isOverdue ? 'OVERDUE' : 
+                        g.needsCheckInReminder ? 'needs check-in' : 'on track';
+          return '• ${g.title} (${g.progressPercent}%, ${g.daysRemaining} days left, $status)';
+        }).join('\n');
+        goalsContext = '\nACTIVE GOALS:\n$goalSummaries\n';
+      }
+      // Build CURRENT wellness chat history (this session's conversation)
+      String currentChatContext = '';
+      if (_chatMessages.isNotEmpty) {
+        final startIndex = _chatMessages.length > 10 ? _chatMessages.length - 10 : 0;
+        final lastMessages = _chatMessages.skip(startIndex).map((m) {
+          final role = m['role'] == 'user' ? userName : avatarName;
+          return '$role: ${m['text']}';
+        }).join('\n');
+        currentChatContext = '\nCURRENT WELLNESS CONVERSATION (continue from here):\n$lastMessages\n';
+      }
+      
+      // Check if we're in goal-setting mode
+      final isGoalSettingMode = _chatMessages.any((m) => 
+        m['text']?.contains('Goal Planning Mode') == true ||
+        m['text']?.contains('Proposed Goal') == true ||
+        m['text']?.toLowerCase()?.contains('setting a goal') == true ||
+        m['text']?.toLowerCase()?.contains('want to set a goal') == true
+      );
+      
       final wellnessPrompt = '''User asks: "$text"
 
 CURRENT HEALTH METRICS: $metricsContext
-
+$goalsContext
+${currentChatContext}${isGoalSettingMode ? '\n⚠️ YOU ARE IN GOAL CREATION MODE - Remember to help refine and eventually propose a formatted goal!\n' : ''}
 HEALTH PROFILE:
 - Name: $userName
 - Age: ${age.isEmpty ? 'Not specified' : age}
@@ -741,7 +875,7 @@ HEALTH PROFILE:
 - Height: ${height.isEmpty ? 'Not specified' : height}
 
 ${memoryContext.isNotEmpty ? 'KEY MEMORIES ABOUT $userName:\n$memoryContext\n' : ''}
-${recentChats.isNotEmpty ? 'RECENT CONVERSATIONS:\n$recentChats\n' : ''}
+${recentChats.isNotEmpty ? 'RECENT CONVERSATIONS (main chat):\n$recentChats\n' : ''}
 ${journalContext.isNotEmpty ? 'RECENT JOURNAL ENTRIES:\n$journalContext' : ''}''';
 
       final systemPrompt = '''You are $avatarName, the same AI companion that $userName chats with every day. You KNOW them deeply - their name, their history, their struggles, their victories.
@@ -763,31 +897,67 @@ WELLNESS FOCUS:
 - Draw from their health metrics, sleep patterns, mood trends
 - Be energetic, systematic, resilient, and empowering
 
-Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know about them.''';
+GOAL COACHING (Important):
+- If user has active goals, naturally weave them into conversation when relevant
+- Be supportive and encouraging about goals, NEVER pushy or guilt-tripping
+- If a goal needs check-in, gently ask how it's going as part of natural conversation
+- If discussing goals, help them refine with SMART criteria (Specific, Measurable, Achievable, Relevant, Time-bound)
+- Celebrate progress, no matter how small
+
+GOAL CREATION MODE:
+- If the conversation includes phrases like "Goal Planning Mode" or user is discussing setting a new goal:
+  1. Help them refine their goal idea into something Specific and Measurable
+  2. Suggest a realistic timeline (ask "when would you like to achieve this by?")
+  3. When you have enough info, propose the goal in this EXACT format:
+     
+     📋 **Proposed Goal:**
+     **Title:** [Short goal name]
+     **Description:** [One sentence description]
+     **Target Date:** [Suggested date, e.g., "January 15, 2025"]
+     **Check-in:** [Every 3 days / Weekly / etc.]
+     
+     Type "yes" to create this goal, or tell me what to change!
+  4. Be encouraging and make sure they feel ownership of the goal
+
+Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and draw from what you know about them.''';
 
       // Use OpenAI provider directly for reliable wellness chat
       final openAiProvider = OpenAiProvider();
-      final response = await openAiProvider.generateResponse(
+      final rawResponse = await openAiProvider.generateResponse(
         prompt: wellnessPrompt,
         systemPrompt: systemPrompt,
         modelId: 'gpt-4o-mini', // Fast, reliable model for wellness chat
       );
       
-      debugPrint('✅ Wellness AI response received: ${response.substring(0, response.length.clamp(0, 100))}...');
+      debugPrint('✅ Wellness AI raw response received: ${rawResponse.substring(0, rawResponse.length.clamp(0, 100))}...');
       
       if (_disposed || !mounted) return;
+      
+      // Apply multi-pass hallucination filtering
+      final filterResult = await _filterHallucinations(rawResponse);
+      final response = filterResult.filteredText;
+      final goalWasAutoCreated = filterResult.goalCreated;
+      
+      debugPrint('🔍 Hallucination filter result: goalAutoCreated=$goalWasAutoCreated');
+      
+      // If goal was auto-created during filtering, refresh the goals list
+      if (goalWasAutoCreated) {
+        final goals = GoalsService.getActiveGoals();
+        if (mounted) setState(() => _goals = goals);
+      }
       
       setState(() {
         _chatMessages.add({'role': 'ai', 'text': response.trim()});
         _isAiThinking = false;
       });
       
-      // Scroll to bottom after adding message
+      // Scroll to bottom after adding message - focus on chat messages area
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        // First scroll the chat messages to bottom
         if (_chatScrollController.hasClients) {
           _chatScrollController.animateTo(
             _chatScrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 200),
             curve: Curves.easeOut,
           );
         }
@@ -811,6 +981,301 @@ Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know 
     await prefs.setBool(_keyPrivateConversations, value);
     if (_disposed || !mounted) return;
     setState(() => _keepConversationsPrivate = value);
+  }
+  
+  /// Parse goal details from AI's proposed goal format and create it
+  Future<bool> _parseAndCreateGoalFromAI(String aiMessage) async {
+    try {
+      debugPrint('🎯 [Goal Parser] Starting to parse message (${aiMessage.length} chars)');
+      debugPrint('🎯 [Goal Parser] Message preview: ${aiMessage.substring(0, aiMessage.length.clamp(0, 300))}');
+      
+      // Use line-by-line parsing for reliability
+      final lines = aiMessage.split('\n');
+      String? title;
+      String? description;
+      String? targetDateStr;
+      String? checkInStr;
+      
+      for (final line in lines) {
+        final trimmedLine = line.trim();
+        
+        // Look for Title
+        if (title == null) {
+          final titlePatterns = [
+            RegExp(r'\*\*Title:\*\*\s*(.+)', caseSensitive: false),
+            RegExp(r'Title:\s*(.+)', caseSensitive: false),
+          ];
+          for (final pattern in titlePatterns) {
+            final match = pattern.firstMatch(trimmedLine);
+            if (match != null) {
+              title = match.group(1)?.trim();
+              // Clean up any markdown artifacts from title
+              title = title?.replaceAll(RegExp(r'\*\*'), '');
+              title = title?.replaceAll(RegExp(r'^\*'), '');
+              title = title?.trim();
+              debugPrint('📋 [Goal Parser] Found title: $title');
+              break;
+            }
+          }
+        }
+        
+        // Look for Description
+        if (description == null) {
+          final descPatterns = [
+            RegExp(r'\*\*Description:\*\*\s*(.+)', caseSensitive: false),
+            RegExp(r'Description:\s*(.+)', caseSensitive: false),
+          ];
+          for (final pattern in descPatterns) {
+            final match = pattern.firstMatch(trimmedLine);
+            if (match != null) {
+              description = match.group(1)?.trim();
+              debugPrint('📝 [Goal Parser] Found description: $description');
+              break;
+            }
+          }
+        }
+        
+        // Look for Target Date
+        if (targetDateStr == null) {
+          final datePatterns = [
+            RegExp(r'\*\*Target Date:\*\*\s*(.+)', caseSensitive: false),
+            RegExp(r'Target Date:\s*(.+)', caseSensitive: false),
+          ];
+          for (final pattern in datePatterns) {
+            final match = pattern.firstMatch(trimmedLine);
+            if (match != null) {
+              targetDateStr = match.group(1)?.trim();
+              debugPrint('📅 [Goal Parser] Found target date: $targetDateStr');
+              break;
+            }
+          }
+        }
+        
+        // Look for Check-in
+        if (checkInStr == null) {
+          final checkInPatterns = [
+            RegExp(r'\*\*Check-in:\*\*\s*(.+)', caseSensitive: false),
+            RegExp(r'Check-in:\s*(.+)', caseSensitive: false),
+          ];
+          for (final pattern in checkInPatterns) {
+            final match = pattern.firstMatch(trimmedLine);
+            if (match != null) {
+              checkInStr = match.group(1)?.trim();
+              debugPrint('🔔 [Goal Parser] Found check-in: $checkInStr');
+              break;
+            }
+          }
+        }
+      }
+      
+      // Parse target date
+      DateTime targetDate = DateTime.now().add(const Duration(days: 30)); // Default: 30 days
+      if (targetDateStr != null && targetDateStr.isNotEmpty) {
+        final parsedDate = _parseFlexibleDate(targetDateStr);
+        if (parsedDate != null) {
+          // If date is in the past, set to 30 days from now
+          if (parsedDate.isBefore(DateTime.now())) {
+            debugPrint('⚠️ [Goal Parser] Target date was in past, setting to 30 days from now');
+            targetDate = DateTime.now().add(const Duration(days: 30));
+          } else {
+            targetDate = parsedDate;
+          }
+        }
+        debugPrint('📅 [Goal Parser] Final target date: $targetDate');
+      }
+      
+      // Parse check-in frequency
+      int checkInDays = 3; // Default: every 3 days
+      if (checkInStr != null && checkInStr.isNotEmpty) {
+        final lowerCheckIn = checkInStr.toLowerCase();
+        if (lowerCheckIn.contains('daily') || lowerCheckIn.contains('every day')) {
+          checkInDays = 1;
+        } else if (lowerCheckIn.contains('weekly') || lowerCheckIn.contains('every week')) {
+          checkInDays = 7;
+        } else if (lowerCheckIn.contains('bi-weekly') || lowerCheckIn.contains('every 2 week')) {
+          checkInDays = 14;
+        } else {
+          // Try to extract number of days
+          final daysMatch = RegExp(r'(\d+)\s*day').firstMatch(lowerCheckIn);
+          if (daysMatch != null) {
+            checkInDays = int.tryParse(daysMatch.group(1) ?? '3') ?? 3;
+          }
+        }
+        debugPrint('🔔 [Goal Parser] Check-in frequency: every $checkInDays days');
+      }
+      
+      // FALLBACK: If no title but we have description, generate title from description
+      if ((title == null || title.isEmpty) && description != null && description.isNotEmpty) {
+        // Take first 50 chars of description as title, or up to first period/comma
+        final firstSentence = description.split(RegExp(r'[.,!?]')).first.trim();
+        title = firstSentence.length <= 50 ? firstSentence : '${firstSentence.substring(0, 47)}...';
+        debugPrint('📋 Generated title from description: $title');
+      }
+      
+      // Validate we have minimum required fields
+      if (title == null || title.isEmpty) {
+        debugPrint('❌ Goal parsing failed: no title found in message');
+        debugPrint('❌ Full message was: $aiMessage');
+        return false;
+      }
+      
+      // Use title as description if none provided
+      description ??= title;
+      
+      debugPrint('✅ Creating goal: "$title" - Target: $targetDate - Check-in: $checkInDays days');
+      
+      // Create the goal
+      await GoalsService.init();
+      final goal = await GoalsService.addGoal(
+        title: title,
+        description: description,
+        targetDate: targetDate,
+        checkInFrequencyDays: checkInDays,
+        aiTip: 'Created via AI coaching conversation',
+      );
+      
+      if (goal != null) {
+        debugPrint('✅ Goal created successfully: ${goal.title} (ID: ${goal.id})');
+        return true;
+      } else {
+        debugPrint('❌ GoalsService.addGoal returned null - may have hit max goals limit');
+        return false;
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error parsing goal from AI: $e');
+      debugPrint('📍 Stack: ${stackTrace.toString().split('\n').take(5).join('\n')}');
+      return false;
+    }
+  }
+  
+  /// Parse flexible date formats like "January 15, 2025" or "in 30 days"
+  DateTime? _parseFlexibleDate(String dateStr) {
+    try {
+      // Try standard formats first
+      final formats = [
+        DateFormat('MMMM d, yyyy'), // January 15, 2025
+        DateFormat('MMM d, yyyy'),  // Jan 15, 2025
+        DateFormat('yyyy-MM-dd'),   // 2025-01-15
+        DateFormat('M/d/yyyy'),     // 1/15/2025
+        DateFormat('d MMMM yyyy'),  // 15 January 2025
+      ];
+      
+      for (final format in formats) {
+        try {
+          return format.parse(dateStr);
+        } catch (_) {}
+      }
+      
+      // Try relative dates like "in 30 days"
+      final daysMatch = RegExp(r'in\s*(\d+)\s*days?', caseSensitive: false).firstMatch(dateStr);
+      if (daysMatch != null) {
+        final days = int.tryParse(daysMatch.group(1) ?? '30') ?? 30;
+        return DateTime.now().add(Duration(days: days));
+      }
+      
+      // Try "X weeks"
+      final weeksMatch = RegExp(r'in\s*(\d+)\s*weeks?', caseSensitive: false).firstMatch(dateStr);
+      if (weeksMatch != null) {
+        final weeks = int.tryParse(weeksMatch.group(1) ?? '4') ?? 4;
+        return DateTime.now().add(Duration(days: weeks * 7));
+      }
+      
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  /// Result from hallucination filtering
+  /// Multi-pass hallucination filter for AI responses
+  /// Pass 1: Detect false goal creation claims and auto-create if valid
+  /// Pass 2: Remove AI identity leaks  
+  /// Pass 3: Clean up impossible action claims
+  Future<({String filteredText, bool goalCreated})> _filterHallucinations(String aiResponse) async {
+    var filtered = aiResponse;
+    var goalCreated = false;
+    
+    debugPrint('🔍 [Hallucination Filter] Starting multi-pass filtering...');
+    
+    // ===== PASS 1: Detect goal creation claims and auto-create if valid =====
+    final goalCreatedPatterns = [
+      'goal created',
+      'goal has been created',
+      'i\'ve created your goal',
+      'i\'ve created the goal',
+      'your goal is set',
+      'i\'ve set up your goal',
+      'goal is now set',
+      'created your goal',
+      'goal! i',  // Catches "Goal! I'm so proud..."
+    ];
+    
+    final claimsGoalCreated = goalCreatedPatterns.any(
+      (p) => filtered.toLowerCase().contains(p)
+    );
+    
+    if (claimsGoalCreated) {
+      debugPrint('⚠️ [Hallucination Filter] AI claims goal was created - attempting to actually create it...');
+      
+      // Try to parse and create the goal from this message
+      final success = await _parseAndCreateGoalFromAI(filtered);
+      
+      if (success) {
+        goalCreated = true;
+        debugPrint('✅ [Hallucination Filter] Goal auto-created from AI response!');
+        // Keep the message as-is since goal is now actually created
+      } else {
+        debugPrint('⚠️ [Hallucination Filter] Could not parse goal from AI response');
+        // Replace false claim with proposal format
+        // Look for goal details and reformat as proposal
+        if (filtered.contains('**Title:**') || filtered.contains('Title:')) {
+          // Has goal format but couldn't create - convert to proposal
+          filtered = filtered.replaceAll(RegExp(r'\*\*Goal Created[!]*\*\*', caseSensitive: false), '📋 **Proposed Goal:**');
+          filtered = filtered.replaceAll(RegExp(r'Goal Created[!]*', caseSensitive: false), '📋 **Proposed Goal:**');
+          filtered += '\n\nType "yes" to create this goal!';
+          debugPrint('🔄 [Hallucination Filter] Converted false claim to proposal format');
+        }
+      }
+    }
+    
+    // ===== PASS 2: Remove AI identity leaks =====
+    final identityLeakPatterns = [
+      RegExp(r'As an AI[^.]*\.', caseSensitive: false),
+      RegExp(r'I cannot actually[^.]*\.', caseSensitive: false),
+      RegExp(r"I don't have the ability[^.]*\.", caseSensitive: false),
+      RegExp(r"I'm just an AI[^.]*\.", caseSensitive: false),
+      RegExp(r'As a language model[^.]*\.', caseSensitive: false),
+      RegExp(r"I don't have access to[^.]*\.", caseSensitive: false),
+    ];
+    
+    for (final pattern in identityLeakPatterns) {
+      if (pattern.hasMatch(filtered)) {
+        debugPrint('🧹 [Hallucination Filter] Removing AI identity leak');
+        filtered = filtered.replaceAll(pattern, '');
+      }
+    }
+    
+    // ===== PASS 3: Clean up impossible action claims =====
+    final impossibleActions = [
+      RegExp(r"I've (?:set|scheduled|added) (?:a |an |your )?(?:reminder|alarm|notification)[^.]*\.", caseSensitive: false),
+      RegExp(r"I've (?:sent|emailed|texted)[^.]*\.", caseSensitive: false),
+      RegExp(r"I've (?:booked|scheduled|reserved)[^.]*(?:appointment|meeting)[^.]*\.", caseSensitive: false),
+    ];
+    
+    for (final pattern in impossibleActions) {
+      if (pattern.hasMatch(filtered)) {
+        debugPrint('🧹 [Hallucination Filter] Removing impossible action claim');
+        filtered = filtered.replaceAll(pattern, '');
+      }
+    }
+    
+    // Clean up any double spaces or awkward spacing from removals
+    filtered = filtered.replaceAll(RegExp(r'\s{2,}'), ' ').trim();
+    filtered = filtered.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+    
+    debugPrint('✅ [Hallucination Filter] Complete. goalCreated=$goalCreated');
+    
+    return (filteredText: filtered, goalCreated: goalCreated);
   }
 
   @override
@@ -911,7 +1376,12 @@ Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know 
                       
                       const SizedBox(height: 24),
                       
-                      // 5. Health Profile Card
+                      // 5. Goals Section (NEW)
+                      _buildGoalsSection(),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // 6. Health Profile Card
                       _buildProfileCard(),
                       
                       const SizedBox(height: 40),
@@ -1107,6 +1577,774 @@ Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know 
               Text(label, style: TextStyle(color: color, fontSize: 10)),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Goals Section - User's active goals with progress tracking
+  Widget _buildGoalsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with Add button
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(LucideIcons.target, color: _accentTeal, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Your Goals',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            GestureDetector(
+              onTap: _showAddGoalDialog,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _accentTeal.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _accentTeal.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.plus, color: _accentTeal, size: 14),
+                    const SizedBox(width: 4),
+                    Text('Add', style: GoogleFonts.inter(color: _accentTeal, fontSize: 12, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        // Goals Content
+        if (_isLoadingGoals)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: CircularProgressIndicator(color: _accentTeal, strokeWidth: 2),
+            ),
+          )
+        else if (_goals.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: _cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _accentTeal.withOpacity(0.2)),
+            ),
+            child: Column(
+              children: [
+                Icon(LucideIcons.compass, color: _accentLavender.withOpacity(0.5), size: 36),
+                const SizedBox(height: 16),
+                Text(
+                  'No goals yet',
+                  style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Let me help you set meaningful goals that work for you.',
+                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                // AI-assisted button (primary)
+                GestureDetector(
+                  onTap: _showAIGoalConversation,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [_accentTeal, _accentLavender]),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.sparkles, color: Colors.black, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Let\'s Talk About Goals',
+                          style: GoogleFonts.inter(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Quick add button (secondary)
+                GestureDetector(
+                  onTap: _showAddGoalDialog,
+                  child: Text(
+                    'or add manually →',
+                    style: GoogleFonts.inter(color: Colors.white38, fontSize: 12, decoration: TextDecoration.underline),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Column(
+            children: [
+              ..._goals.map((goal) => _buildGoalCard(goal)).toList(),
+              // AI-assisted add option at bottom
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: _showAIGoalConversation,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: _accentTeal.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _accentTeal.withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(LucideIcons.sparkles, color: _accentTeal, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Discuss a New Goal with AI',
+                            style: GoogleFonts.inter(color: _accentTeal, fontSize: 13, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'I\'ll help you create a SMART goal with timeline & reminders',
+                        style: GoogleFonts.inter(color: Colors.white38, fontSize: 11),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  /// Individual goal card with progress and actions
+  Widget _buildGoalCard(Goal goal) {
+    final daysLeft = goal.daysRemaining;
+    final isOverdue = goal.isOverdue;
+    final needsCheckIn = goal.needsCheckInReminder;
+    
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isOverdue ? Colors.red.withOpacity(0.5) : 
+                 needsCheckIn ? _accentLavender.withOpacity(0.5) : 
+                 _accentTeal.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title and menu
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  goal.title,
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(LucideIcons.moreVertical, color: Colors.white38, size: 18),
+                color: const Color(0xFF2A2F3C),
+                onSelected: (value) async {
+                  if (value == 'edit') {
+                    _showEditGoalDialog(goal);
+                  } else if (value == 'complete') {
+                    await GoalsService.completeGoal(goal.id);
+                    setState(() => _goals = GoalsService.getActiveGoals());
+                  } else if (value == 'delete') {
+                    await GoalsService.deleteGoal(goal.id);
+                    setState(() => _goals = GoalsService.getActiveGoals());
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 'edit', child: Row(
+                    children: [
+                      Icon(LucideIcons.pencil, color: _accentTeal, size: 16),
+                      const SizedBox(width: 8),
+                      Text('Edit', style: GoogleFonts.inter(color: Colors.white)),
+                    ],
+                  )),
+                  PopupMenuItem(value: 'complete', child: Row(
+                    children: [
+                      Icon(LucideIcons.checkCircle, color: Colors.green, size: 16),
+                      const SizedBox(width: 8),
+                      Text('Mark Complete', style: GoogleFonts.inter(color: Colors.white)),
+                    ],
+                  )),
+                  PopupMenuItem(value: 'delete', child: Row(
+                    children: [
+                      Icon(LucideIcons.trash2, color: Colors.red, size: 16),
+                      const SizedBox(width: 8),
+                      Text('Delete', style: GoogleFonts.inter(color: Colors.red)),
+                    ],
+                  )),
+                ],
+              ),
+            ],
+          ),
+          
+          // Description
+          if (goal.description.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              goal.description,
+              style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          
+          const SizedBox(height: 12),
+          
+          // Progress bar
+          Stack(
+            children: [
+              Container(
+                height: 6,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              FractionallySizedBox(
+                widthFactor: goal.progressPercent / 100,
+                child: Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [_accentTeal, _accentLavender]),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Bottom row: progress %, days left, check-in button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    '${goal.progressPercent}%',
+                    style: GoogleFonts.spaceGrotesk(color: _accentTeal, fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 12),
+                  Icon(
+                    isOverdue ? LucideIcons.alertTriangle : LucideIcons.calendar,
+                    color: isOverdue ? Colors.red : Colors.white38,
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isOverdue ? 'Overdue' : '$daysLeft days left',
+                    style: GoogleFonts.inter(
+                      color: isOverdue ? Colors.red : Colors.white38,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              GestureDetector(
+                onTap: () => _showGoalCheckInDialog(goal),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: needsCheckIn ? _accentLavender.withOpacity(0.2) : _accentTeal.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(LucideIcons.messageCircle, color: needsCheckIn ? _accentLavender : _accentTeal, size: 12),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Check In',
+                        style: GoogleFonts.inter(
+                          color: needsCheckIn ? _accentLavender : _accentTeal,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          // AI Tip if available
+          if (goal.aiTip != null && goal.aiTip!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _accentLavender.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Icon(LucideIcons.sparkles, color: _accentLavender, size: 12),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      goal.aiTip!,
+                      style: GoogleFonts.inter(color: _accentLavender, fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Dialog to add a new goal with AI assistance
+  Future<void> _showAddGoalDialog() async {
+    final canAdd = await GoalsService.canAddGoal();
+    if (!canAdd) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Maximum goals reached. Complete or delete a goal first.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final titleController = TextEditingController();
+    final descController = TextEditingController();
+    DateTime targetDate = DateTime.now().add(const Duration(days: 30));
+    int checkInFrequency = 3;
+
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1F2C),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Icon(LucideIcons.target, color: _accentTeal),
+              const SizedBox(width: 10),
+              Text('New Goal', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: titleController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Goal title (e.g., Exercise more)',
+                    hintStyle: TextStyle(color: Colors.white38),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descController,
+                  style: const TextStyle(color: Colors.white),
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    hintText: 'Description (optional)',
+                    hintStyle: TextStyle(color: Colors.white38),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('Target Date', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: targetDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) {
+                      setDialogState(() => targetDate = picked);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.calendar, color: _accentTeal, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          DateFormat('MMM d, yyyy').format(targetDate),
+                          style: GoogleFonts.inter(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('Check-in Reminder', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 6),
+                DropdownButton<int>(
+                  value: checkInFrequency,
+                  dropdownColor: const Color(0xFF2A2F3C),
+                  style: GoogleFonts.inter(color: Colors.white),
+                  underline: Container(),
+                  items: [
+                    DropdownMenuItem(value: 1, child: Text('Daily')),
+                    DropdownMenuItem(value: 3, child: Text('Every 3 days')),
+                    DropdownMenuItem(value: 7, child: Text('Weekly')),
+                    DropdownMenuItem(value: 14, child: Text('Every 2 weeks')),
+                  ],
+                  onChanged: (v) => setDialogState(() => checkInFrequency = v ?? 3),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (titleController.text.trim().isEmpty) return;
+                await GoalsService.addGoal(
+                  title: titleController.text.trim(),
+                  description: descController.text.trim(),
+                  targetDate: targetDate,
+                  checkInFrequencyDays: checkInFrequency,
+                );
+                if (mounted) {
+                  setState(() => _goals = GoalsService.getActiveGoals());
+                  Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accentTeal,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text('Create Goal', style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Dialog to edit an existing goal
+  Future<void> _showEditGoalDialog(Goal goal) async {
+    final titleController = TextEditingController(text: goal.title);
+    final descController = TextEditingController(text: goal.description);
+    DateTime targetDate = goal.targetDate;
+    int checkInFrequency = goal.checkInFrequencyDays;
+
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1F2C),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Icon(LucideIcons.pencil, color: _accentTeal),
+              const SizedBox(width: 10),
+              Text('Edit Goal', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: titleController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Goal title',
+                    hintStyle: TextStyle(color: Colors.white38),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descController,
+                  style: const TextStyle(color: Colors.white),
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    hintText: 'Description',
+                    hintStyle: TextStyle(color: Colors.white38),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('Target Date', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: targetDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) {
+                      setDialogState(() => targetDate = picked);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.calendar, color: _accentTeal, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          DateFormat('MMM d, yyyy').format(targetDate),
+                          style: GoogleFonts.inter(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('Check-in Reminder', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 6),
+                DropdownButton<int>(
+                  value: checkInFrequency,
+                  dropdownColor: const Color(0xFF2A2F3C),
+                  style: GoogleFonts.inter(color: Colors.white),
+                  underline: Container(),
+                  items: [
+                    DropdownMenuItem(value: 1, child: Text('Daily')),
+                    DropdownMenuItem(value: 3, child: Text('Every 3 days')),
+                    DropdownMenuItem(value: 7, child: Text('Weekly')),
+                    DropdownMenuItem(value: 14, child: Text('Every 2 weeks')),
+                  ],
+                  onChanged: (v) => setDialogState(() => checkInFrequency = v ?? 3),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (titleController.text.trim().isEmpty) return;
+                final updated = goal.copyWith(
+                  title: titleController.text.trim(),
+                  description: descController.text.trim(),
+                  targetDate: targetDate,
+                  checkInFrequencyDays: checkInFrequency,
+                );
+                await GoalsService.updateGoal(updated);
+                if (mounted) {
+                  setState(() => _goals = GoalsService.getActiveGoals());
+                  Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accentTeal,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text('Save Changes', style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// AI-assisted goal conversation - uses wellness chat to discuss and create goals
+  Future<void> _showAIGoalConversation() async {
+    // Pre-populate the chat with a goal discussion prompt
+    if (mounted) {
+      setState(() {
+        // Add AI message to start the conversation with clear explanation
+        _chatMessages.add({
+          'role': 'ai',
+          'text': '🎯 **Goal Planning Mode**\n\n'
+                  'Let\'s work together to create a meaningful goal! Here\'s what we\'ll do:\n\n'
+                  '1. You tell me what you\'ve been wanting to work on\n'
+                  '2. We\'ll discuss it and make it SMART (Specific, Measurable, Achievable)\n'
+                  '3. I\'ll help you set a realistic timeline and check-in schedule\n\n'
+                  'So, what\'s something you\'ve been wanting to improve or accomplish?',
+        });
+        _hideChatMessages = false;
+      });
+      
+      // Scroll the chat messages to show the new AI message
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_chatScrollController.hasClients) {
+          _chatScrollController.animateTo(
+            _chatScrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
+  /// Create goal from AI conversation (can be called by AI)
+  Future<void> createGoalFromAI({
+    required String title,
+    required String description,
+    required DateTime targetDate,
+    int checkInFrequencyDays = 3,
+  }) async {
+    final goal = await GoalsService.addGoal(
+      title: title,
+      description: description,
+      targetDate: targetDate,
+      checkInFrequencyDays: checkInFrequencyDays,
+    );
+    
+    if (goal != null && mounted) {
+      setState(() => _goals = GoalsService.getActiveGoals());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Goal created: ${goal.title}'),
+          backgroundColor: _accentTeal,
+        ),
+      );
+    }
+  }
+
+  /// Dialog for checking in on goal progress
+  Future<void> _showGoalCheckInDialog(Goal goal) async {
+    final noteController = TextEditingController();
+    int progress = goal.progressPercent;
+
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1F2C),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('Check In: ${goal.title}', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('How is your progress?', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      value: progress.toDouble(),
+                      min: 0,
+                      max: 100,
+                      activeColor: _accentTeal,
+                      inactiveColor: Colors.white.withOpacity(0.1),
+                      onChanged: (v) => setDialogState(() => progress = v.round()),
+                    ),
+                  ),
+                  Text('$progress%', style: GoogleFonts.spaceGrotesk(color: _accentTeal, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteController,
+                style: const TextStyle(color: Colors.white),
+                maxLines: 2,
+                decoration: InputDecoration(
+                  hintText: 'How are you feeling about this goal?',
+                  hintStyle: TextStyle(color: Colors.white38),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.05),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await GoalsService.addCheckIn(
+                  goalId: goal.id,
+                  note: noteController.text.trim(),
+                  progressPercent: progress,
+                );
+                if (mounted) {
+                  setState(() => _goals = GoalsService.getActiveGoals());
+                  Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accentTeal,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text('Save', style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.w600)),
+            ),
+          ],
         ),
       ),
     );
@@ -2088,6 +3326,7 @@ Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know 
   
   Widget _buildWellnessChat() {
     return Container(
+      key: _chatSectionKey,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _cardColor,
@@ -2205,7 +3444,48 @@ Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know 
                       ],
                     ),
                   )
-                else
+                else ...[
+                  // Goal check-in reminders (before regular focus items)
+                  ..._goals.where((g) => g.needsCheckInReminder).take(2).map((goal) => 
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: GestureDetector(
+                        onTap: () => _showGoalCheckInDialog(goal),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _accentTeal.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: _accentTeal.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(LucideIcons.target, color: _accentTeal, size: 14),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Goal Check-In',
+                                      style: GoogleFonts.inter(color: _accentTeal, fontSize: 10, fontWeight: FontWeight.w600),
+                                    ),
+                                    Text(
+                                      'How\'s "${goal.title}" going? (${goal.daysSinceLastCheckIn}d ago)',
+                                      style: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(LucideIcons.chevronRight, color: Colors.white38, size: 14),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Regular AI focus items
                   ..._aiFocusItems.map((item) => Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: _buildFocusBullet(
@@ -2215,6 +3495,7 @@ Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know 
                       item['metricId'] as String,
                     ),
                   )),
+                ],
               ],
             ),
           ),
@@ -2232,12 +3513,14 @@ Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know 
                 Expanded(
                   child: TextField(
                     controller: _chatInputController,
-                    textInputAction: TextInputAction.send, // Enter sends message
+                    textInputAction: TextInputAction.send, // Enter submits
+                    minLines: 1,
+                    maxLines: 4, // Still allows expansion via paste/long text
                     decoration: const InputDecoration(
                       hintText: "What's on your mind?",
                       hintStyle: TextStyle(color: Colors.white38),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 24), // 100% increase
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                     style: const TextStyle(color: Colors.white),
                     onSubmitted: (text) {
@@ -2307,22 +3590,24 @@ Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know 
           ),
           const SizedBox(height: 8),
           Container(
-            constraints: const BoxConstraints(minHeight: 120, maxHeight: 750), // 50% increase from 500
+            constraints: const BoxConstraints(minHeight: 100, maxHeight: 420), // Increased for more message visibility
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Reduced padding
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.3),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: _accentTeal.withOpacity(0.2)),
             ),
+            clipBehavior: Clip.antiAlias, // Smooth clipping at edges
             child: (_chatMessages.isEmpty && !_isAiThinking) || _hideChatMessages
                 ? const SizedBox(height: 60) // Empty placeholder
                 : ListView.builder(
                     controller: _chatScrollController,
-                    shrinkWrap: true,
-                    padding: EdgeInsets.zero,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    physics: const ClampingScrollPhysics(), // Use clamping for better nested scroll behavior
                     itemCount: _chatMessages.length + (_isAiThinking ? 1 : 0),
                     itemBuilder: (context, index) {
+                      // Show typing indicator as last item when thinking
                       if (index == _chatMessages.length && _isAiThinking) {
                         // Typing indicator
                         return Padding(
@@ -2489,14 +3774,86 @@ Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know 
 
 
   Widget _buildWellnessCard() {
-    final dailyQuotes = [
+    // Default quotes (fallback)
+    final defaultQuotes = [
       "Every small step counts. Your wellness journey is uniquely yours.",
       "You are stronger than you know.",
       "Rest is productive.",
       "Healing isn't linear. Be patient with yourself.",
+      "Progress, not perfection.",
+      "You're doing better than you think.",
     ];
-    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
-    final todaysQuote = dailyQuotes[dayOfYear % dailyQuotes.length];
+    
+    // Time-based greetings
+    final hour = DateTime.now().hour;
+    final timeContext = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+    
+    String todaysWisdom;
+    
+    // Check recent chat messages for emotional context
+    final recentUserMessages = _chatMessages.where((m) => m['role'] == 'user').toList();
+    bool seemsStressed = false;
+    bool seemsPositive = false;
+    
+    if (recentUserMessages.isNotEmpty) {
+      final recentText = recentUserMessages.take(3).map((m) => m['text'] ?? '').join(' ').toLowerCase();
+      seemsStressed = recentText.contains('stress') || recentText.contains('anxious') || 
+                      recentText.contains('overwhelm') || recentText.contains('tired') ||
+                      recentText.contains('worry') || recentText.contains('hard');
+      seemsPositive = recentText.contains('good') || recentText.contains('great') ||
+                      recentText.contains('better') || recentText.contains('happy') ||
+                      recentText.contains('excited');
+    }
+    
+    // Priority: Recent mood from chat > Goals > Defaults
+    if (seemsStressed) {
+      // Supportive message for stressed user
+      final stressResponses = [
+        "Hey, take a breath. Whatever you're facing, you don't have to figure it all out today. 💜",
+        "It's okay to feel overwhelmed sometimes. Be gentle with yourself this $timeContext.",
+        "You're carrying a lot right now. Remember to rest when you need to. 🌿",
+      ];
+      todaysWisdom = stressResponses[DateTime.now().minute % stressResponses.length];
+    } else if (seemsPositive) {
+      // Celebrate positive energy
+      final positiveResponses = [
+        "Love to see you in good spirits! Keep riding that wave. 🌟",
+        "Your positive energy is contagious! What a beautiful $timeContext to be you.",
+        "You're glowing today! Keep doing whatever you're doing. ✨",
+      ];
+      todaysWisdom = positiveResponses[DateTime.now().minute % positiveResponses.length];
+    } else if (_goals.isNotEmpty) {
+      // Goal-based wisdom - rephrase for natural reading
+      final goalsNeedingCheckIn = _goals.where((g) => g.needsCheckInReminder).toList();
+      final overdueGoals = _goals.where((g) => g.isOverdue).toList();
+      final highProgressGoals = _goals.where((g) => g.progressPercent >= 70).toList();
+      
+      if (overdueGoals.isNotEmpty) {
+        final goal = overdueGoals.first;
+        // Shorten title if too long for natural reading
+        final shortTitle = goal.title.length > 25 ? '${goal.title.substring(0, 25)}...' : goal.title;
+        todaysWisdom = "It's okay if '$shortTitle' is taking longer than expected. What matters is that you keep moving forward. 💜";
+      } else if (goalsNeedingCheckIn.isNotEmpty) {
+        final goal = goalsNeedingCheckIn.first;
+        todaysWisdom = "How's your goal coming along? Even small progress counts! Check in when you're ready. 🌱";
+      } else if (highProgressGoals.isNotEmpty) {
+        final goal = highProgressGoals.first;
+        todaysWisdom = "You're ${goal.progressPercent}% of the way there! Keep that momentum going! 🌟";
+      } else {
+        // General goal encouragement - no awkward title insertion
+        todaysWisdom = "You've got active goals—that takes courage. Keep showing up for yourself. 💪";
+      }
+    } else {
+      // Time-aware default quotes
+      if (hour < 8) {
+        todaysWisdom = "Good morning. Today is a fresh start—take it one moment at a time. ☀️";
+      } else if (hour >= 21) {
+        todaysWisdom = "Winding down for the night? You made it through another day. Rest well. 🌙";
+      } else {
+        final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+        todaysWisdom = defaultQuotes[dayOfYear % defaultQuotes.length];
+      }
+    }
     
     return Container(
       padding: const EdgeInsets.all(20),
@@ -2523,7 +3880,7 @@ Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know 
             ],
           ),
           const SizedBox(height: 12),
-          Text('"$todaysQuote"', style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontStyle: FontStyle.italic, height: 1.5)),
+          Text('"$todaysWisdom"', style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontStyle: FontStyle.italic, height: 1.5)),
         ],
       ),
     );
@@ -2697,24 +4054,95 @@ Keep responses to 2-3 sentences. Be warm, personal, and draw from what you know 
                            Expanded(child: Text('Motion permission required.', style: GoogleFonts.inter(color: Colors.white, fontSize: 12))),
                            TextButton(
                              onPressed: () async {
-                                // Request motion/activity permission - use activityRecognition for iOS
-                                var status = await Permission.activityRecognition.request();
-                                // Fallback to sensors if activityRecognition not available
-                                if (!status.isGranted && !status.isLimited) {
-                                  status = await Permission.sensors.request();
-                                }
+                                // Check if running on simulator (motion not supported)
+                                final isSimulator = Platform.isIOS && 
+                                    (Platform.environment['SIMULATOR_DEVICE_NAME'] != null ||
+                                     await Permission.activityRecognition.status == PermissionStatus.restricted);
+                                
+                                // First check current status
+                                var status = await Permission.activityRecognition.status;
+                                debugPrint('Motion permission status: $status (isSimulator: $isSimulator)');
+                                
                                 if (status.isGranted || status.isLimited) {
-                                  // Permission granted - reinit and refresh dialog
+                                  // Already have permission - just reinit
                                   await StepTrackingService.instance.init();
                                   if (mounted) {
                                     Navigator.pop(context);
-                                    _showStepsDialog(metric); // Reopen with permission
+                                    _showStepsDialog(metric);
                                   }
-                                } else if (status.isPermanentlyDenied) {
-                                  // Only open settings if permanently denied
+                                  return;
+                                }
+                                
+                                // On simulator or if restricted, show helpful message
+                                if (status.isRestricted) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Step tracking requires a physical device with motion sensors.'),
+                                        backgroundColor: Colors.orange,
+                                        duration: Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+                                
+                                if (status.isPermanentlyDenied) {
+                                  // Must go to settings
+                                  debugPrint('Opening app settings for motion permission');
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Please enable Motion & Fitness in Settings.'),
+                                        backgroundColor: Colors.blue,
+                                        action: SnackBarAction(
+                                          label: 'OPEN',
+                                          textColor: Colors.white,
+                                          onPressed: () => openAppSettings(),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  openAppSettings();
+                                  return;
+                                }
+                                
+                                // Request permission (status is denied or undetermined)
+                                debugPrint('Requesting motion permission...');
+                                status = await Permission.activityRecognition.request();
+                                debugPrint('Permission result: $status');
+                                
+                                // iOS fallback to sensors
+                                if (!status.isGranted && !status.isLimited) {
+                                  final sensorStatus = await Permission.sensors.status;
+                                  if (!sensorStatus.isPermanentlyDenied && !sensorStatus.isRestricted) {
+                                    status = await Permission.sensors.request();
+                                    debugPrint('Sensors permission result: $status');
+                                  }
+                                }
+                                
+                                if (status.isGranted || status.isLimited) {
+                                  await StepTrackingService.instance.init();
+                                  if (mounted) {
+                                    Navigator.pop(context);
+                                    _showStepsDialog(metric);
+                                  }
+                                } else if (status.isPermanentlyDenied || status.isRestricted) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Motion permission needed. Open Settings to enable.'),
+                                        backgroundColor: Colors.orange,
+                                        action: SnackBarAction(
+                                          label: 'SETTINGS',
+                                          textColor: Colors.white,
+                                          onPressed: () => openAppSettings(),
+                                        ),
+                                      ),
+                                    );
+                                  }
                                   openAppSettings();
                                 } else {
-                                  // Show snackbar for denied
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(content: Text('Motion permission needed for step tracking'), backgroundColor: Colors.black87)

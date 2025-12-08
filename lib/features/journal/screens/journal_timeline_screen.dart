@@ -110,7 +110,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
     setState(() => _isLoading = false);
   }
   
-  Future<void> _openEditor({String? entryId}) async {
+  Future<void> _openEditor({String? entryId, String? aiPrompt}) async {
     final bucketId = _selectedBucketId ?? _buckets.first.id;
     final result = await Navigator.push<bool>(
       context,
@@ -118,6 +118,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
         builder: (context) => JournalEditorScreen(
           entryId: entryId,
           bucketId: bucketId,
+          aiPrompt: aiPrompt,
         ),
       ),
     );
@@ -932,28 +933,88 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
   
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(LucideIcons.bookOpen, size: 64, color: Colors.white.withOpacity(0.2)),
-          const SizedBox(height: 16),
-          Text(
-            _searchQuery.isNotEmpty 
-                ? 'No entries match your search'
-                : 'No journal entries yet',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
-              fontSize: 16,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(LucideIcons.bookOpen, size: 64, color: Colors.white.withOpacity(0.2)),
+            const SizedBox(height: 16),
+            Text(
+              _searchQuery.isNotEmpty 
+                  ? 'No entries match your search'
+                  : 'No journal entries yet',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          if (_searchQuery.isEmpty)
-            TextButton.icon(
-              onPressed: () => _openEditor(),
-              icon: const Icon(LucideIcons.plus),
-              label: const Text('Write your first entry'),
-            ),
-        ],
+            const SizedBox(height: 8),
+            if (_searchQuery.isEmpty) ...[
+              Text(
+                'Let me help you explore what\'s on your mind.',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.4),
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              // AI-assisted button (primary)
+              GestureDetector(
+                onTap: _showAIJournalConversation,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [Colors.purple, Colors.deepPurple]),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(LucideIcons.sparkles, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Let\'s Talk First',
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Quick add button (secondary)
+              GestureDetector(
+                onTap: () => _openEditor(),
+                child: Text(
+                  'or start writing now →',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.4), 
+                    fontSize: 12, 
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+  
+  /// AI-assisted journal conversation
+  void _showAIJournalConversation() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _AIJournalChatSheet(
+        onStartWriting: (prompt) {
+          Navigator.pop(ctx);
+          _openEditor(aiPrompt: prompt);
+        },
       ),
     );
   }
@@ -1168,6 +1229,231 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// AI-assisted journal conversation sheet
+class _AIJournalChatSheet extends StatefulWidget {
+  final Function(String prompt) onStartWriting;
+  
+  const _AIJournalChatSheet({required this.onStartWriting});
+  
+  @override
+  State<_AIJournalChatSheet> createState() => _AIJournalChatSheetState();
+}
+
+class _AIJournalChatSheetState extends State<_AIJournalChatSheet> {
+  final TextEditingController _controller = TextEditingController();
+  final List<Map<String, String>> _messages = [];
+  bool _isThinking = false;
+  String? _suggestedPrompt;
+  
+  @override
+  void initState() {
+    super.initState();
+    // Start with an AI greeting
+    _messages.add({
+      'role': 'ai',
+      'text': 'Hey! 💜 What\'s on your mind today? I can help you explore your thoughts before you start writing.\n\nTell me anything—how you\'re feeling, what happened today, or something you\'ve been thinking about.',
+    });
+  }
+  
+  void _sendMessage(String text) async {
+    if (text.trim().isEmpty) return;
+    
+    setState(() {
+      _messages.add({'role': 'user', 'text': text});
+      _isThinking = true;
+    });
+    _controller.clear();
+    
+    // Simulate AI processing (in production, use ModelOrchestrator)
+    await Future.delayed(const Duration(milliseconds: 800));
+    
+    // Generate contextual response
+    String response;
+    if (_messages.length <= 2) {
+      response = 'That\'s interesting. Tell me more—what specifically about that is on your mind?';
+    } else if (_messages.length <= 4) {
+      response = 'I hear you. It sounds like there\'s a lot there. Would you like to explore how this makes you feel, or dive into the details?';
+    } else {
+      // After enough context, suggest a writing prompt
+      response = 'Thanks for sharing all that with me. Based on what you\'ve said, here\'s a thought to start your entry:\n\n"${_generatePrompt(text)}"\n\nReady to start writing? 📝';
+      _suggestedPrompt = _generatePrompt(text);
+    }
+    
+    if (mounted) {
+      setState(() {
+        _messages.add({'role': 'ai', 'text': response});
+        _isThinking = false;
+      });
+    }
+  }
+  
+  String _generatePrompt(String lastMessage) {
+    // Create a starter prompt based on the conversation
+    final lowerText = lastMessage.toLowerCase();
+    if (lowerText.contains('feel') || lowerText.contains('emotion')) {
+      return 'Today I\'m processing some feelings about...';
+    } else if (lowerText.contains('work') || lowerText.contains('job')) {
+      return 'At work, I\'ve been noticing that...';
+    } else if (lowerText.contains('friend') || lowerText.contains('relationship')) {
+      return 'I\'ve been thinking about my relationship with...';
+    } else if (lowerText.contains('stress') || lowerText.contains('anxiety')) {
+      return 'Something that\'s been weighing on me is...';
+    } else if (lowerText.contains('grateful') || lowerText.contains('happy')) {
+      return 'Today I\'m feeling grateful for...';
+    } else {
+      return 'What\'s been on my mind lately is...';
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // Handle
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[700],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          
+          // Title
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(LucideIcons.sparkles, color: Colors.purple, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Let\'s Talk First',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: Icon(LucideIcons.x, color: Colors.grey),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          
+          // Messages
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _messages.length + (_isThinking ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == _messages.length && _isThinking) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Text('💭 Thinking...', style: TextStyle(color: Colors.purple, fontStyle: FontStyle.italic)),
+                      ],
+                    ),
+                  );
+                }
+                
+                final msg = _messages[index];
+                final isUser = msg['role'] == 'user';
+                
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Align(
+                    alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isUser ? Colors.purple.withOpacity(0.3) : Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        msg['text'] ?? '',
+                        style: TextStyle(color: Colors.white, height: 1.4),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          
+          // Start writing button (when prompt is ready)
+          if (_suggestedPrompt != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: GestureDetector(
+                onTap: () => widget.onStartWriting(_suggestedPrompt!),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [Colors.purple, Colors.deepPurple]),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(LucideIcons.pencil, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      Text('Start Writing Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          
+          // Input area
+          Container(
+            padding: EdgeInsets.only(
+              left: 16, right: 16, top: 8,
+              bottom: MediaQuery.of(context).padding.bottom + 8,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.grey[850],
+              border: Border(top: BorderSide(color: Colors.grey[800]!)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Share what\'s on your mind...',
+                      hintStyle: TextStyle(color: Colors.grey),
+                      border: InputBorder.none,
+                    ),
+                    onSubmitted: _sendMessage,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(LucideIcons.send, color: Colors.purple),
+                  onPressed: () => _sendMessage(_controller.text),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

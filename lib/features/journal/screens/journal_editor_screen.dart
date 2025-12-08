@@ -18,11 +18,13 @@ import 'package:sable/src/config/app_config.dart';
 class JournalEditorScreen extends StatefulWidget {
   final String? entryId; // null for new entry
   final String bucketId;
+  final String? aiPrompt; // Pre-filled AI prompt for assisted journaling
 
   const JournalEditorScreen({
     super.key,
     this.entryId,
     required this.bucketId,
+    this.aiPrompt,
   });
 
   @override
@@ -90,6 +92,15 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
     } else {
       // New entry
       _quillController = QuillController.basic();
+      // If AI prompt provided, insert it as starter text
+      if (widget.aiPrompt != null && widget.aiPrompt!.isNotEmpty) {
+        _quillController.document.insert(0, widget.aiPrompt!);
+        // Move cursor to end of prompt
+        _quillController.updateSelection(
+          TextSelection.collapsed(offset: widget.aiPrompt!.length),
+          ChangeSource.local,
+        );
+      }
       // Default privacy based on bucket settings
       _isPrivate = _bucket?.isVault ?? !(_bucket?.avatarAccessDefault ?? true);
     }

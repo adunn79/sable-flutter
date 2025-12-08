@@ -476,4 +476,96 @@ class OnboardingStateService {
     // USA / Default
     return isFemale ? 'cgSgspJ2msm6clMCkdW9' : 'TxGEqnHWrfWFTfGW9XjX'; // Jessica or Josh
   }
+  
+  // ============================================
+  // AVATAR AGE TRACKING & GALLERY
+  // ============================================
+  
+  static const String _keyAvatarGeneratedAge = 'avatar_generated_age';
+  static const String _keyAvatarGallery = 'avatar_gallery';
+  static const String _keyAvatarRegenerationDismissed = 'avatar_regen_dismissed_at';
+  
+  /// Get the age when the avatar was last generated
+  int? get avatarGeneratedAge => _prefs.getInt(_keyAvatarGeneratedAge);
+  
+  /// Save the age when avatar was generated
+  Future<void> setAvatarGeneratedAge(int age) async {
+    await _prefs.setInt(_keyAvatarGeneratedAge, age);
+  }
+  
+  /// Get all saved avatar URLs (gallery)
+  List<String> get avatarGallery {
+    return _prefs.getStringList(_keyAvatarGallery) ?? [];
+  }
+  
+  /// Add an avatar URL to the gallery
+  Future<void> addToAvatarGallery(String url) async {
+    final gallery = avatarGallery;
+    if (!gallery.contains(url)) {
+      gallery.add(url);
+      await _prefs.setStringList(_keyAvatarGallery, gallery);
+    }
+  }
+  
+  /// Remove an avatar URL from the gallery
+  Future<void> removeFromAvatarGallery(String url) async {
+    final gallery = avatarGallery;
+    gallery.remove(url);
+    await _prefs.setStringList(_keyAvatarGallery, gallery);
+  }
+  
+  /// Check if avatar regeneration should be prompted (age changed by ±5 years)
+  bool shouldPromptAvatarRegeneration() {
+    final generatedAge = avatarGeneratedAge;
+    if (generatedAge == null) return false;
+    
+    // Calculate current age from DOB
+    final dob = userDob;
+    if (dob == null) return false;
+    
+    final now = DateTime.now();
+    int currentAge = now.year - dob.year;
+    if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) {
+      currentAge--;
+    }
+    
+    // Check if age difference is >= 5 years
+    final ageDiff = (currentAge - generatedAge).abs();
+    if (ageDiff < 5) return false;
+    
+    // Check if user dismissed the prompt recently (within 30 days)
+    final dismissedAt = _prefs.getString(_keyAvatarRegenerationDismissed);
+    if (dismissedAt != null) {
+      try {
+        final dismissedDate = DateTime.parse(dismissedAt);
+        final daysSinceDismissed = DateTime.now().difference(dismissedDate).inDays;
+        if (daysSinceDismissed < 30) return false;
+      } catch (_) {}
+    }
+    
+    return true;
+  }
+  
+  /// Get current user age
+  int? getCurrentAge() {
+    final dob = userDob;
+    if (dob == null) return null;
+    
+    final now = DateTime.now();
+    int age = now.year - dob.year;
+    if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) {
+      age--;
+    }
+    return age;
+  }
+  
+  /// Dismiss avatar regeneration prompt for 30 days
+  Future<void> dismissAvatarRegenerationPrompt() async {
+    await _prefs.setString(_keyAvatarRegenerationDismissed, DateTime.now().toIso8601String());
+  }
+  
+  /// Clear regeneration dismissal (for testing)
+  Future<void> clearRegenerationDismissal() async {
+    await _prefs.remove(_keyAvatarRegenerationDismissed);
+  }
 }

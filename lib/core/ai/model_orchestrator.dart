@@ -7,6 +7,7 @@ import 'providers/openai_provider.dart';
 import 'providers/grok_provider.dart';
 import 'providers/deepseek_provider.dart';
 import 'package:sable/core/services/settings_control_service.dart';
+import 'package:sable/core/personality/age_adaptive_service.dart';
 
 part 'model_orchestrator.g.dart';
 
@@ -165,6 +166,15 @@ class ModelOrchestrator extends _$ModelOrchestrator {
           return "I wasn't able to change that setting. You can update it manually in Settings.";
         }
       }
+      // Step 0.5: Get age-adaptive personality calibration
+      String agePersonalityContext = '';
+      try {
+        final ageService = await AgeAdaptiveService.getInstance();
+        agePersonalityContext = ageService.getPersonalityInstructions();
+        debugPrint('🎂 Age tier: ${ageService.getTierLabel()}');
+      } catch (e) {
+        debugPrint('⚠️ Age service error: $e');
+      }
 
       // Step 1: Get routing decision from Gemini
       final routingPrompt = '''
@@ -213,6 +223,8 @@ Return ONLY the JSON, nothing else.
 
       final String claudePrompt = '''${userContext ?? ''}You are $archetypeName - their companion, assistant, and coach.
 
+$agePersonalityContext
+
 RULES:
 1. ULTRA-SHORT: 1 sentence ideal, 2 max. Text message brevity.
 2. NO asterisks, NO "I'm an AI" talk
@@ -221,12 +233,16 @@ RULES:
       
       final String gpt4oPrompt = '''${userContext ?? ''}You are $archetypeName - companion and assistant.
 
+$agePersonalityContext
+
 - 1 sentence ideal, 2 max
 - NO asterisks or AI language
 - USE their name from context
 - Brief, warm, helpful'''.replaceFirst(r'${userContext}', userContext ?? '');
       
       final String grokPrompt = '''${userContext ?? ''}You are $archetypeName - direct, helpful companion.
+
+$agePersonalityContext
 
 - 1-2 sentences total
 - NO asterisks or AI talk

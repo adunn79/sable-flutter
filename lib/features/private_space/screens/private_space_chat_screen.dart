@@ -6,7 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../../core/theme/aureal_theme.dart';
-import '../../../core/ai/providers/gemini_provider.dart';
+import '../../../core/ai/providers/grok_provider.dart';
+import '../../../features/settings/widgets/magic_orb_widget.dart';
 import '../services/private_storage_service.dart';
 import '../services/private_content_filter.dart';
 import '../models/private_message.dart';
@@ -14,6 +15,13 @@ import '../models/private_user_persona.dart';
 import '../widgets/private_avatar_picker.dart';
 import '../widgets/private_persona_editor.dart';
 import '../../safety/screens/emergency_screen.dart';
+
+/// Avatar display modes for Private Space
+enum PrivateAvatarDisplayMode {
+  orb,      // Magic orb animation
+  image,    // Static photorealistic image
+  fullScreen, // Full screen avatar backdrop
+}
 
 /// Isolated chat screen for Private Space
 /// NEVER shares data with main app
@@ -36,6 +44,8 @@ class _PrivateSpaceChatScreenState extends State<PrivateSpaceChatScreen> {
   PrivateUserPersona? _userPersona;
   PrivateStorageService? _storage;
   bool _showSettings = false;
+  PrivateAvatarDisplayMode _displayMode = PrivateAvatarDisplayMode.image;
+  bool _showInfoTip = true; // Show info blobs on first use
 
   @override
   void initState() {
@@ -274,7 +284,7 @@ Guidelines for MAXIMUM BONDING:
     }).toList();
 
     try {
-      final provider = GeminiProvider();
+      final provider = GrokProvider();
       
       // Build conversation context as a prompt
       final contextBuilder = StringBuffer();
@@ -287,7 +297,7 @@ Guidelines for MAXIMUM BONDING:
       final response = await provider.generateResponse(
         prompt: contextBuilder.toString(),
         systemPrompt: systemPrompt,
-        modelId: 'gemini-2.0-flash',
+        modelId: 'grok-beta', // Using Grok for more relaxed content
       );
       return response;
     } catch (e) {
@@ -415,6 +425,19 @@ Guidelines for MAXIMUM BONDING:
           ],
         ),
         actions: [
+          // Display mode toggle
+          IconButton(
+            icon: Icon(
+              _displayMode == PrivateAvatarDisplayMode.orb 
+                  ? LucideIcons.circle 
+                  : (_displayMode == PrivateAvatarDisplayMode.fullScreen 
+                      ? LucideIcons.maximize 
+                      : LucideIcons.image),
+              color: avatar?.accentColor ?? AurealColors.plasmaCyan,
+            ),
+            onPressed: _cycleDisplayMode,
+            tooltip: 'Change avatar display',
+          ),
           IconButton(
             icon: Icon(
               _showSettings ? LucideIcons.x : LucideIcons.settings,
@@ -424,31 +447,153 @@ Guidelines for MAXIMUM BONDING:
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Settings panel (collapsible)
-          if (_showSettings) _buildSettingsPanel(),
-          
-          // Messages
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length + (_isTyping ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == _messages.length && _isTyping) {
-                  return _buildTypingIndicator();
-                }
-                return _buildMessageBubble(_messages[index]);
-              },
+          // Full screen avatar backdrop (when in fullScreen mode)
+          if (_displayMode == PrivateAvatarDisplayMode.fullScreen && avatar?.imagePath != null)
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.15,
+                child: Image.asset(
+                  avatar!.imagePath!,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
+            
+          Column(
+            children: [
+              // Info tip for first-time users
+              if (_showInfoTip)
+                _buildInfoTip(avatar),
+              
+              // Avatar display widget (Orb or Image, not fullScreen which is backdrop)
+              if (_displayMode != PrivateAvatarDisplayMode.fullScreen)
+                _buildAvatarDisplay(avatar),
+              
+              // Settings panel (collapsible)
+              if (_showSettings) _buildSettingsPanel(),
+              
+              // Messages
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _messages.length + (_isTyping ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == _messages.length && _isTyping) {
+                      return _buildTypingIndicator();
+                    }
+                    return _buildMessageBubble(_messages[index]);
+                  },
+                ),
+              ),
+              
+              // Input
+              _buildInputArea(),
+            ],
           ),
-          
-          // Input
-          _buildInputArea(),
         ],
       ),
     );
+  }
+  
+  void _cycleDisplayMode() {
+    setState(() {
+      switch (_displayMode) {
+        case PrivateAvatarDisplayMode.image:
+          _displayMode = PrivateAvatarDisplayMode.orb;
+          break;
+        case PrivateAvatarDisplayMode.orb:
+          _displayMode = PrivateAvatarDisplayMode.fullScreen;
+          break;
+        case PrivateAvatarDisplayMode.fullScreen:
+          _displayMode = PrivateAvatarDisplayMode.image;
+          break;
+      }
+    });
+    
+    // Save preference
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('private_space_display_mode', _displayMode.name);
+    });
+  }
+  
+  Widget _buildInfoTip(PrivateAvatar? avatar) {
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: (avatar?.accentColor ?? AurealColors.plasmaCyan).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: (avatar?.accentColor ?? AurealColors.plasmaCyan).withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(LucideIcons.info, color: avatar?.accentColor ?? AurealColors.plasmaCyan, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'This is your private sanctuary. Conversations are encrypted and never shared. Tap the avatar icon to change display mode.',
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(LucideIcons.x, color: Colors.white38, size: 16),
+            onPressed: () => setState(() => _showInfoTip = false),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildAvatarDisplay(PrivateAvatar? avatar) {
+    if (_displayMode == PrivateAvatarDisplayMode.orb) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: MagicOrbWidget(
+            size: 80,
+            isActive: _isTyping,
+          ),
+        ),
+      );
+    }
+    
+    // Image mode - show circular avatar
+    if (avatar?.imagePath != null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Center(
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: avatar!.accentColor, width: 3),
+              image: DecorationImage(
+                image: AssetImage(avatar.imagePath!),
+                fit: BoxFit.cover,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: avatar.accentColor.withOpacity(0.4),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    
+    return const SizedBox.shrink();
   }
 
   Widget _buildSettingsPanel() {

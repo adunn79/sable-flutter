@@ -14,6 +14,7 @@ import 'package:sable/core/emotion/location_service.dart';
 import 'package:sable/core/emotion/weather_service.dart';
 import 'package:sable/core/ai/providers/gemini_provider.dart';
 import 'package:sable/src/config/app_config.dart';
+import 'package:sable/core/photos/widgets/photo_picker_sheet.dart';
 
 /// Rich text journal editor with privacy toggle, mood, and tags
 class JournalEditorScreen extends StatefulWidget {
@@ -803,6 +804,32 @@ No hashtags, no explanations, just the tags.''',
                       child: Icon(
                         _isListening ? LucideIcons.micOff : LucideIcons.mic,
                         color: _isListening ? Colors.red : Colors.white70,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  // Photo button
+                  GestureDetector(
+                    onTap: () async {
+                      final photo = await PhotoPickerSheet.show(
+                        context,
+                        linkedJournalId: _existingEntry?.id,
+                        showPrivateOption: true,
+                      );
+                      if (photo != null && mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('📷 Photo added${photo.isPrivate ? " (private)" : ""}'),
+                            backgroundColor: photo.isPrivate ? Colors.red.withOpacity(0.8) : Colors.green.withOpacity(0.8),
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      child: const Icon(
+                        LucideIcons.camera,
+                        color: Colors.white70,
                         size: 20,
                       ),
                     ),

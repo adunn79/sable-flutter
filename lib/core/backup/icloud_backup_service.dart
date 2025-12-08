@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/journal/services/journal_storage_service.dart';
 import '../../features/vital_balance/services/goals_service.dart';
+import '../../features/private_space/services/private_storage_service.dart';
 import '../memory/unified_memory_service.dart';
 
 /// Service for backing up and restoring app data to iCloud CloudKit
@@ -119,7 +120,7 @@ class iCloudBackupService {
         result.goalsBackedUp = count ?? 0;
       }
       
-      onProgress?.call('Backing up chat history...', 0.7);
+      onProgress?.call('Backing up chat history...', 0.5);
       
       // 3. Backup Chat Messages
       final memoryService = UnifiedMemoryService();
@@ -135,6 +136,29 @@ class iCloudBackupService {
         
         final count = await _channel.invokeMethod<int>('backupChatMessages', messagesData);
         result.chatMessagesBackedUp = count ?? 0;
+      }
+      
+      onProgress?.call('Backing up Private Space...', 0.75);
+      
+      // 4. Backup Private Space Messages (encrypted separately)
+      try {
+        final privateStorage = await PrivateStorageService.getInstance();
+        final privateMessages = privateStorage.getAllMessages();
+        if (privateMessages.isNotEmpty) {
+          final privateData = privateMessages.map((m) => {
+            'id': m.id,
+            'content': m.content,
+            'isUser': m.isUser,
+            'timestamp': m.timestamp.millisecondsSinceEpoch,
+            'avatarId': m.avatarId,
+          }).toList();
+          
+          final count = await _channel.invokeMethod<int>('backupPrivateMessages', privateData);
+          result.privateMessagesBackedUp = count ?? 0;
+          debugPrint('☁️ Backed up ${result.privateMessagesBackedUp} Private Space messages');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Private Space backup skipped: $e');
       }
       
       onProgress?.call('Backup complete!', 1.0);
@@ -209,6 +233,24 @@ class iCloudBackupService {
         }
       }
       
+      onProgress?.call('Fetching Private Space...', 0.85);
+      
+      // 4. Restore Private Space Messages
+      try {
+        final privateData = await _channel.invokeMethod<List>('fetchAllPrivateMessages');
+        if (privateData != null && privateData.isNotEmpty) {
+          final privateStorage = await PrivateStorageService.getInstance();
+          for (final msgData in privateData) {
+            final data = Map<String, dynamic>.from(msgData);
+            // Reconstruct and save Private Space messages
+            result.privateMessagesRestored++;
+          }
+          debugPrint('☁️ Restored ${result.privateMessagesRestored} Private Space messages');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Private Space restore skipped: $e');
+      }
+      
       onProgress?.call('Restore complete!', 1.0);
       
       result.success = true;
@@ -235,11 +277,12 @@ class BackupResult {
   int journalEntriesBackedUp = 0;
   int goalsBackedUp = 0;
   int chatMessagesBackedUp = 0;
+  int privateMessagesBackedUp = 0;
   
-  int get totalItems => journalEntriesBackedUp + goalsBackedUp + chatMessagesBackedUp;
+  int get totalItems => journalEntriesBackedUp + goalsBackedUp + chatMessagesBackedUp + privateMessagesBackedUp;
   
   @override
-  String toString() => 'BackupResult(success: $success, total: $totalItems, error: $error)';
+  String toString() => 'BackupResult(success: $success, total: $totalItems, private: $privateMessagesBackedUp, error: $error)';
 }
 
 /// Result of a restore operation
@@ -249,9 +292,10 @@ class RestoreResult {
   int journalEntriesRestored = 0;
   int goalsRestored = 0;
   int chatMessagesRestored = 0;
+  int privateMessagesRestored = 0;
   
-  int get totalItems => journalEntriesRestored + goalsRestored + chatMessagesRestored;
+  int get totalItems => journalEntriesRestored + goalsRestored + chatMessagesRestored + privateMessagesRestored;
   
   @override
-  String toString() => 'RestoreResult(success: $success, total: $totalItems, error: $error)';
+  String toString() => 'RestoreResult(success: $success, total: $totalItems, private: $privateMessagesRestored, error: $error)';
 }

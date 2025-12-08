@@ -288,12 +288,14 @@ Communication Style:
     try {
       final provider = GrokProvider();
       
-      // Build conversation context as a prompt
+      // Build conversation context as a prompt (use more messages for better memory)
       final contextBuilder = StringBuffer();
-      for (final msg in recentMessages.take(10)) {
+      contextBuilder.writeln('Previous conversation (for context):');
+      for (final msg in recentMessages.take(50)) {
         final role = msg.isUser ? 'User' : avatar?.name ?? 'Luna';
         contextBuilder.writeln('$role: ${msg.content}');
       }
+      contextBuilder.writeln('');
       contextBuilder.writeln('User: $userMessage');
       
       final response = await provider.generateResponse(

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/theme/aureal_theme.dart';
 import 'package:sable/core/widgets/restart_widget.dart';
+import 'package:sable/features/private_space/services/private_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// More screen - provides access to Settings and other options
@@ -107,18 +108,18 @@ class MoreScreen extends StatelessWidget {
             context,
             icon: LucideIcons.trash2,
             title: 'Reset Private Space',
-            subtitle: 'Clear data for fresh onboarding test',
+            subtitle: 'COMPLETE data wipe for fresh onboarding',
             onTap: () async {
-              final prefs = await SharedPreferences.getInstance();
-              // Clear all Private Space preferences
-              await prefs.remove('private_space_pin');
-              await prefs.remove('private_space_pin_enabled');
-              await prefs.remove('private_space_biometric_enabled');
-              await prefs.remove('private_space_age_confirmed');
-              await prefs.remove('private_space_avatar');
+              // Nuclear option - delete EVERYTHING
+              final storage = await PrivateStorageService.getInstance();
+              await storage.deleteAllPrivateData();
+              
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('✅ Private Space reset! Go to Private Space to test fresh onboarding.')),
+                  const SnackBar(
+                    content: Text('🗑️ Private Space COMPLETELY reset! All data deleted. Go to Private Space for fresh onboarding.'),
+                    duration: Duration(seconds: 3),
+                  ),
                 );
               }
             },

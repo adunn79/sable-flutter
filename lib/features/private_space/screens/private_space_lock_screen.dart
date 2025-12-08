@@ -69,16 +69,18 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
 
     setState(() => _isLoading = false);
 
-    // If PIN not enabled AND avatar selected, go straight to content (after age gate)
-    if (!_pinEnabled && _ageConfirmed && _isPremium && _avatarSelected) {
-      setState(() => _isUnlocked = true);
+    // PIN is MANDATORY - only auto-unlock if PIN is already set AND enabled
+    // (This handles the case where user disabled PIN in settings after initial setup)
+    if (_pinEnabled && _ageConfirmed && _isPremium && _avatarSelected) {
+      // PIN exists, try biometric first
+      if (_biometricEnabled && _canUseBiometric) {
+        await _authenticateWithBiometric();
+      }
+      // Otherwise, will show PIN entry screen via build()
       return;
     }
-
-    // Try biometric first if enabled
-    if (_biometricEnabled && _canUseBiometric && _ageConfirmed && _isPremium) {
-      await _authenticateWithBiometric();
-    }
+    
+    // If PIN NOT set yet, build() will show the setup screen
   }
 
   Future<void> _authenticateWithBiometric() async {

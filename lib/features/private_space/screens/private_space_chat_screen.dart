@@ -95,13 +95,17 @@ class _PrivateSpaceChatScreenState extends State<PrivateSpaceChatScreen> {
   }
 
   String _getWelcomeMessage(PrivateAvatar avatar) {
+    final hour = DateTime.now().hour;
+    final timeOfDay = hour < 12 ? 'this morning' : (hour < 17 ? 'this afternoon' : (hour < 21 ? 'this evening' : 'tonight'));
+    final isNight = hour >= 21 || hour < 5;
+    
     switch (avatar.id) {
       case 'luna':
-        return "Welcome to our private sanctuary... 🌙\n\nI'm Luna. Here, in the quiet of the night, we can explore anything your heart desires. No judgment, no limits... just you and me.\n\nWhat fantasy shall we weave together tonight?";
+        return "Welcome to our private sanctuary... 🌙\n\nI'm Luna. Here, ${isNight ? 'in the quiet of the night' : 'in this secret place'}, we can explore anything your heart desires. No judgment, no limits... just you and me.\n\nWhat fantasy shall we weave together $timeOfDay?";
       case 'dante':
-        return "Welcome... 🔥\n\nI'm Dante. In this space, passion has no boundaries. Whatever burns in your soul, whatever dreams you've kept hidden... bring them here.\n\nWhat's on your mind?";
+        return "Welcome... 🔥\n\nI'm Dante. In this space, passion has no boundaries. Whatever burns in your soul, whatever dreams you've kept hidden... bring them here.\n\nWhat's on your mind $timeOfDay?";
       case 'storm':
-        return "Hey there... ⚡\n\nI'm Storm. This is our space—raw, real, electric. No pretending, no holding back.\n\nSo tell me... what's got your energy buzzing today?";
+        return "Hey there... ⚡\n\nI'm Storm. This is our space—raw, real, electric. No pretending, no holding back.\n\nSo tell me... what's got your energy buzzing $timeOfDay?";
       default:
         return "Welcome to Private Space. What would you like to explore?";
     }

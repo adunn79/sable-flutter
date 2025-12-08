@@ -420,29 +420,91 @@ class _PrivateAvatarCustomizeScreenState extends State<PrivateAvatarCustomizeScr
     }
     
     if (_availableVoices.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AurealColors.carbon,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          'Voice selection will use app default. You can change this in settings later.',
-          style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
-        ),
-      );
+      return _buildVoiceFallback('Loading voices... Check your connection.');
     }
     
-    return CascadingVoiceSelector(
-      voices: _availableVoices,
-      selectedVoiceId: _selectedVoiceId,
-      onVoiceSelected: (voiceId) => setState(() => _selectedVoiceId = voiceId),
-      onPlayPreview: () async {
-        if (_selectedVoiceId != null) {
-          await _voiceService.setVoice(_selectedVoiceId!);
-          await _voiceService.speak("Hello, I'm excited to explore this private sanctuary with you.");
-        }
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CascadingVoiceSelector(
+          voices: _availableVoices,
+          selectedVoiceId: _selectedVoiceId,
+          onVoiceSelected: (voiceId) => setState(() => _selectedVoiceId = voiceId),
+          onPlayPreview: () async {
+            if (_selectedVoiceId != null) {
+              await _voiceService.setVoice(_selectedVoiceId!);
+              await _voiceService.speak("Hello, I'm excited to explore this private sanctuary with you.");
+            }
+          },
+        ),
+        const SizedBox(height: 12),
+        // Skip option
+        GestureDetector(
+          onTap: () => setState(() => _selectedVoiceId = null),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: _selectedVoiceId == null 
+                  ? widget.selectedAvatar.accentColor.withOpacity(0.2)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _selectedVoiceId == null 
+                    ? widget.selectedAvatar.accentColor 
+                    : Colors.white24,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _selectedVoiceId == null ? LucideIcons.checkCircle : LucideIcons.circle,
+                  color: _selectedVoiceId == null 
+                      ? widget.selectedAvatar.accentColor 
+                      : Colors.white38,
+                  size: 18,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Use app default voice (can change in settings)',
+                    style: GoogleFonts.inter(
+                      color: _selectedVoiceId == null ? Colors.white : Colors.white60,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildVoiceFallback(String message) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AurealColors.carbon,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            message,
+            style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '✓ Will use app default voice.\nYou can change voice anytime in Settings.',
+            style: GoogleFonts.inter(
+              color: widget.selectedAvatar.accentColor,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

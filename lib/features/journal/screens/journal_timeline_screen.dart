@@ -7,6 +7,7 @@ import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
 import '../widgets/avatar_journal_overlay.dart';
 import 'journal_editor_screen.dart';
+import 'journal_calendar_screen.dart';
 
 /// Main journal screen showing timeline of entries
 class JournalTimelineScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class JournalTimelineScreen extends StatefulWidget {
 class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
   List<JournalBucket> _buckets = [];
   List<JournalEntry> _entries = [];
+  List<JournalEntry> _onThisDayEntries = []; // Entries from previous years on this date
   String? _selectedBucketId;
   String _searchQuery = '';
   bool _isLoading = true;
@@ -60,6 +62,9 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     _buckets = JournalStorageService.getAllBuckets();
+    
+    // Load "On This Day" entries from previous years
+    _onThisDayEntries = JournalStorageService.getOnThisDayEntries();
     
     if (_selectedBucketId != null) {
       _entries = JournalStorageService.getEntriesForBucket(_selectedBucketId!);
@@ -491,6 +496,92 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                   ),
                 ),
               
+              // "On This Day" memories card
+              if (_onThisDayEntries.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.amber.withOpacity(0.15), Colors.orange.withOpacity(0.08)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('✨', style: TextStyle(fontSize: 18)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'On This Day',
+                              style: TextStyle(
+                                color: Colors.amber[200],
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${_onThisDayEntries.length} ${_onThisDayEntries.length == 1 ? 'memory' : 'memories'}',
+                            style: TextStyle(color: Colors.amber.withOpacity(0.6), fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Show first entry preview
+                      GestureDetector(
+                        onTap: () => _openEditor(entryId: _onThisDayEntries.first.id),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  if (_onThisDayEntries.first.moodScore != null)
+                                    Text(_getMoodEmoji(_onThisDayEntries.first.moodScore), style: const TextStyle(fontSize: 18)),
+                                  if (_onThisDayEntries.first.moodScore != null)
+                                    const SizedBox(width: 8),
+                                  Text(
+                                    DateFormat('MMMM d, y').format(_onThisDayEntries.first.timestamp),
+                                    style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _onThisDayEntries.first.plainText.length > 120 
+                                  ? '${_onThisDayEntries.first.plainText.substring(0, 120)}...'
+                                  : _onThisDayEntries.first.plainText,
+                                style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (_onThisDayEntries.length > 1) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          '+ ${_onThisDayEntries.length - 1} more from past years',
+                          style: TextStyle(color: Colors.amber.withOpacity(0.5), fontSize: 11),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              
               // Entries list
               Expanded(
                 child: _isLoading
@@ -540,9 +631,10 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
             children: [
               _buildNavItem(LucideIcons.layoutList, 'Timeline', true, () {}),
               _buildNavItem(LucideIcons.calendar, 'Calendar', false, () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('📅 Calendar view coming soon!')),
-                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const JournalCalendarScreen()),
+                ).then((_) => _loadData());
               }),
               _buildNavItem(LucideIcons.folderOpen, 'Buckets', false, _showBucketPicker),
               _buildNavItem(LucideIcons.settings, 'Settings', false, _showJournalSettings),

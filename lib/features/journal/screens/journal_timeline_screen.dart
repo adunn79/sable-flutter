@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +11,14 @@ import '../widgets/avatar_journal_overlay.dart';
 import 'journal_editor_screen.dart';
 import 'journal_calendar_screen.dart';
 
+// Soothing color palette (matching Vital Balance)
+const Color _backgroundStart = Color(0xFF0D1B2A); // Deep navy
+const Color _backgroundMid = Color(0xFF1B263B);   // Slate blue
+const Color _backgroundEnd = Color(0xFF0D1B2A);   // Deep navy
+const Color _accentTeal = Color(0xFF5DD9C1);      // Soothing teal
+const Color _accentLavender = Color(0xFFB8A9D9);  // Soft lavender
+const Color _cardColor = Color(0xFF1E2D3D);       // Dark card
+
 /// Main journal screen showing timeline of entries
 class JournalTimelineScreen extends StatefulWidget {
   const JournalTimelineScreen({super.key});
@@ -19,6 +28,7 @@ class JournalTimelineScreen extends StatefulWidget {
 }
 
 class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
+  
   List<JournalBucket> _buckets = [];
   List<JournalEntry> _entries = [];
   List<JournalEntry> _onThisDayEntries = []; // Entries from previous years on this date
@@ -36,6 +46,9 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
   DateTime? _filterEndDate;
   bool _hasActiveFilters = false;
   
+  // Weather
+  String? _weatherTemp;
+  
   @override
   void initState() {
     super.initState();
@@ -48,6 +61,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
     setState(() {
       _archetype = prefs.getString('selected_archetype_id') ?? 'sable';
       _welcomeBannerHiddenPermanently = prefs.getBool('journal_welcome_hidden') ?? false;
+      _weatherTemp = prefs.getString('cached_weather_temp');
     });
   }
   
@@ -140,7 +154,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: _cardColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         padding: const EdgeInsets.all(24),
@@ -207,7 +221,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
           maxHeight: MediaQuery.of(context).size.height * 0.5,
         ),
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: _cardColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SingleChildScrollView(
@@ -273,146 +287,140 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
         : null;
     
     return Scaffold(
-      backgroundColor: const Color(0xFF050505),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false, // No back button - bottom nav handles this
-        title: GestureDetector(
-          onTap: _showBucketPicker,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (currentBucket != null) ...[
-                Text(currentBucket.icon, style: const TextStyle(fontSize: 20)),
-                const SizedBox(width: 8),
-              ],
-              Text(
-                currentBucket?.name ?? 'All Entries',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(width: 4),
-              const Icon(LucideIcons.chevronDown, color: Colors.white60, size: 18),
+      backgroundColor: _backgroundStart,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              _backgroundStart,
+              _backgroundMid,
+              _backgroundEnd,
             ],
+            stops: [0.0, 0.5, 1.0],
           ),
         ),
-        centerTitle: true,
-        actions: [
-          // Streak counter with tooltip
-          Tooltip(
-            message: 'Your journaling streak - days in a row!',
-            child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('🔥', style: TextStyle(fontSize: 14)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${JournalStorageService.getCurrentStreak()}',
-                    style: const TextStyle(
-                      color: Colors.orange,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Info button with gesture instructions
-          IconButton(
-            icon: Icon(LucideIcons.info, color: Colors.white.withOpacity(0.5), size: 20),
-            onPressed: _showJournalHelp,
-            tooltip: 'Journal Help',
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Column(
+        child: SafeArea(
+          child: Stack(
             children: [
-              // Welcome banner for new users (dismissible)
-              if (!_welcomeBannerDismissed && !_welcomeBannerHiddenPermanently)
-                Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.purple.withOpacity(0.2), Colors.blue.withOpacity(0.1)],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.purple.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Text('✨', style: TextStyle(fontSize: 20)),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'Welcome to Your Journal',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
+              Column(
+                children: [
+                  // Header - matching Vital Balance style
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        // Icon + Title (tappable for bucket picker)
+                        GestureDetector(
+                          onTap: _showBucketPicker,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(LucideIcons.bookOpen, color: _accentTeal, size: 22),
+                              const SizedBox(width: 10),
+                              Text(
+                                currentBucket?.name ?? 'Journal',
+                                style: GoogleFonts.spaceGrotesk(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                          ),
-                          // Dismiss button
-                          GestureDetector(
-                            onTap: () => _dismissWelcomeBanner(),
-                            child: Icon(LucideIcons.x, color: Colors.white.withOpacity(0.5), size: 18),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Tap + to write an entry. ${_archetype[0].toUpperCase()}${_archetype.substring(1)} can help with prompts and reflection!',
-                        style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '🔥 The flame shows your streak - journal daily to keep it going!',
-                        style: TextStyle(color: Colors.orange.withOpacity(0.8), fontSize: 12),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          _buildFeatureChip('👈 Swipe to delete'),
-                          _buildFeatureChip('👆🏻 Hold for options'),
-                          _buildFeatureChip('🎤 Voice dictate'),
-                          _buildFeatureChip('👁️ Privacy control'),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // Don't show again
-                      GestureDetector(
-                        onTap: () => _dismissWelcomeBanner(permanently: true),
-                        child: Text(
-                          "Don't show this again",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
-                            fontSize: 11,
-                            decoration: TextDecoration.underline,
+                              const SizedBox(width: 4),
+                              Icon(LucideIcons.chevronDown, color: Colors.white60, size: 16),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
+                        const Spacer(),
+                        // Streak badge (compact)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('🔥', style: TextStyle(fontSize: 14)),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${JournalStorageService.getCurrentStreak()}',
+                                style: GoogleFonts.spaceGrotesk(
+                                  color: Colors.orange,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Weather badge
+                        if (_weatherTemp != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.white10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.cloudSun, color: _accentTeal, size: 16),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _weatherTemp!.split(' ').first,
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        // Help button
+                        IconButton(
+                          icon: Icon(LucideIcons.helpCircle, color: Colors.white38, size: 20),
+                          onPressed: _showJournalHelp,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  // Welcome banner (simplified)
+                  if (!_welcomeBannerDismissed && !_welcomeBannerHiddenPermanently)
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: _cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _accentTeal.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(LucideIcons.sparkles, color: _accentTeal, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Tap + to write. Swipe entries to delete.',
+                              style: TextStyle(color: Colors.white70, fontSize: 13),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => _dismissWelcomeBanner(permanently: true),
+                            child: Icon(LucideIcons.x, color: Colors.white38, size: 16),
+                          ),
+                        ],
+                      ),
+                    ),
               
               // Search bar with filter button
               Padding(
@@ -429,9 +437,9 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                         decoration: InputDecoration(
                           hintText: 'Search entries, tags, locations...',
                           hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                          prefixIcon: Icon(LucideIcons.search, color: Colors.white.withOpacity(0.3)),
+                          prefixIcon: Icon(LucideIcons.search, color: _accentTeal.withOpacity(0.5)),
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.05),
+                          fillColor: _cardColor,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
@@ -446,13 +454,13 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _hasActiveFilters ? Colors.purple.withOpacity(0.3) : Colors.white.withOpacity(0.05),
+                          color: _hasActiveFilters ? _accentTeal.withOpacity(0.3) : _cardColor,
                           borderRadius: BorderRadius.circular(12),
-                          border: _hasActiveFilters ? Border.all(color: Colors.purple) : null,
+                          border: _hasActiveFilters ? Border.all(color: _accentTeal) : null,
                         ),
                         child: Icon(
                           LucideIcons.slidersHorizontal,
-                          color: _hasActiveFilters ? Colors.purple : Colors.white.withOpacity(0.5),
+                          color: _hasActiveFilters ? _accentTeal : Colors.white.withOpacity(0.5),
                           size: 20,
                         ),
                       ),
@@ -491,7 +499,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                         }),
                       GestureDetector(
                         onTap: _clearFilters,
-                        child: Text('Clear all', style: TextStyle(color: Colors.purple, fontSize: 12)),
+                        child: Text('Clear all', style: TextStyle(color: _accentTeal, fontSize: 12)),
                       ),
                     ],
                   ),
@@ -598,32 +606,42 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
             ],
           ),
           
-          // Avatar overlay
-          AvatarJournalOverlay(
-            isPrivate: false,
-            archetype: _archetype,
-            onSparkTap: null, // No spark on timeline
-            onAvatarTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Hi! Tap + to start journaling. I can help with prompts! 💜'),
-                  backgroundColor: Colors.purple[800],
-                ),
-              );
-            },
+          // Avatar overlay - positioned bottom-right to not cover text
+          Positioned(
+            bottom: 80, // Lower position to avoid overlapping empty state text
+            right: 16,
+            child: SizedBox(
+              width: 100,
+              height: 100,
+              child: AvatarJournalOverlay(
+                isPrivate: false,
+                archetype: _archetype,
+                onSparkTap: null, // No spark on timeline
+                onAvatarTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Hi! Tap + to start journaling. I can help with prompts! 💜'),
+                      backgroundColor: _accentLavender.withOpacity(0.9),
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
-        ],
+            ],
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openEditor(),
-        backgroundColor: Colors.white,
+        backgroundColor: _accentTeal,
         child: const Icon(LucideIcons.plus, color: Colors.black),
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.black,
-          border: Border(top: BorderSide(color: Colors.white.withOpacity(0.1))),
+          color: _backgroundStart,
+          border: Border(top: BorderSide(color: _accentTeal.withOpacity(0.2))),
         ),
         child: SafeArea(
           top: false,
@@ -656,7 +674,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
           maxHeight: MediaQuery.of(context).size.height * 0.6,
         ),
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: _cardColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SingleChildScrollView(
@@ -673,7 +691,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(LucideIcons.lock, color: Colors.purple),
+                leading: const Icon(LucideIcons.lock, color: _accentTeal),
                 title: const Text('Journal PIN', style: TextStyle(color: Colors.white)),
                 subtitle: Text('Change or remove PIN lock', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                 trailing: const Icon(LucideIcons.chevronRight, color: Colors.white30),
@@ -738,7 +756,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: _cardColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -747,7 +765,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
             const Text('🔐 PIN Settings', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             ListTile(
-              leading: const Icon(LucideIcons.keyRound, color: Colors.purple),
+              leading: const Icon(LucideIcons.keyRound, color: _accentTeal),
               title: const Text('Change PIN', style: TextStyle(color: Colors.white)),
               onTap: () async {
                 Navigator.pop(ctx);
@@ -792,7 +810,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: _cardColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -917,7 +935,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
           maxHeight: MediaQuery.of(context).size.height * 0.7,
         ),
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: _cardColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SingleChildScrollView(
@@ -951,9 +969,9 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isSelected ? Colors.purple.withOpacity(0.3) : Colors.white.withOpacity(0.05),
+                        color: isSelected ? _accentTeal.withOpacity(0.3) : Colors.white.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(12),
-                        border: isSelected ? Border.all(color: Colors.purple) : null,
+                        border: isSelected ? Border.all(color: _accentTeal) : null,
                       ),
                       child: Text(emoji, style: const TextStyle(fontSize: 24)),
                     ),
@@ -1064,7 +1082,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(ctx),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
+                      style: ElevatedButton.styleFrom(backgroundColor: _accentTeal),
                       child: const Text('Apply', style: TextStyle(color: Colors.white)),
                     ),
                   ),
@@ -1091,9 +1109,9 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.purple.withOpacity(0.2),
+        color: _accentTeal.withOpacity(0.2),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.purple.withOpacity(0.5)),
+        border: Border.all(color: _accentTeal.withOpacity(0.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1181,7 +1199,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [Colors.purple, Colors.deepPurple]),
+                    gradient: LinearGradient(colors: [_accentTeal, _accentLavender]),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -1204,9 +1222,10 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                 child: Text(
                   'or start writing now →',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.4), 
-                    fontSize: 12, 
+                    color: Colors.white.withOpacity(0.7), 
+                    fontSize: 14, 
                     decoration: TextDecoration.underline,
+                    decorationColor: Colors.white.withOpacity(0.5),
                   ),
                 ),
               ),
@@ -1365,7 +1384,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
     return await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: _cardColor,
         title: const Text('Delete Entry?', style: TextStyle(color: Colors.white)),
         content: Text(
           'This will permanently delete this journal entry.',
@@ -1396,7 +1415,7 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: _cardColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -1528,7 +1547,7 @@ class _AIJournalChatSheetState extends State<_AIJournalChatSheet> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: const Color(0xFF1E2D3D), // _cardColor
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -1549,7 +1568,7 @@ class _AIJournalChatSheetState extends State<_AIJournalChatSheet> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(LucideIcons.sparkles, color: Colors.purple, size: 20),
+                Icon(LucideIcons.sparkles, color: const Color(0xFF5DD9C1), size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Let\'s Talk First',
@@ -1579,7 +1598,7 @@ class _AIJournalChatSheetState extends State<_AIJournalChatSheet> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       children: [
-                        Text('💭 Thinking...', style: TextStyle(color: Colors.purple, fontStyle: FontStyle.italic)),
+                        Text('💭 Thinking...', style: TextStyle(color: const Color(0xFF5DD9C1), fontStyle: FontStyle.italic)),
                       ],
                     ),
                   );
@@ -1596,7 +1615,7 @@ class _AIJournalChatSheetState extends State<_AIJournalChatSheet> {
                       constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isUser ? Colors.purple.withOpacity(0.3) : Colors.white.withOpacity(0.1),
+                        color: isUser ? const Color(0xFF5DD9C1).withOpacity(0.3) : Colors.white.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
@@ -1620,7 +1639,7 @@ class _AIJournalChatSheetState extends State<_AIJournalChatSheet> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [Colors.purple, Colors.deepPurple]),
+                    gradient: LinearGradient(colors: [const Color(0xFF5DD9C1), const Color(0xFFB8A9D9)]),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -1660,7 +1679,7 @@ class _AIJournalChatSheetState extends State<_AIJournalChatSheet> {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(LucideIcons.send, color: Colors.purple),
+                  icon: Icon(LucideIcons.send, color: const Color(0xFF5DD9C1)),
                   onPressed: () => _sendMessage(_controller.text),
                 ),
               ],

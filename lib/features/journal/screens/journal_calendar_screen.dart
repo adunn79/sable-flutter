@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../core/theme/aureal_theme.dart';
 import '../services/journal_storage_service.dart';
 import '../models/journal_entry.dart';
 import 'journal_editor_screen.dart';
@@ -102,7 +104,7 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF050505),
+      backgroundColor: AurealColors.obsidian,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -122,8 +124,9 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: AurealColors.carbon,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.15)),
             ),
             child: TableCalendar<JournalEntry>(
               firstDay: DateTime(2020, 1, 1),
@@ -135,20 +138,20 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
               startingDayOfWeek: StartingDayOfWeek.sunday,
               calendarStyle: CalendarStyle(
                 outsideDaysVisible: false,
-                defaultTextStyle: const TextStyle(color: Colors.white),
-                weekendTextStyle: const TextStyle(color: Colors.white70),
+                defaultTextStyle: GoogleFonts.inter(color: Colors.white),
+                weekendTextStyle: GoogleFonts.inter(color: Colors.white70),
                 todayDecoration: BoxDecoration(
-                  color: Colors.cyan.withOpacity(0.3),
+                  color: AurealColors.plasmaCyan.withOpacity(0.3),
                   shape: BoxShape.circle,
                 ),
-                todayTextStyle: const TextStyle(color: Colors.cyan),
-                selectedDecoration: const BoxDecoration(
-                  color: Colors.cyan,
+                todayTextStyle: GoogleFonts.inter(color: AurealColors.plasmaCyan),
+                selectedDecoration: BoxDecoration(
+                  color: AurealColors.plasmaCyan,
                   shape: BoxShape.circle,
                 ),
-                selectedTextStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                markerDecoration: const BoxDecoration(
-                  color: Colors.purple,
+                selectedTextStyle: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold),
+                markerDecoration: BoxDecoration(
+                  color: AurealColors.hyperGold,
                   shape: BoxShape.circle,
                 ),
                 markersMaxCount: 3,
@@ -159,13 +162,13 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
                 formatButtonVisible: true,
                 titleCentered: true,
                 formatButtonDecoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: AurealColors.plasmaCyan.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                formatButtonTextStyle: const TextStyle(color: Colors.white, fontSize: 12),
-                leftChevronIcon: const Icon(LucideIcons.chevronLeft, color: Colors.white),
-                rightChevronIcon: const Icon(LucideIcons.chevronRight, color: Colors.white),
-                titleTextStyle: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600),
+                formatButtonTextStyle: GoogleFonts.inter(color: Colors.white, fontSize: 12),
+                leftChevronIcon: Icon(LucideIcons.chevronLeft, color: AurealColors.plasmaCyan),
+                rightChevronIcon: Icon(LucideIcons.chevronRight, color: AurealColors.plasmaCyan),
+                titleTextStyle: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600),
               ),
               daysOfWeekStyle: DaysOfWeekStyle(
                 weekdayStyle: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
@@ -234,12 +237,12 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.2),
+                      color: AurealColors.hyperGold.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '${_selectedDayEntries.length} ${_selectedDayEntries.length == 1 ? 'entry' : 'entries'}',
-                      style: const TextStyle(color: Colors.purple, fontSize: 12),
+                      style: GoogleFonts.inter(color: AurealColors.hyperGold, fontSize: 12),
                     ),
                   ),
               ],
@@ -262,8 +265,8 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openEditor(),
-        backgroundColor: Colors.white,
-        child: const Icon(LucideIcons.plus, color: Colors.black),
+        backgroundColor: AurealColors.plasmaCyan,
+        child: Icon(LucideIcons.plus, color: AurealColors.obsidian),
       ),
     );
   }
@@ -273,18 +276,18 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(LucideIcons.bookOpen, size: 48, color: Colors.white.withOpacity(0.2)),
+          Icon(LucideIcons.bookOpen, size: 48, color: AurealColors.plasmaCyan.withOpacity(0.3)),
           const SizedBox(height: 12),
           Text(
             'No entries for this day',
-            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 16),
+            style: GoogleFonts.inter(color: Colors.white.withOpacity(0.5), fontSize: 16),
           ),
           const SizedBox(height: 8),
           TextButton.icon(
             onPressed: () => _openEditor(),
-            icon: const Icon(LucideIcons.plus, size: 16),
-            label: const Text('Write one'),
-            style: TextButton.styleFrom(foregroundColor: Colors.cyan),
+            icon: Icon(LucideIcons.plus, size: 16, color: AurealColors.plasmaCyan),
+            label: Text('Write one', style: GoogleFonts.inter()),
+            style: TextButton.styleFrom(foregroundColor: AurealColors.plasmaCyan),
           ),
         ],
       ),
@@ -300,9 +303,9 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: AurealColors.carbon,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.15)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

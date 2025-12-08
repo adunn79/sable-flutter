@@ -2584,13 +2584,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: AurealColors.carbon, // Slate blue
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
+            border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.2)), // Subtle teal
           ),
           child: Row(
             children: [
-              Icon(icon, color: Colors.white, size: 16),
+              Icon(icon, color: AurealColors.plasmaCyan, size: 16), // Teal icon
               const SizedBox(width: 8),
               Text(
                 label,
@@ -2884,10 +2884,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+            color: AurealColors.carbon.withOpacity(0.9), // Slate blue
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+              color: AurealColors.plasmaCyan.withOpacity(0.2), // Teal border
             ),
           ),
           child: Column(
@@ -2927,7 +2927,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       LucideIcons.wand2,
                       color: _controller.text.isNotEmpty 
                           ? AurealColors.hyperGold 
-                          : (isDark ? Colors.white70 : Colors.grey[700]),
+                          : AurealColors.plasmaCyan.withOpacity(0.6),
                       size: 22,
                     ),
                   ),
@@ -2939,7 +2939,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       _isListening ? LucideIcons.micOff : LucideIcons.mic,
                       color: _isListening 
                           ? AurealColors.plasmaCyan 
-                          : (isDark ? Colors.white70 : Colors.grey[700]),
+                          : AurealColors.plasmaCyan.withOpacity(0.6),
                       size: 22,
                     ),
                   ),
@@ -2952,8 +2952,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     child: Icon(
                       _isMuted ? LucideIcons.volumeX : LucideIcons.volume2,
                       color: _isMuted 
-                          ? Colors.red 
-                          : (isDark ? Colors.white70 : Colors.grey[700]),
+                          ? AurealColors.warningAmber 
+                          : AurealColors.plasmaCyan.withOpacity(0.6),
                       size: 22,
                     ),
                   ),
@@ -2963,7 +2963,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     onTap: () => _showInputIconsHelp(isDark),
                     child: Icon(
                       LucideIcons.info,
-                      color: isDark ? Colors.white38 : Colors.grey[500],
+                      color: AurealColors.plasmaCyan.withOpacity(0.4),
                       size: 18,
                     ),
                   ),

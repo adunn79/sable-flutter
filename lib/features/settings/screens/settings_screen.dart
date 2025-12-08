@@ -421,6 +421,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _persistentMemoryEnabled = prefs.getBool('persistent_memory_enabled') ?? true;
       _appleIntelligenceEnabled = prefs.getBool('apple_intelligence_enabled') ?? false;
       
+      // Load App Experience Settings
+      _startOnLastTab = prefs.getBool('start_on_last_tab') ?? false;
+      
       // Load News Settings
       _newsEnabled = stateService.newsEnabled;
 
@@ -693,6 +696,863 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                    _buildBondSliderRow(),
                    _buildIntelligenceSliderRow(),
                 ]
+             ),
+             
+             // Chat Appearance Section
+             Padding(
+               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+               child: Theme(
+                 data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                 child: ExpansionTile(
+                   initiallyExpanded: false,
+                   tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                   backgroundColor: AurealColors.carbon,
+                   collapsedBackgroundColor: AurealColors.carbon,
+                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                   collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                   leading: const Icon(Icons.palette_outlined, color: AurealColors.hyperGold),
+                   title: Text(
+                     'CHAT APPEARANCE',
+                     style: GoogleFonts.spaceGrotesk(
+                       color: AurealColors.hyperGold,
+                       fontSize: 14,
+                       fontWeight: FontWeight.bold,
+                       letterSpacing: 1.5,
+                     ),
+                   ),
+                   subtitle: Text(
+                     'Customize avatar and background',
+                     style: GoogleFonts.inter(color: Colors.white54, fontSize: 11),
+                   ),
+                   children: [
+                     // Avatar Selection (Sable, Kai, Echo)
+                     Container(
+                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                       padding: const EdgeInsets.all(16),
+                       decoration: BoxDecoration(
+                         color: AurealColors.obsidian,
+                         borderRadius: BorderRadius.circular(12),
+                       ),
+                       child: Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           Text(
+                             'Avatar',
+                             style: GoogleFonts.spaceGrotesk(
+                               color: Colors.white,
+                               fontSize: 14,
+                               fontWeight: FontWeight.w600,
+                             ),
+                           ),
+                           const SizedBox(height: 12),
+                           Row(
+                             children: [
+                               // Sable (Female)
+                               Expanded(
+                                 child: GestureDetector(
+                                   onTap: () async {
+                                     ref.read(buttonSoundServiceProvider).playMediumTap();
+                                     final stateService = await OnboardingStateService.create();
+                                     final previousArchetype = _selectedArchetypeId.toLowerCase();
+                                     await stateService.setArchetypeId('sable');
+                                     // Only change voice when switching FROM male (Kai) to female
+                                     if (previousArchetype == 'kai') {
+                                       final aiOrigin = stateService.aiOrigin ?? 'United States';
+                                       final femaleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'female');
+                                       if (femaleVoice != null) {
+                                         await _voiceService.setVoice(femaleVoice);
+                                         setState(() {
+                                           _selectedArchetypeId = 'sable';
+                                           _selectedVoiceId = femaleVoice;
+                                         });
+                                         return;
+                                       }
+                                     }
+                                     setState(() {
+                                       _selectedArchetypeId = 'sable';
+                                     });
+                                   },
+                                   child: Container(
+                                     padding: const EdgeInsets.symmetric(vertical: 12),
+                                     decoration: BoxDecoration(
+                                       color: _selectedArchetypeId.toLowerCase() == 'sable'
+                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           : Colors.transparent,
+                                       border: Border.all(
+                                         color: _selectedArchetypeId.toLowerCase() == 'sable'
+                                             ? AurealColors.hyperGold
+                                             : Colors.white24,
+                                         width: 2,
+                                       ),
+                                       borderRadius: BorderRadius.circular(8),
+                                     ),
+                                     child: Column(
+                                       children: [
+                                         ClipRRect(
+                                           borderRadius: BorderRadius.circular(20),
+                                           child: (_savedAvatarArchetype?.toLowerCase() == 'sable' && _customAvatarUrl != null)
+                                             ? Image.network(
+                                                 _customAvatarUrl!,
+                                                 width: 40,
+                                                 height: 40,
+                                                 fit: BoxFit.cover,
+                                                 errorBuilder: (context, error, stack) => Image.asset(
+                                                   'assets/images/archetypes/sable.png',
+                                                   width: 40,
+                                                   height: 40,
+                                                   fit: BoxFit.cover,
+                                                 ),
+                                               )
+                                             : Image.asset(
+                                                 'assets/images/archetypes/sable.png',
+                                                 width: 40,
+                                                 height: 40,
+                                                 fit: BoxFit.cover,
+                                               ),
+                                         ),
+                                         const SizedBox(height: 4),
+                                         Text(
+                                           'Sable',
+                                           style: GoogleFonts.inter(
+                                             color: _selectedArchetypeId.toLowerCase() == 'sable'
+                                                 ? AurealColors.hyperGold
+                                                 : Colors.white70,
+                                             fontWeight: FontWeight.w600,
+                                             fontSize: 12,
+                                           ),
+                                         ),
+                                       ],
+                                     ),
+                                   ),
+                                 ),
+                               ),
+                               const SizedBox(width: 12),
+                               // Kai (Male)
+                               Expanded(
+                                 child: GestureDetector(
+                                   onTap: () async {
+                                     ref.read(buttonSoundServiceProvider).playMediumTap();
+                                     final stateService = await OnboardingStateService.create();
+                                     final previousArchetype = _selectedArchetypeId.toLowerCase();
+                                     await stateService.setArchetypeId('kai');
+                                     // Only change voice when switching FROM female (Sable/Echo) to male
+                                     if (previousArchetype == 'sable' || previousArchetype == 'echo') {
+                                       final aiOrigin = stateService.aiOrigin ?? 'United States';
+                                       final maleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'male');
+                                       if (maleVoice != null) {
+                                         await _voiceService.setVoice(maleVoice);
+                                         setState(() {
+                                           _selectedArchetypeId = 'kai';
+                                           _selectedVoiceId = maleVoice;
+                                         });
+                                         return;
+                                       }
+                                     }
+                                     setState(() {
+                                       _selectedArchetypeId = 'kai';
+                                     });
+                                   },
+                                   child: Container(
+                                     padding: const EdgeInsets.symmetric(vertical: 12),
+                                     decoration: BoxDecoration(
+                                       color: _selectedArchetypeId.toLowerCase() == 'kai'
+                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           : Colors.transparent,
+                                       border: Border.all(
+                                         color: _selectedArchetypeId.toLowerCase() == 'kai'
+                                             ? AurealColors.hyperGold
+                                             : Colors.white24,
+                                         width: 2,
+                                       ),
+                                       borderRadius: BorderRadius.circular(8),
+                                     ),
+                                     child: Column(
+                                       children: [
+                                         ClipRRect(
+                                           borderRadius: BorderRadius.circular(20),
+                                           child: (_savedAvatarArchetype?.toLowerCase() == 'kai' && _customAvatarUrl != null)
+                                             ? Image.network(
+                                                 _customAvatarUrl!,
+                                                 width: 40,
+                                                 height: 40,
+                                                 fit: BoxFit.cover,
+                                                 errorBuilder: (context, error, stack) => Image.asset(
+                                                   'assets/images/archetypes/kai.png',
+                                                   width: 40,
+                                                   height: 40,
+                                                   fit: BoxFit.cover,
+                                                 ),
+                                               )
+                                             : Image.asset(
+                                                 'assets/images/archetypes/kai.png',
+                                                 width: 40,
+                                                 height: 40,
+                                                 fit: BoxFit.cover,
+                                               ),
+                                         ),
+                                         const SizedBox(height: 4),
+                                         Text(
+                                           'Kai',
+                                           style: GoogleFonts.inter(
+                                             color: _selectedArchetypeId.toLowerCase() == 'kai'
+                                                 ? AurealColors.hyperGold
+                                                 : Colors.white70,
+                                             fontWeight: FontWeight.w600,
+                                             fontSize: 12,
+                                           ),
+                                         ),
+                                       ],
+                                     ),
+                                   ),
+                                 ),
+                               ),
+                               const SizedBox(width: 12),
+                               // Echo (Female)
+                               Expanded(
+                                 child: GestureDetector(
+                                   onTap: () async {
+                                     ref.read(buttonSoundServiceProvider).playMediumTap();
+                                     final stateService = await OnboardingStateService.create();
+                                     final previousArchetype = _selectedArchetypeId.toLowerCase();
+                                     await stateService.setArchetypeId('echo');
+                                     // Only change voice when switching FROM male (Kai) to female
+                                     if (previousArchetype == 'kai') {
+                                       final aiOrigin = stateService.aiOrigin ?? 'United States';
+                                       final femaleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'female');
+                                       if (femaleVoice != null) {
+                                         await _voiceService.setVoice(femaleVoice);
+                                         setState(() {
+                                           _selectedArchetypeId = 'echo';
+                                           _selectedVoiceId = femaleVoice;
+                                         });
+                                         return;
+                                       }
+                                     }
+                                     setState(() {
+                                       _selectedArchetypeId = 'echo';
+                                     });
+                                   },
+                                   child: Container(
+                                     padding: const EdgeInsets.symmetric(vertical: 12),
+                                     decoration: BoxDecoration(
+                                       color: _selectedArchetypeId.toLowerCase() == 'echo'
+                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           : Colors.transparent,
+                                       border: Border.all(
+                                         color: _selectedArchetypeId.toLowerCase() == 'echo'
+                                             ? AurealColors.hyperGold
+                                             : Colors.white24,
+                                         width: 2,
+                                       ),
+                                       borderRadius: BorderRadius.circular(8),
+                                     ),
+                                     child: Column(
+                                       children: [
+                                         ClipRRect(
+                                           borderRadius: BorderRadius.circular(20),
+                                           child: (_savedAvatarArchetype?.toLowerCase() == 'echo' && _customAvatarUrl != null)
+                                             ? Image.network(
+                                                 _customAvatarUrl!,
+                                                 width: 40,
+                                                 height: 40,
+                                                 fit: BoxFit.cover,
+                                                 errorBuilder: (context, error, stack) => Image.asset(
+                                                   'assets/images/archetypes/echo.png',
+                                                   width: 40,
+                                                   height: 40,
+                                                   fit: BoxFit.cover,
+                                                 ),
+                                               )
+                                             : Image.asset(
+                                                 'assets/images/archetypes/echo.png',
+                                                 width: 40,
+                                                 height: 40,
+                                                 fit: BoxFit.cover,
+                                               ),
+                                         ),
+                                         const SizedBox(height: 4),
+                                         Text(
+                                           'Echo',
+                                           style: GoogleFonts.inter(
+                                             color: _selectedArchetypeId.toLowerCase() == 'echo'
+                                                 ? AurealColors.hyperGold
+                                                 : Colors.white70,
+                                             fontWeight: FontWeight.w600,
+                                             fontSize: 12,
+                                           ),
+                                         ),
+                                       ],
+                                     ),
+                                   ),
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ],
+                       ),
+                     ),
+                     // Avatar Display Mode Toggle
+                     Container(
+                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                       padding: const EdgeInsets.all(16),
+                       decoration: BoxDecoration(
+                         color: AurealColors.obsidian,
+                         borderRadius: BorderRadius.circular(12),
+                       ),
+                       child: Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           Text(
+                             'Avatar Display Mode',
+                             style: GoogleFonts.spaceGrotesk(
+                               color: Colors.white,
+                               fontSize: 14,
+                               fontWeight: FontWeight.w600,
+                             ),
+                           ),
+                           const SizedBox(height: 12),
+                           // Row 1: Full Screen, Icon, Orb
+                           Row(
+                             children: [
+                               Expanded(
+                                 child: GestureDetector(
+                                   onTap: () async {
+                                     ref.read(buttonSoundServiceProvider).playMediumTap();
+                                     final avatarSettings = AvatarDisplaySettings();
+                                     await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeFullscreen);
+                                     setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeFullscreen);
+                                   },
+                                   child: Container(
+                                     padding: const EdgeInsets.symmetric(vertical: 12),
+                                     decoration: BoxDecoration(
+                                       color: _avatarDisplayMode == AvatarDisplaySettings.modeFullscreen
+                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           : Colors.transparent,
+                                       border: Border.all(
+                                         color: _avatarDisplayMode == AvatarDisplaySettings.modeFullscreen
+                                             ? AurealColors.hyperGold
+                                             : Colors.white24,
+                                         width: 2,
+                                       ),
+                                       borderRadius: BorderRadius.circular(8),
+                                     ),
+                                     child: Center(
+                                       child: Text(
+                                         'Full Screen',
+                                         style: GoogleFonts.inter(
+                                           color: _avatarDisplayMode == AvatarDisplaySettings.modeFullscreen
+                                               ? AurealColors.hyperGold
+                                               : Colors.white70,
+                                           fontWeight: FontWeight.w600,
+                                           fontSize: 13,
+                                         ),
+                                       ),
+                                     ),
+                                   ),
+                                 ),
+                               ),
+                               const SizedBox(width: 12),
+                               Expanded(
+                                 child: GestureDetector(
+                                   onTap: () async {
+                                     ref.read(buttonSoundServiceProvider).playMediumTap();
+                                     final avatarSettings = AvatarDisplaySettings();
+                                     await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeIcon);
+                                     setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeIcon);
+                                   },
+                                   child: Container(
+                                     padding: const EdgeInsets.symmetric(vertical: 12),
+                                     decoration: BoxDecoration(
+                                       color: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
+                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           : Colors.transparent,
+                                       border: Border.all(
+                                         color: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
+                                             ? AurealColors.hyperGold
+                                             : Colors.white24,
+                                         width: 2,
+                                       ),
+                                       borderRadius: BorderRadius.circular(8),
+                                     ),
+                                     child: Center(
+                                       child: Text(
+                                         'Icon',
+                                         style: GoogleFonts.inter(
+                                           color: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
+                                               ? AurealColors.hyperGold
+                                               : Colors.white70,
+                                           fontWeight: FontWeight.w600,
+                                           fontSize: 13,
+                                         ),
+                                       ),
+                                     ),
+                                   ),
+                                 ),
+                               ),
+                               const SizedBox(width: 12),
+                               Expanded(
+                                 child: GestureDetector(
+                                   onTap: () async {
+                                     ref.read(buttonSoundServiceProvider).playMediumTap();
+                                     final avatarSettings = AvatarDisplaySettings();
+                                     await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeOrb);
+                                     setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeOrb);
+                                   },
+                                   child: Container(
+                                     padding: const EdgeInsets.symmetric(vertical: 12),
+                                     decoration: BoxDecoration(
+                                       color: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
+                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           : Colors.transparent,
+                                       border: Border.all(
+                                         color: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
+                                             ? AurealColors.hyperGold
+                                             : Colors.white24,
+                                         width: 2,
+                                       ),
+                                       borderRadius: BorderRadius.circular(8),
+                                     ),
+                                     child: Center(
+                                       child: Text(
+                                         'Orb',
+                                         style: GoogleFonts.inter(
+                                           color: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
+                                               ? AurealColors.hyperGold
+                                               : Colors.white70,
+                                           fontWeight: FontWeight.w600,
+                                           fontSize: 13,
+                                         ),
+                                       ),
+                                     ),
+                                   ),
+                                 ),
+                               ),
+                             ],
+                           ),
+                           const SizedBox(height: 8),
+                           // Row 2: Portrait, Chat
+                           Row(
+                             children: [
+                               Expanded(
+                                 child: GestureDetector(
+                                   onTap: () async {
+                                     ref.read(buttonSoundServiceProvider).playMediumTap();
+                                     final avatarSettings = AvatarDisplaySettings();
+                                     await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modePortrait);
+                                     setState(() => _avatarDisplayMode = AvatarDisplaySettings.modePortrait);
+                                   },
+                                   child: Container(
+                                     padding: const EdgeInsets.symmetric(vertical: 12),
+                                     decoration: BoxDecoration(
+                                       color: _avatarDisplayMode == AvatarDisplaySettings.modePortrait
+                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           : Colors.transparent,
+                                       border: Border.all(
+                                         color: _avatarDisplayMode == AvatarDisplaySettings.modePortrait
+                                             ? AurealColors.hyperGold
+                                             : Colors.white24,
+                                         width: 2,
+                                       ),
+                                       borderRadius: BorderRadius.circular(8),
+                                     ),
+                                     child: Center(
+                                       child: Text(
+                                         'Portrait',
+                                         style: GoogleFonts.inter(
+                                           color: _avatarDisplayMode == AvatarDisplaySettings.modePortrait
+                                               ? AurealColors.hyperGold
+                                               : Colors.white70,
+                                           fontWeight: FontWeight.w600,
+                                           fontSize: 13,
+                                         ),
+                                       ),
+                                     ),
+                                   ),
+                                 ),
+                               ),
+                               const SizedBox(width: 12),
+                               Expanded(
+                                 child: GestureDetector(
+                                   onTap: () async {
+                                     ref.read(buttonSoundServiceProvider).playMediumTap();
+                                     final avatarSettings = AvatarDisplaySettings();
+                                     await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeConversation);
+                                     setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeConversation);
+                                   },
+                                   child: Container(
+                                     padding: const EdgeInsets.symmetric(vertical: 12),
+                                     decoration: BoxDecoration(
+                                       color: _avatarDisplayMode == AvatarDisplaySettings.modeConversation
+                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           : Colors.transparent,
+                                       border: Border.all(
+                                         color: _avatarDisplayMode == AvatarDisplaySettings.modeConversation
+                                             ? AurealColors.hyperGold
+                                             : Colors.white24,
+                                         width: 2,
+                                       ),
+                                       borderRadius: BorderRadius.circular(8),
+                                     ),
+                                     child: Center(
+                                       child: Text(
+                                         'Chat',
+                                         style: GoogleFonts.inter(
+                                           color: _avatarDisplayMode == AvatarDisplaySettings.modeConversation
+                                               ? AurealColors.hyperGold
+                                               : Colors.white70,
+                                           fontWeight: FontWeight.w600,
+                                           fontSize: 13,
+                                         ),
+                                       ),
+                                     ),
+                                   ),
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ],
+                       ),
+                     ),
+                     
+                     // CLOCK MODE (separate section)
+                     Container(
+                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                       padding: const EdgeInsets.all(16),
+                       decoration: BoxDecoration(
+                         color: AurealColors.obsidian,
+                         borderRadius: BorderRadius.circular(12),
+                       ),
+                       child: Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           Text(
+                             'CLOCK MODE',
+                             style: GoogleFonts.spaceGrotesk(
+                               color: Colors.white,
+                               fontSize: 14,
+                               fontWeight: FontWeight.w600,
+                             ),
+                           ),
+                           const SizedBox(height: 12),
+                           GestureDetector(
+                             onTap: () async {
+                               ref.read(buttonSoundServiceProvider).playMediumTap();
+                               final avatarSettings = AvatarDisplaySettings();
+                               await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeClock);
+                               setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeClock);
+                             },
+                             child: Container(
+                               padding: const EdgeInsets.symmetric(vertical: 12),
+                               decoration: BoxDecoration(
+                                 color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
+                                     ? AurealColors.hyperGold.withOpacity(0.2)
+                                     : Colors.transparent,
+                                 border: Border.all(
+                                   color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
+                                       ? AurealColors.hyperGold
+                                       : Colors.white24,
+                                   width: 2,
+                                 ),
+                                 borderRadius: BorderRadius.circular(8),
+                               ),
+                               child: Center(
+                                 child: Text(
+                                   'Clock',
+                                   style: GoogleFonts.inter(
+                                     color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
+                                         ? AurealColors.hyperGold
+                                         : Colors.white70,
+                                     fontWeight: FontWeight.w600,
+                                     fontSize: 13,
+                                   ),
+                                 ),
+                               ),
+                             ),
+                           ),
+                         ],
+                       ),
+                     ),
+                     
+                     // Background Color Selector (shown in Icon, Orb, and Portrait modes)
+                     if (_avatarDisplayMode == AvatarDisplaySettings.modeIcon ||
+                         _avatarDisplayMode == AvatarDisplaySettings.modeOrb ||
+                         _avatarDisplayMode == AvatarDisplaySettings.modePortrait)
+                       Container(
+                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                         padding: const EdgeInsets.all(16),
+                         decoration: BoxDecoration(
+                           color: AurealColors.obsidian,
+                           borderRadius: BorderRadius.circular(12),
+                         ),
+                         child: Column(
+                           crossAxisAlignment: CrossAxisAlignment.start,
+                           children: [
+                             Text(
+                               'Background Color',
+                               style: GoogleFonts.spaceGrotesk(
+                                 color: Colors.white,
+                                 fontSize: 14,
+                                 fontWeight: FontWeight.w600,
+                               ),
+                             ),
+                             const SizedBox(height: 12),
+                             Row(
+                               children: [
+                                 Expanded(
+                                   child: GestureDetector(
+                                     onTap: () async {
+                                       ref.read(buttonSoundServiceProvider).playMediumTap();
+                                       final avatarSettings = AvatarDisplaySettings();
+                                       await avatarSettings.setBackgroundColor(AvatarDisplaySettings.colorBlack);
+                                       setState(() => _backgroundColor = AvatarDisplaySettings.colorBlack);
+                                     },
+                                     child: Container(
+                                       padding: const EdgeInsets.symmetric(vertical: 12),
+                                       decoration: BoxDecoration(
+                                         color: Colors.black,
+                                         border: Border.all(
+                                           color: _backgroundColor == AvatarDisplaySettings.colorBlack
+                                               ? AurealColors.hyperGold
+                                               : Colors.white24,
+                                           width: 2,
+                                         ),
+                                         borderRadius: BorderRadius.circular(8),
+                                       ),
+                                       child: Center(
+                                         child: Text(
+                                           'Black',
+                                           style: GoogleFonts.inter(
+                                             color: Colors.white,
+                                             fontWeight: FontWeight.w600,
+                                           ),
+                                         ),
+                                       ),
+                                     ),
+                                   ),
+                                 ),
+                                 const SizedBox(width: 12),
+                                 Expanded(
+                                   child: GestureDetector(
+                                     onTap: () async {
+                                       ref.read(buttonSoundServiceProvider).playMediumTap();
+                                       final avatarSettings = AvatarDisplaySettings();
+                                       await avatarSettings.setBackgroundColor(AvatarDisplaySettings.colorWhite);
+                                       setState(() => _backgroundColor = AvatarDisplaySettings.colorWhite);
+                                     },
+                                     child: Container(
+                                       padding: const EdgeInsets.symmetric(vertical: 12),
+                                       decoration: BoxDecoration(
+                                         color: Colors.white,
+                                         border: Border.all(
+                                           color: _backgroundColor == AvatarDisplaySettings.colorWhite
+                                               ? AurealColors.hyperGold
+                                               : Colors.black26,
+                                           width: 2,
+                                         ),
+                                         borderRadius: BorderRadius.circular(8),
+                                       ),
+                                       child: Center(
+                                         child: Text(
+                                           'White',
+                                           style: GoogleFonts.inter(
+                                             color: Colors.black,
+                                             fontWeight: FontWeight.w600,
+                                           ),
+                                         ),
+                                       ),
+                                     ),
+                                   ),
+                                 ),
+                               ],
+                             ),
+                           ],
+                         ),
+                       ),
+
+                     // Clock Settings (shown only in Clock mode)
+                     if (_avatarDisplayMode == AvatarDisplaySettings.modeClock)
+                       Container(
+                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                         padding: const EdgeInsets.all(16),
+                         decoration: BoxDecoration(
+                           color: AurealColors.obsidian,
+                           borderRadius: BorderRadius.circular(12),
+                         ),
+                         child: Column(
+                           crossAxisAlignment: CrossAxisAlignment.start,
+                           children: [
+                             Text(
+                               'Clock Settings',
+                               style: GoogleFonts.spaceGrotesk(
+                                 color: Colors.white,
+                                 fontSize: 16,
+                                 fontWeight: FontWeight.w600,
+                               ),
+                             ),
+                             const SizedBox(height: 16),
+                             // 12hr / 24hr toggle
+                             Row(
+                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                               children: [
+                                 Text(
+                                   'Time Format',
+                                   style: GoogleFonts.inter(
+                                     color: Colors.white70,
+                                     fontSize: 14,
+                                   ),
+                                 ),
+                                 Row(
+                                   children: [
+                                     GestureDetector(
+                                       onTap: () async {
+                                         ref.read(buttonSoundServiceProvider).playMediumTap();
+                                         final prefs = await SharedPreferences.getInstance();
+                                         await prefs.setBool('clock_use_24hour', false);
+                                         setState(() => _clockUse24Hour = false);
+                                       },
+                                       child: Container(
+                                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                         decoration: BoxDecoration(
+                                           color: !_clockUse24Hour
+                                               ? AurealColors.hyperGold.withOpacity(0.2)
+                                               : Colors.transparent,
+                                           border: Border.all(
+                                             color: !_clockUse24Hour
+                                                 ? AurealColors.hyperGold
+                                                 : Colors.white24,
+                                           ),
+                                           borderRadius: BorderRadius.circular(6),
+                                         ),
+                                         child: Text(
+                                           '12hr',
+                                           style: GoogleFonts.inter(
+                                             color: !_clockUse24Hour ? AurealColors.hyperGold : Colors.white54,
+                                             fontWeight: FontWeight.w600,
+                                             fontSize: 12,
+                                           ),
+                                         ),
+                                       ),
+                                     ),
+                                     const SizedBox(width: 8),
+                                     GestureDetector(
+                                       onTap: () async {
+                                         ref.read(buttonSoundServiceProvider).playMediumTap();
+                                         final prefs = await SharedPreferences.getInstance();
+                                         await prefs.setBool('clock_use_24hour', true);
+                                         setState(() => _clockUse24Hour = true);
+                                       },
+                                       child: Container(
+                                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                         decoration: BoxDecoration(
+                                           color: _clockUse24Hour
+                                               ? AurealColors.hyperGold.withOpacity(0.2)
+                                               : Colors.transparent,
+                                           border: Border.all(
+                                             color: _clockUse24Hour
+                                                 ? AurealColors.hyperGold
+                                                 : Colors.white24,
+                                           ),
+                                           borderRadius: BorderRadius.circular(6),
+                                         ),
+                                         child: Text(
+                                           '24hr',
+                                           style: GoogleFonts.inter(
+                                             color: _clockUse24Hour ? AurealColors.hyperGold : Colors.white54,
+                                             fontWeight: FontWeight.w600,
+                                             fontSize: 12,
+                                           ),
+                                         ),
+                                       ),
+                                     ),
+                                   ],
+                                 ),
+                               ],
+                             ),
+                             const SizedBox(height: 16),
+                             // Digital / Analog toggle
+                             Row(
+                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                               children: [
+                                 Text(
+                                   'Clock Style',
+                                   style: GoogleFonts.inter(
+                                     color: Colors.white70,
+                                     fontSize: 14,
+                                   ),
+                                 ),
+                                 Row(
+                                   children: [
+                                     GestureDetector(
+                                       onTap: () async {
+                                         ref.read(buttonSoundServiceProvider).playMediumTap();
+                                         final prefs = await SharedPreferences.getInstance();
+                                         await prefs.setBool('clock_is_analog', false);
+                                         setState(() => _clockIsAnalog = false);
+                                       },
+                                       child: Container(
+                                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                         decoration: BoxDecoration(
+                                           color: !_clockIsAnalog
+                                               ? AurealColors.hyperGold.withOpacity(0.2)
+                                               : Colors.transparent,
+                                           border: Border.all(
+                                             color: !_clockIsAnalog
+                                                 ? AurealColors.hyperGold
+                                                 : Colors.white24,
+                                           ),
+                                           borderRadius: BorderRadius.circular(6),
+                                         ),
+                                         child: Text(
+                                           'Digital',
+                                           style: GoogleFonts.inter(
+                                             color: !_clockIsAnalog ? AurealColors.hyperGold : Colors.white54,
+                                             fontWeight: FontWeight.w600,
+                                             fontSize: 12,
+                                           ),
+                                         ),
+                                       ),
+                                     ),
+                                     const SizedBox(width: 8),
+                                     GestureDetector(
+                                       onTap: () async {
+                                         ref.read(buttonSoundServiceProvider).playMediumTap();
+                                         final prefs = await SharedPreferences.getInstance();
+                                         await prefs.setBool('clock_is_analog', true);
+                                         setState(() => _clockIsAnalog = true);
+                                       },
+                                       child: Container(
+                                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                         decoration: BoxDecoration(
+                                           color: _clockIsAnalog
+                                               ? AurealColors.hyperGold.withOpacity(0.2)
+                                               : Colors.transparent,
+                                           border: Border.all(
+                                             color: _clockIsAnalog
+                                                 ? AurealColors.hyperGold
+                                                 : Colors.white24,
+                                           ),
+                                           borderRadius: BorderRadius.circular(6),
+                                         ),
+                                         child: Text(
+                                           'Analog',
+                                           style: GoogleFonts.inter(
+                                             color: _clockIsAnalog ? AurealColors.hyperGold : Colors.white54,
+                                             fontWeight: FontWeight.w600,
+                                             fontSize: 12,
+                                           ),
+                                         ),
+                                       ),
+                                     ),
+                                   ],
+                                 ),
+                               ],
+                             ),
+                           ],
+                         ),
+                       ),
+                   ],
+                 ),
+               ),
              ),
              
              // 3. Daily Life

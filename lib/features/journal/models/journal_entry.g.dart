@@ -40,13 +40,22 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       nowPlayingArtist: fields[20] as String?,
       weightLbs: fields[21] as double?,
       heartRate: fields[22] as int?,
+      taggedPeople: (fields[23] as List).cast<String>(),
+      isGroupActivity: fields[24] as bool,
+      energyLevel: fields[25] as int?,
+      vibeColor: fields[26] as String?,
+      ambientDescription: fields[27] as String?,
+      topHeadline: fields[28] as String?,
+      onThisDay: fields[29] as String?,
+      sleepHours: fields[30] as int?,
+      oneSentenceSummary: fields[31] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, JournalEntry obj) {
     writer
-      ..writeByte(23)
+      ..writeByte(32)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -92,7 +101,25 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       ..writeByte(21)
       ..write(obj.weightLbs)
       ..writeByte(22)
-      ..write(obj.heartRate);
+      ..write(obj.heartRate)
+      ..writeByte(23)
+      ..write(obj.taggedPeople)
+      ..writeByte(24)
+      ..write(obj.isGroupActivity)
+      ..writeByte(25)
+      ..write(obj.energyLevel)
+      ..writeByte(26)
+      ..write(obj.vibeColor)
+      ..writeByte(27)
+      ..write(obj.ambientDescription)
+      ..writeByte(28)
+      ..write(obj.topHeadline)
+      ..writeByte(29)
+      ..write(obj.onThisDay)
+      ..writeByte(30)
+      ..write(obj.sleepHours)
+      ..writeByte(31)
+      ..write(obj.oneSentenceSummary);
   }
 
   @override

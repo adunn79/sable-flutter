@@ -71,13 +71,12 @@ class InteractiveButton extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: backgroundColor ?? 
-                     (isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.08)),
+              color: backgroundColor ?? AurealColors.carbon, // Slate blue
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isDestructive
                     ? Colors.red.withOpacity(0.3)
-                    : (isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.2)),
+                    : AurealColors.plasmaCyan.withOpacity(0.2), // Teal border
               ),
             ),
             child: Row(

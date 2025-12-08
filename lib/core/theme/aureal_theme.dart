@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AurealColors {
-  static const Color obsidian = Color(0xFF0A0A0E);
-  static const Color plasmaCyan = Color(0xFF00F0FF);
-  static const Color hyperGold = Color(0xFFFFD700);
-  static const Color carbon = Color(0xFF1A1A1F);
-  static const Color stardust = Color(0xFFF2F2F2);
-  static const Color ghost = Color(0xFFA0A0A0);
+  // Unified Sable Design Language (Vital Balance palette)
+  static const Color obsidian = Color(0xFF0D1B2A);      // Deep navy background
+  static const Color plasmaCyan = Color(0xFF5DD9C1);    // Soft teal accent
+  static const Color hyperGold = Color(0xFFB8A9D9);     // Lavender accent
+  static const Color carbon = Color(0xFF1E2D3D);        // Slate blue card
+  static const Color stardust = Color(0xFFF2F2F2);      // Light text
+  static const Color ghost = Color(0xFFA0A0A0);         // Muted text
+  
+  // Additional Sable palette colors
+  static const Color backgroundMid = Color(0xFF1B263B); // Mid gradient
+  static const Color warningAmber = Color(0xFFFFB74D);  // Warning/attention
 }
 
 class AurealTheme {

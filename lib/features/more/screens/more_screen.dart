@@ -13,9 +13,9 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AurealColors.obsidian,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: AurealColors.obsidian,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
@@ -128,10 +128,10 @@ class MoreScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: AurealColors.carbon, // Slate blue
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Colors.white.withOpacity(0.1),
+            color: AurealColors.plasmaCyan.withOpacity(0.15), // Teal border
           ),
         ),
         child: Row(
@@ -139,10 +139,10 @@ class MoreScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AurealColors.hyperGold.withOpacity(0.1),
+                color: AurealColors.plasmaCyan.withOpacity(0.15), // Teal bg
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: AurealColors.hyperGold, size: 22),
+              child: Icon(icon, color: AurealColors.plasmaCyan, size: 22), // Teal icon
             ),
             const SizedBox(width: 16),
             Expanded(

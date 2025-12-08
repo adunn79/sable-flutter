@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Configuration class for managing API keys and environment variables
@@ -27,10 +28,17 @@ class AppConfig {
   // ElevenLabs (Voice)
   static String get elevenLabsKey => dotenv.env['ELEVEN_LABS_API_KEY'] ?? '';
 
+  // Grok / xAI (The Realist)
+  static String get grokKey => dotenv.env['GROK_API_KEY'] ?? '';
+
+  // DeepSeek (The Coder)
+  static String get deepseekKey => dotenv.env['DEEPSEEK_API_KEY'] ?? '';
+
 
   /// Initialize the environment configuration
   static Future<void> initialize() async {
     await dotenv.load(fileName: '.env');
+    debugPrint('🔑 AppConfig: Grok API key present: ${grokKey.isNotEmpty}');
   }
 
   /// Check if all required keys are present

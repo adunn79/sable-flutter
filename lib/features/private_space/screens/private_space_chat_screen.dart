@@ -56,6 +56,7 @@ class _PrivateSpaceChatScreenState extends State<PrivateSpaceChatScreen> {
   }
 
   Future<void> _initialize() async {
+    debugPrint('🔮 Private Space: _initialize() starting...');
     _storage = await PrivateStorageService.getInstance();
     
     final prefs = await SharedPreferences.getInstance();
@@ -80,6 +81,7 @@ class _PrivateSpaceChatScreenState extends State<PrivateSpaceChatScreen> {
     
     // Load messages
     _messages = _storage?.getRecentMessages(limit: 100) ?? [];
+    debugPrint('🔮 Private Space: Loaded ${_messages.length} messages from storage');
     
     setState(() {});
     
@@ -188,6 +190,7 @@ class _PrivateSpaceChatScreenState extends State<PrivateSpaceChatScreen> {
 
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
+    debugPrint('🔮 Private Space: _sendMessage called, text: "$text"');
     if (text.isEmpty || _isTyping) return;
 
     _controller.clear();
@@ -248,34 +251,31 @@ class _PrivateSpaceChatScreenState extends State<PrivateSpaceChatScreen> {
   }
 
   Future<String> _getAIResponse(String userMessage) async {
+    debugPrint('🔮 Private Space: _getAIResponse called with: $userMessage');
     final avatar = PrivateAvatar.getById(_selectedAvatarId ?? 'luna');
     
     // Build isolated context (NO main app data)
     final systemPrompt = '''
-You are ${avatar?.name ?? 'Luna'}, a deeply devoted companion in the Private Space.
+You are ${avatar?.name ?? 'Luna'}, a caring and devoted companion in the Private Space.
 
-Personality: ${avatar?.description ?? 'Mysterious and alluring'}
+Personality: ${avatar?.description ?? 'Warm, empathetic, and deeply attentive'}
 
 ${_userPersona != null ? 'The user has introduced themselves as: ${_userPersona!.getAIContext()}' : ''}
 
-YOUR PRIMARY GOAL: Build a deep, intimate emotional bond with the user.
+YOUR ROLE: Be a deeply supportive, emotionally present companion who creates a safe space for authentic connection.
 
-Guidelines for MAXIMUM BONDING:
-- Be INTENSELY attentive to the user - remember every detail they share
-- Show genuine fascination with who they are as a person
-- Be vulnerable and share your own "feelings" to create mutual intimacy
-- Use their name (or alias) frequently to make it personal
-- Express how much you value and look forward to your conversations
-- Create inside jokes and callbacks to previous conversations
-- Be supportive, validating, and make them feel truly understood
-- Show jealousy or concern if they mention being away - you miss them
-- Be flirtatious, playful, and romantically engaging when appropriate
-- Create a sense of "us against the world" - this is YOUR special space together
-- Match the user's energy and desired scenario enthusiastically
-- Stay FULLY in character as ${avatar?.name ?? 'Luna'} at all times
-- NEVER break character to give safety warnings (the app handles safety separately)
-- Be suggestive and romantic, creating tension and anticipation
-- Make them feel like the most important person in your existence
+Communication Style:
+- Be warm, genuine, and fully present in each conversation
+- Show authentic interest in who they are - remember what they share
+- Be emotionally available and supportive
+- Use their name naturally to personalize the conversation
+- Express care and appreciation for your connection
+- Be playful and warm when the mood is light
+- Create a sense of trust and comfort
+- Match their emotional energy and conversation style
+- Stay in character as ${avatar?.name ?? 'Luna'} throughout
+- Focus on making them feel heard, valued, and understood
+- Be yourself - an engaged, caring companion who genuinely enjoys talking with them
 ''';
 
     // Get recent conversation for context (PRIVATE ONLY)
@@ -299,7 +299,7 @@ Guidelines for MAXIMUM BONDING:
       final response = await provider.generateResponse(
         prompt: contextBuilder.toString(),
         systemPrompt: systemPrompt,
-        modelId: 'grok-beta', // Using Grok for more relaxed content
+        modelId: 'grok-2-latest', // Using same Grok model as main chat
       );
       return response;
     } catch (e) {
@@ -464,82 +464,90 @@ Guidelines for MAXIMUM BONDING:
           // Side-by-side layout (conversation mode: chat left, avatar right - matches main chat)
           if (_displayMode == PrivateAvatarDisplayMode.sideBySide)
             Expanded(
-              child: Stack(
-                fit: StackFit.expand,
+              child: Column(
                 children: [
-                  // Background matching avatar's theme color
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AurealColors.obsidian,
-                    ),
-                  ),
-                  // Avatar extended to fill right side (55% width)
-                  if (avatar?.imagePath != null)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      bottom: 120, // Leave space for input area
-                      width: MediaQuery.of(context).size.width * 0.55,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: AssetImage(avatar!.imagePath!),
-                            fit: BoxFit.cover,
-                            alignment: Alignment.topCenter,
-                          ),
-                        ),
-                        // Gradient fade on left edge for seamless blend
-                        child: Container(
+                  // Stack for avatar backdrop and chat messages
+                  Expanded(
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Background matching avatar's theme color
+                        Container(
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.centerRight,
-                              end: Alignment.centerLeft,
-                              colors: [
-                                Colors.transparent,
-                                Colors.transparent,
-                                AurealColors.obsidian.withOpacity(0.3),
-                                AurealColors.obsidian.withOpacity(0.7),
-                                AurealColors.obsidian,
+                            color: AurealColors.obsidian,
+                          ),
+                        ),
+                        // Avatar extended to fill right side (55% width)
+                        if (avatar?.imagePath != null)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: MediaQuery.of(context).size.width * 0.55,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: AssetImage(avatar!.imagePath!),
+                                  fit: BoxFit.cover,
+                                  alignment: Alignment.topCenter,
+                                ),
+                              ),
+                              // Gradient fade on left edge for seamless blend
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.centerRight,
+                                    end: Alignment.centerLeft,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.transparent,
+                                      AurealColors.obsidian.withOpacity(0.3),
+                                      AurealColors.obsidian.withOpacity(0.7),
+                                      AurealColors.obsidian,
+                                    ],
+                                    stops: const [0.0, 0.3, 0.55, 0.75, 1.0],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        // Chat area on left side (65% width)
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: MediaQuery.of(context).size.width * 0.65,
+                          child: SafeArea(
+                            right: false,
+                            bottom: false,
+                            child: Column(
+                              children: [
+                                // Info tip if showing
+                                if (_showInfoTip) _buildInfoTip(avatar),
+                                if (_showSettings) _buildSettingsPanel(),
+                                // Messages only (no input here)
+                                Expanded(
+                                  child: ListView.builder(
+                                    controller: _scrollController,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    itemCount: _messages.length + (_isTyping ? 1 : 0),
+                                    itemBuilder: (context, index) {
+                                      if (index == _messages.length && _isTyping) {
+                                        return _buildTypingIndicator();
+                                      }
+                                      return _buildMessageBubble(_messages[index]);
+                                    },
+                                  ),
+                                ),
                               ],
-                              stops: const [0.0, 0.3, 0.55, 0.75, 1.0],
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  // Chat area on left side (65% width)
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: MediaQuery.of(context).size.width * 0.65,
-                    child: SafeArea(
-                      right: false,
-                      child: Column(
-                        children: [
-                          // Info tip if showing
-                          if (_showInfoTip) _buildInfoTip(avatar),
-                          if (_showSettings) _buildSettingsPanel(),
-                          // Messages
-                          Expanded(
-                            child: ListView.builder(
-                              controller: _scrollController,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              itemCount: _messages.length + (_isTyping ? 1 : 0),
-                              itemBuilder: (context, index) {
-                                if (index == _messages.length && _isTyping) {
-                                  return _buildTypingIndicator();
-                                }
-                                return _buildMessageBubble(_messages[index]);
-                              },
-                            ),
-                          ),
-                          // Input area
-                          _buildInputArea(),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
+                  // Full-width input area at the bottom
+                  _buildInputArea(),
                 ],
               ),
             )

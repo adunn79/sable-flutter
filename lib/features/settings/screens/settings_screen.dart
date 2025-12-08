@@ -12,6 +12,8 @@ import 'package:sable/core/identity/bond_engine.dart';
 import 'package:sable/features/common/widgets/cascading_voice_selector.dart';
 import 'package:sable/features/settings/widgets/settings_tile.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
+// iCloud Backup
+import 'package:sable/core/backup/icloud_backup_service.dart';
 import 'package:sable/core/emotion/conversation_memory_service.dart';
 import 'package:sable/core/voice/voice_service.dart';
 
@@ -956,6 +958,78 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       },
                    ),
                  ],
+              ),
+
+              // iCloud Backup Section
+              SettingsSection(
+                title: 'iCloud Backup',
+                children: [
+                  SettingsTile(
+                    icon: LucideIcons.cloud,
+                    title: 'iCloud Status',
+                    subtitle: 'Checking...',
+                    trailing: FutureBuilder<bool>(
+                      future: iCloudBackupService.instance.isAvailable(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const SizedBox(
+                            width: 16, height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+                          );
+                        }
+                        final available = snapshot.data ?? false;
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 10, height: 10,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: available ? Colors.green : Colors.red,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              available ? 'Connected' : 'Not Available',
+                              style: GoogleFonts.inter(color: available ? Colors.green : Colors.red, fontSize: 13),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  FutureBuilder<DateTime?>(
+                    future: iCloudBackupService.instance.getLastBackupTime(),
+                    builder: (context, snapshot) {
+                      final lastBackup = snapshot.data;
+                      String subtitle = 'Never backed up';
+                      if (lastBackup != null) {
+                        final diff = DateTime.now().difference(lastBackup);
+                        if (diff.inMinutes < 1) {
+                          subtitle = 'Just now';
+                        } else if (diff.inHours < 1) {
+                          subtitle = '${diff.inMinutes} minutes ago';
+                        } else if (diff.inDays < 1) {
+                          subtitle = '${diff.inHours} hours ago';
+                        } else {
+                          subtitle = '${diff.inDays} days ago';
+                        }
+                      }
+                      return SettingsTile(
+                        icon: LucideIcons.upload,
+                        title: 'Backup Now',
+                        subtitle: 'Last backup: $subtitle',
+                        onTap: () => _performiCloudBackup(),
+                      );
+                    },
+                  ),
+                  SettingsTile(
+                    icon: LucideIcons.download,
+                    title: 'Restore from Backup',
+                    subtitle: 'Download data from iCloud',
+                    onTap: () => _performiCloudRestore(),
+                  ),
+                ],
               ),
 
              // 6. Debug / Advanced
@@ -2682,4 +2756,135 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
 
+  // ============= iCloud Backup Methods =============
+  
+  Future<void> _performiCloudBackup() async {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(color: AurealColors.hyperGold),
+            const SizedBox(height: 20),
+            Text('Backing up to iCloud...', style: GoogleFonts.inter(color: Colors.white)),
+          ],
+        ),
+      ),
+    );
+    
+    try {
+      final result = await iCloudBackupService.instance.performFullBackup(
+        onProgress: (stage, progress) {
+          debugPrint('Backup: $stage (${(progress * 100).toInt()}%)');
+        },
+      );
+      
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close loading dialog
+      
+      if (result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Backed up ${result.totalItems} items to iCloud'),
+            backgroundColor: Colors.green[700],
+          ),
+        );
+        setState(() {}); // Refresh to update last backup time
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Backup failed: ${result.error}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+  
+  Future<void> _performiCloudRestore() async {
+    // Confirm first
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text('Restore from iCloud?', style: GoogleFonts.inter(color: Colors.white)),
+        content: Text(
+          'This will download your backed up data from iCloud. Your current data will be merged with the backup.',
+          style: GoogleFonts.inter(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Restore', style: GoogleFonts.inter(color: AurealColors.hyperGold, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirm != true) return;
+    
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(color: Colors.blue),
+            const SizedBox(height: 20),
+            Text('Restoring from iCloud...', style: GoogleFonts.inter(color: Colors.white)),
+          ],
+        ),
+      ),
+    );
+    
+    try {
+      final result = await iCloudBackupService.instance.performFullRestore(
+        onProgress: (stage, progress) {
+          debugPrint('Restore: $stage (${(progress * 100).toInt()}%)');
+        },
+      );
+      
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      
+      if (result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Restored ${result.totalItems} items from iCloud'),
+            backgroundColor: Colors.green[700],
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Restore failed: ${result.error}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
 }

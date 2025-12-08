@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
 import '../ai_provider_interface.dart';
 
 /// Grok (xAI) provider using OpenAI-compatible API.
@@ -18,6 +19,8 @@ class GrokProvider implements AiProviderInterface {
     required String modelId,
   }) async {
     final apiKey = dotenv.env['GROK_API_KEY'];
+    debugPrint('🤖 Grok: API Key present: ${apiKey != null && apiKey.isNotEmpty}');
+    
     if (apiKey == null || apiKey.isEmpty) {
       throw Exception('GROK_API_KEY not found in environment variables');
     }
@@ -31,6 +34,8 @@ class GrokProvider implements AiProviderInterface {
       
       messages.add({'role': 'user', 'content': prompt});
 
+      debugPrint('🤖 Grok: Calling $modelId with ${messages.length} messages...');
+      
       final response = await http.post(
         Uri.parse(_baseUrl),
         headers: {
@@ -43,20 +48,25 @@ class GrokProvider implements AiProviderInterface {
         }),
       );
 
+      debugPrint('🤖 Grok: Response status: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final choices = data['choices'] as List?;
         
         if (choices != null && choices.isNotEmpty) {
           final message = choices[0]['message'];
+          debugPrint('🤖 Grok: Success! Got response');
           return message['content'];
         }
         
         throw Exception('Unexpected response format from Grok API');
       } else {
+        debugPrint('🤖 Grok: Error ${response.statusCode}: ${response.body}');
         throw Exception('Grok API error: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
+      debugPrint('🤖 Grok: Exception: $e');
       throw Exception('Failed to call Grok API: $e');
     }
   }

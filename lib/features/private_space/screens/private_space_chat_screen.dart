@@ -461,76 +461,83 @@ Guidelines for MAXIMUM BONDING:
               ),
             ),
             
-          // Side-by-side layout (conversation mode: chat left, avatar right)
+          // Side-by-side layout (conversation mode: chat left, avatar right - matches main chat)
           if (_displayMode == PrivateAvatarDisplayMode.sideBySide)
             Expanded(
-              child: Row(
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  // Chat column on left
-                  Expanded(
-                    child: Column(
-                      children: [
-                        if (_showInfoTip) _buildInfoTip(avatar),
-                        if (_showSettings) _buildSettingsPanel(),
-                        Expanded(
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(12),
-                            itemCount: _messages.length + (_isTyping ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == _messages.length && _isTyping) {
-                                return _buildTypingIndicator();
-                              }
-                              return _buildMessageBubble(_messages[index]);
-                            },
-                          ),
-                        ),
-                        _buildInputArea(),
-                      ],
+                  // Background matching avatar's theme color
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AurealColors.obsidian,
                     ),
                   ),
-                  // Avatar column on right
-                  Container(
-                    width: 120,
-                    decoration: BoxDecoration(
-                      border: Border(
-                        left: BorderSide(color: AurealColors.carbon, width: 1),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 16),
-                        if (avatar?.imagePath != null)
-                          Container(
-                            width: 90,
-                            height: 90,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: avatar!.accentColor, width: 3),
-                              image: DecorationImage(
-                                image: AssetImage(avatar.imagePath!),
-                                fit: BoxFit.cover,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: avatar.accentColor.withOpacity(0.4),
-                                  blurRadius: 12,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                          ),
-                        const SizedBox(height: 12),
-                        Text(
-                          avatar?.name ?? '',
-                          style: GoogleFonts.spaceGrotesk(
-                            color: avatar?.accentColor ?? Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                  // Avatar extended to fill right side (55% width)
+                  if (avatar?.imagePath != null)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      bottom: 120, // Leave space for input area
+                      width: MediaQuery.of(context).size.width * 0.55,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage(avatar!.imagePath!),
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
                           ),
                         ),
-                        const Spacer(),
-                      ],
+                        // Gradient fade on left edge for seamless blend
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.centerRight,
+                              end: Alignment.centerLeft,
+                              colors: [
+                                Colors.transparent,
+                                Colors.transparent,
+                                AurealColors.obsidian.withOpacity(0.3),
+                                AurealColors.obsidian.withOpacity(0.7),
+                                AurealColors.obsidian,
+                              ],
+                              stops: const [0.0, 0.3, 0.55, 0.75, 1.0],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Chat area on left side (65% width)
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: MediaQuery.of(context).size.width * 0.65,
+                    child: SafeArea(
+                      right: false,
+                      child: Column(
+                        children: [
+                          // Info tip if showing
+                          if (_showInfoTip) _buildInfoTip(avatar),
+                          if (_showSettings) _buildSettingsPanel(),
+                          // Messages
+                          Expanded(
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              itemCount: _messages.length + (_isTyping ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index == _messages.length && _isTyping) {
+                                  return _buildTypingIndicator();
+                                }
+                                return _buildMessageBubble(_messages[index]);
+                              },
+                            ),
+                          ),
+                          // Input area
+                          _buildInputArea(),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -680,7 +687,7 @@ Guidelines for MAXIMUM BONDING:
 
   Widget _buildSettingsPanel() {
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.45),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -836,6 +843,7 @@ Guidelines for MAXIMUM BONDING:
               style: GoogleFonts.inter(color: Colors.white),
               maxLines: 4,
               minLines: 1,
+              textInputAction: TextInputAction.send,
               decoration: InputDecoration(
                 hintText: 'Message ${avatar?.name ?? 'Luna'}...',
                 hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.4)),

@@ -1284,9 +1284,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     : AelianaColors.obsidian,
                 child: Column(
                   children: [
-                    // Top 22% for the orb
+                    // Top 40% for the orb - positioned well below weather info
                     Container(
-                      height: MediaQuery.of(context).size.height * 0.22,
+                      height: MediaQuery.of(context).size.height * 0.40,
                       alignment: Alignment.center,
                       child: SafeArea(
                         bottom: false,

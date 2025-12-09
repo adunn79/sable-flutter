@@ -5,7 +5,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Aureal</string>
+		<string>Aeliana</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIconFile</key>
@@ -15,7 +15,7 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>$(PRODUCT_NAME)</string>
+		<string>Aeliana</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
@@ -31,13 +31,13 @@
 		<key>NSPrincipalClass</key>
 		<string>NSApplication</string>
 		<key>NSSpeechRecognitionUsageDescription</key>
-		<string>Aureal uses speech recognition to enable voice conversations and commands.</string>
+		<string>Aeliana uses speech recognition to enable voice conversations and commands.</string>
 		<key>NSMicrophoneUsageDescription</key>
-		<string>Aureal needs access to your microphone for voice input and conversations.</string>
+		<string>Aeliana needs access to your microphone for voice input and conversations.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Aureal uses your location to provide context-aware responses and local information.</string>
+		<string>Aeliana uses your location to provide context-aware responses and local information.</string>
 		<key>NSCameraUsageDescription</key>
-		<string>Aureal may use your camera for visual recognition features.</string>
+		<string>Aeliana may use your camera for visual recognition features.</string>
 		<key>NSCalendarsUsageDescription</key>
 		<string>Sable helps organize your schedule and provides intelligent reminders.</string>
 		<key>NSContactsUsageDescription</key>

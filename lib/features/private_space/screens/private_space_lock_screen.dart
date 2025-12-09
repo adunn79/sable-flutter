@@ -11,6 +11,7 @@ import '../../../features/subscription/services/subscription_service.dart';
 import '../widgets/private_avatar_picker.dart';
 import 'private_space_age_gate.dart';
 import 'private_avatar_customize_screen.dart';
+import 'private_space_onboarding_screen.dart';
 
 /// PIN/Biometric lock screen for Private Space
 /// Includes decoy mode: 3 wrong attempts → redirect to main chat silently
@@ -400,75 +401,14 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
   }
 
   Widget _buildAvatarOnboarding() {
-    return Scaffold(
-      backgroundColor: AelianaColors.obsidian,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
-          onPressed: () => context.go('/chat'),
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text('🎭', style: const TextStyle(fontSize: 48)),
-              const SizedBox(height: 16),
-              Text(
-                'Choose Your Companion',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Select who you\'d like to explore this private sanctuary with',
-                style: GoogleFonts.inter(
-                  color: Colors.white.withOpacity(0.6),
-                  fontSize: 14,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              
-              // Avatar picker
-              PrivateAvatarPicker(
-                selectedAvatarId: null,
-                onSelect: (avatar) {
-                  // Navigate to customization screen BEFORE unlocking
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PrivateAvatarCustomizeScreen(
-                        selectedAvatar: avatar,
-                        onComplete: () async {
-                          // Save avatar and unlock after customization
-                          final prefs = await SharedPreferences.getInstance();
-                          await prefs.setString('private_space_avatar', avatar.id);
-                          
-                          if (mounted) {
-                            Navigator.pop(context); // Close customize screen
-                            setState(() {
-                              _avatarSelected = true;
-                              _isUnlocked = true;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+    // Use the new dedicated onboarding screen with Create Your Persona at top
+    return PrivateSpaceOnboardingScreen(
+      onComplete: () {
+        setState(() {
+          _avatarSelected = true;
+          _isUnlocked = true;
+        });
+      },
     );
   }
 

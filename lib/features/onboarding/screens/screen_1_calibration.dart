@@ -68,7 +68,8 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                     style: GoogleFonts.spaceGrotesk(
                       color: AelianaColors.plasmaCyan,
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 20,
+                      decoration: TextDecoration.none,
                     ),
                   ),
                   const Spacer(),

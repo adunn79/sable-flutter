@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../../core/theme/aureal_theme.dart';
+import '../../../core/theme/aeliana_theme.dart';
 import '../../../core/services/recovery_service.dart';
 
 /// Recovery setup screen for onboarding - collects email/phone for PIN reset
@@ -120,7 +120,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
@@ -144,7 +144,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'Go Back',
-              style: GoogleFonts.inter(color: AurealColors.plasmaCyan),
+              style: GoogleFonts.inter(color: AelianaColors.plasmaCyan),
             ),
           ),
           TextButton(
@@ -167,7 +167,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
     final hasAnyVerified = _emailVerified || _phoneVerified;
     
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -180,13 +180,13 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AurealColors.plasmaCyan.withOpacity(0.15),
+                  color: AelianaColors.plasmaCyan.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
                   LucideIcons.shieldCheck,
                   size: 40,
-                  color: AurealColors.plasmaCyan,
+                  color: AelianaColors.plasmaCyan,
                 ),
               ),
               
@@ -250,7 +250,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
                   onPressed: _isLoading ? null : _handleContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: hasAnyVerified 
-                        ? AurealColors.plasmaCyan 
+                        ? AelianaColors.plasmaCyan 
                         : Colors.white24,
                     foregroundColor: hasAnyVerified 
                         ? Colors.black 
@@ -318,7 +318,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: AurealColors.carbon,
+            color: AelianaColors.carbon,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: error != null 
@@ -381,7 +381,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
                     child: Text(
                       'Verify',
                       style: GoogleFonts.inter(
-                        color: AurealColors.plasmaCyan,
+                        color: AelianaColors.plasmaCyan,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

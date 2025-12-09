@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 
 class SlideToAcknowledge extends StatefulWidget {
   final VoidCallback onAcknowledged;
@@ -35,19 +35,19 @@ class _SlideToAcknowledgeState extends State<SlideToAcknowledge> {
     return Container(
       height: 60,
       decoration: BoxDecoration(
-        color: AurealColors.carbon,
+        color: AelianaColors.carbon,
         borderRadius: BorderRadius.circular(30),
         border: Border.all(
           color: _isCompleted
-              ? AurealColors.hyperGold
-              : AurealColors.plasmaCyan,
+              ? AelianaColors.hyperGold
+              : AelianaColors.plasmaCyan,
           width: 2,
         ),
         boxShadow: _isCompleted
             ? []
             : [
                 BoxShadow(
-                  color: AurealColors.plasmaCyan.withOpacity(0.5),
+                  color: AelianaColors.plasmaCyan.withOpacity(0.5),
                   blurRadius: 10,
                   spreadRadius: 2,
                 ),
@@ -64,8 +64,8 @@ class _SlideToAcknowledgeState extends State<SlideToAcknowledge> {
                 end: Alignment.centerRight,
                 stops: [0.0, _sliderValue, _sliderValue, 1.0],
                 colors: [
-                  AurealColors.plasmaCyan.withOpacity(0.2),
-                  AurealColors.plasmaCyan.withOpacity(0.2),
+                  AelianaColors.plasmaCyan.withOpacity(0.2),
+                  AelianaColors.plasmaCyan.withOpacity(0.2),
                   Colors.transparent,
                   Colors.transparent,
                 ],
@@ -83,9 +83,9 @@ class _SlideToAcknowledgeState extends State<SlideToAcknowledge> {
                 activeTrackColor: Colors.transparent,
                 inactiveTrackColor: Colors.transparent,
                 thumbColor: _isCompleted
-                    ? AurealColors.hyperGold
-                    : AurealColors.plasmaCyan,
-                overlayColor: AurealColors.plasmaCyan.withOpacity(0.2),
+                    ? AelianaColors.hyperGold
+                    : AelianaColors.plasmaCyan,
+                overlayColor: AelianaColors.plasmaCyan.withOpacity(0.2),
               ),
               child: Slider(
                 value: _sliderValue,
@@ -106,8 +106,8 @@ class _SlideToAcknowledgeState extends State<SlideToAcknowledge> {
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: _isCompleted
-                        ? AurealColors.hyperGold
-                        : AurealColors.stardust.withOpacity(0.6),
+                        ? AelianaColors.hyperGold
+                        : AelianaColors.stardust.withOpacity(0.6),
                     letterSpacing: 1.5,
                   ),
                 ),

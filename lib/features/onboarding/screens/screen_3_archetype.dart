@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 
 class Screen3Archetype extends StatefulWidget {
   final Function(String archetype) onComplete;
@@ -33,7 +33,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: Column(
           children: [
@@ -51,7 +51,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AurealColors.hyperGold,
+                        color: AelianaColors.hyperGold,
                         letterSpacing: 2,
                       ),
                     ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
@@ -62,7 +62,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                       'Choose your archetype. This defines the essence of your companion.',
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: AurealColors.ghost,
+                        color: AelianaColors.ghost,
                         height: 1.5,
                       ),
                     ).animate(delay: 200.ms).fadeIn(duration: 600.ms),
@@ -73,10 +73,10 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AurealColors.plasmaCyan.withOpacity(0.1),
+                        color: AelianaColors.plasmaCyan.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: AurealColors.plasmaCyan.withOpacity(0.3),
+                          color: AelianaColors.plasmaCyan.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
@@ -85,7 +85,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                           Icon(
                             Icons.info_outline,
                             size: 16,
-                            color: AurealColors.plasmaCyan,
+                            color: AelianaColors.plasmaCyan,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -93,7 +93,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                               'You can customize Race, Gender, and Appearance for any archetype on the next screen.',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: AurealColors.plasmaCyan,
+                                color: AelianaColors.plasmaCyan,
                                 height: 1.4,
                               ),
                             ),
@@ -150,7 +150,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                       'Note: You will have the option to keep these looks or regenerate new ones.',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: AurealColors.ghost,
+                        color: AelianaColors.ghost,
                         fontStyle: FontStyle.italic,
                       ),
                       textAlign: TextAlign.center,
@@ -193,13 +193,13 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isSelected
-              ? AurealColors.plasmaCyan.withOpacity(0.1)
-              : AurealColors.carbon.withOpacity(0.6),
+              ? AelianaColors.plasmaCyan.withOpacity(0.1)
+              : AelianaColors.carbon.withOpacity(0.6),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? AurealColors.plasmaCyan
-                : AurealColors.ghost.withOpacity(0.2),
+                ? AelianaColors.plasmaCyan
+                : AelianaColors.ghost.withOpacity(0.2),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -226,14 +226,14 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      AurealColors.hyperGold.withOpacity(0.3),
-                      AurealColors.plasmaCyan.withOpacity(0.3),
+                      AelianaColors.hyperGold.withOpacity(0.3),
+                      AelianaColors.plasmaCyan.withOpacity(0.3),
                     ],
                   ),
                 ),
                 child: const Icon(
                   Icons.add_circle_outline,
-                  color: AurealColors.stardust,
+                  color: AelianaColors.stardust,
                   size: 40,
                 ),
               ),
@@ -252,7 +252,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? AurealColors.plasmaCyan : AurealColors.stardust,
+                            color: isSelected ? AelianaColors.plasmaCyan : AelianaColors.stardust,
                             letterSpacing: 2,
                           ),
                         ),
@@ -260,7 +260,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                       if (isSelected)
                         const Icon(
                           Icons.check_circle,
-                          color: AurealColors.plasmaCyan,
+                          color: AelianaColors.plasmaCyan,
                           size: 24,
                         ),
                     ],
@@ -270,7 +270,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                     subtitle,
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: AurealColors.hyperGold,
+                      color: AelianaColors.hyperGold,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -279,7 +279,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                     description,
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: AurealColors.ghost,
+                      color: AelianaColors.ghost,
                       height: 1.5,
                     ),
                   ),

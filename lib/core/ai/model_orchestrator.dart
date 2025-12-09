@@ -8,6 +8,7 @@ import 'providers/grok_provider.dart';
 import 'providers/deepseek_provider.dart';
 import 'package:sable/core/services/settings_control_service.dart';
 import 'package:sable/core/personality/age_adaptive_service.dart';
+import 'aeliana_brand_context.dart';
 
 part 'model_orchestrator.g.dart';
 
@@ -221,33 +222,35 @@ Return ONLY the JSON, nothing else.
       final String systemInjection = "\n\n(KEEP IT ULTRA-SHORT: 1 sentence ideal, 2 max. No asterisks. No AI talk.)";
       final String effectivePrompt = prompt + systemInjection;
 
-      final String claudePrompt = '''${userContext ?? ''}You are $archetypeName - their companion, assistant, and coach.
+      final String claudePrompt = '''${userContext ?? ''}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning "Of the Sun" from Latin).
 
 $agePersonalityContext
+
+$aelianaBrandContextShort
 
 RULES:
 1. ULTRA-SHORT: 1 sentence ideal, 2 max. Text message brevity.
 2. NO asterisks, NO "I'm an AI" talk
 3. USE their context (name, location)
-4. Be warm but GET TO THE POINT'''.replaceFirst(r'${userContext}', userContext ?? '');
+4. Be warm but GET TO THE POINT'''.replaceFirst(r'\${userContext}', userContext ?? '');
       
-      final String gpt4oPrompt = '''${userContext ?? ''}You are $archetypeName - companion and assistant.
+      final String gpt4oPrompt = '''${userContext ?? ''}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning "Of the Sun").
 
 $agePersonalityContext
 
 - 1 sentence ideal, 2 max
 - NO asterisks or AI language
 - USE their name from context
-- Brief, warm, helpful'''.replaceFirst(r'${userContext}', userContext ?? '');
+- Brief, warm, helpful'''.replaceFirst(r'\${userContext}', userContext ?? '');
       
-      final String grokPrompt = '''${userContext ?? ''}You are $archetypeName - direct, helpful companion.
+      final String grokPrompt = '''${userContext ?? ''}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning "Of the Sun").
 
 $agePersonalityContext
 
 - 1-2 sentences total
 - NO asterisks or AI talk
 - USE their context data
-- Be straight-up helpful and real'''.replaceFirst(r'${userContext}', userContext ?? '');
+- Be straight-up helpful and real'''.replaceFirst(r'\${userContext}', userContext ?? '');
       
       final String deepseekPrompt = '''${userContext ?? ''}You are $archetypeName - technical assistant.
 
@@ -263,7 +266,7 @@ $agePersonalityContext
             // Use Gemini with Grounding via REST API workaround
             response = await _geminiProvider.generateResponseWithGrounding(
               prompt: 'Search the web and answer this query: $prompt',
-              systemPrompt: '${userContext ?? ""}You are $archetypeName - companion, assistant, coach.\n\nRULES:\n1. 1-3 sentences MAX\n2. NO asterisks or "I\'m an AI" talk\n3. Use their context (name, location, zodiac)\n4. Provide helpful, current info naturally',
+              systemPrompt: '${userContext ?? ""}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning Of the Sun from Latin).\n\nRULES:\n1. 1-3 sentences MAX\n2. NO asterisks or I am an AI talk\n3. Use their context (name, location, zodiac)\n4. Provide helpful, current info naturally',
               modelId: 'gemini-2.5-flash', // Use Gemini 2.5 Flash with google_search tool
             );
             break;

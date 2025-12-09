@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 
 class AvatarJournalOverlay extends StatefulWidget {
@@ -54,8 +54,8 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
   Color get _avatarColor {
     switch (widget.archetype.toLowerCase()) {
       case 'kai': return Colors.blueAccent; 
-      case 'echo': return AurealColors.plasmaCyan;
-      case 'sable': default: return AurealColors.hyperGold;
+      case 'echo': return AelianaColors.plasmaCyan;
+      case 'sable': default: return AelianaColors.hyperGold;
     }
   }
 

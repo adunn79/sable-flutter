@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/features/local_vibe/models/local_vibe_settings.dart';
 import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
 
@@ -46,9 +46,9 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
-        backgroundColor: AurealColors.obsidian,
+        backgroundColor: AelianaColors.obsidian,
         elevation: 0,
         title: Text(
           'LOCAL VIBE SETTINGS',
@@ -65,7 +65,7 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
         actions: [
           TextButton(
             onPressed: _save,
-            child: Text('SAVE', style: GoogleFonts.inter(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold)),
+            child: Text('SAVE', style: GoogleFonts.inter(color: AelianaColors.plasmaCyan, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -105,7 +105,7 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
     return Text(
       title,
       style: GoogleFonts.spaceGrotesk(
-        color: AurealColors.plasmaCyan,
+        color: AelianaColors.plasmaCyan,
         fontSize: 12,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.5,
@@ -147,9 +147,9 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AurealColors.hyperGold.withOpacity(0.2) : AurealColors.carbon,
+          color: isSelected ? AelianaColors.hyperGold.withOpacity(0.2) : AelianaColors.carbon,
           border: Border.all(
-            color: isSelected ? AurealColors.hyperGold : Colors.white24,
+            color: isSelected ? AelianaColors.hyperGold : Colors.white24,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(8),
@@ -158,7 +158,7 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
           label,
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(
-            color: isSelected ? AurealColors.hyperGold : Colors.white,
+            color: isSelected ? AelianaColors.hyperGold : Colors.white,
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
@@ -173,7 +173,7 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AurealColors.carbon,
+          color: AelianaColors.carbon,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white10),
         ),
@@ -186,16 +186,16 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
                 Text('Search Radius', style: GoogleFonts.inter(color: Colors.white70)),
                 Text(
                   '${_settings.radiusMiles.toInt()} miles',
-                  style: GoogleFonts.inter(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.inter(color: AelianaColors.plasmaCyan, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             SliderTheme(
               data: SliderThemeData(
-                activeTrackColor: AurealColors.plasmaCyan,
+                activeTrackColor: AelianaColors.plasmaCyan,
                 inactiveTrackColor: Colors.white10,
                 thumbColor: Colors.white,
-                overlayColor: AurealColors.plasmaCyan.withOpacity(0.2),
+                overlayColor: AelianaColors.plasmaCyan.withOpacity(0.2),
                 trackHeight: 4,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
               ),
@@ -230,14 +230,14 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
                 runSpacing: 8,
                 children: _settings.targetCities.map((city) => Chip(
                   label: Text(city, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
-                  backgroundColor: AurealColors.plasmaCyan.withOpacity(0.2),
-                  deleteIcon: const Icon(LucideIcons.x, size: 14, color: AurealColors.plasmaCyan),
+                  backgroundColor: AelianaColors.plasmaCyan.withOpacity(0.2),
+                  deleteIcon: const Icon(LucideIcons.x, size: 14, color: AelianaColors.plasmaCyan),
                   onDeleted: () {
                     final updated = List<String>.from(_settings.targetCities)..remove(city);
                     setState(() => _settings = _settings.copyWith(targetCities: updated));
                     widget.service.updateSettings(_settings);
                   },
-                  side: const BorderSide(color: AurealColors.plasmaCyan),
+                  side: const BorderSide(color: AelianaColors.plasmaCyan),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 )).toList(),
               ),
@@ -249,7 +249,7 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
                   child: Container(
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AurealColors.carbon,
+                      color: AelianaColors.carbon,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white24),
                     ),
@@ -271,10 +271,10 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(LucideIcons.plusCircle, color: AurealColors.plasmaCyan),
+                  icon: const Icon(LucideIcons.plusCircle, color: AelianaColors.plasmaCyan),
                   onPressed: _addCity,
                   style: IconButton.styleFrom(
-                    backgroundColor: AurealColors.carbon,
+                    backgroundColor: AelianaColors.carbon,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
@@ -332,16 +332,16 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AurealColors.plasmaCyan.withOpacity(0.2) : AurealColors.carbon,
+          color: isSelected ? AelianaColors.plasmaCyan.withOpacity(0.2) : AelianaColors.carbon,
           border: Border.all(
-            color: isSelected ? AurealColors.plasmaCyan : Colors.white24,
+            color: isSelected ? AelianaColors.plasmaCyan : Colors.white24,
           ),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
-            color: isSelected ? AurealColors.plasmaCyan : Colors.white,
+            color: isSelected ? AelianaColors.plasmaCyan : Colors.white,
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
@@ -364,14 +364,14 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
               runSpacing: 8,
               children: _settings.customCategories.map((cat) => Chip(
                 label: Text(cat, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
-                backgroundColor: AurealColors.plasmaCyan.withOpacity(0.2),
-                deleteIcon: const Icon(LucideIcons.x, size: 14, color: AurealColors.plasmaCyan),
+                backgroundColor: AelianaColors.plasmaCyan.withOpacity(0.2),
+                deleteIcon: const Icon(LucideIcons.x, size: 14, color: AelianaColors.plasmaCyan),
                 onDeleted: () {
                   final updated = List<String>.from(_settings.customCategories)..remove(cat);
                   setState(() => _settings = _settings.copyWith(customCategories: updated));
                   widget.service.updateSettings(_settings);
                 },
-                side: const BorderSide(color: AurealColors.plasmaCyan),
+                side: const BorderSide(color: AelianaColors.plasmaCyan),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               )).toList(),
             ),
@@ -383,7 +383,7 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
                 child: Container(
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AurealColors.carbon,
+                    color: AelianaColors.carbon,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.white24),
                   ),
@@ -405,10 +405,10 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
               ),
               const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(LucideIcons.plusCircle, color: AurealColors.plasmaCyan),
+                icon: const Icon(LucideIcons.plusCircle, color: AelianaColors.plasmaCyan),
                 onPressed: _addCustomCategory,
                 style: IconButton.styleFrom(
-                  backgroundColor: AurealColors.carbon,
+                  backgroundColor: AelianaColors.carbon,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),

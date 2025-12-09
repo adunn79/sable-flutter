@@ -7,7 +7,7 @@ import 'package:sable/core/services/settings_control_service.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
 
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/identity/bond_engine.dart';
 import 'package:sable/features/common/widgets/cascading_voice_selector.dart';
 import 'package:sable/features/settings/widgets/settings_tile.dart';
@@ -213,7 +213,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (modalContext) => Container(
         height: 250,
-        color: AurealColors.carbon,
+        color: AelianaColors.carbon,
         child: Column(
           children: [
             Row(
@@ -224,7 +224,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onPressed: () => Navigator.of(modalContext).pop(),
                 ),
                 CupertinoButton(
-                  child: Text('Done', style: GoogleFonts.inter(color: AurealColors.hyperGold, fontWeight: FontWeight.bold)),
+                  child: Text('Done', style: GoogleFonts.inter(color: AelianaColors.hyperGold, fontWeight: FontWeight.bold)),
                   onPressed: () => Navigator.of(modalContext).pop(),
                 ),
               ],
@@ -249,7 +249,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       });
                     }
                   },
-                  backgroundColor: AurealColors.carbon,
+                  backgroundColor: AelianaColors.carbon,
                 ),
               ),
             ),
@@ -269,7 +269,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showTriggerModeSelector() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AurealColors.carbon,
+      backgroundColor: AelianaColors.carbon,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
@@ -316,16 +316,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AurealColors.hyperGold.withOpacity(0.1) : Colors.transparent,
+          color: isSelected ? AelianaColors.hyperGold.withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? AurealColors.hyperGold : Colors.white10),
+          border: Border.all(color: isSelected ? AelianaColors.hyperGold : Colors.white10),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isSelected ? AurealColors.hyperGold : Colors.white10,
+                color: isSelected ? AelianaColors.hyperGold : Colors.white10,
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: isSelected ? Colors.black : Colors.white, size: 20),
@@ -342,7 +342,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
             if (isSelected)
-              Icon(LucideIcons.check, color: AurealColors.hyperGold),
+              Icon(LucideIcons.check, color: AelianaColors.hyperGold),
           ],
         ),
       ),
@@ -549,7 +549,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showVoiceSelector() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       isScrollControlled: true, // Allow full height
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -612,9 +612,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
-        backgroundColor: AurealColors.obsidian,
+        backgroundColor: AelianaColors.obsidian,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
@@ -623,7 +623,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: Text(
           'Settings',
           style: GoogleFonts.spaceGrotesk(
-            color: AurealColors.hyperGold,
+            color: AelianaColors.hyperGold,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -676,7 +676,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                  alignment: Alignment.centerLeft,
                  child: Text(
                     'PERSONALITY TUNING',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AurealColors.ghost),
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AelianaColors.ghost),
                  ),
                ),
              ),
@@ -707,15 +707,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                  child: ExpansionTile(
                    initiallyExpanded: false,
                    tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                   backgroundColor: AurealColors.carbon,
-                   collapsedBackgroundColor: AurealColors.carbon,
+                   backgroundColor: AelianaColors.carbon,
+                   collapsedBackgroundColor: AelianaColors.carbon,
                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                    collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                   leading: const Icon(Icons.palette_outlined, color: AurealColors.hyperGold),
+                   leading: const Icon(Icons.palette_outlined, color: AelianaColors.hyperGold),
                    title: Text(
                      'CHAT APPEARANCE',
                      style: GoogleFonts.spaceGrotesk(
-                       color: AurealColors.hyperGold,
+                       color: AelianaColors.hyperGold,
                        fontSize: 14,
                        fontWeight: FontWeight.bold,
                        letterSpacing: 1.5,
@@ -731,7 +731,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                        padding: const EdgeInsets.all(16),
                        decoration: BoxDecoration(
-                         color: AurealColors.obsidian,
+                         color: AelianaColors.obsidian,
                          borderRadius: BorderRadius.circular(12),
                        ),
                        child: Column(
@@ -777,11 +777,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                      decoration: BoxDecoration(
                                        color: _selectedArchetypeId.toLowerCase() == 'sable'
-                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           ? AelianaColors.hyperGold.withOpacity(0.2)
                                            : Colors.transparent,
                                        border: Border.all(
                                          color: _selectedArchetypeId.toLowerCase() == 'sable'
-                                             ? AurealColors.hyperGold
+                                             ? AelianaColors.hyperGold
                                              : Colors.white24,
                                          width: 2,
                                        ),
@@ -816,7 +816,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                            'Sable',
                                            style: GoogleFonts.inter(
                                              color: _selectedArchetypeId.toLowerCase() == 'sable'
-                                                 ? AurealColors.hyperGold
+                                                 ? AelianaColors.hyperGold
                                                  : Colors.white70,
                                              fontWeight: FontWeight.w600,
                                              fontSize: 12,
@@ -857,11 +857,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                      decoration: BoxDecoration(
                                        color: _selectedArchetypeId.toLowerCase() == 'kai'
-                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           ? AelianaColors.hyperGold.withOpacity(0.2)
                                            : Colors.transparent,
                                        border: Border.all(
                                          color: _selectedArchetypeId.toLowerCase() == 'kai'
-                                             ? AurealColors.hyperGold
+                                             ? AelianaColors.hyperGold
                                              : Colors.white24,
                                          width: 2,
                                        ),
@@ -896,7 +896,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                            'Kai',
                                            style: GoogleFonts.inter(
                                              color: _selectedArchetypeId.toLowerCase() == 'kai'
-                                                 ? AurealColors.hyperGold
+                                                 ? AelianaColors.hyperGold
                                                  : Colors.white70,
                                              fontWeight: FontWeight.w600,
                                              fontSize: 12,
@@ -937,11 +937,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                      decoration: BoxDecoration(
                                        color: _selectedArchetypeId.toLowerCase() == 'echo'
-                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           ? AelianaColors.hyperGold.withOpacity(0.2)
                                            : Colors.transparent,
                                        border: Border.all(
                                          color: _selectedArchetypeId.toLowerCase() == 'echo'
-                                             ? AurealColors.hyperGold
+                                             ? AelianaColors.hyperGold
                                              : Colors.white24,
                                          width: 2,
                                        ),
@@ -976,7 +976,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                            'Echo',
                                            style: GoogleFonts.inter(
                                              color: _selectedArchetypeId.toLowerCase() == 'echo'
-                                                 ? AurealColors.hyperGold
+                                                 ? AelianaColors.hyperGold
                                                  : Colors.white70,
                                              fontWeight: FontWeight.w600,
                                              fontSize: 12,
@@ -997,7 +997,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                        padding: const EdgeInsets.all(16),
                        decoration: BoxDecoration(
-                         color: AurealColors.obsidian,
+                         color: AelianaColors.obsidian,
                          borderRadius: BorderRadius.circular(12),
                        ),
                        child: Column(
@@ -1027,11 +1027,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                      decoration: BoxDecoration(
                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeFullscreen
-                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           ? AelianaColors.hyperGold.withOpacity(0.2)
                                            : Colors.transparent,
                                        border: Border.all(
                                          color: _avatarDisplayMode == AvatarDisplaySettings.modeFullscreen
-                                             ? AurealColors.hyperGold
+                                             ? AelianaColors.hyperGold
                                              : Colors.white24,
                                          width: 2,
                                        ),
@@ -1042,7 +1042,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          'Full Screen',
                                          style: GoogleFonts.inter(
                                            color: _avatarDisplayMode == AvatarDisplaySettings.modeFullscreen
-                                               ? AurealColors.hyperGold
+                                               ? AelianaColors.hyperGold
                                                : Colors.white70,
                                            fontWeight: FontWeight.w600,
                                            fontSize: 13,
@@ -1065,11 +1065,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                      decoration: BoxDecoration(
                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
-                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           ? AelianaColors.hyperGold.withOpacity(0.2)
                                            : Colors.transparent,
                                        border: Border.all(
                                          color: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
-                                             ? AurealColors.hyperGold
+                                             ? AelianaColors.hyperGold
                                              : Colors.white24,
                                          width: 2,
                                        ),
@@ -1080,7 +1080,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          'Icon',
                                          style: GoogleFonts.inter(
                                            color: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
-                                               ? AurealColors.hyperGold
+                                               ? AelianaColors.hyperGold
                                                : Colors.white70,
                                            fontWeight: FontWeight.w600,
                                            fontSize: 13,
@@ -1103,11 +1103,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                      decoration: BoxDecoration(
                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
-                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           ? AelianaColors.hyperGold.withOpacity(0.2)
                                            : Colors.transparent,
                                        border: Border.all(
                                          color: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
-                                             ? AurealColors.hyperGold
+                                             ? AelianaColors.hyperGold
                                              : Colors.white24,
                                          width: 2,
                                        ),
@@ -1118,7 +1118,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          'Orb',
                                          style: GoogleFonts.inter(
                                            color: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
-                                               ? AurealColors.hyperGold
+                                               ? AelianaColors.hyperGold
                                                : Colors.white70,
                                            fontWeight: FontWeight.w600,
                                            fontSize: 13,
@@ -1146,11 +1146,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                      decoration: BoxDecoration(
                                        color: _avatarDisplayMode == AvatarDisplaySettings.modePortrait
-                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           ? AelianaColors.hyperGold.withOpacity(0.2)
                                            : Colors.transparent,
                                        border: Border.all(
                                          color: _avatarDisplayMode == AvatarDisplaySettings.modePortrait
-                                             ? AurealColors.hyperGold
+                                             ? AelianaColors.hyperGold
                                              : Colors.white24,
                                          width: 2,
                                        ),
@@ -1161,7 +1161,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          'Portrait',
                                          style: GoogleFonts.inter(
                                            color: _avatarDisplayMode == AvatarDisplaySettings.modePortrait
-                                               ? AurealColors.hyperGold
+                                               ? AelianaColors.hyperGold
                                                : Colors.white70,
                                            fontWeight: FontWeight.w600,
                                            fontSize: 13,
@@ -1184,11 +1184,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                      decoration: BoxDecoration(
                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeConversation
-                                           ? AurealColors.hyperGold.withOpacity(0.2)
+                                           ? AelianaColors.hyperGold.withOpacity(0.2)
                                            : Colors.transparent,
                                        border: Border.all(
                                          color: _avatarDisplayMode == AvatarDisplaySettings.modeConversation
-                                             ? AurealColors.hyperGold
+                                             ? AelianaColors.hyperGold
                                              : Colors.white24,
                                          width: 2,
                                        ),
@@ -1199,7 +1199,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          'Chat',
                                          style: GoogleFonts.inter(
                                            color: _avatarDisplayMode == AvatarDisplaySettings.modeConversation
-                                               ? AurealColors.hyperGold
+                                               ? AelianaColors.hyperGold
                                                : Colors.white70,
                                            fontWeight: FontWeight.w600,
                                            fontSize: 13,
@@ -1220,7 +1220,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                        padding: const EdgeInsets.all(16),
                        decoration: BoxDecoration(
-                         color: AurealColors.obsidian,
+                         color: AelianaColors.obsidian,
                          borderRadius: BorderRadius.circular(12),
                        ),
                        child: Column(
@@ -1246,11 +1246,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                padding: const EdgeInsets.symmetric(vertical: 12),
                                decoration: BoxDecoration(
                                  color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
-                                     ? AurealColors.hyperGold.withOpacity(0.2)
+                                     ? AelianaColors.hyperGold.withOpacity(0.2)
                                      : Colors.transparent,
                                  border: Border.all(
                                    color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
-                                       ? AurealColors.hyperGold
+                                       ? AelianaColors.hyperGold
                                        : Colors.white24,
                                    width: 2,
                                  ),
@@ -1261,7 +1261,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                    'Clock',
                                    style: GoogleFonts.inter(
                                      color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
-                                         ? AurealColors.hyperGold
+                                         ? AelianaColors.hyperGold
                                          : Colors.white70,
                                      fontWeight: FontWeight.w600,
                                      fontSize: 13,
@@ -1282,7 +1282,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                          padding: const EdgeInsets.all(16),
                          decoration: BoxDecoration(
-                           color: AurealColors.obsidian,
+                           color: AelianaColors.obsidian,
                            borderRadius: BorderRadius.circular(12),
                          ),
                          child: Column(
@@ -1313,7 +1313,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          color: Colors.black,
                                          border: Border.all(
                                            color: _backgroundColor == AvatarDisplaySettings.colorBlack
-                                               ? AurealColors.hyperGold
+                                               ? AelianaColors.hyperGold
                                                : Colors.white24,
                                            width: 2,
                                          ),
@@ -1346,7 +1346,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          color: Colors.white,
                                          border: Border.all(
                                            color: _backgroundColor == AvatarDisplaySettings.colorWhite
-                                               ? AurealColors.hyperGold
+                                               ? AelianaColors.hyperGold
                                                : Colors.black26,
                                            width: 2,
                                          ),
@@ -1383,19 +1383,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                          child: Container(
                            padding: const EdgeInsets.all(16),
                            decoration: BoxDecoration(
-                             color: AurealColors.obsidian,
+                             color: AelianaColors.obsidian,
                              borderRadius: BorderRadius.circular(12),
-                             border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                             border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
                            ),
                            child: Row(
                              children: [
                                Container(
                                  padding: const EdgeInsets.all(10),
                                  decoration: BoxDecoration(
-                                   color: AurealColors.plasmaCyan.withOpacity(0.2),
+                                   color: AelianaColors.plasmaCyan.withOpacity(0.2),
                                    borderRadius: BorderRadius.circular(10),
                                  ),
-                                child: const Icon(LucideIcons.image, color: AurealColors.plasmaCyan, size: 20),
+                                child: const Icon(LucideIcons.image, color: AelianaColors.plasmaCyan, size: 20),
                                ),
                                const SizedBox(width: 16),
                                Expanded(
@@ -1430,7 +1430,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                          padding: const EdgeInsets.all(16),
                          decoration: BoxDecoration(
-                           color: AurealColors.obsidian,
+                           color: AelianaColors.obsidian,
                            borderRadius: BorderRadius.circular(12),
                          ),
                          child: Column(
@@ -1469,11 +1469,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                          decoration: BoxDecoration(
                                            color: !_clockUse24Hour
-                                               ? AurealColors.hyperGold.withOpacity(0.2)
+                                               ? AelianaColors.hyperGold.withOpacity(0.2)
                                                : Colors.transparent,
                                            border: Border.all(
                                              color: !_clockUse24Hour
-                                                 ? AurealColors.hyperGold
+                                                 ? AelianaColors.hyperGold
                                                  : Colors.white24,
                                            ),
                                            borderRadius: BorderRadius.circular(6),
@@ -1481,7 +1481,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          child: Text(
                                            '12hr',
                                            style: GoogleFonts.inter(
-                                             color: !_clockUse24Hour ? AurealColors.hyperGold : Colors.white54,
+                                             color: !_clockUse24Hour ? AelianaColors.hyperGold : Colors.white54,
                                              fontWeight: FontWeight.w600,
                                              fontSize: 12,
                                            ),
@@ -1500,11 +1500,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                          decoration: BoxDecoration(
                                            color: _clockUse24Hour
-                                               ? AurealColors.hyperGold.withOpacity(0.2)
+                                               ? AelianaColors.hyperGold.withOpacity(0.2)
                                                : Colors.transparent,
                                            border: Border.all(
                                              color: _clockUse24Hour
-                                                 ? AurealColors.hyperGold
+                                                 ? AelianaColors.hyperGold
                                                  : Colors.white24,
                                            ),
                                            borderRadius: BorderRadius.circular(6),
@@ -1512,7 +1512,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          child: Text(
                                            '24hr',
                                            style: GoogleFonts.inter(
-                                             color: _clockUse24Hour ? AurealColors.hyperGold : Colors.white54,
+                                             color: _clockUse24Hour ? AelianaColors.hyperGold : Colors.white54,
                                              fontWeight: FontWeight.w600,
                                              fontSize: 12,
                                            ),
@@ -1548,11 +1548,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                          decoration: BoxDecoration(
                                            color: !_clockIsAnalog
-                                               ? AurealColors.hyperGold.withOpacity(0.2)
+                                               ? AelianaColors.hyperGold.withOpacity(0.2)
                                                : Colors.transparent,
                                            border: Border.all(
                                              color: !_clockIsAnalog
-                                                 ? AurealColors.hyperGold
+                                                 ? AelianaColors.hyperGold
                                                  : Colors.white24,
                                            ),
                                            borderRadius: BorderRadius.circular(6),
@@ -1560,7 +1560,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          child: Text(
                                            'Digital',
                                            style: GoogleFonts.inter(
-                                             color: !_clockIsAnalog ? AurealColors.hyperGold : Colors.white54,
+                                             color: !_clockIsAnalog ? AelianaColors.hyperGold : Colors.white54,
                                              fontWeight: FontWeight.w600,
                                              fontSize: 12,
                                            ),
@@ -1579,11 +1579,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                          decoration: BoxDecoration(
                                            color: _clockIsAnalog
-                                               ? AurealColors.hyperGold.withOpacity(0.2)
+                                               ? AelianaColors.hyperGold.withOpacity(0.2)
                                                : Colors.transparent,
                                            border: Border.all(
                                              color: _clockIsAnalog
-                                                 ? AurealColors.hyperGold
+                                                 ? AelianaColors.hyperGold
                                                  : Colors.white24,
                                            ),
                                            borderRadius: BorderRadius.circular(6),
@@ -1591,7 +1591,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                          child: Text(
                                            'Analog',
                                            style: GoogleFonts.inter(
-                                             color: _clockIsAnalog ? AurealColors.hyperGold : Colors.white54,
+                                             color: _clockIsAnalog ? AelianaColors.hyperGold : Colors.white54,
                                              fontWeight: FontWeight.w600,
                                              fontSize: 12,
                                            ),
@@ -1623,7 +1623,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                        setState(() => _newsEnabled = val);
                        OnboardingStateService.create().then((s) => s.setNewsEnabled(val));
                      },
-                     activeColor: AurealColors.hyperGold,
+                     activeColor: AelianaColors.hyperGold,
                    ),
                  ),
                   if (_newsEnabled) ...[
@@ -1692,16 +1692,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: isSelected ? AurealColors.hyperGold.withOpacity(0.2) : AurealColors.obsidian,
+                                      color: isSelected ? AelianaColors.hyperGold.withOpacity(0.2) : AelianaColors.obsidian,
                                       border: Border.all(
-                                        color: isSelected ? AurealColors.hyperGold : Colors.white24,
+                                        color: isSelected ? AelianaColors.hyperGold : Colors.white24,
                                       ),
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Text(
                                       category,
                                       style: GoogleFonts.inter(
-                                        color: isSelected ? AurealColors.hyperGold : Colors.white70,
+                                        color: isSelected ? AelianaColors.hyperGold : Colors.white70,
                                         fontSize: 12,
                                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                       ),
@@ -1724,14 +1724,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   runSpacing: 8,
                                   children: _customNewsTopics.map((topic) => Chip(
                                     label: Text(topic, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
-                                    backgroundColor: AurealColors.hyperGold.withOpacity(0.2),
-                                    deleteIcon: const Icon(LucideIcons.x, size: 14, color: AurealColors.hyperGold),
+                                    backgroundColor: AelianaColors.hyperGold.withOpacity(0.2),
+                                    deleteIcon: const Icon(LucideIcons.x, size: 14, color: AelianaColors.hyperGold),
                                     onDeleted: () {
                                       setState(() {
                                         _customNewsTopics.remove(topic);
                                       });
                                     },
-                                    side: const BorderSide(color: AurealColors.hyperGold),
+                                    side: const BorderSide(color: AelianaColors.hyperGold),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                   )).toList(),
                                 ),
@@ -1743,7 +1743,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     child: Container(
                                       height: 48,
                                       decoration: BoxDecoration(
-                                        color: AurealColors.obsidian,
+                                        color: AelianaColors.obsidian,
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(color: Colors.white24),
                                       ),
@@ -1765,10 +1765,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   IconButton(
-                                    icon: const Icon(LucideIcons.plusCircle, color: AurealColors.hyperGold),
+                                    icon: const Icon(LucideIcons.plusCircle, color: AelianaColors.hyperGold),
                                     onPressed: _addCustomTopic,
                                     style: IconButton.styleFrom(
-                                      backgroundColor: AurealColors.obsidian,
+                                      backgroundColor: AelianaColors.obsidian,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                       side: const BorderSide(color: Colors.white24),
                                     ),
@@ -1817,7 +1817,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                          setState(() => _startOnLastTab = val);
                          SettingsControlService.updateSetting('start_on_last_tab', val);
                        },
-                       activeColor: AurealColors.hyperGold,
+                       activeColor: AelianaColors.hyperGold,
                      ),
                    ),
                    SettingsTile(
@@ -1827,7 +1827,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                      trailing: Switch(
                        value: _persistentMemoryEnabled,
                        onChanged: _togglePersistentMemory,
-                       activeColor: AurealColors.hyperGold,
+                       activeColor: AelianaColors.hyperGold,
                      ),
                    ),
                    SettingsTile(
@@ -1838,7 +1838,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                        builder: (context) {
                          final count = UnifiedMemoryService().getAllMemories().length;
                          if (count == 0) {
-                           return Icon(LucideIcons.chevronRight, color: AurealColors.ghost, size: 18);
+                           return Icon(LucideIcons.chevronRight, color: AelianaColors.ghost, size: 18);
                          }
                          return Row(
                            mainAxisSize: MainAxisSize.min,
@@ -1846,7 +1846,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                              Container(
                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                decoration: BoxDecoration(
-                                 color: AurealColors.hyperGold.withOpacity(0.2),
+                                 color: AelianaColors.hyperGold.withOpacity(0.2),
                                  borderRadius: BorderRadius.circular(10),
                                ),
                                child: Text(
@@ -1854,12 +1854,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                  style: GoogleFonts.inter(
                                    fontSize: 12,
                                    fontWeight: FontWeight.bold,
-                                   color: AurealColors.hyperGold,
+                                   color: AelianaColors.hyperGold,
                                  ),
                                ),
                              ),
                              const SizedBox(width: 8),
-                             Icon(LucideIcons.chevronRight, color: AurealColors.ghost, size: 18),
+                             Icon(LucideIcons.chevronRight, color: AelianaColors.ghost, size: 18),
                            ],
                          );
                        },
@@ -1879,7 +1879,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                      trailing: Switch(
                        value: _hapticsEnabled,
                        onChanged: (v) => setState(() => _hapticsEnabled = v), 
-                       activeColor: AurealColors.hyperGold,
+                       activeColor: AelianaColors.hyperGold,
                      ),
                    ),
                    SettingsTile(
@@ -1888,7 +1888,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                      trailing: Switch(
                        value: _soundsEnabled,
                        onChanged: (v) => setState(() => _soundsEnabled = v), 
-                       activeColor: AurealColors.hyperGold,
+                       activeColor: AelianaColors.hyperGold,
                      ),
                    ),
                 ],
@@ -2041,16 +2041,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AurealColors.hyperGold.withOpacity(0.2) : AurealColors.obsidian,
+          color: isSelected ? AelianaColors.hyperGold.withOpacity(0.2) : AelianaColors.obsidian,
           border: Border.all(
-            color: isSelected ? AurealColors.hyperGold : Colors.white24,
+            color: isSelected ? AelianaColors.hyperGold : Colors.white24,
           ),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
-            color: isSelected ? AurealColors.hyperGold : Colors.white70,
+            color: isSelected ? AelianaColors.hyperGold : Colors.white70,
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
@@ -2067,9 +2067,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         children: [
            Row(
              children: [
-               Text(label, style: GoogleFonts.inter(color: AurealColors.stardust, fontSize: 15, fontWeight: FontWeight.w500)),
+               Text(label, style: GoogleFonts.inter(color: AelianaColors.stardust, fontSize: 15, fontWeight: FontWeight.w500)),
                const Spacer(),
-               Text('${(value * 100).toInt()}%', style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 13)),
+               Text('${(value * 100).toInt()}%', style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 13)),
              ],
            ),
            SliderTheme(
@@ -2077,7 +2077,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                trackHeight: 2,
                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-               activeTrackColor: AurealColors.hyperGold,
+               activeTrackColor: AelianaColors.hyperGold,
                inactiveTrackColor: Colors.white10,
                thumbColor: Colors.white,
              ),
@@ -2104,7 +2104,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         children: [
            Row(
              children: [
-               Text('User Bond', style: GoogleFonts.inter(color: AurealColors.stardust, fontSize: 15, fontWeight: FontWeight.w500)),
+               Text('User Bond', style: GoogleFonts.inter(color: AelianaColors.stardust, fontSize: 15, fontWeight: FontWeight.w500)),
                const Spacer(),
                Container(
                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -2159,7 +2159,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         : (displayPercent < 75 ? 'Brilliant' : 'Genius'));
     Color levelColor = displayPercent < 25 ? Colors.grey 
         : (displayPercent < 50 ? Colors.green[300]! 
-        : (displayPercent < 75 ? Colors.purple[300]! : AurealColors.hyperGold));
+        : (displayPercent < 75 ? Colors.purple[300]! : AelianaColors.hyperGold));
     
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -2168,7 +2168,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         children: [
            Row(
              children: [
-               Text('Intelligence', style: GoogleFonts.inter(color: AurealColors.stardust, fontSize: 15, fontWeight: FontWeight.w500)),
+               Text('Intelligence', style: GoogleFonts.inter(color: AelianaColors.stardust, fontSize: 15, fontWeight: FontWeight.w500)),
                const Spacer(),
                Container(
                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -2214,7 +2214,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
              mainAxisAlignment: MainAxisAlignment.spaceBetween,
              children: [
                Text('Average', style: GoogleFonts.inter(color: Colors.grey, fontSize: 10)),
-               Text('Genius', style: GoogleFonts.inter(color: AurealColors.hyperGold, fontSize: 10)),
+               Text('Genius', style: GoogleFonts.inter(color: AelianaColors.hyperGold, fontSize: 10)),
              ],
            ),
            // Warning for high intelligence settings
@@ -2242,7 +2242,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _pickUserPhoto() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AurealColors.carbon,
+      backgroundColor: AelianaColors.carbon,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2273,10 +2273,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AurealColors.plasmaCyan.withOpacity(0.2),
+                  color: AelianaColors.plasmaCyan.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(LucideIcons.camera, color: AurealColors.plasmaCyan),
+                child: Icon(LucideIcons.camera, color: AelianaColors.plasmaCyan),
               ),
               title: Text('Take Photo', style: GoogleFonts.inter(color: Colors.white)),
               subtitle: Text('Use camera', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
@@ -2301,10 +2301,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AurealColors.hyperGold.withOpacity(0.2),
+                  color: AelianaColors.hyperGold.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(LucideIcons.image, color: AurealColors.hyperGold),
+                child: Icon(LucideIcons.image, color: AelianaColors.hyperGold),
               ),
               title: Text('Choose from Library', style: GoogleFonts.inter(color: Colors.white)),
               subtitle: Text('Select existing photo', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
@@ -2355,7 +2355,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     int tempAge = _companionAge;
     showModalBottomSheet(
       context: context,
-      backgroundColor: AurealColors.carbon,
+      backgroundColor: AelianaColors.carbon,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2393,7 +2393,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 48,
                   fontWeight: FontWeight.bold,
-                  color: AurealColors.plasmaCyan,
+                  color: AelianaColors.plasmaCyan,
                 ),
               ),
               const SizedBox(height: 16),
@@ -2402,7 +2402,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 min: 18,
                 max: 65,
                 divisions: 47,
-                activeColor: AurealColors.plasmaCyan,
+                activeColor: AelianaColors.plasmaCyan,
                 inactiveColor: Colors.white12,
                 label: tempAge >= 65 ? '65+' : '$tempAge',
                 onChanged: (value) {
@@ -2427,7 +2427,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     if (mounted) Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AurealColors.plasmaCyan,
+                    backgroundColor: AelianaColors.plasmaCyan,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -2450,7 +2450,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showArchetypeSelector() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AurealColors.carbon,
+      backgroundColor: AelianaColors.carbon,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -2506,15 +2506,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isSelected ? AurealColors.plasmaCyan.withOpacity(0.15) : Colors.black26,
+                        color: isSelected ? AelianaColors.plasmaCyan.withOpacity(0.15) : Colors.black26,
                         border: Border.all(
-                          color: isSelected ? AurealColors.plasmaCyan : Colors.white12,
+                          color: isSelected ? AelianaColors.plasmaCyan : Colors.white12,
                           width: isSelected ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: isSelected ? [
                           BoxShadow(
-                            color: AurealColors.plasmaCyan.withOpacity(0.3),
+                            color: AelianaColors.plasmaCyan.withOpacity(0.3),
                             blurRadius: 8,
                             spreadRadius: 1,
                           ),
@@ -2529,7 +2529,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               height: 24,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: AurealColors.plasmaCyan,
+                                color: AelianaColors.plasmaCyan,
                               ),
                               child: const Icon(LucideIcons.check, color: Colors.white, size: 16),
                             ),
@@ -2542,7 +2542,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 Text(
                                   archetype.name,
                                   style: GoogleFonts.spaceGrotesk(
-                                    color: isSelected ? AurealColors.plasmaCyan : Colors.white,
+                                    color: isSelected ? AelianaColors.plasmaCyan : Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                   ),
@@ -2551,7 +2551,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 Text(
                                   archetype.subtitle,
                                   style: GoogleFonts.inter(
-                                    color: AurealColors.plasmaCyan,
+                                    color: AelianaColors.plasmaCyan,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -2591,7 +2591,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Text(
         title,
         style: GoogleFonts.spaceGrotesk(
-          color: AurealColors.plasmaCyan,
+          color: AelianaColors.plasmaCyan,
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.5,
@@ -2613,7 +2613,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Color _getBondColor(BondState state) {
     switch (state) {
       case BondState.warm:
-        return AurealColors.hyperGold;
+        return AelianaColors.hyperGold;
       case BondState.neutral:
         return Colors.blue;
       case BondState.cooled:
@@ -2627,9 +2627,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AurealColors.hyperGold.withOpacity(0.2) : AurealColors.carbon,
+          color: isSelected ? AelianaColors.hyperGold.withOpacity(0.2) : AelianaColors.carbon,
           border: Border.all(
-            color: isSelected ? AurealColors.hyperGold : Colors.white24,
+            color: isSelected ? AelianaColors.hyperGold : Colors.white24,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(8),
@@ -2638,7 +2638,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           label,
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(
-            color: isSelected ? AurealColors.hyperGold : Colors.white,
+            color: isSelected ? AelianaColors.hyperGold : Colors.white,
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
@@ -2653,16 +2653,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AurealColors.plasmaCyan.withOpacity(0.2) : AurealColors.carbon,
+          color: isSelected ? AelianaColors.plasmaCyan.withOpacity(0.2) : AelianaColors.carbon,
           border: Border.all(
-            color: isSelected ? AurealColors.plasmaCyan : Colors.white24,
+            color: isSelected ? AelianaColors.plasmaCyan : Colors.white24,
           ),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
-            color: isSelected ? AurealColors.plasmaCyan : Colors.white,
+            color: isSelected ? AelianaColors.plasmaCyan : Colors.white,
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
@@ -2677,7 +2677,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         title: Text('Set Manual Location', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -2692,9 +2692,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: GoogleFonts.inter(color: Colors.white),
               decoration: InputDecoration(
                 labelText: 'City, State',
-                labelStyle: TextStyle(color: AurealColors.stardust),
+                labelStyle: TextStyle(color: AelianaColors.stardust),
                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AurealColors.plasmaCyan)),
+                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AelianaColors.plasmaCyan)),
               ),
             ),
           ],
@@ -2725,7 +2725,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               }
               Navigator.pop(context);
             },
-            child: Text('Save', style: TextStyle(color: AurealColors.plasmaCyan)),
+            child: Text('Save', style: TextStyle(color: AelianaColors.plasmaCyan)),
           ),
         ],
       ),
@@ -2747,7 +2747,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            backgroundColor: AurealColors.carbon,
+            backgroundColor: AelianaColors.carbon,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Text('Edit Profile', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
             content: SizedBox(
@@ -2776,8 +2776,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         child: DropdownButton<String>(
                           value: selectedGender,
                           isExpanded: true,
-                          dropdownColor: AurealColors.carbon,
-                          hint: Text('Select Gender', style: TextStyle(color: AurealColors.stardust)),
+                          dropdownColor: AelianaColors.carbon,
+                          hint: Text('Select Gender', style: TextStyle(color: AelianaColors.stardust)),
                           icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
                           items: ['Male', 'Female', 'Non-Binary', 'Prefer not to say'].map((String value) {
                             return DropdownMenuItem<String>(
@@ -2825,7 +2825,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AurealColors.plasmaCyan,
+                  backgroundColor: AelianaColors.plasmaCyan,
                   foregroundColor: Colors.black,
                 ),
                 child: const Text('Save Changes'),
@@ -2843,7 +2843,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       style: GoogleFonts.inter(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: AurealColors.stardust),
+        labelStyle: TextStyle(color: AelianaColors.stardust),
         prefixIcon: Icon(icon, color: Colors.white54, size: 20),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -2851,7 +2851,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AurealColors.plasmaCyan)
+          borderSide: const BorderSide(color: AelianaColors.plasmaCyan)
         ),
         fillColor: Colors.white.withOpacity(0.05),
         filled: true,
@@ -2875,7 +2875,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
@@ -2933,7 +2933,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Are you absolutely sure?',
@@ -2986,7 +2986,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AurealColors.carbon,
+          color: AelianaColors.carbon,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white10),
         ),
@@ -3157,10 +3157,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     margin: const EdgeInsets.only(right: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isSelected ? AurealColors.hyperGold.withOpacity(0.1) : AurealColors.carbon,
+                      color: isSelected ? AelianaColors.hyperGold.withOpacity(0.1) : AelianaColors.carbon,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected ? AurealColors.hyperGold : Colors.white10,
+                        color: isSelected ? AelianaColors.hyperGold : Colors.white10,
                         width: isSelected ? 2 : 1,
                       ),
                     ),
@@ -3173,7 +3173,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: isSelected ? AurealColors.hyperGold : Colors.white10,
+                                color: isSelected ? AelianaColors.hyperGold : Colors.white10,
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -3209,7 +3209,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         Text(
                           archetype.subtitle,
                           style: GoogleFonts.inter(
-                            color: isSelected ? AurealColors.hyperGold : Colors.white54,
+                            color: isSelected ? AelianaColors.hyperGold : Colors.white54,
                             fontSize: 12,
                           ),
                         ),
@@ -3229,11 +3229,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(LucideIcons.brainCircuit, color: AurealColors.plasmaCyan),
+            Icon(LucideIcons.brainCircuit, color: AelianaColors.plasmaCyan),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -3247,7 +3247,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(archetype.subtitle, style: GoogleFonts.inter(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold)),
+            Text(archetype.subtitle, style: GoogleFonts.inter(color: AelianaColors.plasmaCyan, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             _buildInfoRow('Vibe', archetype.vibe),
             const SizedBox(height: 12),
@@ -3269,7 +3269,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close', style: TextStyle(color: AurealColors.hyperGold)),
+            child: Text('Close', style: TextStyle(color: AelianaColors.hyperGold)),
           ),
         ],
       ),
@@ -3315,9 +3315,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AurealColors.hyperGold.withOpacity(0.2) : AurealColors.carbon,
+          color: isSelected ? AelianaColors.hyperGold.withOpacity(0.2) : AelianaColors.carbon,
           border: Border.all(
-            color: isSelected ? AurealColors.hyperGold : Colors.white24,
+            color: isSelected ? AelianaColors.hyperGold : Colors.white24,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(8),
@@ -3326,7 +3326,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           label,
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(
-            color: isSelected ? AurealColors.hyperGold : Colors.white,
+            color: isSelected ? AelianaColors.hyperGold : Colors.white,
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
@@ -3341,7 +3341,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AurealColors.carbon,
+          color: AelianaColors.carbon,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white10),
         ),
@@ -3354,16 +3354,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Text('Search Radius', style: GoogleFonts.inter(color: Colors.white70)),
                 Text(
                   '${_localVibeSettings.radiusMiles.toInt()} miles',
-                  style: GoogleFonts.inter(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.inter(color: AelianaColors.plasmaCyan, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             SliderTheme(
               data: SliderThemeData(
-                activeTrackColor: AurealColors.plasmaCyan,
+                activeTrackColor: AelianaColors.plasmaCyan,
                 inactiveTrackColor: Colors.white10,
                 thumbColor: Colors.white,
-                overlayColor: AurealColors.plasmaCyan.withOpacity(0.2),
+                overlayColor: AelianaColors.plasmaCyan.withOpacity(0.2),
                 trackHeight: 4,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
               ),
@@ -3395,13 +3395,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 runSpacing: 8,
                 children: _localVibeSettings.targetCities.map((city) => Chip(
                   label: Text(city, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
-                  backgroundColor: AurealColors.plasmaCyan.withOpacity(0.2),
-                  deleteIcon: const Icon(LucideIcons.x, size: 14, color: AurealColors.plasmaCyan),
+                  backgroundColor: AelianaColors.plasmaCyan.withOpacity(0.2),
+                  deleteIcon: const Icon(LucideIcons.x, size: 14, color: AelianaColors.plasmaCyan),
                   onDeleted: () {
                     final updated = List<String>.from(_localVibeSettings.targetCities)..remove(city);
                     _updateLocalVibeSettings(_localVibeSettings.copyWith(targetCities: updated));
                   },
-                  side: const BorderSide(color: AurealColors.plasmaCyan),
+                  side: const BorderSide(color: AelianaColors.plasmaCyan),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 )).toList(),
               ),
@@ -3413,7 +3413,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   child: Container(
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AurealColors.carbon,
+                      color: AelianaColors.carbon,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white24),
                     ),
@@ -3435,10 +3435,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(LucideIcons.plusCircle, color: AurealColors.plasmaCyan),
+                  icon: const Icon(LucideIcons.plusCircle, color: AelianaColors.plasmaCyan),
                   onPressed: _addCity,
                   style: IconButton.styleFrom(
-                    backgroundColor: AurealColors.carbon,
+                    backgroundColor: AelianaColors.carbon,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
@@ -3504,9 +3504,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Container(
                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                  decoration: BoxDecoration(
-                   color: AurealColors.carbon,
+                   color: AelianaColors.carbon,
                    borderRadius: BorderRadius.circular(20),
-                   border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.5)),
+                   border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.5)),
                  ),
                  child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -3514,7 +3514,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     Text(
                       _showAllVibeCategories ? 'Show Less' : 'Show All (${allCategories.length})',
                       style: GoogleFonts.inter(
-                        color: AurealColors.plasmaCyan,
+                        color: AelianaColors.plasmaCyan,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -3522,7 +3522,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(width: 4),
                     Icon(
                       _showAllVibeCategories ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                      color: AurealColors.plasmaCyan,
+                      color: AelianaColors.plasmaCyan,
                       size: 16,
                     ),
                   ],
@@ -3550,13 +3550,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               runSpacing: 8,
               children: _localVibeSettings.customCategories.map((cat) => Chip(
                 label: Text(cat, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
-                backgroundColor: AurealColors.plasmaCyan.withOpacity(0.2),
-                deleteIcon: const Icon(LucideIcons.x, size: 14, color: AurealColors.plasmaCyan),
+                backgroundColor: AelianaColors.plasmaCyan.withOpacity(0.2),
+                deleteIcon: const Icon(LucideIcons.x, size: 14, color: AelianaColors.plasmaCyan),
                 onDeleted: () {
                   final updated = List<String>.from(_localVibeSettings.customCategories)..remove(cat);
                   _updateLocalVibeSettings(_localVibeSettings.copyWith(customCategories: updated));
                 },
-                side: const BorderSide(color: AurealColors.plasmaCyan),
+                side: const BorderSide(color: AelianaColors.plasmaCyan),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               )).toList(),
             ),
@@ -3568,7 +3568,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Container(
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AurealColors.carbon,
+                    color: AelianaColors.carbon,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.white24),
                   ),
@@ -3590,10 +3590,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(LucideIcons.plusCircle, color: AurealColors.plasmaCyan),
+                icon: const Icon(LucideIcons.plusCircle, color: AelianaColors.plasmaCyan),
                 onPressed: _addCustomCategory,
                 style: IconButton.styleFrom(
-                  backgroundColor: AurealColors.carbon,
+                  backgroundColor: AelianaColors.carbon,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -3628,7 +3628,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AurealColors.carbon,
+        color: AelianaColors.carbon,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white10),
       ),
@@ -3652,15 +3652,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w500)),
-            Text('${(value * 100).toInt()}%', style: GoogleFonts.inter(color: AurealColors.plasmaCyan)),
+            Text('${(value * 100).toInt()}%', style: GoogleFonts.inter(color: AelianaColors.plasmaCyan)),
           ],
         ),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: AurealColors.plasmaCyan,
+            activeTrackColor: AelianaColors.plasmaCyan,
             inactiveTrackColor: Colors.white10,
             thumbColor: Colors.white,
-            overlayColor: AurealColors.plasmaCyan.withOpacity(0.2),
+            overlayColor: AelianaColors.plasmaCyan.withOpacity(0.2),
             trackHeight: 2,
           ),
           child: Slider(
@@ -3694,9 +3694,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: isActive ? AurealColors.hyperGold.withOpacity(0.2) : Colors.transparent,
+          color: isActive ? AelianaColors.hyperGold.withOpacity(0.2) : Colors.transparent,
           border: Border.all(
-            color: isActive ? AurealColors.hyperGold : Colors.white24,
+            color: isActive ? AelianaColors.hyperGold : Colors.white24,
             width: 1.5,
           ),
           shape: BoxShape.circle,
@@ -3705,7 +3705,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: Text(
             day,
             style: GoogleFonts.inter(
-              color: isActive ? AurealColors.hyperGold : Colors.white54,
+              color: isActive ? AelianaColors.hyperGold : Colors.white54,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -3728,7 +3728,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(color: AurealColors.hyperGold),
+            const CircularProgressIndicator(color: AelianaColors.hyperGold),
             const SizedBox(height: 20),
             Text('Backing up to iCloud...', style: GoogleFonts.inter(color: Colors.white)),
           ],
@@ -3789,7 +3789,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Restore', style: GoogleFonts.inter(color: AurealColors.hyperGold, fontWeight: FontWeight.bold)),
+            child: Text('Restore', style: GoogleFonts.inter(color: AelianaColors.hyperGold, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/theme/aureal_theme.dart';
+import '../../../core/theme/aeliana_theme.dart';
 
 /// 17+ Age Gate for Private Space
 /// Must be confirmed before accessing Private Space for the first time
@@ -25,7 +25,7 @@ class PrivateSpaceAgeGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -40,7 +40,7 @@ class PrivateSpaceAgeGate extends StatelessWidget {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        AurealColors.hyperGold.withOpacity(0.2),
+                        AelianaColors.hyperGold.withOpacity(0.2),
                         Colors.transparent,
                       ],
                     ),
@@ -76,17 +76,17 @@ class PrivateSpaceAgeGate extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AurealColors.carbon,
+                    color: AelianaColors.carbon,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AurealColors.hyperGold.withOpacity(0.3),
+                      color: AelianaColors.hyperGold.withOpacity(0.3),
                     ),
                   ),
                   child: Column(
                     children: [
                       Icon(
                         LucideIcons.alertTriangle,
-                        color: AurealColors.hyperGold,
+                        color: AelianaColors.hyperGold,
                         size: 32,
                       ),
                       const SizedBox(height: 12),
@@ -120,7 +120,7 @@ class PrivateSpaceAgeGate extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => _handleConfirm(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AurealColors.hyperGold,
+                      backgroundColor: AelianaColors.hyperGold,
                       foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(

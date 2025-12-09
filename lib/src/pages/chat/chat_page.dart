@@ -10,7 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
 import 'package:sable/core/widgets/cinematic_background.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:sable/features/settings/screens/settings_screen.dart';
 import 'package:sable/core/emotion/emotional_state_service.dart';
@@ -43,6 +43,7 @@ import 'package:sable/core/ui/feedback_service.dart'; // Added implementation
 import 'package:share_plus/share_plus.dart';
 import 'package:sable/core/audio/button_sound_service.dart';
 import 'package:sable/core/widgets/interactive_button.dart';
+import 'package:sable/features/onboarding/widgets/avatar_regeneration_dialog.dart';
 
 
 class ChatPage extends ConsumerStatefulWidget {
@@ -116,8 +117,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         final savedArchetypeId = prefs.getString('selected_archetype_id');
           if (savedAvatarUrl != null || savedArchetypeId != null) {
             setState(() {
-              if (savedAvatarUrl != null) _avatarUrl = savedAvatarUrl;
-              if (savedArchetypeId != null) _archetypeId = savedArchetypeId.toLowerCase();
+              // Only use personalized avatar URL for Sable archetype
+              // KAI and other archetypes should use their asset images
+              final archetype = savedArchetypeId?.toLowerCase() ?? 'sable';
+              if (savedAvatarUrl != null && archetype == 'sable') {
+                _avatarUrl = savedAvatarUrl;
+              } else {
+                // Clear personalized URL for non-Sable archetypes
+                _avatarUrl = null;
+              }
+              if (savedArchetypeId != null) _archetypeId = archetype;
               _isAvatarSettingsLoaded = true;
             });
           } else {
@@ -396,7 +405,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     
     if (mounted) {
       setState(() {
-        _avatarUrl = _stateService?.avatarUrl;
+        // Only use personalized avatar URL for Sable archetype
+        if (_archetypeId == 'sable' && _stateService?.avatarUrl != null) {
+          _avatarUrl = _stateService?.avatarUrl;
+        } else {
+          _avatarUrl = null; // Use default asset for non-Sable archetypes
+        }
       });
       
     // Load message history from persistent storage
@@ -422,6 +436,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       
       // Always scroll to bottom to show most recent messages
       _scrollToBottom();
+      
+      // Check if avatar regeneration should be prompted (age changed ±5 years)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          AvatarRegenerationDialog.checkAndShow(context);
+        }
+      });
     }
   }
 
@@ -1068,7 +1089,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         const SnackBar(
           content: Text('Rewriting with Apple Intelligence...'),
           duration: Duration(seconds: 1),
-          backgroundColor: AurealColors.plasmaCyan,
+          backgroundColor: AelianaColors.plasmaCyan,
         ),
       );
     }
@@ -1205,7 +1226,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       child: Scaffold(
         backgroundColor: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
             ? (_backgroundColor == AvatarDisplaySettings.colorWhite ? Colors.white : Colors.black)
-            : AurealColors.obsidian,
+            : AelianaColors.obsidian,
         extendBodyBehindAppBar: true,
         resizeToAvoidBottomInset: true, // Explicitly handle keyboard
         body: Stack(
@@ -1506,12 +1527,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(LucideIcons.triangle, color: AurealColors.hyperGold, size: 16),
+                                    const Icon(LucideIcons.triangle, color: AelianaColors.hyperGold, size: 16),
                                     const SizedBox(width: 8),
                                     Text(
                                       _companionName,
                                       style: GoogleFonts.spaceGrotesk(
-                                        color: AurealColors.hyperGold,
+                                        color: AelianaColors.hyperGold,
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: 2,
@@ -1610,8 +1631,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                               end: Alignment.bottomRight,
                                               colors: isUser 
                                                   ? [
-                                                      AurealColors.plasmaCyan.withOpacity(0.08), // Extremely transparent
-                                                      AurealColors.plasmaCyan.withOpacity(0.04),
+                                                      AelianaColors.plasmaCyan.withOpacity(0.08), // Extremely transparent
+                                                      AelianaColors.plasmaCyan.withOpacity(0.04),
                                                     ]
                                                   : [
                                                       Colors.white.withOpacity(0.08),  // More transparent for AI
@@ -1621,13 +1642,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                             borderRadius: BorderRadius.circular(32),
                                             border: Border.all(
                                               color: isUser 
-                                                  ? AurealColors.plasmaCyan.withOpacity(0.5)
+                                                  ? AelianaColors.plasmaCyan.withOpacity(0.5)
                                                   : Colors.white.withOpacity(0.25),
                                               width: 1.5,
                                             ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: (isUser ? AurealColors.plasmaCyan : Colors.white).withOpacity(0.1),
+                                                color: (isUser ? AelianaColors.plasmaCyan : Colors.white).withOpacity(0.1),
                                                 blurRadius: 16,
                                                 spreadRadius: 0,
                                               ),
@@ -1772,12 +1793,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(LucideIcons.triangle, color: AurealColors.hyperGold, size: 16),
+                  const Icon(LucideIcons.triangle, color: AelianaColors.hyperGold, size: 16),
                   const SizedBox(width: 8),
                   Text(
                     _companionName,
                     style: GoogleFonts.spaceGrotesk(
-                      color: AurealColors.hyperGold,
+                      color: AelianaColors.hyperGold,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 2,
@@ -1839,7 +1860,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       IconButton(
                         icon: Icon(
                           isEnabled ? LucideIcons.volume2 : LucideIcons.volumeX,
-                          color: isEnabled ? AurealColors.plasmaCyan : Colors.white,
+                          color: isEnabled ? AelianaColors.plasmaCyan : Colors.white,
                         ),
                         onPressed: () async {
                           ref.read(buttonSoundServiceProvider).playMediumTap();
@@ -1852,16 +1873,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                               final shouldEnable = await showDialog<bool>(
                                 context: context,
                                 builder: (context) => AlertDialog(
-                                  backgroundColor: AurealColors.carbon,
+                                  backgroundColor: AelianaColors.carbon,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                   title: Row(
                                     children: [
-                                      const Icon(LucideIcons.volume2, color: AurealColors.plasmaCyan),
+                                      const Icon(LucideIcons.volume2, color: AelianaColors.plasmaCyan),
                                       const SizedBox(width: 12),
                                       Text(
                                         'TEXT-TO-VOICE',
                                         style: GoogleFonts.spaceGrotesk(
-                                          color: AurealColors.plasmaCyan,
+                                          color: AelianaColors.plasmaCyan,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 1,
                                         ),
@@ -1880,14 +1901,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                       Container(
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                          color: AurealColors.plasmaCyan.withOpacity(0.1),
+                                          color: AelianaColors.plasmaCyan.withOpacity(0.1),
                                           borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                                          border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
                                         ),
                                         child: Text(
                                           '⚡ Premium Feature\n\nLimited free usage available during preview. Full access comes with premium tiers.',
                                           style: GoogleFonts.inter(
-                                            color: AurealColors.plasmaCyan,
+                                            color: AelianaColors.plasmaCyan,
                                             fontSize: 12,
                                           ),
                                         ),
@@ -1905,8 +1926,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                     ElevatedButton(
                                       onPressed: () => Navigator.pop(context, true),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: AurealColors.plasmaCyan,
-                                        foregroundColor: AurealColors.obsidian,
+                                        backgroundColor: AelianaColors.plasmaCyan,
+                                        foregroundColor: AelianaColors.obsidian,
                                       ),
                                       child: Text(
                                         'ENABLE',
@@ -1957,9 +1978,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           return Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AurealColors.obsidian.withOpacity(0.95),
+              color: AelianaColors.obsidian.withOpacity(0.95),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-              border: Border(top: BorderSide(color: AurealColors.plasmaCyan.withOpacity(0.3))),
+              border: Border(top: BorderSide(color: AelianaColors.plasmaCyan.withOpacity(0.3))),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1970,7 +1991,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   children: [
                     Row(
                       children: [
-                        const Icon(LucideIcons.brainCircuit, color: AurealColors.plasmaCyan),
+                        const Icon(LucideIcons.brainCircuit, color: AelianaColors.plasmaCyan),
                         const SizedBox(width: 12),
                         Text(
                           'NEURAL STATUS',
@@ -2015,7 +2036,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   label: 'Energy',
                   value: _emotionalService!.energy,
                   statusText: '${_emotionalService!.energy.toInt()}%',
-                  color: AurealColors.hyperGold,
+                  color: AelianaColors.hyperGold,
                   onChanged: (val) {
                     setModalState(() {
                       _emotionalService!.setEnergy(val);
@@ -2076,7 +2097,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     if (value <= 40) return Colors.orangeAccent;
     if (value <= 60) return Colors.grey;
     if (value <= 80) return Colors.lightGreenAccent;
-    return AurealColors.plasmaCyan;
+    return AelianaColors.plasmaCyan;
   }
 
   Widget _buildInteractiveSlider({
@@ -2122,7 +2143,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
-                      color: AurealColors.carbon,
+                      color: AelianaColors.carbon,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.white24),
                     ),
@@ -2159,16 +2180,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(LucideIcons.share2, color: AurealColors.plasmaCyan),
+            const Icon(LucideIcons.share2, color: AelianaColors.plasmaCyan),
             const SizedBox(width: 12),
             Text(
               'SHARE CONVERSATION',
               style: GoogleFonts.spaceGrotesk(
-                color: AurealColors.plasmaCyan,
+                color: AelianaColors.plasmaCyan,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1,
               ),
@@ -2187,9 +2208,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AurealColors.plasmaCyan.withOpacity(0.1),
+                color: AelianaColors.plasmaCyan.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2197,7 +2218,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   Text(
                     '📤 What gets shared:',
                     style: GoogleFonts.inter(
-                      color: AurealColors.plasmaCyan,
+                      color: AelianaColors.plasmaCyan,
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
@@ -2235,8 +2256,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AurealColors.plasmaCyan,
-              foregroundColor: AurealColors.obsidian,
+              backgroundColor: AelianaColors.plasmaCyan,
+              foregroundColor: AelianaColors.obsidian,
             ),
           ),
         ],
@@ -2314,7 +2335,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Screen cleared! Your conversation history is safely preserved.'),
-          backgroundColor: AurealColors.plasmaCyan,
+          backgroundColor: AelianaColors.plasmaCyan,
           duration: Duration(seconds: 2),
         ),
       );
@@ -2434,17 +2455,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     required VoidCallback onAction,
   }) {
     return AlertDialog(
-      backgroundColor: AurealColors.carbon,
+      backgroundColor: AelianaColors.carbon,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          Icon(icon, color: AurealColors.plasmaCyan),
+          Icon(icon, color: AelianaColors.plasmaCyan),
           const SizedBox(width: 12),
           Flexible(
             child: Text(
               title,
               style: GoogleFonts.spaceGrotesk(
-                color: AurealColors.plasmaCyan,
+                color: AelianaColors.plasmaCyan,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1,
               ),
@@ -2464,9 +2485,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AurealColors.plasmaCyan.withOpacity(0.1),
+              color: AelianaColors.plasmaCyan.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+              border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
             ),
             child: Text(
               details,
@@ -2490,8 +2511,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         ElevatedButton(
           onPressed: onAction,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AurealColors.plasmaCyan,
-            foregroundColor: AurealColors.obsidian,
+            backgroundColor: AelianaColors.plasmaCyan,
+            foregroundColor: AelianaColors.obsidian,
           ),
           child: Text(
             actionLabel,
@@ -2584,13 +2605,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: AurealColors.carbon, // Slate blue
+            color: AelianaColors.carbon, // Slate blue
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.2)), // Subtle teal
+            border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.2)), // Subtle teal
           ),
           child: Row(
             children: [
-              Icon(icon, color: AurealColors.plasmaCyan, size: 16), // Teal icon
+              Icon(icon, color: AelianaColors.plasmaCyan, size: 16), // Teal icon
               const SizedBox(width: 8),
               Text(
                 label,
@@ -2669,7 +2690,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ? BoxDecoration(
                       color: Colors.white.withOpacity(0.15), // Light semi-transparent
                       borderRadius: BorderRadius.circular(16).copyWith(bottomRight: Radius.zero),
-                      border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                      border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
                     )
                   : BoxDecoration(
                       color: Colors.white.withOpacity(0.1), // Very light semi-transparent for AI
@@ -2716,12 +2737,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           height: 1.4,
         ),
         a: GoogleFonts.inter(
-          color: AurealColors.plasmaCyan,
+          color: AelianaColors.plasmaCyan,
           fontSize: 16,
           height: 1.4,
           fontWeight: FontWeight.w500,
           decoration: TextDecoration.underline,
-          decorationColor: AurealColors.plasmaCyan.withOpacity(0.5),
+          decorationColor: AelianaColors.plasmaCyan.withOpacity(0.5),
         ),
         strong: GoogleFonts.inter(
           color: strongColor,
@@ -2729,22 +2750,22 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           fontWeight: FontWeight.bold,
         ),
         h1: GoogleFonts.spaceGrotesk(
-          color: AurealColors.hyperGold,
+          color: AelianaColors.hyperGold,
           fontSize: 24,
           fontWeight: FontWeight.bold,
         ),
         h2: GoogleFonts.spaceGrotesk(
-          color: AurealColors.hyperGold,
+          color: AelianaColors.hyperGold,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
         h3: GoogleFonts.spaceGrotesk(
-          color: AurealColors.plasmaCyan,
+          color: AelianaColors.plasmaCyan,
           fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
         listBullet: GoogleFonts.inter(
-          color: AurealColors.plasmaCyan,
+          color: AelianaColors.plasmaCyan,
           fontSize: 16,
         ),
       ),
@@ -2787,11 +2808,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: isDark ? AurealColors.carbon : Colors.white,
+        backgroundColor: isDark ? AelianaColors.carbon : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(LucideIcons.info, color: AurealColors.plasmaCyan, size: 20),
+            Icon(LucideIcons.info, color: AelianaColors.plasmaCyan, size: 20),
             const SizedBox(width: 12),
             Text(
               'INPUT CONTROLS',
@@ -2807,7 +2828,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildIconHelpRow(LucideIcons.wand2, AurealColors.hyperGold, 'Rewrite', 
+            _buildIconHelpRow(LucideIcons.wand2, AelianaColors.hyperGold, 'Rewrite', 
               'Use Apple Intelligence to improve your text', isDark),
             const SizedBox(height: 12),
             _buildIconHelpRow(LucideIcons.mic, isDark ? Colors.white70 : Colors.grey[700]!, 'Voice Input', 
@@ -2823,7 +2844,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             child: Text(
               'GOT IT',
               style: GoogleFonts.spaceGrotesk(
-                color: AurealColors.plasmaCyan,
+                color: AelianaColors.plasmaCyan,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -2884,10 +2905,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: AurealColors.carbon.withOpacity(0.9), // Slate blue
+            color: AelianaColors.carbon.withOpacity(0.9), // Slate blue
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: AurealColors.plasmaCyan.withOpacity(0.2), // Teal border
+              color: AelianaColors.plasmaCyan.withOpacity(0.2), // Teal border
             ),
           ),
           child: Column(
@@ -2926,8 +2947,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     child: Icon(
                       LucideIcons.wand2,
                       color: _controller.text.isNotEmpty 
-                          ? AurealColors.hyperGold 
-                          : AurealColors.plasmaCyan.withOpacity(0.6),
+                          ? AelianaColors.hyperGold 
+                          : AelianaColors.plasmaCyan.withOpacity(0.6),
                       size: 22,
                     ),
                   ),
@@ -2938,8 +2959,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     child: Icon(
                       _isListening ? LucideIcons.micOff : LucideIcons.mic,
                       color: _isListening 
-                          ? AurealColors.plasmaCyan 
-                          : AurealColors.plasmaCyan.withOpacity(0.6),
+                          ? AelianaColors.plasmaCyan 
+                          : AelianaColors.plasmaCyan.withOpacity(0.6),
                       size: 22,
                     ),
                   ),
@@ -2952,8 +2973,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     child: Icon(
                       _isMuted ? LucideIcons.volumeX : LucideIcons.volume2,
                       color: _isMuted 
-                          ? AurealColors.warningAmber 
-                          : AurealColors.plasmaCyan.withOpacity(0.6),
+                          ? AelianaColors.warningAmber 
+                          : AelianaColors.plasmaCyan.withOpacity(0.6),
                       size: 22,
                     ),
                   ),
@@ -2963,7 +2984,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     onTap: () => _showInputIconsHelp(isDark),
                     child: Icon(
                       LucideIcons.info,
-                      color: AurealColors.plasmaCyan.withOpacity(0.4),
+                      color: AelianaColors.plasmaCyan.withOpacity(0.4),
                       size: 18,
                     ),
                   ),

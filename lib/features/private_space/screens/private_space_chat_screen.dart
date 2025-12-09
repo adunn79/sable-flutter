@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import '../../../core/theme/aureal_theme.dart';
+import '../../../core/theme/aeliana_theme.dart';
 import '../../../core/ai/providers/grok_provider.dart';
 import '../../../core/widgets/cinematic_background.dart';
 import '../../../features/settings/widgets/magic_orb_widget.dart';
@@ -360,7 +360,7 @@ Communication Style:
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Persona saved: ${persona.aliasName}'),
-        backgroundColor: AurealColors.hyperGold.withOpacity(0.9),
+        backgroundColor: AelianaColors.hyperGold.withOpacity(0.9),
       ),
     );
   }
@@ -378,9 +378,9 @@ Communication Style:
     final avatar = PrivateAvatar.getById(_selectedAvatarId ?? 'luna');
     
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
-        backgroundColor: AurealColors.obsidian,
+        backgroundColor: AelianaColors.obsidian,
         leading: IconButton(
           icon: Icon(LucideIcons.arrowLeft, color: Colors.white),
           onPressed: () => context.go('/chat'),
@@ -393,7 +393,7 @@ Communication Style:
               height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: avatar?.accentColor ?? AurealColors.hyperGold, width: 2),
+                border: Border.all(color: avatar?.accentColor ?? AelianaColors.hyperGold, width: 2),
                 image: avatar?.imagePath != null
                     ? DecorationImage(
                         image: AssetImage(avatar!.imagePath!),
@@ -421,7 +421,7 @@ Communication Style:
                     'as ${_userPersona!.aliasName}',
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: avatar?.accentColor ?? AurealColors.hyperGold,
+                      color: avatar?.accentColor ?? AelianaColors.hyperGold,
                     ),
                   ),
               ],
@@ -439,7 +439,7 @@ Communication Style:
                       : (_displayMode == PrivateAvatarDisplayMode.fullScreen 
                           ? LucideIcons.maximize 
                           : LucideIcons.image)),
-              color: avatar?.accentColor ?? AurealColors.plasmaCyan,
+              color: avatar?.accentColor ?? AelianaColors.plasmaCyan,
             ),
             onPressed: _cycleDisplayMode,
             tooltip: 'Change avatar display',
@@ -447,7 +447,7 @@ Communication Style:
           IconButton(
             icon: Icon(
               _showSettings ? LucideIcons.x : LucideIcons.settings,
-              color: AurealColors.hyperGold,
+              color: AelianaColors.hyperGold,
             ),
             onPressed: _toggleSettings,
           ),
@@ -476,7 +476,7 @@ Communication Style:
                         // Background matching avatar's theme color
                         Container(
                           decoration: BoxDecoration(
-                            color: AurealColors.obsidian,
+                            color: AelianaColors.obsidian,
                           ),
                         ),
                         // Avatar extended to fill right side (55% width)
@@ -503,9 +503,9 @@ Communication Style:
                                     colors: [
                                       Colors.transparent,
                                       Colors.transparent,
-                                      AurealColors.obsidian.withOpacity(0.3),
-                                      AurealColors.obsidian.withOpacity(0.7),
-                                      AurealColors.obsidian,
+                                      AelianaColors.obsidian.withOpacity(0.3),
+                                      AelianaColors.obsidian.withOpacity(0.7),
+                                      AelianaColors.obsidian,
                                     ],
                                     stops: const [0.0, 0.3, 0.55, 0.75, 1.0],
                                   ),
@@ -623,13 +623,13 @@ Communication Style:
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: (avatar?.accentColor ?? AurealColors.plasmaCyan).withOpacity(0.15),
+        color: (avatar?.accentColor ?? AelianaColors.plasmaCyan).withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: (avatar?.accentColor ?? AurealColors.plasmaCyan).withOpacity(0.3)),
+        border: Border.all(color: (avatar?.accentColor ?? AelianaColors.plasmaCyan).withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          Icon(LucideIcons.info, color: avatar?.accentColor ?? AurealColors.plasmaCyan, size: 20),
+          Icon(LucideIcons.info, color: avatar?.accentColor ?? AelianaColors.plasmaCyan, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -733,7 +733,7 @@ Communication Style:
         children: [
           if (!isUser) ...[
             CircleAvatar(
-              backgroundColor: avatar?.accentColor.withOpacity(0.2) ?? AurealColors.carbon,
+              backgroundColor: avatar?.accentColor.withOpacity(0.2) ?? AelianaColors.carbon,
               child: Text(avatar?.emoji ?? '🎭', style: TextStyle(fontSize: 20)),
             ),
             const SizedBox(width: 8),
@@ -744,8 +744,8 @@ Communication Style:
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isUser 
-                    ? AurealColors.hyperGold.withOpacity(0.2)
-                    : AurealColors.carbon,
+                    ? AelianaColors.hyperGold.withOpacity(0.2)
+                    : AelianaColors.carbon.withOpacity(0.4), // More transparent so avatar face is visible
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(isUser ? 16 : 4),
                   topRight: Radius.circular(isUser ? 4 : 16),
@@ -754,8 +754,8 @@ Communication Style:
                 ),
                 border: Border.all(
                   color: isUser 
-                      ? AurealColors.hyperGold.withOpacity(0.3)
-                      : (avatar?.accentColor ?? AurealColors.plasmaCyan).withOpacity(0.2),
+                      ? AelianaColors.hyperGold.withOpacity(0.3)
+                      : (avatar?.accentColor ?? AelianaColors.plasmaCyan).withOpacity(0.2),
                 ),
               ),
               child: Text(
@@ -783,17 +783,17 @@ Communication Style:
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: avatar?.accentColor.withOpacity(0.2) ?? AurealColors.carbon,
+            backgroundColor: avatar?.accentColor.withOpacity(0.2) ?? AelianaColors.carbon,
             child: Text(avatar?.emoji ?? '🎭', style: TextStyle(fontSize: 20)),
           ),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AurealColors.carbon,
+              color: AelianaColors.carbon,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: (avatar?.accentColor ?? AurealColors.plasmaCyan).withOpacity(0.2),
+                color: (avatar?.accentColor ?? AelianaColors.plasmaCyan).withOpacity(0.2),
               ),
             ),
             child: Row(
@@ -839,9 +839,9 @@ Communication Style:
         top: 12,
       ),
       decoration: BoxDecoration(
-        color: AurealColors.carbon.withOpacity(0.9),
+        color: AelianaColors.carbon.withOpacity(0.9),
         border: Border(
-          top: BorderSide(color: (avatar?.accentColor ?? AurealColors.hyperGold).withOpacity(0.2)),
+          top: BorderSide(color: (avatar?.accentColor ?? AelianaColors.hyperGold).withOpacity(0.2)),
         ),
       ),
       child: Row(
@@ -858,7 +858,7 @@ Communication Style:
                 hintText: 'Message ${avatar?.name ?? 'Luna'}...',
                 hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.4)),
                 filled: true,
-                fillColor: AurealColors.obsidian,
+                fillColor: AelianaColors.obsidian,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -876,7 +876,7 @@ Communication Style:
               height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: avatar?.accentColor ?? AurealColors.hyperGold,
+                color: avatar?.accentColor ?? AelianaColors.hyperGold,
               ),
               child: Icon(
                 LucideIcons.send,

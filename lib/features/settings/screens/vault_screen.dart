@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 // import 'package:local_auth/local_auth.dart'; // Determine if we can use this later, or just mock for now
 
@@ -132,12 +132,12 @@ class _VaultScreenState extends State<VaultScreen> {
   Widget build(BuildContext context) {
     if (!_isUnlocked) {
       return Scaffold(
-        backgroundColor: AurealColors.obsidian,
+        backgroundColor: AelianaColors.obsidian,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(LucideIcons.lock, size: 64, color: AurealColors.plasmaCyan),
+              const Icon(LucideIcons.lock, size: 64, color: AelianaColors.plasmaCyan),
               const SizedBox(height: 24),
               Text(
                 'THE VAULT',
@@ -151,12 +151,12 @@ class _VaultScreenState extends State<VaultScreen> {
               const SizedBox(height: 12),
               Text(
                 _isAuthenticating ? 'Verifying Credentials...' : 'Biometric Auth Required',
-                style: GoogleFonts.inter(color: AurealColors.stardust, fontSize: 14),
+                style: GoogleFonts.inter(color: AelianaColors.stardust, fontSize: 14),
               ),
               if (_isAuthenticating)
                 const Padding(
                   padding: EdgeInsets.only(top: 32),
-                  child: CircularProgressIndicator(color: AurealColors.plasmaCyan),
+                  child: CircularProgressIndicator(color: AelianaColors.plasmaCyan),
                 ),
             ],
           ),
@@ -165,13 +165,13 @@ class _VaultScreenState extends State<VaultScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
-        backgroundColor: AurealColors.obsidian,
+        backgroundColor: AelianaColors.obsidian,
         title: Text(
           'THE VAULT',
           style: GoogleFonts.spaceGrotesk(
-            color: AurealColors.plasmaCyan,
+            color: AelianaColors.plasmaCyan,
             letterSpacing: 2,
             fontWeight: FontWeight.bold,
           ),
@@ -195,14 +195,14 @@ class _VaultScreenState extends State<VaultScreen> {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AurealColors.plasmaCyan.withOpacity(0.1), Colors.transparent],
+                colors: [AelianaColors.plasmaCyan.withOpacity(0.1), Colors.transparent],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
             ),
             child: Column(
               children: [
-                const Icon(LucideIcons.brainCircuit, color: AurealColors.plasmaCyan, size: 48),
+                const Icon(LucideIcons.brainCircuit, color: AelianaColors.plasmaCyan, size: 48),
                 const SizedBox(height: 16),
                 Text(
                   'Zero-Knowledge Zone',
@@ -242,12 +242,12 @@ class _VaultScreenState extends State<VaultScreen> {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: AurealColors.carbon,
+                          color: AelianaColors.carbon,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.white10),
                         ),
                         child: ListTile(
-                          leading: const Icon(LucideIcons.database, color: AurealColors.plasmaCyan, size: 20),
+                          leading: const Icon(LucideIcons.database, color: AelianaColors.plasmaCyan, size: 20),
                           title: Text(
                             item,
                             style: GoogleFonts.inter(color: Colors.white, fontSize: 14),

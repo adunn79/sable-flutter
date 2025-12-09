@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sable/core/contacts/contacts_service.dart';
@@ -103,7 +103,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     await showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         title: Text('Add Emergency Contact', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
         content: SingleChildScrollView(
           child: Column(
@@ -189,8 +189,8 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                 icon: const Icon(LucideIcons.users, size: 16),
                 label: const Text('Import from Contacts'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AurealColors.plasmaCyan,
-                  side: BorderSide(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+                  foregroundColor: AelianaColors.plasmaCyan,
+                  side: BorderSide(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
                 ),
               ),
             ],
@@ -216,8 +216,8 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AurealColors.hyperGold,
-              foregroundColor: AurealColors.obsidian,
+              backgroundColor: AelianaColors.hyperGold,
+              foregroundColor: AelianaColors.obsidian,
             ),
             child: const Text('Add'),
           ),
@@ -231,7 +231,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
@@ -352,9 +352,9 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
-        backgroundColor: AurealColors.obsidian,
+        backgroundColor: AelianaColors.obsidian,
         title: Text(
           'EMERGENCY CENTER',
           style: GoogleFonts.spaceGrotesk(
@@ -394,7 +394,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                    return Container(
                      margin: const EdgeInsets.only(bottom: 8),
                      decoration: BoxDecoration(
-                       color: AurealColors.carbon,
+                       color: AelianaColors.carbon,
                        borderRadius: BorderRadius.circular(12),
                        border: Border.all(color: Colors.white12),
                      ),
@@ -410,7 +410,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                            ),
                            Text(
                              relationship,
-                             style: TextStyle(color: AurealColors.plasmaCyan, fontSize: 12),
+                             style: TextStyle(color: AelianaColors.plasmaCyan, fontSize: 12),
                            ),
                          ],
                        ),
@@ -428,7 +428,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                   onPressed: _addContact,
                   icon: const Icon(Icons.add),
                   label: const Text('Add Emergency Contact'),
-                  style: OutlinedButton.styleFrom(foregroundColor: AurealColors.plasmaCyan),
+                  style: OutlinedButton.styleFrom(foregroundColor: AelianaColors.plasmaCyan),
                 ),
                 
                 const SizedBox(height: 24),
@@ -515,7 +515,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AurealColors.carbon,
+        color: AelianaColors.carbon,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white12),
       ),
@@ -541,7 +541,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
           children: [
             Text(
               resource['number']!,
-              style: GoogleFonts.spaceGrotesk(color: AurealColors.plasmaCyan, fontSize: 16),
+              style: GoogleFonts.spaceGrotesk(color: AelianaColors.plasmaCyan, fontSize: 16),
             ),
             if (resource['subtitle'] != null)
               Text(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/theme/aureal_theme.dart';
+import 'core/theme/aeliana_theme.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/onboarding/onboarding_flow.dart';
 import 'features/onboarding/screens/access_denied_screen.dart';
@@ -79,23 +79,23 @@ class _AppLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AurealApp(initialRoute: initialRoute);
+    return AelianaApp(initialRoute: initialRoute);
   }
 }
 
-class AurealApp extends StatelessWidget {
+class AelianaApp extends StatelessWidget {
   final String initialRoute;
   
-  const AurealApp({super.key, this.initialRoute = '/chat'});
+  const AelianaApp({super.key, this.initialRoute = '/chat'});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AUREAL',
+      title: 'AELIANA',
       debugShowCheckedModeBanner: false,
-      theme: AurealTheme.darkTheme,
+      theme: AelianaTheme.darkTheme,
       themeMode: ThemeMode.dark,
-      home: const AurealSplashScreen(),
+      home: const AelianaSplashScreen(),
       routes: {
         '/onboarding': (context) => OnboardingFlow(
               onComplete: () {
@@ -106,7 +106,7 @@ class AurealApp extends StatelessWidget {
         '/access-denied': (context) => const AccessDeniedScreen(),
         '/debug': (context) => const DebugDashboard(),
         '/settings': (context) => const SettingsScreen(),
-        '/splash': (context) => const AurealSplashScreen(),
+        '/splash': (context) => const AelianaSplashScreen(),
         '/journal': (context) => const JournalTimelineScreen(),
       },
     );

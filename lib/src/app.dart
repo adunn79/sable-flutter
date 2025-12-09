@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'router.dart';
 
 void main() {
@@ -20,8 +20,8 @@ class SableApp extends ConsumerWidget {
     final router = createAppRouter(initialRoute);
 
     return MaterialApp.router(
-      title: 'Aureal',
-      theme: AurealTheme.darkTheme,
+      title: 'Aeliana',
+      theme: AelianaTheme.darkTheme,
       themeMode: ThemeMode.dark,
       routerConfig: router,
       localizationsDelegates: const [

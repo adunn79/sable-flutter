@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class SettingsHeader extends StatelessWidget {
@@ -54,9 +54,9 @@ class SettingsHeader extends StatelessWidget {
                           width: 24,
                           height: 24,
                           decoration: BoxDecoration(
-                            color: AurealColors.hyperGold,
+                            color: AelianaColors.hyperGold,
                             shape: BoxShape.circle,
-                            border: Border.all(color: AurealColors.carbon, width: 2),
+                            border: Border.all(color: AelianaColors.carbon, width: 2),
                           ),
                           child: const Icon(LucideIcons.camera, size: 12, color: Colors.white),
                         ),
@@ -80,7 +80,7 @@ class SettingsHeader extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  Icon(Icons.favorite, color: AurealColors.hyperGold.withOpacity(0.6), size: 16),
+                  Icon(Icons.favorite, color: AelianaColors.hyperGold.withOpacity(0.6), size: 16),
                   const SizedBox(height: 4),
                   Container(
                     width: 40,
@@ -88,8 +88,8 @@ class SettingsHeader extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          AurealColors.hyperGold.withOpacity(0.3),
-                          AurealColors.plasmaCyan.withOpacity(0.3),
+                          AelianaColors.hyperGold.withOpacity(0.3),
+                          AelianaColors.plasmaCyan.withOpacity(0.3),
                         ],
                       ),
                     ),
@@ -107,7 +107,7 @@ class SettingsHeader extends StatelessWidget {
                   _getCompanionName(),
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: AurealColors.plasmaCyan,
+                    color: AelianaColors.plasmaCyan,
                   ),
                 ),
               ],
@@ -122,7 +122,7 @@ class SettingsHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AurealColors.hyperGold,
+              color: AelianaColors.hyperGold,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
@@ -141,7 +141,7 @@ class SettingsHeader extends StatelessWidget {
           child: Text(
             'Edit Profile',
             style: GoogleFonts.inter(
-              color: AurealColors.plasmaCyan,
+              color: AelianaColors.plasmaCyan,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -158,10 +158,10 @@ class SettingsHeader extends StatelessWidget {
       height: 80,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AurealColors.hyperGold, width: 2),
+        border: Border.all(color: AelianaColors.hyperGold, width: 2),
         boxShadow: [
           BoxShadow(
-            color: AurealColors.hyperGold.withOpacity(0.2),
+            color: AelianaColors.hyperGold.withOpacity(0.2),
             blurRadius: 12,
             spreadRadius: 1,
           ),
@@ -197,14 +197,14 @@ class SettingsHeader extends StatelessWidget {
 
   Widget _buildInitialsPlaceholder(String initials) {
     return Container(
-      color: AurealColors.carbon,
+      color: AelianaColors.carbon,
       child: Center(
         child: Text(
           initials,
           style: GoogleFonts.spaceGrotesk(
             fontSize: 28,
             fontWeight: FontWeight.bold,
-            color: AurealColors.hyperGold,
+            color: AelianaColors.hyperGold,
           ),
         ),
       ),
@@ -217,10 +217,10 @@ class SettingsHeader extends StatelessWidget {
       height: 80,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AurealColors.plasmaCyan, width: 2),
+        border: Border.all(color: AelianaColors.plasmaCyan, width: 2),
         boxShadow: [
           BoxShadow(
-            color: AurealColors.plasmaCyan.withOpacity(0.2),
+            color: AelianaColors.plasmaCyan.withOpacity(0.2),
             blurRadius: 12,
             spreadRadius: 1,
           ),
@@ -244,9 +244,9 @@ class SettingsHeader extends StatelessWidget {
       'assets/images/archetypes/$safeArch.png',
       fit: BoxFit.cover,
       errorBuilder: (c, e, s) => Container(
-        color: AurealColors.carbon,
+        color: AelianaColors.carbon,
         child: Center(
-          child: Icon(Icons.person, color: AurealColors.plasmaCyan, size: 32),
+          child: Icon(Icons.person, color: AelianaColors.plasmaCyan, size: 32),
         ),
       ),
     );

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 
 class SettingsTile extends StatelessWidget {
   final IconData icon;
@@ -40,13 +40,13 @@ class SettingsTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: (iconColor ?? AurealColors.hyperGold).withOpacity(0.15),
+                  color: (iconColor ?? AelianaColors.hyperGold).withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
                   size: 20,
-                  color: iconColor ?? AurealColors.hyperGold,
+                  color: iconColor ?? AelianaColors.hyperGold,
                 ),
               ),
               const SizedBox(width: 16),
@@ -61,7 +61,7 @@ class SettingsTile extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: isDestructive ? Colors.red : AurealColors.stardust,
+                        color: isDestructive ? Colors.red : AelianaColors.stardust,
                       ),
                     ),
                     if (subtitle != null) ...[
@@ -70,7 +70,7 @@ class SettingsTile extends StatelessWidget {
                         subtitle!,
                         style: GoogleFonts.inter(
                           fontSize: 13,
-                          color: AurealColors.ghost,
+                          color: AelianaColors.ghost,
                         ),
                       ),
                     ],
@@ -87,7 +87,7 @@ class SettingsTile extends StatelessWidget {
                     value!,
                     style: GoogleFonts.inter(
                       fontSize: 15,
-                      color: AurealColors.ghost.withOpacity(0.8),
+                      color: AelianaColors.ghost.withOpacity(0.8),
                     ),
                   ),
                 if (showChevron && onTap != null) ...[

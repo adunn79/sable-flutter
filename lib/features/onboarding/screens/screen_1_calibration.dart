@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import '../models/user_profile.dart';
 
 class Screen1Calibration extends StatefulWidget {
@@ -49,11 +49,11 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
         return Theme(
           data: ThemeData.dark().copyWith(
             colorScheme: ColorScheme.dark(
-              primary: AurealColors.plasmaCyan,
-              surface: AurealColors.carbon,
-              onSurface: AurealColors.stardust,
+              primary: AelianaColors.plasmaCyan,
+              surface: AelianaColors.carbon,
+              onSurface: AelianaColors.stardust,
             ),
-            dialogBackgroundColor: AurealColors.carbon,
+            dialogBackgroundColor: AelianaColors.carbon,
           ),
           child: child!,
         );
@@ -73,7 +73,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
           SnackBar(
             content: Text('Please select your date of birth',
                 style: GoogleFonts.inter()),
-            backgroundColor: AurealColors.plasmaCyan,
+            backgroundColor: AelianaColors.plasmaCyan,
           ),
         );
         return;
@@ -101,7 +101,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -118,7 +118,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: AurealColors.plasmaCyan,
+                    color: AelianaColors.plasmaCyan,
                     letterSpacing: 2,
                   ),
                 ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
@@ -129,7 +129,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                   'This helps me get to know you right away. It\'s part of our bonding—understanding who you are, where you come from, and how to connect with you.',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: AurealColors.ghost,
+                    color: AelianaColors.ghost,
                     height: 1.5,
                   ),
                 ).animate(delay: 200.ms).fadeIn(duration: 600.ms),
@@ -141,7 +141,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                   'What do they call you?',
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: AurealColors.ghost,
+                    color: AelianaColors.ghost,
                     letterSpacing: 1,
                   ),
                 ).animate(delay: 400.ms).fadeIn(duration: 400.ms),
@@ -150,7 +150,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
 
                 TextFormField(
                   controller: _nameController,
-                  style: GoogleFonts.inter(color: AurealColors.stardust),
+                  style: GoogleFonts.inter(color: AelianaColors.stardust),
                   decoration: const InputDecoration(
                     hintText: 'Enter your name',
                   ),
@@ -171,7 +171,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                       'Where were you born?',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: AurealColors.ghost,
+                        color: AelianaColors.ghost,
                         letterSpacing: 1,
                       ),
                     ),
@@ -181,17 +181,17 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            backgroundColor: AurealColors.carbon,
+                            backgroundColor: AelianaColors.carbon,
                             title: Text(
                               'About Location',
                               style: GoogleFonts.spaceGrotesk(
-                                color: AurealColors.plasmaCyan,
+                                color: AelianaColors.plasmaCyan,
                               ),
                             ),
                             content: Text(
                               'This helps the avatar know a little about you. You can skip this if you like.',
                               style: GoogleFonts.inter(
-                                color: AurealColors.stardust,
+                                color: AelianaColors.stardust,
                               ),
                             ),
                             actions: [
@@ -200,7 +200,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                                 child: Text(
                                   'Got it',
                                   style: GoogleFonts.inter(
-                                    color: AurealColors.plasmaCyan,
+                                    color: AelianaColors.plasmaCyan,
                                   ),
                                 ),
                               ),
@@ -211,7 +211,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                       child: Icon(
                         Icons.info_outline,
                         size: 16,
-                        color: AurealColors.plasmaCyan.withOpacity(0.6),
+                        color: AelianaColors.plasmaCyan.withOpacity(0.6),
                       ),
                     ),
                   ],
@@ -221,7 +221,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
 
                 TextFormField(
                   controller: _locationController,
-                  style: GoogleFonts.inter(color: AurealColors.stardust),
+                  style: GoogleFonts.inter(color: AelianaColors.stardust),
                   decoration: const InputDecoration(
                     hintText: 'City, Country',
                   ),
@@ -242,7 +242,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                       'When did you begin?',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: AurealColors.ghost,
+                        color: AelianaColors.ghost,
                         letterSpacing: 1,
                       ),
                     ),
@@ -252,17 +252,17 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            backgroundColor: AurealColors.carbon,
+                            backgroundColor: AelianaColors.carbon,
                             title: Text(
                               'Date of Birth',
                               style: GoogleFonts.spaceGrotesk(
-                                color: AurealColors.plasmaCyan,
+                                color: AelianaColors.plasmaCyan,
                               ),
                             ),
                             content: Text(
                               'What is your date of birth',
                               style: GoogleFonts.inter(
-                                color: AurealColors.stardust,
+                                color: AelianaColors.stardust,
                               ),
                             ),
                             actions: [
@@ -271,7 +271,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                                 child: Text(
                                   'Got it',
                                   style: GoogleFonts.inter(
-                                    color: AurealColors.plasmaCyan,
+                                    color: AelianaColors.plasmaCyan,
                                   ),
                                 ),
                               ),
@@ -282,7 +282,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                       child: Icon(
                         Icons.info_outline,
                         size: 16,
-                        color: AurealColors.plasmaCyan.withOpacity(0.6),
+                        color: AelianaColors.plasmaCyan.withOpacity(0.6),
                       ),
                     ),
                   ],
@@ -295,11 +295,11 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     decoration: BoxDecoration(
-                      color: AurealColors.carbon,
+                      color: AelianaColors.carbon,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: _selectedDate != null
-                            ? AurealColors.plasmaCyan
+                            ? AelianaColors.plasmaCyan
                             : Colors.transparent,
                         width: 1.5,
                       ),
@@ -313,12 +313,12 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                               : 'Select date of birth',
                           style: GoogleFonts.inter(
                             color: _selectedDate != null
-                                ? AurealColors.stardust
-                                : AurealColors.ghost.withOpacity(0.5),
+                                ? AelianaColors.stardust
+                                : AelianaColors.ghost.withOpacity(0.5),
                           ),
                         ),
                         const Icon(Icons.calendar_today,
-                            color: AurealColors.plasmaCyan, size: 20),
+                            color: AelianaColors.plasmaCyan, size: 20),
                       ],
                     ),
                   ),
@@ -333,7 +333,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                       'How do you identify? (Optional)',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: AurealColors.ghost,
+                        color: AelianaColors.ghost,
                         letterSpacing: 1,
                       ),
                     ),
@@ -343,17 +343,17 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            backgroundColor: AurealColors.carbon,
+                            backgroundColor: AelianaColors.carbon,
                             title: Text(
                               'Identity',
                               style: GoogleFonts.spaceGrotesk(
-                                color: AurealColors.plasmaCyan,
+                                color: AelianaColors.plasmaCyan,
                               ),
                             ),
                             content: Text(
                               'This helps the avatar address you correctly. It is completely optional.',
                               style: GoogleFonts.inter(
-                                color: AurealColors.stardust,
+                                color: AelianaColors.stardust,
                               ),
                             ),
                             actions: [
@@ -362,7 +362,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                                 child: Text(
                                   'Got it',
                                   style: GoogleFonts.inter(
-                                    color: AurealColors.plasmaCyan,
+                                    color: AelianaColors.plasmaCyan,
                                   ),
                                 ),
                               ),
@@ -373,7 +373,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                       child: Icon(
                         Icons.info_outline,
                         size: 16,
-                        color: AurealColors.plasmaCyan.withOpacity(0.6),
+                        color: AelianaColors.plasmaCyan.withOpacity(0.6),
                       ),
                     ),
                   ],
@@ -383,7 +383,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
 
                 DropdownButtonFormField<String>(
                   value: _genderIdentity,
-                  dropdownColor: AurealColors.carbon,
+                  dropdownColor: AelianaColors.carbon,
                   decoration: const InputDecoration(
                     hintText: 'Select or skip',
                   ),
@@ -399,7 +399,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                       _genderIdentity = value;
                     });
                   },
-                  style: GoogleFonts.inter(color: AurealColors.stardust),
+                  style: GoogleFonts.inter(color: AelianaColors.stardust),
                 ).animate(delay: 1100.ms).fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
 
                 const SizedBox(height: 48),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/identity/bond_engine.dart';
 import 'package:sable/core/identity/emotional_state.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
@@ -28,10 +28,10 @@ class _DebugDashboardState extends ConsumerState<DebugDashboard> {
     final emotion = ref.watch(emotionalStateProvider);
 
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
-        title: const Text('AUREAL DEBUG CONSOLE'),
-        backgroundColor: AurealColors.carbon,
+        title: const Text('AELIANA DEBUG CONSOLE'),
+        backgroundColor: AelianaColors.carbon,
       ),
       body: Row(
         children: [
@@ -128,7 +128,7 @@ class _DebugDashboardState extends ConsumerState<DebugDashboard> {
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.black,
-                border: Border.all(color: AurealColors.hyperGold),
+                border: Border.all(color: AelianaColors.hyperGold),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -136,11 +136,11 @@ class _DebugDashboardState extends ConsumerState<DebugDashboard> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(8),
-                    color: AurealColors.hyperGold.withOpacity(0.2),
+                    color: AelianaColors.hyperGold.withOpacity(0.2),
                     child: const Text(
                       'SYSTEM LOGS',
                       style: TextStyle(
-                          color: AurealColors.hyperGold,
+                          color: AelianaColors.hyperGold,
                           fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -178,7 +178,7 @@ class _DebugDashboardState extends ConsumerState<DebugDashboard> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AurealColors.carbon,
+        color: AelianaColors.carbon,
         border: Border(left: BorderSide(color: color, width: 4)),
       ),
       child: Row(
@@ -196,8 +196,8 @@ class _DebugDashboardState extends ConsumerState<DebugDashboard> {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
-        backgroundColor: AurealColors.carbon,
-        foregroundColor: AurealColors.stardust,
+        backgroundColor: AelianaColors.carbon,
+        foregroundColor: AelianaColors.stardust,
         side: const BorderSide(color: Colors.grey),
       ),
       child: Text(label),

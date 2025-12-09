@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/voice/voice_service.dart';
 import '../models/avatar_config.dart';
 import '../services/avatar_generation_service.dart';
@@ -129,7 +129,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
         children: [
           Expanded(
             child: Center(
-              child: CircularProgressIndicator(color: AurealColors.plasmaCyan),
+              child: CircularProgressIndicator(color: AelianaColors.plasmaCyan),
             ),
           ),
         ],
@@ -142,7 +142,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
           Expanded(
             child: Text(
               'No voices available. Check your connection.',
-              style: GoogleFonts.inter(color: AurealColors.ghost),
+              style: GoogleFonts.inter(color: AelianaColors.ghost),
             ),
           ),
         ],
@@ -311,11 +311,11 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         title: Text(
           'Your Avatar',
           style: GoogleFonts.spaceGrotesk(
-            color: AurealColors.stardust,
+            color: AelianaColors.stardust,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -337,7 +337,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
             const SizedBox(height: 16),
             Text(
               'Generations remaining: ${_stateService?.remainingGenerations ?? 3}',
-              style: GoogleFonts.inter(color: AurealColors.ghost),
+              style: GoogleFonts.inter(color: AelianaColors.ghost),
             ),
           ],
         ),
@@ -348,7 +348,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
             },
             child: Text(
               'Regenerate',
-              style: GoogleFonts.inter(color: AurealColors.plasmaCyan),
+              style: GoogleFonts.inter(color: AelianaColors.plasmaCyan),
             ),
           ),
           ElevatedButton(
@@ -370,17 +370,17 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         title: Text(
           '⚡ Energy Depleted',
           style: GoogleFonts.spaceGrotesk(
-            color: AurealColors.hyperGold,
+            color: AelianaColors.hyperGold,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
           'You\'ve used all 3 free generations. Upgrade to a Spark Pack to continue refining your avatar.',
-          style: GoogleFonts.inter(color: AurealColors.stardust),
+          style: GoogleFonts.inter(color: AelianaColors.stardust),
         ),
         actions: [
           TextButton(
@@ -406,7 +406,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
             },
             child: Text(
               'Use Default',
-              style: GoogleFonts.inter(color: AurealColors.ghost),
+              style: GoogleFonts.inter(color: AelianaColors.ghost),
             ),
           ),
           ElevatedButton(
@@ -434,7 +434,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
   Widget _buildChoiceScreen() {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -446,7 +446,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: AurealColors.hyperGold,
+                  color: AelianaColors.hyperGold,
                   letterSpacing: 2,
                 ),
               ).animate().fadeIn(duration: 600.ms),
@@ -457,7 +457,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                 'How would you like to proceed?',
                 style: GoogleFonts.inter(
                   fontSize: 16,
-                  color: AurealColors.ghost,
+                  color: AelianaColors.ghost,
                 ),
                 textAlign: TextAlign.center,
               ).animate(delay: 200.ms).fadeIn(duration: 600.ms),
@@ -468,9 +468,9 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AurealColors.carbon,
+                  color: AelianaColors.carbon,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AurealColors.ghost.withOpacity(0.2)),
+                  border: Border.all(color: AelianaColors.ghost.withOpacity(0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,7 +480,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: AurealColors.ghost,
+                        color: AelianaColors.ghost,
                         letterSpacing: 1,
                       ),
                     ),
@@ -489,9 +489,9 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                       child: DropdownButton<String>(
                         value: _race,
                         isExpanded: true,
-                        dropdownColor: AurealColors.carbon,
-                        style: GoogleFonts.inter(color: AurealColors.stardust, fontSize: 16),
-                        icon: const Icon(Icons.keyboard_arrow_down, color: AurealColors.plasmaCyan),
+                        dropdownColor: AelianaColors.carbon,
+                        style: GoogleFonts.inter(color: AelianaColors.stardust, fontSize: 16),
+                        icon: const Icon(Icons.keyboard_arrow_down, color: AelianaColors.plasmaCyan),
                         items: [
                           'Sable (Synthetic Human)',
                           'Caucasian / White',
@@ -531,7 +531,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                   onPressed: _handleUseAsIs,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 20),
-                    backgroundColor: AurealColors.plasmaCyan,
+                    backgroundColor: AelianaColors.plasmaCyan,
                     foregroundColor: Colors.black,
                   ),
                   child: Column(
@@ -559,7 +559,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
               
               const SizedBox(height: 24),
 
-              Divider(color: AurealColors.ghost.withOpacity(0.2)),
+              Divider(color: AelianaColors.ghost.withOpacity(0.2)),
               
               const SizedBox(height: 24),
               
@@ -570,12 +570,12 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                   onPressed: _handleCustomize,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 20),
-                    side: const BorderSide(color: AurealColors.hyperGold),
+                    side: const BorderSide(color: AelianaColors.hyperGold),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.star, color: AurealColors.hyperGold, size: 20),
+                      const Icon(Icons.star, color: AelianaColors.hyperGold, size: 20),
                       const SizedBox(width: 8),
                       Column(
                         children: [
@@ -584,7 +584,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                             style: GoogleFonts.spaceGrotesk(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: AurealColors.hyperGold,
+                              color: AelianaColors.hyperGold,
                               letterSpacing: 1,
                             ),
                           ),
@@ -593,7 +593,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                             'Full control over every specific detail',
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: AurealColors.hyperGold.withOpacity(0.8),
+                              color: AelianaColors.hyperGold.withOpacity(0.8),
                             ),
                           ),
                         ],
@@ -610,7 +610,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                 'Upgrade to Premium to design your own avatar. You can always change this later in settings.',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: AurealColors.ghost,
+                  color: AelianaColors.ghost,
                   fontStyle: FontStyle.italic,
                 ),
                 textAlign: TextAlign.center,
@@ -624,7 +624,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
   Widget _buildCustomizationScreen() {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: Column(
           children: [
@@ -644,7 +644,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: AurealColors.hyperGold,
+                        color: AelianaColors.hyperGold,
                         letterSpacing: 2,
                       ),
                     ).animate().fadeIn(duration: 600.ms),
@@ -655,7 +655,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                       'Generations remaining: ${_stateService?.remainingGenerations ?? 3}/3',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: AurealColors.plasmaCyan,
+                        color: AelianaColors.plasmaCyan,
                       ),
                     ),
 
@@ -668,7 +668,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                       min: 18,
                       max: 65,
                       divisions: 47,
-                      activeColor: AurealColors.plasmaCyan,
+                      activeColor: AelianaColors.plasmaCyan,
                       onChanged: (value) {
                         setState(() {
                           _apparentAge = value.toInt();
@@ -749,18 +749,18 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                             return TextFormField(
                               controller: textEditingController,
                               focusNode: focusNode,
-                              style: GoogleFonts.inter(color: AurealColors.stardust),
+                              style: GoogleFonts.inter(color: AelianaColors.stardust),
                               decoration: InputDecoration(
                                 hintText: 'Type a city or country...',
-                                hintStyle: GoogleFonts.inter(color: AurealColors.ghost),
+                                hintStyle: GoogleFonts.inter(color: AelianaColors.ghost),
                                 filled: true,
-                                fillColor: AurealColors.carbon,
+                                fillColor: AelianaColors.carbon,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                   borderSide: BorderSide.none,
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                suffixIcon: const Icon(Icons.search, color: AurealColors.ghost),
+                                suffixIcon: const Icon(Icons.search, color: AelianaColors.ghost),
                               ),
                             );
                           },
@@ -769,7 +769,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                               alignment: Alignment.topLeft,
                               child: Material(
                                 elevation: 4,
-                                color: AurealColors.carbon,
+                                color: AelianaColors.carbon,
                                 borderRadius: BorderRadius.circular(8),
                                 child: SizedBox(
                                   width: constraints.maxWidth,
@@ -782,12 +782,12 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                                       return ListTile(
                                         title: Text(
                                           option,
-                                          style: GoogleFonts.inter(color: AurealColors.stardust),
+                                          style: GoogleFonts.inter(color: AelianaColors.stardust),
                                         ),
                                         onTap: () {
                                           onSelected(option);
                                         },
-                                        hoverColor: AurealColors.plasmaCyan.withOpacity(0.1),
+                                        hoverColor: AelianaColors.plasmaCyan.withOpacity(0.1),
                                       );
                                     },
                                   ),
@@ -1018,7 +1018,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(AurealColors.obsidian),
+                            valueColor: AlwaysStoppedAnimation(AelianaColors.obsidian),
                           ),
                         )
                       : const Text('MANIFEST FORM'),
@@ -1036,7 +1036,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
       text,
       style: GoogleFonts.inter(
         fontSize: 14,
-        color: AurealColors.stardust,
+        color: AelianaColors.stardust,
         fontWeight: FontWeight.w500,
       ),
     );
@@ -1049,13 +1049,13 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   }) {
     return DropdownButtonFormField<String>(
       value: value,
-      dropdownColor: AurealColors.carbon,
+      dropdownColor: AelianaColors.carbon,
       decoration: const InputDecoration(),
       items: items.map((item) {
         return DropdownMenuItem(value: item, child: Text(item));
       }).toList(),
       onChanged: onChanged,
-      style: GoogleFonts.inter(color: AurealColors.stardust),
+      style: GoogleFonts.inter(color: AelianaColors.stardust),
     );
   }
 

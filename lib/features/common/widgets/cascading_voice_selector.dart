@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/voice/elevenlabs_api_service.dart';
 
 class CascadingVoiceSelector extends StatefulWidget {
@@ -195,13 +195,13 @@ class _CascadingVoiceSelectorState extends State<CascadingVoiceSelector> {
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     value: hasSelectedVoice ? widget.selectedVoiceId : null,
-                    dropdownColor: AurealColors.carbon,
+                    dropdownColor: AelianaColors.carbon,
                     isExpanded: true,
                     decoration: InputDecoration(
                       labelText: 'Voice',
-                      labelStyle: GoogleFonts.inter(color: AurealColors.ghost),
+                      labelStyle: GoogleFonts.inter(color: AelianaColors.ghost),
                       filled: true,
-                      fillColor: AurealColors.carbon,
+                      fillColor: AelianaColors.carbon,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide.none,
@@ -213,7 +213,7 @@ class _CascadingVoiceSelectorState extends State<CascadingVoiceSelector> {
                         value: voice.voiceId,
                         child: Text(
                           voice.name,
-                          style: GoogleFonts.inter(color: AurealColors.stardust),
+                          style: GoogleFonts.inter(color: AelianaColors.stardust),
                         ),
                       );
                     }).toList(),
@@ -227,7 +227,7 @@ class _CascadingVoiceSelectorState extends State<CascadingVoiceSelector> {
                 if (widget.onPlayPreview != null) ...[
                   const SizedBox(width: 8),
                   IconButton(
-                    icon: const Icon(Icons.play_circle_outline, color: AurealColors.plasmaCyan),
+                    icon: const Icon(Icons.play_circle_outline, color: AelianaColors.plasmaCyan),
                     onPressed: widget.onPlayPreview,
                   ),
                 ],
@@ -241,7 +241,7 @@ class _CascadingVoiceSelectorState extends State<CascadingVoiceSelector> {
             padding: const EdgeInsets.only(top: 8.0),
             child: Text(
               'No voices match filters',
-              style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 12),
+              style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12),
             ),
           ),
       ],
@@ -256,13 +256,13 @@ class _CascadingVoiceSelectorState extends State<CascadingVoiceSelector> {
   }) {
     return DropdownButtonFormField<String>(
       value: items.contains(value) ? value : null,
-      dropdownColor: AurealColors.carbon,
+      dropdownColor: AelianaColors.carbon,
       isExpanded: true,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.inter(color: AurealColors.ghost),
+        labelStyle: GoogleFonts.inter(color: AelianaColors.ghost),
         filled: true,
-        fillColor: AurealColors.carbon,
+        fillColor: AelianaColors.carbon,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
@@ -274,7 +274,7 @@ class _CascadingVoiceSelectorState extends State<CascadingVoiceSelector> {
           value: item,
           child: Text(
             item.capitalize(),
-            style: GoogleFonts.inter(color: AurealColors.stardust),
+            style: GoogleFonts.inter(color: AelianaColors.stardust),
           ),
         );
       }).toList(),

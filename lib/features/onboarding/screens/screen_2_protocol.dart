@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import '../widgets/slide_to_acknowledge.dart';
 
 class Screen2Protocol extends StatefulWidget {
@@ -32,7 +32,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -48,7 +48,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: AurealColors.hyperGold,
+                    color: AelianaColors.hyperGold,
                     letterSpacing: 2,
                   ),
                 ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
@@ -60,10 +60,10 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AurealColors.carbon.withOpacity(0.6),
+                  color: AelianaColors.carbon.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AurealColors.stardust.withOpacity(0.1),
+                    color: AelianaColors.stardust.withOpacity(0.1),
                     width: 1,
                   ),
                 ),
@@ -76,7 +76,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AurealColors.plasmaCyan,
+                        color: AelianaColors.plasmaCyan,
                         letterSpacing: 1.5,
                       ),
                     ),
@@ -94,14 +94,14 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                       'You can ask me to forget anything, anytime.',
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: AurealColors.stardust.withOpacity(0.9),
+                        color: AelianaColors.stardust.withOpacity(0.9),
                         height: 1.6,
                       ),
                     ),
 
                     const SizedBox(height: 12),
 
-                    const Divider(color: AurealColors.ghost, thickness: 0.5),
+                    const Divider(color: AelianaColors.ghost, thickness: 0.5),
 
                     const SizedBox(height: 12),
 
@@ -111,7 +111,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AurealColors.plasmaCyan,
+                        color: AelianaColors.plasmaCyan,
                         letterSpacing: 1.5,
                       ),
                     ),
@@ -123,14 +123,14 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                       'I do not sell your data. Ever. This is non-negotiable.',
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: AurealColors.stardust.withOpacity(0.9),
+                        color: AelianaColors.stardust.withOpacity(0.9),
                         height: 1.6,
                       ),
                     ),
 
                     const SizedBox(height: 12),
 
-                    const Divider(color: AurealColors.ghost, thickness: 0.5),
+                    const Divider(color: AelianaColors.ghost, thickness: 0.5),
 
                     const SizedBox(height: 12),
 
@@ -140,7 +140,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AurealColors.plasmaCyan,
+                        color: AelianaColors.plasmaCyan,
                         letterSpacing: 1.5,
                       ),
                     ),
@@ -161,7 +161,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                       'Upgrades are optional. Core features remain accessible.',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: AurealColors.ghost,
+                        color: AelianaColors.ghost,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -194,7 +194,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
           width: 8,
           height: 8,
           decoration: const BoxDecoration(
-            color: AurealColors.hyperGold,
+            color: AelianaColors.hyperGold,
             shape: BoxShape.circle,
           ),
         ),
@@ -207,7 +207,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                   text: '$tier: ',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: AurealColors.stardust,
+                    color: AelianaColors.stardust,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -215,7 +215,7 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                   text: description,
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: AurealColors.ghost,
+                    color: AelianaColors.ghost,
                   ),
                 ),
               ],

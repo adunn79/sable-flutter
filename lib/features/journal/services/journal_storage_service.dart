@@ -152,6 +152,12 @@ class JournalStorageService {
     double? longitude,
     String? weather,
     List<String> mediaUrls = const [],
+    // P1+ Memory Fields
+    String? nowPlayingTrack,
+    String? nowPlayingArtist,
+    List<String> taggedPeople = const [],
+    bool isGroupActivity = false,
+    String? topHeadline,
   }) async {
     // Check if bucket is a vault (forces private)
     final bucket = getBucket(bucketId);
@@ -173,6 +179,12 @@ class JournalStorageService {
       weather: weather,
       mediaUrls: mediaUrls,
       isSynced: false,
+      // P1+ Memory Fields
+      nowPlayingTrack: nowPlayingTrack,
+      nowPlayingArtist: nowPlayingArtist,
+      taggedPeople: taggedPeople,
+      isGroupActivity: isGroupActivity,
+      topHeadline: topHeadline,
     );
     
     await _entriesBox.put(entry.id, entry);

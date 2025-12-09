@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 
 class AccessDeniedScreen extends StatelessWidget {
   const AccessDeniedScreen({super.key});
@@ -9,7 +9,7 @@ class AccessDeniedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -19,7 +19,7 @@ class AccessDeniedScreen extends StatelessWidget {
               // Warning Icon
               const Icon(
                 Icons.block,
-                color: AurealColors.plasmaCyan,
+                color: AelianaColors.plasmaCyan,
                 size: 80,
               ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
 
@@ -31,7 +31,7 @@ class AccessDeniedScreen extends StatelessWidget {
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: AurealColors.plasmaCyan,
+                  color: AelianaColors.plasmaCyan,
                   letterSpacing: 3,
                 ),
                 textAlign: TextAlign.center,
@@ -44,7 +44,7 @@ class AccessDeniedScreen extends StatelessWidget {
                 'This application requires users to be 17 years or older.',
                 style: GoogleFonts.inter(
                   fontSize: 16,
-                  color: AurealColors.stardust,
+                  color: AelianaColors.stardust,
                   height: 1.6,
                 ),
                 textAlign: TextAlign.center,
@@ -56,7 +56,7 @@ class AccessDeniedScreen extends StatelessWidget {
                 'We take age restrictions seriously. This is non-negotiable.',
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: AurealColors.ghost,
+                  color: AelianaColors.ghost,
                   height: 1.6,
                 ),
                 textAlign: TextAlign.center,
@@ -71,8 +71,8 @@ class AccessDeniedScreen extends StatelessWidget {
                   Navigator.of(context).pop();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AurealColors.carbon,
-                  foregroundColor: AurealColors.stardust,
+                  backgroundColor: AelianaColors.carbon,
+                  foregroundColor: AelianaColors.stardust,
                 ),
                 child: const Text('GO BACK'),
               ).animate(delay: 800.ms).fadeIn(duration: 600.ms),

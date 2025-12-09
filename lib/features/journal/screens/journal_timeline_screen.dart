@@ -1081,7 +1081,10 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx),
+                      onPressed: () {
+                        _loadData(); // Apply filters
+                        Navigator.pop(ctx);
+                      },
                       style: ElevatedButton.styleFrom(backgroundColor: _accentTeal),
                       child: const Text('Apply', style: TextStyle(color: Colors.white)),
                     ),

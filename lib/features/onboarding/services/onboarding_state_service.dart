@@ -484,6 +484,8 @@ class OnboardingStateService {
   static const String _keyAvatarGeneratedAge = 'avatar_generated_age';
   static const String _keyAvatarGallery = 'avatar_gallery';
   static const String _keyAvatarRegenerationDismissed = 'avatar_regen_dismissed_at';
+  static const String _keyAvatarRegenCountYear = 'avatar_regen_count_year';
+  static const String _keyAvatarRegenCount = 'avatar_regen_count';
   
   /// Get the age when the avatar was last generated
   int? get avatarGeneratedAge => _prefs.getInt(_keyAvatarGeneratedAge);
@@ -514,10 +516,35 @@ class OnboardingStateService {
     await _prefs.setStringList(_keyAvatarGallery, gallery);
   }
   
+  /// Get regeneration count for current year (resets each year)
+  int get regenerationCountThisYear {
+    final storedYear = _prefs.getInt(_keyAvatarRegenCountYear) ?? 0;
+    final currentYear = DateTime.now().year;
+    
+    // Reset count if it's a new year
+    if (storedYear != currentYear) {
+      return 0;
+    }
+    return _prefs.getInt(_keyAvatarRegenCount) ?? 0;
+  }
+  
+  /// Check if user can regenerate (max 2x per year)
+  bool get canRegenerateThisYear => regenerationCountThisYear < 2;
+  
+  /// Increment regeneration count for this year
+  Future<void> incrementRegenerationCount() async {
+    final currentYear = DateTime.now().year;
+    await _prefs.setInt(_keyAvatarRegenCountYear, currentYear);
+    await _prefs.setInt(_keyAvatarRegenCount, regenerationCountThisYear + 1);
+  }
+  
   /// Check if avatar regeneration should be prompted (age changed by ±5 years)
   bool shouldPromptAvatarRegeneration() {
     final generatedAge = avatarGeneratedAge;
     if (generatedAge == null) return false;
+    
+    // Check 2x per year limit
+    if (!canRegenerateThisYear) return false;
     
     // Calculate current age from DOB
     final dob = userDob;
@@ -546,6 +573,14 @@ class OnboardingStateService {
     return true;
   }
   
+  /// Get age direction: 1 = older, -1 = younger, 0 = same
+  int getAgeDirection() {
+    final generatedAge = avatarGeneratedAge;
+    final currentAge = getCurrentAge();
+    if (generatedAge == null || currentAge == null) return 0;
+    return currentAge > generatedAge ? 1 : (currentAge < generatedAge ? -1 : 0);
+  }
+  
   /// Get current user age
   int? getCurrentAge() {
     final dob = userDob;
@@ -569,3 +604,4 @@ class OnboardingStateService {
     await _prefs.remove(_keyAvatarRegenerationDismissed);
   }
 }
+

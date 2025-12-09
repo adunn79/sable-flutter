@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/widgets/restart_widget.dart';
 import 'package:sable/features/private_space/services/private_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,9 +14,9 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
-        backgroundColor: AurealColors.obsidian,
+        backgroundColor: AelianaColors.obsidian,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
@@ -25,7 +25,7 @@ class MoreScreen extends StatelessWidget {
         title: Text(
           'More',
           style: GoogleFonts.spaceGrotesk(
-            color: AurealColors.hyperGold,
+            color: AelianaColors.hyperGold,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -150,10 +150,10 @@ class MoreScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AurealColors.carbon, // Slate blue
+          color: AelianaColors.carbon, // Slate blue
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AurealColors.plasmaCyan.withOpacity(0.15), // Teal border
+            color: AelianaColors.plasmaCyan.withOpacity(0.15), // Teal border
           ),
         ),
         child: Row(
@@ -161,10 +161,10 @@ class MoreScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AurealColors.plasmaCyan.withOpacity(0.15), // Teal bg
+                color: AelianaColors.plasmaCyan.withOpacity(0.15), // Teal bg
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: AurealColors.plasmaCyan, size: 22), // Teal icon
+              child: Icon(icon, color: AelianaColors.plasmaCyan, size: 22), // Teal icon
             ),
             const SizedBox(width: 16),
             Expanded(

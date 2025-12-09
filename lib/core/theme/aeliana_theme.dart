@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class AurealColors {
+class AelianaColors {
   // Unified Sable Design Language (Vital Balance palette)
   static const Color obsidian = Color(0xFF0D1B2A);      // Deep navy background
   static const Color plasmaCyan = Color(0xFF5DD9C1);    // Soft teal accent
@@ -15,21 +15,21 @@ class AurealColors {
   static const Color warningAmber = Color(0xFFFFB74D);  // Warning/attention
 }
 
-class AurealTheme {
+class AelianaTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: AurealColors.obsidian,
-      primaryColor: AurealColors.hyperGold,
+      scaffoldBackgroundColor: AelianaColors.obsidian,
+      primaryColor: AelianaColors.hyperGold,
       
       // Color Scheme Definition
       colorScheme: const ColorScheme.dark(
-        primary: AurealColors.hyperGold,
-        secondary: AurealColors.plasmaCyan,
-        surface: AurealColors.carbon,
-        onPrimary: AurealColors.obsidian, // Text on Gold buttons
-        onSurface: AurealColors.stardust,
+        primary: AelianaColors.hyperGold,
+        secondary: AelianaColors.plasmaCyan,
+        surface: AelianaColors.carbon,
+        onPrimary: AelianaColors.obsidian, // Text on Gold buttons
+        onSurface: AelianaColors.stardust,
       ),
 
       // Typography
@@ -37,40 +37,40 @@ class AurealTheme {
         displayLarge: GoogleFonts.spaceGrotesk(
           fontSize: 57, 
           fontWeight: FontWeight.bold, 
-          color: AurealColors.stardust
+          color: AelianaColors.stardust
         ),
         displayMedium: GoogleFonts.spaceGrotesk(
           fontSize: 45, 
           fontWeight: FontWeight.w600, 
-          color: AurealColors.stardust
+          color: AelianaColors.stardust
         ),
         headlineSmall: GoogleFonts.spaceGrotesk(
           fontSize: 24, 
           fontWeight: FontWeight.w600, 
-          color: AurealColors.plasmaCyan
+          color: AelianaColors.plasmaCyan
         ),
         bodyLarge: GoogleFonts.inter(
           fontSize: 16, 
-          color: AurealColors.stardust
+          color: AelianaColors.stardust
         ),
         bodyMedium: GoogleFonts.inter(
           fontSize: 14, 
-          color: AurealColors.ghost
+          color: AelianaColors.ghost
         ),
       ),
 
       // Component Styles
       appBarTheme: const AppBarTheme(
-        backgroundColor: AurealColors.obsidian,
+        backgroundColor: AelianaColors.obsidian,
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: AurealColors.stardust),
+        iconTheme: IconThemeData(color: AelianaColors.stardust),
       ),
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AurealColors.hyperGold,
-          foregroundColor: AurealColors.obsidian,
+          backgroundColor: AelianaColors.hyperGold,
+          foregroundColor: AelianaColors.obsidian,
           textStyle: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -79,16 +79,16 @@ class AurealTheme {
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AurealColors.carbon,
+        fillColor: AelianaColors.carbon,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AurealColors.plasmaCyan, width: 1),
+          borderSide: const BorderSide(color: AelianaColors.plasmaCyan, width: 1),
         ),
-        hintStyle: GoogleFonts.inter(color: AurealColors.ghost),
+        hintStyle: GoogleFonts.inter(color: AelianaColors.ghost),
       ),
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/features/subscription/services/subscription_service.dart';
 
 class SubscriptionScreen extends StatefulWidget {
@@ -46,15 +46,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Widget build(BuildContext context) {
     if (_isLoading || _service == null) {
       return const Scaffold(
-        backgroundColor: AurealColors.obsidian,
-        body: Center(child: CircularProgressIndicator(color: AurealColors.plasmaCyan)),
+        backgroundColor: AelianaColors.obsidian,
+        body: Center(child: CircularProgressIndicator(color: AelianaColors.plasmaCyan)),
       );
     }
 
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
-        backgroundColor: AurealColors.obsidian,
+        backgroundColor: AelianaColors.obsidian,
         elevation: 0,
         title: Text(
           'SUBSCRIPTION & STORE',
@@ -98,7 +98,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     return Text(
       title,
       style: GoogleFonts.spaceGrotesk(
-        color: AurealColors.plasmaCyan,
+        color: AelianaColors.plasmaCyan,
         fontSize: 12,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.5,
@@ -112,14 +112,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AurealColors.plasmaCyan.withOpacity(0.2),
-            AurealColors.obsidian,
+            AelianaColors.plasmaCyan.withOpacity(0.2),
+            AelianaColors.obsidian,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+        border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
       ),
       child: Column(
         children: [
@@ -141,7 +141,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ),
                 ],
               ),
-              Icon(LucideIcons.crown, color: AurealColors.hyperGold, size: 32),
+              Icon(LucideIcons.crown, color: AelianaColors.hyperGold, size: 32),
             ],
           ),
           const SizedBox(height: 20),
@@ -192,10 +192,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       width: 240,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isCurrent ? AurealColors.plasmaCyan.withOpacity(0.1) : AurealColors.carbon,
+        color: isCurrent ? AelianaColors.plasmaCyan.withOpacity(0.1) : AelianaColors.carbon,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isCurrent ? AurealColors.plasmaCyan : Colors.white10,
+          color: isCurrent ? AelianaColors.plasmaCyan : Colors.white10,
           width: isCurrent ? 2 : 1,
         ),
       ),
@@ -208,7 +208,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               Text(
                 _service!.getTierName(tier).toUpperCase(),
                 style: GoogleFonts.spaceGrotesk(
-                  color: isCurrent ? AurealColors.plasmaCyan : Colors.white,
+                  color: isCurrent ? AelianaColors.plasmaCyan : Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -239,7 +239,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(LucideIcons.check, size: 14, color: AurealColors.hyperGold),
+                      const Icon(LucideIcons.check, size: 14, color: AelianaColors.hyperGold),
                       const SizedBox(width: 8),
                       Expanded(child: Text(f, style: GoogleFonts.inter(color: Colors.white70, fontSize: 12))),
                     ],
@@ -254,8 +254,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             child: ElevatedButton(
               onPressed: isCurrent ? null : () => _service!.setTier(tier),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isCurrent ? Colors.white10 : AurealColors.plasmaCyan,
-                foregroundColor: isCurrent ? Colors.white : AurealColors.obsidian,
+                backgroundColor: isCurrent ? Colors.white10 : AelianaColors.plasmaCyan,
+                foregroundColor: isCurrent ? Colors.white : AelianaColors.obsidian,
                 disabledBackgroundColor: Colors.white10,
                 disabledForegroundColor: Colors.white30,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -288,7 +288,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AurealColors.carbon,
+          color: AelianaColors.carbon,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white10),
         ),
@@ -315,11 +315,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AurealColors.plasmaCyan.withOpacity(0.1),
+                color: AelianaColors.plasmaCyan.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.5)),
+                border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.5)),
               ),
-              child: Text(price, style: GoogleFonts.inter(color: AurealColors.plasmaCyan, fontWeight: FontWeight.bold)),
+              child: Text(price, style: GoogleFonts.inter(color: AelianaColors.plasmaCyan, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -331,9 +331,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AurealColors.carbon,
+        color: AelianaColors.carbon,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AurealColors.hyperGold.withOpacity(0.3)),
+        border: Border.all(color: AelianaColors.hyperGold.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,14 +343,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             children: [
               Row(
                 children: [
-                  Icon(LucideIcons.sparkles, color: AurealColors.hyperGold, size: 20),
+                  Icon(LucideIcons.sparkles, color: AelianaColors.hyperGold, size: 20),
                   const SizedBox(width: 12),
                   Text('Smart Adjustments', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
               Switch(
                 value: _service!.smartAdjustmentsEnabled,
-                activeColor: AurealColors.hyperGold,
+                activeColor: AelianaColors.hyperGold,
                 onChanged: (val) => _service!.toggleSmartAdjustments(val),
               ),
             ],
@@ -365,15 +365,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: AurealColors.hyperGold.withOpacity(0.1),
+                color: AelianaColors.hyperGold.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(LucideIcons.checkCircle, size: 14, color: AurealColors.hyperGold),
+                  const Icon(LucideIcons.checkCircle, size: 14, color: AelianaColors.hyperGold),
                   const SizedBox(width: 8),
-                  Text('Active', style: GoogleFonts.inter(color: AurealColors.hyperGold, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text('Active', style: GoogleFonts.inter(color: AelianaColors.hyperGold, fontSize: 12, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),

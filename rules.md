@@ -1,7 +1,7 @@
-## 📂 MASTER DIRECTIVE: AUREAL ORCHESTRATOR (v2.0 - Unified)
+## 📂 MASTER DIRECTIVE: AELIANA ORCHESTRATOR (v2.0 - Unified)
 
 **Target System:** Google Antigravity / Cursor
-**Project:** AUREAL (iOS Hyper-Human Companion)
+**Project:** AELIANA (iOS Hyper-Human Companion)
 **Protocol:** Swarm + Adversarial + Live Validation
 **Status:** ACTIVE
 

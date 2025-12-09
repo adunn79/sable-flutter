@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/voice/voice_service.dart';
 import 'package:sable/core/voice/elevenlabs_api_service.dart';
 import 'package:sable/features/common/widgets/cascading_voice_selector.dart';
@@ -134,7 +134,7 @@ class _PrivateAvatarCustomizeScreenState extends State<PrivateAvatarCustomizeScr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         leading: IconButton(
@@ -222,7 +222,7 @@ class _PrivateAvatarCustomizeScreenState extends State<PrivateAvatarCustomizeScr
                       max: 55,
                       divisions: 34,
                       activeColor: widget.selectedAvatar.accentColor,
-                      inactiveColor: AurealColors.carbon,
+                      inactiveColor: AelianaColors.carbon,
                       onChanged: (value) => setState(() => _apparentAge = value.toInt()),
                     ),
                     
@@ -264,14 +264,14 @@ class _PrivateAvatarCustomizeScreenState extends State<PrivateAvatarCustomizeScr
                         children: [
                           Icon(
                             _showAdvanced ? LucideIcons.chevronDown : LucideIcons.chevronRight,
-                            color: AurealColors.hyperGold,
+                            color: AelianaColors.hyperGold,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             'Advanced Options',
                             style: GoogleFonts.spaceGrotesk(
-                              color: AurealColors.hyperGold,
+                              color: AelianaColors.hyperGold,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -326,8 +326,8 @@ class _PrivateAvatarCustomizeScreenState extends State<PrivateAvatarCustomizeScr
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AurealColors.obsidian,
-                border: Border(top: BorderSide(color: AurealColors.carbon)),
+                color: AelianaColors.obsidian,
+                border: Border(top: BorderSide(color: AelianaColors.carbon)),
               ),
               child: SafeArea(
                 top: false,
@@ -366,7 +366,7 @@ class _PrivateAvatarCustomizeScreenState extends State<PrivateAvatarCustomizeScr
       style: GoogleFonts.spaceGrotesk(
         fontSize: 12,
         fontWeight: FontWeight.bold,
-        color: AurealColors.hyperGold,
+        color: AelianaColors.hyperGold,
         letterSpacing: 1.5,
       ),
     );
@@ -390,17 +390,17 @@ class _PrivateAvatarCustomizeScreenState extends State<PrivateAvatarCustomizeScr
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: AurealColors.carbon,
+        color: AelianaColors.carbon,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AurealColors.ghost.withOpacity(0.2)),
+        border: Border.all(color: AelianaColors.ghost.withOpacity(0.2)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: items.contains(value) ? value : items.first,
           isExpanded: true,
-          dropdownColor: AurealColors.carbon,
+          dropdownColor: AelianaColors.carbon,
           style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
-          icon: const Icon(Icons.keyboard_arrow_down, color: AurealColors.ghost),
+          icon: const Icon(Icons.keyboard_arrow_down, color: AelianaColors.ghost),
           items: items.map((item) => DropdownMenuItem(
             value: item,
             child: Text(item),
@@ -416,7 +416,7 @@ class _PrivateAvatarCustomizeScreenState extends State<PrivateAvatarCustomizeScr
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(16),
-          child: CircularProgressIndicator(color: AurealColors.plasmaCyan),
+          child: CircularProgressIndicator(color: AelianaColors.plasmaCyan),
         ),
       );
     }
@@ -487,7 +487,7 @@ class _PrivateAvatarCustomizeScreenState extends State<PrivateAvatarCustomizeScr
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AurealColors.carbon,
+        color: AelianaColors.carbon,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

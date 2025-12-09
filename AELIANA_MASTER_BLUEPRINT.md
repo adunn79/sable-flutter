@@ -1,4 +1,4 @@
-# 📂 AUREAL MASTER BLUEPRINT (v3.0 - Complete)
+# 📂 AELIANA MASTER BLUEPRINT (v3.0 - Complete)
 
 **Target:** iOS Hyper-Human Companion
 **Core Philosophy:** "The Illusion of One." A single consciousness powered by a specialist team of 5 models.
@@ -108,7 +108,7 @@
 
 ---
 
-## 4. SYSTEM DIRECTIVE: AUREAL ORCHESTRATOR (v3.0 - FULL SCOPE)
+## 4. SYSTEM DIRECTIVE: AELIANA ORCHESTRATOR (v3.0 - FULL SCOPE)
 
 **Target:** iOS Hyper-Human Companion
 **Protocol:** Swarm + Adversarial + Live Validation + Latency Audit

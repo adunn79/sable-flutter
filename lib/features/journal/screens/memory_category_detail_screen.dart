@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
 
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/memory/unified_memory_service.dart';
 import 'package:sable/core/memory/models/extracted_memory.dart';
 
@@ -74,7 +74,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
           content: const Text('Memory deleted'),
           action: SnackBarAction(
             label: 'Undo',
-            textColor: AurealColors.hyperGold,
+            textColor: AelianaColors.hyperGold,
             onPressed: () async {
               // Re-add the memory
               await _memoryService.addMemory(
@@ -102,10 +102,10 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AurealColors.carbon,
+          backgroundColor: AelianaColors.carbon,
           title: Row(
             children: [
-              Icon(LucideIcons.edit, color: AurealColors.hyperGold, size: 20),
+              Icon(LucideIcons.edit, color: AelianaColors.hyperGold, size: 20),
               const SizedBox(width: 8),
               Text('Edit Memory', style: GoogleFonts.inter(color: Colors.white)),
             ],
@@ -121,18 +121,18 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
                   style: GoogleFonts.inter(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'Memory content...',
-                    hintStyle: TextStyle(color: AurealColors.ghost),
+                    hintStyle: TextStyle(color: AelianaColors.ghost),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AurealColors.ghost.withOpacity(0.3)),
+                      borderSide: BorderSide(color: AelianaColors.ghost.withOpacity(0.3)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AurealColors.ghost.withOpacity(0.3)),
+                      borderSide: BorderSide(color: AelianaColors.ghost.withOpacity(0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AurealColors.hyperGold),
+                      borderSide: BorderSide(color: AelianaColors.hyperGold),
                     ),
                     filled: true,
                     fillColor: Colors.black26,
@@ -141,7 +141,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
                 const SizedBox(height: 16),
                 
                 // Importance
-                Text('Importance', style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 12)),
+                Text('Importance', style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12)),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -153,7 +153,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Icon(
                           starValue <= importance ? LucideIcons.star : Icons.star_border,
-                          color: starValue <= importance ? AurealColors.hyperGold : AurealColors.ghost,
+                          color: starValue <= importance ? AelianaColors.hyperGold : AelianaColors.ghost,
                           size: 28,
                         ),
                       ),
@@ -163,7 +163,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
                 const SizedBox(height: 16),
                 
                 // Tags
-                Text('Tags', style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 12)),
+                Text('Tags', style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12)),
                 const SizedBox(height: 8),
                 if (tags.isNotEmpty)
                   Wrap(
@@ -171,9 +171,9 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
                     runSpacing: 6,
                     children: tags.map((tag) => Chip(
                       label: Text(tag, style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
-                      backgroundColor: AurealColors.hyperGold.withOpacity(0.2),
+                      backgroundColor: AelianaColors.hyperGold.withOpacity(0.2),
                       deleteIcon: const Icon(LucideIcons.x, size: 14),
-                      deleteIconColor: AurealColors.ghost,
+                      deleteIconColor: AelianaColors.ghost,
                       onDeleted: () => setDialogState(() => tags.remove(tag)),
                     )).toList(),
                   ),
@@ -186,16 +186,16 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
                         style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
                         decoration: InputDecoration(
                           hintText: 'Add tag...',
-                          hintStyle: TextStyle(color: AurealColors.ghost, fontSize: 14),
+                          hintStyle: TextStyle(color: AelianaColors.ghost, fontSize: 14),
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: AurealColors.ghost.withOpacity(0.3)),
+                            borderSide: BorderSide(color: AelianaColors.ghost.withOpacity(0.3)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: AurealColors.ghost.withOpacity(0.3)),
+                            borderSide: BorderSide(color: AelianaColors.ghost.withOpacity(0.3)),
                           ),
                         ),
                         onSubmitted: (value) {
@@ -210,7 +210,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: Icon(LucideIcons.plus, color: AurealColors.hyperGold),
+                      icon: Icon(LucideIcons.plus, color: AelianaColors.hyperGold),
                       onPressed: () {
                         final value = tagController.text;
                         if (value.trim().isNotEmpty && !tags.contains(value.trim())) {
@@ -229,7 +229,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: AurealColors.ghost)),
+              child: Text('Cancel', style: TextStyle(color: AelianaColors.ghost)),
             ),
             TextButton(
               onPressed: () {
@@ -241,7 +241,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
                   });
                 }
               },
-              child: Text('Save', style: TextStyle(color: AurealColors.hyperGold)),
+              child: Text('Save', style: TextStyle(color: AelianaColors.hyperGold)),
             ),
           ],
         ),
@@ -273,19 +273,19 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         title: Text(
           'Clear ${widget.category.name.toUpperCase()}?',
           style: GoogleFonts.inter(color: Colors.white),
         ),
         content: Text(
           'This will permanently delete all ${_memories.length} memories in this category. This cannot be undone.',
-          style: GoogleFonts.inter(color: AurealColors.ghost),
+          style: GoogleFonts.inter(color: AelianaColors.ghost),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: AurealColors.ghost)),
+            child: Text('Cancel', style: TextStyle(color: AelianaColors.ghost)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
@@ -330,8 +330,8 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
       case MemoryCategory.dates: return Colors.purple;
       case MemoryCategory.life: return Colors.green;
       case MemoryCategory.emotional: return Colors.orange;
-      case MemoryCategory.goals: return AurealColors.hyperGold;
-      case MemoryCategory.misc: return AurealColors.ghost;
+      case MemoryCategory.goals: return AelianaColors.hyperGold;
+      case MemoryCategory.misc: return AelianaColors.ghost;
     }
   }
 
@@ -340,7 +340,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
     final color = _getCategoryColor(widget.category);
     
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: Column(
           children: [
@@ -406,7 +406,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
                   '${_memories.length} memories',
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: AurealColors.ghost,
+                    color: AelianaColors.ghost,
                   ),
                 ),
               ],
@@ -414,8 +414,8 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
           ),
           if (_memories.isNotEmpty)
             PopupMenuButton<String>(
-              icon: Icon(LucideIcons.moreVertical, color: AurealColors.ghost),
-              color: AurealColors.carbon,
+              icon: Icon(LucideIcons.moreVertical, color: AelianaColors.ghost),
+              color: AelianaColors.carbon,
               onSelected: (value) {
                 if (value == 'clear') {
                   _clearCategory();
@@ -448,7 +448,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
             'Sort by:',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: AurealColors.ghost,
+              color: AelianaColors.ghost,
             ),
           ),
           const SizedBox(width: 12),
@@ -475,17 +475,17 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AurealColors.hyperGold.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+          color: isSelected ? AelianaColors.hyperGold.withOpacity(0.2) : Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AurealColors.hyperGold : Colors.transparent,
+            color: isSelected ? AelianaColors.hyperGold : Colors.transparent,
           ),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
             fontSize: 12,
-            color: isSelected ? AurealColors.hyperGold : AurealColors.ghost,
+            color: isSelected ? AelianaColors.hyperGold : AelianaColors.ghost,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
@@ -504,7 +504,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
             'No memories yet',
             style: GoogleFonts.inter(
               fontSize: 18,
-              color: AurealColors.ghost,
+              color: AelianaColors.ghost,
             ),
           ),
           const SizedBox(height: 8),
@@ -512,7 +512,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
             'Memories will appear here as I learn about you',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: AurealColors.ghost.withOpacity(0.6),
+              color: AelianaColors.ghost.withOpacity(0.6),
             ),
             textAlign: TextAlign.center,
           ),
@@ -550,18 +550,18 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
         return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: AurealColors.carbon,
+            backgroundColor: AelianaColors.carbon,
             title: Text('Delete this memory?', style: GoogleFonts.inter(color: Colors.white)),
             content: Text(
               memory.content,
-              style: GoogleFonts.inter(color: AurealColors.ghost),
+              style: GoogleFonts.inter(color: AelianaColors.ghost),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: Text('Cancel', style: TextStyle(color: AurealColors.ghost)),
+                child: Text('Cancel', style: TextStyle(color: AelianaColors.ghost)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
@@ -578,7 +578,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AurealColors.carbon,
+            color: AelianaColors.carbon,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: color.withOpacity(0.2)),
           ),
@@ -608,7 +608,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
                           Icon(
                             i < memory.importance ? LucideIcons.star : Icons.star_border,
                             size: 12,
-                            color: i < memory.importance ? AurealColors.hyperGold : AurealColors.ghost.withOpacity(0.3),
+                            color: i < memory.importance ? AelianaColors.hyperGold : AelianaColors.ghost.withOpacity(0.3),
                           ),
                         ),
                       ),
@@ -649,7 +649,7 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
                     DateFormat('MMM d, yyyy').format(memory.extractedAt),
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: AurealColors.ghost,
+                      color: AelianaColors.ghost,
                     ),
                   ),
                 ],
@@ -660,13 +660,13 @@ class _MemoryCategoryDetailScreenState extends State<MemoryCategoryDetailScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Icon(LucideIcons.info, size: 10, color: AurealColors.ghost.withOpacity(0.4)),
+                  Icon(LucideIcons.info, size: 10, color: AelianaColors.ghost.withOpacity(0.4)),
                   const SizedBox(width: 4),
                   Text(
                     'Long press to edit',
                     style: GoogleFonts.inter(
                       fontSize: 10,
-                      color: AurealColors.ghost.withOpacity(0.4),
+                      color: AelianaColors.ghost.withOpacity(0.4),
                     ),
                   ),
                 ],

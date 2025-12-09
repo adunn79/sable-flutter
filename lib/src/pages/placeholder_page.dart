@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/theme/aureal_theme.dart';
+import '../../core/theme/aeliana_theme.dart';
 
 class PlaceholderPage extends StatelessWidget {
   final String title;
@@ -12,9 +12,9 @@ class PlaceholderPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
-        backgroundColor: AurealColors.obsidian,
+        backgroundColor: AelianaColors.obsidian,
         leading: IconButton(
           icon: Icon(LucideIcons.arrowLeft, color: Colors.white.withOpacity(0.8)),
           onPressed: () {
@@ -45,7 +45,7 @@ class PlaceholderPage extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AurealColors.plasmaCyan.withOpacity(0.2),
+                    AelianaColors.plasmaCyan.withOpacity(0.2),
                     Colors.transparent,
                   ],
                 ),
@@ -53,7 +53,7 @@ class PlaceholderPage extends StatelessWidget {
               child: Icon(
                 LucideIcons.sparkles,
                 size: 64,
-                color: AurealColors.plasmaCyan,
+                color: AelianaColors.plasmaCyan,
               ),
             ),
             const SizedBox(height: 24),
@@ -71,17 +71,17 @@ class PlaceholderPage extends StatelessWidget {
               style: GoogleFonts.spaceGrotesk(
                 fontSize: 18,
                 fontWeight: FontWeight.w400,
-                color: AurealColors.plasmaCyan,
+                color: AelianaColors.plasmaCyan,
               ),
             ),
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: AurealColors.carbon,
+                color: AelianaColors.carbon,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AurealColors.plasmaCyan.withOpacity(0.2),
+                  color: AelianaColors.plasmaCyan.withOpacity(0.2),
                 ),
               ),
               child: Text(

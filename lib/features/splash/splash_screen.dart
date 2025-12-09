@@ -4,17 +4,17 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 
-import '../../core/theme/aureal_theme.dart';
+import '../../core/theme/aeliana_theme.dart';
 import '../onboarding/services/onboarding_state_service.dart'; 
 
-class AurealSplashScreen extends StatefulWidget {
-  const AurealSplashScreen({super.key});
+class AelianaSplashScreen extends StatefulWidget {
+  const AelianaSplashScreen({super.key});
 
   @override
-  State<AurealSplashScreen> createState() => _AurealSplashScreenState();
+  State<AelianaSplashScreen> createState() => _AelianaSplashScreenState();
 }
 
-class _AurealSplashScreenState extends State<AurealSplashScreen> {
+class _AelianaSplashScreenState extends State<AelianaSplashScreen> {
   @override
   void initState() {
     super.initState();
@@ -48,7 +48,7 @@ class _AurealSplashScreenState extends State<AurealSplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian, // #0A0A0E
+      backgroundColor: AelianaColors.obsidian, // #0A0A0E
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -73,12 +73,12 @@ class _AurealSplashScreenState extends State<AurealSplashScreen> {
 
             // BRAND NAME
             Text(
-              "AUREAL",
+              "AELIANA",
               style: GoogleFonts.spaceGrotesk(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 8.0,
-                color: AurealColors.stardust,
+                color: AelianaColors.stardust,
               ),
             )
             .animate()
@@ -87,17 +87,47 @@ class _AurealSplashScreenState extends State<AurealSplashScreen> {
 
             const SizedBox(height: 12),
 
-            // TAGLINE
-            Text(
-              "Living technology.",
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: AurealColors.plasmaCyan, // Cyan accent for the tagline
-                letterSpacing: 1.2,
-              ),
-            )
-            .animate()
-            .fadeIn(delay: 1000.ms, duration: 600.ms),
+            // TAGLINE - Three-part reveal
+            Column(
+              children: [
+                Text(
+                  "Living technology.",
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AelianaColors.plasmaCyan,
+                    letterSpacing: 1.2,
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 1000.ms, duration: 600.ms),
+                
+                const SizedBox(height: 4),
+                
+                Text(
+                  "Digital soul.",
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AelianaColors.hyperGold,
+                    letterSpacing: 1.2,
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 1400.ms, duration: 600.ms),
+                
+                const SizedBox(height: 4),
+                
+                Text(
+                  "Hyper-human.",
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AelianaColors.stardust,
+                    letterSpacing: 1.2,
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 1800.ms, duration: 600.ms),
+              ],
+            ),
           ],
         ),
       ),
@@ -116,7 +146,7 @@ class SynapseLogoPainter extends CustomPainter {
 
     // 1. Draw the Cyan Arcs (The Synapse)
     final arcPaint = Paint()
-      ..color = AurealColors.plasmaCyan // #00F0FF
+      ..color = AelianaColors.plasmaCyan // #00F0FF
       ..style = PaintingStyle.stroke
       ..strokeWidth = 6.0
       ..strokeCap = StrokeCap.round
@@ -142,7 +172,7 @@ class SynapseLogoPainter extends CustomPainter {
 
     // 2. Draw the Gold Spark (The Soul)
     final sparkPaint = Paint()
-      ..color = AurealColors.hyperGold // #FFD700
+      ..color = AelianaColors.hyperGold // #FFD700
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 8); // Intense glow
 

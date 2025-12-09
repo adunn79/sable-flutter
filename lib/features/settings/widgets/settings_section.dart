@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 
 class SettingsSection extends StatelessWidget {
   final String? title;
@@ -25,7 +25,7 @@ class SettingsSection extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AurealColors.ghost,
+                color: AelianaColors.ghost,
                 letterSpacing: 0.5,
               ),
             ),
@@ -33,7 +33,7 @@ class SettingsSection extends StatelessWidget {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AurealColors.carbon,
+            color: AelianaColors.carbon,
             borderRadius: BorderRadius.circular(16),
           ),
           clipBehavior: Clip.antiAlias,

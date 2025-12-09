@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sable/features/clock/widgets/clock_face_widget.dart';
 import 'package:sable/features/clock/screens/alarm_screen.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/emotion/weather_service.dart';
 
 /// A full-screen clock mode with avatar and clock display
@@ -112,7 +112,7 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
         return Theme(
           data: ThemeData.dark().copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: AurealColors.hyperGold,
+              primary: AelianaColors.hyperGold,
               surface: Colors.black87,
             ),
           ),
@@ -332,19 +332,19 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: AurealColors.hyperGold.withOpacity(0.2),
+                            color: AelianaColors.hyperGold.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: AurealColors.hyperGold),
+                            border: Border.all(color: AelianaColors.hyperGold),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.alarm, color: AurealColors.hyperGold, size: 16),
+                              const Icon(Icons.alarm, color: AelianaColors.hyperGold, size: 16),
                               const SizedBox(width: 6),
                               Text(
                                 _formatAlarmTime(_alarmTime!),
                                 style: GoogleFonts.inter(
-                                  color: AurealColors.hyperGold,
+                                  color: AelianaColors.hyperGold,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -426,16 +426,16 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: highlight 
-                  ? AurealColors.hyperGold.withOpacity(0.2) 
+                  ? AelianaColors.hyperGold.withOpacity(0.2) 
                   : Colors.white.withOpacity(0.1),
               shape: BoxShape.circle,
               border: highlight 
-                  ? Border.all(color: AurealColors.hyperGold)
+                  ? Border.all(color: AelianaColors.hyperGold)
                   : null,
             ),
             child: Icon(
               icon,
-              color: highlight ? AurealColors.hyperGold : Colors.white,
+              color: highlight ? AelianaColors.hyperGold : Colors.white,
               size: 24,
             ),
           ),

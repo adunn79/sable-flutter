@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/ui/feedback_service.dart';
 import 'package:sable/core/audio/button_sound_service.dart';
 
@@ -71,12 +71,12 @@ class InteractiveButton extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: backgroundColor ?? AurealColors.carbon, // Slate blue
+              color: backgroundColor ?? AelianaColors.carbon, // Slate blue
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isDestructive
                     ? Colors.red.withOpacity(0.3)
-                    : AurealColors.plasmaCyan.withOpacity(0.2), // Teal border
+                    : AelianaColors.plasmaCyan.withOpacity(0.2), // Teal border
               ),
             ),
             child: Row(
@@ -111,20 +111,20 @@ class InteractiveButton extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Icon(
               icon,
-              color: isDestructive ? Colors.red : AurealColors.plasmaCyan,
+              color: isDestructive ? Colors.red : AelianaColors.plasmaCyan,
             ),
             const SizedBox(width: 12),
             Flexible(
               child: Text(
                 infoTitle!,
                 style: GoogleFonts.spaceGrotesk(
-                  color: isDestructive ? Colors.red : AurealColors.plasmaCyan,
+                  color: isDestructive ? Colors.red : AelianaColors.plasmaCyan,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
                 ),
@@ -145,11 +145,11 @@ class InteractiveButton extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: (isDestructive ? Colors.red : AurealColors.plasmaCyan)
+                  color: (isDestructive ? Colors.red : AelianaColors.plasmaCyan)
                       .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: (isDestructive ? Colors.red : AurealColors.plasmaCyan)
+                    color: (isDestructive ? Colors.red : AelianaColors.plasmaCyan)
                         .withOpacity(0.3),
                   ),
                 ),
@@ -181,8 +181,8 @@ class InteractiveButton extends ConsumerWidget {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor:
-                    isDestructive ? Colors.red : AurealColors.plasmaCyan,
-                foregroundColor: AurealColors.obsidian,
+                    isDestructive ? Colors.red : AelianaColors.plasmaCyan,
+                foregroundColor: AelianaColors.obsidian,
               ),
               child: Text(
                 actionLabel!,

@@ -2353,7 +2353,24 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
   Widget _buildProfileCard() {
     // If profile is empty/loading, show skeleton or CTA?
     // We'll show a summary card.
-    final age = _profile['age'] ?? '-';
+    
+    // Calculate age from DOB
+    String age = '-';
+    final dobString = _profile['dob'];
+    if (dobString != null && dobString.isNotEmpty) {
+      try {
+        final dob = DateTime.parse(dobString);
+        final now = DateTime.now();
+        int calculatedAge = now.year - dob.year;
+        if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) {
+          calculatedAge--;
+        }
+        age = calculatedAge.toString();
+      } catch (e) {
+        age = '-';
+      }
+    }
+    
     final sex = _profile['sex'] ?? '-';
     final height = _profile['height'] ?? '-';
     
@@ -2419,8 +2436,9 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
 
   Future<void> _checkProfile() async {
     final profile = await VitalBalanceService.getProfile();
-    // If age or sex is missing, assume first time setup needed
-    if (profile['age'] == null || profile['sex'] == null) {
+    // If dob (date of birth) or sex is missing, assume first time setup needed
+    // Note: We store 'dob' not 'age' since age changes yearly
+    if (profile['dob'] == null || profile['sex'] == null) {
       if (mounted) _showProfileDialog(isFirstTime: true);
     }
   }
@@ -2500,19 +2518,25 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
   }
 
   void _showProfileDialog({required bool isFirstTime}) {
+    final parentContext = context; // Capture parent context
     showDialog(
       context: context,
       barrierDismissible: !isFirstTime, // Force setup if first time? Maybe let them cancel.
-      builder: (context) => _ProfileDialog(
+      builder: (dialogContext) => _ProfileDialog(
         currentProfile: _profile,
         onSave: (newProfile) async {
           await VitalBalanceService.updateProfile(newProfile);
           if (mounted) {
             setState(() => _profile = newProfile);
             _refreshMetrics();
-            ScaffoldMessenger.of(context).showSnackBar(
-               const SnackBar(content: Text('Profile Updated', style: TextStyle(color: Colors.white)), backgroundColor: Colors.black87),
-            );
+            // Show success feedback (try-catch to handle edge cases)
+            try {
+              ScaffoldMessenger.of(parentContext).showSnackBar(
+                 const SnackBar(content: Text('Profile Updated', style: TextStyle(color: Colors.white)), backgroundColor: Colors.black87),
+              );
+            } catch (e) {
+              debugPrint('SnackBar display skipped: $e');
+            }
           }
         },
       ),

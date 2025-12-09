@@ -7,7 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/memory/unified_memory_service.dart';
 import 'package:sable/core/memory/models/extracted_memory.dart';
 import 'package:sable/core/emotion/weather_service.dart';
@@ -132,19 +132,19 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         title: Text(
           'Clear All Knowledge?',
           style: GoogleFonts.inter(color: Colors.white),
         ),
         content: Text(
           'This will permanently delete all ${_stats['total'] ?? 0} memories the AI has learned about you. This cannot be undone.',
-          style: GoogleFonts.inter(color: AurealColors.ghost),
+          style: GoogleFonts.inter(color: AelianaColors.ghost),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: AurealColors.ghost)),
+            child: Text('Cancel', style: TextStyle(color: AelianaColors.ghost)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
@@ -244,10 +244,10 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AurealColors.carbon,
+          backgroundColor: AelianaColors.carbon,
           title: Row(
             children: [
-              Icon(LucideIcons.plus, color: AurealColors.hyperGold, size: 20),
+              Icon(LucideIcons.plus, color: AelianaColors.hyperGold, size: 20),
               const SizedBox(width: 8),
               Text('Add Memory', style: GoogleFonts.inter(color: Colors.white)),
             ],
@@ -263,7 +263,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                   style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                   decoration: InputDecoration(
                     hintText: 'Title (e.g. "The day I got promoted")',
-                    hintStyle: TextStyle(color: AurealColors.ghost),
+                    hintStyle: TextStyle(color: AelianaColors.ghost),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
                   ),
@@ -275,18 +275,18 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                   style: GoogleFonts.inter(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'What should I remember about you?',
-                    hintStyle: TextStyle(color: AurealColors.ghost),
+                    hintStyle: TextStyle(color: AelianaColors.ghost),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AurealColors.ghost.withOpacity(0.3)),
+                      borderSide: BorderSide(color: AelianaColors.ghost.withOpacity(0.3)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AurealColors.ghost.withOpacity(0.3)),
+                      borderSide: BorderSide(color: AelianaColors.ghost.withOpacity(0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AurealColors.hyperGold),
+                      borderSide: BorderSide(color: AelianaColors.hyperGold),
                     ),
                     filled: true,
                     fillColor: Colors.black26,
@@ -308,12 +308,12 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                         if (locationName != null)
                           Row(
                             children: [
-                              Icon(LucideIcons.mapPin, size: 14, color: AurealColors.plasmaCyan),
+                              Icon(LucideIcons.mapPin, size: 14, color: AelianaColors.plasmaCyan),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   locationName,
-                                  style: GoogleFonts.inter(fontSize: 11, color: AurealColors.plasmaCyan),
+                                  style: GoogleFonts.inter(fontSize: 11, color: AelianaColors.plasmaCyan),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -358,7 +358,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                 
                 // Vibe Color Picker
                 const SizedBox(height: 16),
-                Text('Vibe', style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 12)),
+                Text('Vibe', style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12)),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 50,
@@ -409,16 +409,16 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Who was there?', style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 12)),
+                    Text('Who was there?', style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12)),
                     // Group toggle
                     Row(
                       children: [
-                        Text('Group', style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 11)),
+                        Text('Group', style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 11)),
                         const SizedBox(width: 4),
                         Switch(
                           value: isGroupActivity,
                           onChanged: (v) => setDialogState(() => isGroupActivity = v),
-                          activeColor: AurealColors.hyperGold,
+                          activeColor: AelianaColors.hyperGold,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ],
@@ -453,7 +453,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                             children: [
                               if (isAdded) Icon(LucideIcons.check, size: 12, color: Colors.blue),
                               if (isAdded) const SizedBox(width: 4),
-                              Text(person, style: GoogleFonts.inter(fontSize: 11, color: isAdded ? Colors.blue : AurealColors.ghost)),
+                              Text(person, style: GoogleFonts.inter(fontSize: 11, color: isAdded ? Colors.blue : AelianaColors.ghost)),
                             ],
                           ),
                         ),
@@ -465,28 +465,28 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                         final result = await showDialog<String>(
                           context: context,
                           builder: (ctx) => AlertDialog(
-                            backgroundColor: AurealColors.carbon,
+                            backgroundColor: AelianaColors.carbon,
                             title: Text('Add Person', style: GoogleFonts.inter(color: Colors.white)),
                             content: TextField(
                               controller: peopleController,
                               style: GoogleFonts.inter(color: Colors.white),
                               decoration: InputDecoration(
                                 hintText: 'Name',
-                                hintStyle: TextStyle(color: AurealColors.ghost),
+                                hintStyle: TextStyle(color: AelianaColors.ghost),
                               ),
                               autofocus: true,
                             ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(ctx),
-                                child: Text('Cancel', style: TextStyle(color: AurealColors.ghost)),
+                                child: Text('Cancel', style: TextStyle(color: AelianaColors.ghost)),
                               ),
                               TextButton(
                                 onPressed: () {
                                   Navigator.pop(ctx, peopleController.text.trim());
                                   peopleController.clear();
                                 },
-                                child: Text('Add', style: TextStyle(color: AurealColors.hyperGold)),
+                                child: Text('Add', style: TextStyle(color: AelianaColors.hyperGold)),
                               ),
                             ],
                           ),
@@ -500,14 +500,14 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AurealColors.ghost.withOpacity(0.3)),
+                          border: Border.all(color: AelianaColors.ghost.withOpacity(0.3)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.plus, size: 12, color: AurealColors.ghost),
+                            Icon(LucideIcons.plus, size: 12, color: AelianaColors.ghost),
                             const SizedBox(width: 4),
-                            Text('Add', style: GoogleFonts.inter(fontSize: 11, color: AurealColors.ghost)),
+                            Text('Add', style: GoogleFonts.inter(fontSize: 11, color: AelianaColors.ghost)),
                           ],
                         ),
                       ),
@@ -517,7 +517,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                 
                 // Headlines Section (World + Local)
                 const SizedBox(height: 16),
-                Text('What was happening?', style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 12)),
+                Text('What was happening?', style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -528,7 +528,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                         style: GoogleFonts.inter(color: Colors.white, fontSize: 12),
                         decoration: InputDecoration(
                           hintText: 'World headline (optional)',
-                          hintStyle: TextStyle(color: AurealColors.ghost.withOpacity(0.5), fontSize: 12),
+                          hintStyle: TextStyle(color: AelianaColors.ghost.withOpacity(0.5), fontSize: 12),
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
@@ -548,7 +548,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                         style: GoogleFonts.inter(color: Colors.white, fontSize: 12),
                         decoration: InputDecoration(
                           hintText: 'Local/national headline (optional)',
-                          hintStyle: TextStyle(color: AurealColors.ghost.withOpacity(0.5), fontSize: 12),
+                          hintStyle: TextStyle(color: AelianaColors.ghost.withOpacity(0.5), fontSize: 12),
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
@@ -560,7 +560,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                 ),
                 
                 const SizedBox(height: 16),
-                Text('Category', style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 12)),
+                Text('Category', style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -572,10 +572,10 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: isSelected ? AurealColors.hyperGold.withOpacity(0.2) : Colors.black26,
+                          color: isSelected ? AelianaColors.hyperGold.withOpacity(0.2) : Colors.black26,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isSelected ? AurealColors.hyperGold : Colors.transparent,
+                            color: isSelected ? AelianaColors.hyperGold : Colors.transparent,
                           ),
                         ),
                         child: Row(
@@ -584,14 +584,14 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                             Icon(
                               _getCategoryIcon(cat),
                               size: 14,
-                              color: isSelected ? AurealColors.hyperGold : AurealColors.ghost,
+                              color: isSelected ? AelianaColors.hyperGold : AelianaColors.ghost,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               cat.name,
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: isSelected ? AurealColors.hyperGold : AurealColors.ghost,
+                                color: isSelected ? AelianaColors.hyperGold : AelianaColors.ghost,
                               ),
                             ),
                           ],
@@ -602,7 +602,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                 ),
                 
                 const SizedBox(height: 16),
-                Text('Importance', style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 12)),
+                Text('Importance', style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12)),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -614,7 +614,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Icon(
                           starValue <= importance ? LucideIcons.star : Icons.star_border,
-                          color: starValue <= importance ? AurealColors.hyperGold : AurealColors.ghost,
+                          color: starValue <= importance ? AelianaColors.hyperGold : AelianaColors.ghost,
                           size: 28,
                         ),
                       ),
@@ -626,7 +626,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Text('Energy Level', style: GoogleFonts.inter(color: AurealColors.ghost, fontSize: 12)),
+                    Text('Energy Level', style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12)),
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -671,7 +671,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: AurealColors.ghost)),
+              child: Text('Cancel', style: TextStyle(color: AelianaColors.ghost)),
             ),
             TextButton(
               onPressed: () {
@@ -704,7 +704,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                   });
                 }
               },
-              child: Text('Add', style: TextStyle(color: AurealColors.hyperGold)),
+              child: Text('Add', style: TextStyle(color: AelianaColors.hyperGold)),
             ),
           ],
         ),
@@ -775,15 +775,15 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
       case MemoryCategory.dates: return Colors.purple;
       case MemoryCategory.life: return Colors.green;
       case MemoryCategory.emotional: return Colors.orange;
-      case MemoryCategory.goals: return AurealColors.hyperGold;
-      case MemoryCategory.misc: return AurealColors.ghost;
+      case MemoryCategory.goals: return AelianaColors.hyperGold;
+      case MemoryCategory.misc: return AelianaColors.ghost;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -826,7 +826,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addManualMemory,
-        backgroundColor: AurealColors.hyperGold,
+        backgroundColor: AelianaColors.hyperGold,
         child: const Icon(LucideIcons.plus, color: Colors.black),
       ),
     );
@@ -868,15 +868,15 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                       'What I know about you',
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: AurealColors.ghost,
+                        color: AelianaColors.ghost,
                       ),
                     ),
                   ],
                 ),
               ),
               PopupMenuButton<String>(
-                icon: Icon(LucideIcons.moreVertical, color: AurealColors.ghost),
-                color: AurealColors.carbon,
+                icon: Icon(LucideIcons.moreVertical, color: AelianaColors.ghost),
+                color: AelianaColors.carbon,
                 onSelected: (value) {
                   switch (value) {
                     case 'export':
@@ -892,7 +892,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                     value: 'export',
                     child: Row(
                       children: [
-                        Icon(LucideIcons.download, size: 18, color: AurealColors.ghost),
+                        Icon(LucideIcons.download, size: 18, color: AelianaColors.ghost),
                         const SizedBox(width: 12),
                         Text('Export All', style: GoogleFonts.inter(color: Colors.white)),
                       ],
@@ -931,11 +931,11 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
           style: GoogleFonts.inter(color: Colors.white),
           decoration: InputDecoration(
             hintText: 'Search memories...',
-            hintStyle: GoogleFonts.inter(color: AurealColors.ghost),
-            prefixIcon: Icon(LucideIcons.search, color: AurealColors.ghost, size: 20),
+            hintStyle: GoogleFonts.inter(color: AelianaColors.ghost),
+            prefixIcon: Icon(LucideIcons.search, color: AelianaColors.ghost, size: 20),
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
-                    icon: Icon(LucideIcons.x, color: AurealColors.ghost, size: 18),
+                    icon: Icon(LucideIcons.x, color: AelianaColors.ghost, size: 18),
                     onPressed: () {
                       _searchController.clear();
                     },
@@ -960,14 +960,14 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AurealColors.hyperGold.withOpacity(0.15),
-            AurealColors.hyperGold.withOpacity(0.05),
+            AelianaColors.hyperGold.withOpacity(0.15),
+            AelianaColors.hyperGold.withOpacity(0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AurealColors.hyperGold.withOpacity(0.3)),
+        border: Border.all(color: AelianaColors.hyperGold.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -977,13 +977,13 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
             value: total.toString(),
             label: 'Memories',
           ),
-          Container(width: 1, height: 40, color: AurealColors.ghost.withOpacity(0.3)),
+          Container(width: 1, height: 40, color: AelianaColors.ghost.withOpacity(0.3)),
           _buildStatItem(
             icon: LucideIcons.tag,
             value: totalTags.toString(),
             label: 'Tags',
           ),
-          Container(width: 1, height: 40, color: AurealColors.ghost.withOpacity(0.3)),
+          Container(width: 1, height: 40, color: AelianaColors.ghost.withOpacity(0.3)),
           _buildStatItem(
             icon: LucideIcons.clock,
             value: lastExtracted != null 
@@ -1003,7 +1003,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
   }) {
     return Column(
       children: [
-        Icon(icon, color: AurealColors.hyperGold, size: 24),
+        Icon(icon, color: AelianaColors.hyperGold, size: 24),
         const SizedBox(height: 8),
         Text(
           value,
@@ -1017,7 +1017,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
           label,
           style: GoogleFonts.inter(
             fontSize: 12,
-            color: AurealColors.ghost,
+            color: AelianaColors.ghost,
           ),
         ),
       ],
@@ -1037,7 +1037,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AurealColors.ghost,
+              color: AelianaColors.ghost,
               letterSpacing: 0.5,
             ),
           ),
@@ -1133,7 +1133,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AurealColors.ghost,
+              color: AelianaColors.ghost,
               letterSpacing: 0.5,
             ),
           ),
@@ -1151,7 +1151,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AurealColors.carbon,
+        color: AelianaColors.carbon,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1183,7 +1183,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                   DateFormat('MMM d, yyyy').format(memory.extractedAt),
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: AurealColors.ghost,
+                    color: AelianaColors.ghost,
                   ),
                 ),
               ],
@@ -1193,7 +1193,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: List.generate(memory.importance, (i) => 
-              Icon(LucideIcons.star, size: 10, color: AurealColors.hyperGold),
+              Icon(LucideIcons.star, size: 10, color: AelianaColors.hyperGold),
             ),
           ),
         ],
@@ -1209,13 +1209,13 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
             padding: const EdgeInsets.all(40),
             child: Column(
               children: [
-                Icon(LucideIcons.searchX, size: 48, color: AurealColors.ghost),
+                Icon(LucideIcons.searchX, size: 48, color: AelianaColors.ghost),
                 const SizedBox(height: 16),
                 Text(
                   'No memories found',
                   style: GoogleFonts.inter(
                     fontSize: 16,
-                    color: AurealColors.ghost,
+                    color: AelianaColors.ghost,
                   ),
                 ),
               ],

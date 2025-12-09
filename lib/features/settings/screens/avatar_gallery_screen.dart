@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 
 /// Gallery screen to view and manage all saved avatar images
 class AvatarGalleryScreen extends StatefulWidget {
@@ -53,7 +53,7 @@ class _AvatarGalleryScreenState extends State<AvatarGalleryScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         title: Text('Delete Avatar?', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
         content: Text('This avatar will be removed from your gallery.', style: GoogleFonts.inter(color: Colors.white70)),
         actions: [
@@ -103,7 +103,7 @@ class _AvatarGalleryScreenState extends State<AvatarGalleryScreen> {
                   },
                   icon: const Icon(LucideIcons.check),
                   label: const Text('Set Active'),
-                  style: ElevatedButton.styleFrom(backgroundColor: AurealColors.plasmaCyan),
+                  style: ElevatedButton.styleFrom(backgroundColor: AelianaColors.plasmaCyan),
                 ),
                 const SizedBox(width: 16),
                 TextButton.icon(
@@ -122,7 +122,7 @@ class _AvatarGalleryScreenState extends State<AvatarGalleryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         leading: IconButton(
@@ -148,7 +148,7 @@ class _AvatarGalleryScreenState extends State<AvatarGalleryScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AurealColors.plasmaCyan))
+          ? const Center(child: CircularProgressIndicator(color: AelianaColors.plasmaCyan))
           : _avatars.isEmpty
               ? _buildEmptyState()
               : _buildGalleryGrid(),
@@ -214,7 +214,7 @@ class _AvatarGalleryScreenState extends State<AvatarGalleryScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isActive ? AurealColors.plasmaCyan : Colors.white12,
+            color: isActive ? AelianaColors.plasmaCyan : Colors.white12,
             width: isActive ? 3 : 1,
           ),
         ),
@@ -229,7 +229,7 @@ class _AvatarGalleryScreenState extends State<AvatarGalleryScreen> {
                       url,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stack) => Container(
-                        color: AurealColors.carbon,
+                        color: AelianaColors.carbon,
                         child: const Center(
                           child: Icon(LucideIcons.imageOff, color: Colors.white24),
                         ),
@@ -243,7 +243,7 @@ class _AvatarGalleryScreenState extends State<AvatarGalleryScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AurealColors.plasmaCyan,
+                    color: AelianaColors.plasmaCyan,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(

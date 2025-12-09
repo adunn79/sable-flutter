@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/permissions_config.dart';
 import '../services/onboarding_state_service.dart';
@@ -55,7 +55,7 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: Column(
           children: [
@@ -73,7 +73,7 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AurealColors.plasmaCyan,
+                        color: AelianaColors.plasmaCyan,
                         letterSpacing: 2,
                       ),
                     ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
@@ -84,7 +84,7 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                       'Grant me context about your world. These permissions are optional, but recommended for a richer experience.',
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: AurealColors.ghost,
+                        color: AelianaColors.ghost,
                         height: 1.5,
                       ),
                     ).animate(delay: 200.ms).fadeIn(duration: 600.ms),
@@ -127,10 +127,10 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AurealColors.carbon.withOpacity(0.3),
+                        color: AelianaColors.carbon.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AurealColors.ghost.withOpacity(0.2),
+                          color: AelianaColors.ghost.withOpacity(0.2),
                           width: 1,
                         ),
                       ),
@@ -138,7 +138,7 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                         children: [
                           const Icon(
                             Icons.info_outline,
-                            color: AurealColors.plasmaCyan,
+                            color: AelianaColors.plasmaCyan,
                             size: 20,
                           ),
                           const SizedBox(width: 12),
@@ -147,7 +147,7 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                               'You can change these permissions anytime in Settings. Your privacy is always protected.',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: AurealColors.ghost,
+                                color: AelianaColors.ghost,
                                 height: 1.4,
                               ),
                             ),
@@ -189,13 +189,13 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: value
-            ? AurealColors.plasmaCyan.withOpacity(0.05)
-            : AurealColors.carbon.withOpacity(0.6),
+            ? AelianaColors.plasmaCyan.withOpacity(0.05)
+            : AelianaColors.carbon.withOpacity(0.6),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: value
-              ? AurealColors.plasmaCyan.withOpacity(0.3)
-              : AurealColors.ghost.withOpacity(0.2),
+              ? AelianaColors.plasmaCyan.withOpacity(0.3)
+              : AelianaColors.ghost.withOpacity(0.2),
           width: 1.5,
         ),
       ),
@@ -203,7 +203,7 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
         children: [
           Icon(
             icon,
-            color: value ? AurealColors.plasmaCyan : AurealColors.ghost,
+            color: value ? AelianaColors.plasmaCyan : AelianaColors.ghost,
             size: 32,
           ),
           const SizedBox(width: 16),
@@ -216,7 +216,7 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: value ? AurealColors.plasmaCyan : AurealColors.stardust,
+                    color: value ? AelianaColors.plasmaCyan : AelianaColors.stardust,
                     letterSpacing: 1,
                   ),
                 ),
@@ -225,7 +225,7 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                   description,
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: AurealColors.ghost,
+                    color: AelianaColors.ghost,
                     height: 1.4,
                   ),
                 ),
@@ -235,7 +235,7 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: value ? AurealColors.plasmaCyan : AurealColors.ghost.withOpacity(0.5),
+                    color: value ? AelianaColors.plasmaCyan : AelianaColors.ghost.withOpacity(0.5),
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -246,10 +246,10 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AurealColors.plasmaCyan,
-            activeTrackColor: AurealColors.plasmaCyan.withOpacity(0.3),
-            inactiveThumbColor: AurealColors.ghost,
-            inactiveTrackColor: AurealColors.carbon,
+            activeColor: AelianaColors.plasmaCyan,
+            activeTrackColor: AelianaColors.plasmaCyan.withOpacity(0.3),
+            inactiveThumbColor: AelianaColors.ghost,
+            inactiveTrackColor: AelianaColors.carbon,
           ),
         ],
       ),

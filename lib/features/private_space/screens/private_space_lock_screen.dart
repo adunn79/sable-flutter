@@ -5,7 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/theme/aureal_theme.dart';
+import '../../../core/theme/aeliana_theme.dart';
 import '../../../core/services/recovery_service.dart';
 import '../../../features/subscription/services/subscription_service.dart';
 import '../widgets/private_avatar_picker.dart';
@@ -181,7 +181,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ PIN set! Now choose your companion...'),
-          backgroundColor: AurealColors.hyperGold.withOpacity(0.9),
+          backgroundColor: AelianaColors.hyperGold.withOpacity(0.9),
         ),
       );
     }
@@ -195,7 +195,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ Biometric unlock enabled!'),
-          backgroundColor: AurealColors.hyperGold.withOpacity(0.9),
+          backgroundColor: AelianaColors.hyperGold.withOpacity(0.9),
         ),
       );
     }
@@ -208,7 +208,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
     if (_isLoading) {
       debugPrint('🔐 → Showing LOADING');
       return Scaffold(
-        backgroundColor: AurealColors.obsidian,
+        backgroundColor: AelianaColors.obsidian,
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -259,7 +259,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
 
   Widget _buildPaywall() {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         leading: IconButton(
@@ -288,16 +288,16 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
                 'Premium Feature',
                 style: GoogleFonts.inter(
                   fontSize: 16,
-                  color: AurealColors.hyperGold,
+                  color: AelianaColors.hyperGold,
                 ),
               ),
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AurealColors.carbon,
+                  color: AelianaColors.carbon,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AurealColors.hyperGold.withOpacity(0.3)),
+                  border: Border.all(color: AelianaColors.hyperGold.withOpacity(0.3)),
                 ),
                 child: Text(
                   'Upgrade to Silver or higher to unlock your private sanctuary with Luna, Dante, and Storm.',
@@ -312,7 +312,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
               ElevatedButton(
                 onPressed: () => context.go('/settings'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AurealColors.hyperGold,
+                  backgroundColor: AelianaColors.hyperGold,
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -330,7 +330,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
 
   Widget _buildSetupScreen() {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -341,9 +341,9 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AurealColors.carbon,
+                    color: AelianaColors.carbon,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AurealColors.hyperGold.withOpacity(0.3)),
+                    border: Border.all(color: AelianaColors.hyperGold.withOpacity(0.3)),
                   ),
                   child: Column(
                     children: [
@@ -375,7 +375,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
                 ElevatedButton(
                   onPressed: () => setState(() => _isSettingPin = true),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AurealColors.hyperGold,
+                    backgroundColor: AelianaColors.hyperGold,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -401,7 +401,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
 
   Widget _buildAvatarOnboarding() {
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         leading: IconButton(
@@ -478,7 +478,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
         : 'Enter PIN';
 
     return Scaffold(
-      backgroundColor: AurealColors.obsidian,
+      backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
         child: Column(
           children: [
@@ -509,8 +509,8 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
                   height: 16,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: i < _enteredPin.length ? AurealColors.hyperGold : Colors.grey[700],
-                    border: Border.all(color: AurealColors.hyperGold.withOpacity(0.5)),
+                    color: i < _enteredPin.length ? AelianaColors.hyperGold : Colors.grey[700],
+                    border: Border.all(color: AelianaColors.hyperGold.withOpacity(0.5)),
                   ),
                 ),
               ),
@@ -524,8 +524,8 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
             if (_canUseBiometric && _biometricEnabled && !_isSettingPin) ...[
               TextButton.icon(
                 onPressed: _authenticateWithBiometric,
-                icon: Icon(LucideIcons.fingerprint, color: AurealColors.hyperGold),
-                label: Text('Use biometric', style: GoogleFonts.inter(color: AurealColors.hyperGold)),
+                icon: Icon(LucideIcons.fingerprint, color: AelianaColors.hyperGold),
+                label: Text('Use biometric', style: GoogleFonts.inter(color: AelianaColors.hyperGold)),
               ),
               const SizedBox(height: 20),
             ],
@@ -586,7 +586,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: AurealColors.carbon,
+          backgroundColor: AelianaColors.carbon,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
@@ -602,7 +602,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('OK', style: GoogleFonts.inter(color: AurealColors.hyperGold)),
+              child: Text('OK', style: GoogleFonts.inter(color: AelianaColors.hyperGold)),
             ),
           ],
         ),
@@ -619,11 +619,11 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: AurealColors.carbon,
+        backgroundColor: AelianaColors.carbon,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(LucideIcons.shieldCheck, color: AurealColors.hyperGold),
+            Icon(LucideIcons.shieldCheck, color: AelianaColors.hyperGold),
             const SizedBox(width: 12),
             Expanded(
               child: Text('Verify Identity', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -647,7 +647,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
                 decoration: InputDecoration(
                   hintText: 'Email',
                   hintStyle: GoogleFonts.inter(color: Colors.white38),
-                  prefixIcon: Icon(LucideIcons.mail, color: AurealColors.hyperGold.withOpacity(0.7)),
+                  prefixIcon: Icon(LucideIcons.mail, color: AelianaColors.hyperGold.withOpacity(0.7)),
                   filled: true,
                   fillColor: Colors.black26,
                   border: OutlineInputBorder(
@@ -666,7 +666,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
                 decoration: InputDecoration(
                   hintText: 'Phone',
                   hintStyle: GoogleFonts.inter(color: Colors.white38),
-                  prefixIcon: Icon(LucideIcons.phone, color: AurealColors.hyperGold.withOpacity(0.7)),
+                  prefixIcon: Icon(LucideIcons.phone, color: AelianaColors.hyperGold.withOpacity(0.7)),
                   filled: true,
                   fillColor: Colors.black26,
                   border: OutlineInputBorder(
@@ -692,7 +692,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
               Navigator.pop(context, isVerified);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AurealColors.hyperGold,
+              backgroundColor: AelianaColors.hyperGold,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Text('Verify', style: GoogleFonts.inter(color: Colors.black)),
@@ -731,7 +731,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ PIN reset! Please set a new PIN.'),
-          backgroundColor: AurealColors.hyperGold.withOpacity(0.9),
+          backgroundColor: AelianaColors.hyperGold.withOpacity(0.9),
         ),
       );
     }
@@ -776,8 +776,8 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AurealColors.carbon,
-          border: Border.all(color: AurealColors.hyperGold.withOpacity(0.2)),
+          color: AelianaColors.carbon,
+          border: Border.all(color: AelianaColors.hyperGold.withOpacity(0.2)),
         ),
         child: Center(
           child: Text(

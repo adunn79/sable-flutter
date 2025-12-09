@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../core/theme/aureal_theme.dart';
+import '../../../core/theme/aeliana_theme.dart';
 import '../photo_service.dart';
 import '../models/photo_entry.dart';
 
@@ -121,7 +121,7 @@ class _PhotoPickerSheetState extends State<PhotoPickerSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AurealColors.carbon,
+        color: AelianaColors.carbon,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: const EdgeInsets.all(20),
@@ -261,7 +261,7 @@ class _PhotoPickerSheetState extends State<PhotoPickerSheet> {
                               'assets/images/placeholder.png',
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Container(
-                                color: AurealColors.obsidian,
+                                color: AelianaColors.obsidian,
                                 child: const Icon(LucideIcons.image, color: Colors.white24),
                               ),
                             ),
@@ -312,18 +312,18 @@ class _PhotoPickerSheetState extends State<PhotoPickerSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 20),
           decoration: BoxDecoration(
-            color: AurealColors.plasmaCyan.withOpacity(0.1),
+            color: AelianaColors.plasmaCyan.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.3)),
+            border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
           ),
           child: Column(
             children: [
-              Icon(icon, color: AurealColors.plasmaCyan, size: 32),
+              Icon(icon, color: AelianaColors.plasmaCyan, size: 32),
               const SizedBox(height: 8),
               Text(
                 label,
                 style: GoogleFonts.inter(
-                  color: AurealColors.plasmaCyan,
+                  color: AelianaColors.plasmaCyan,
                   fontWeight: FontWeight.w500,
                 ),
               ),

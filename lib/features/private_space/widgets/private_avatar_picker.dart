@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/theme/aureal_theme.dart';
+import '../../../core/theme/aeliana_theme.dart';
 
 /// Private Space avatar data
 /// NEVER visible in main app archetype picker
@@ -107,7 +107,7 @@ class PrivateAvatarPicker extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AurealColors.carbon.withOpacity(0.5),
+            color: AelianaColors.carbon.withOpacity(0.5),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: Colors.white24,
@@ -147,14 +147,14 @@ class PrivateAvatarPicker extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AurealColors.hyperGold.withOpacity(0.2),
+                            color: AelianaColors.hyperGold.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             'Coming Soon',
                             style: GoogleFonts.inter(
                               fontSize: 10,
-                              color: AurealColors.hyperGold,
+                              color: AelianaColors.hyperGold,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -190,12 +190,12 @@ class PrivateAvatarPicker extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected 
               ? avatar.accentColor.withOpacity(0.15)
-              : AurealColors.carbon,
+              : AelianaColors.carbon,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected 
                 ? avatar.accentColor 
-                : AurealColors.plasmaCyan.withOpacity(0.15),
+                : AelianaColors.plasmaCyan.withOpacity(0.15),
             width: isSelected ? 2 : 1,
           ),
         ),

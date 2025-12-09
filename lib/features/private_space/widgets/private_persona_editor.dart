@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../core/theme/aureal_theme.dart';
+import '../../../core/theme/aeliana_theme.dart';
 import '../models/private_user_persona.dart';
 
 /// Editor widget for creating/editing user persona in Private Space
@@ -86,9 +86,9 @@ class _PrivatePersonaEditorState extends State<PrivatePersonaEditor> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AurealColors.carbon,
+        color: AelianaColors.carbon,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.2)),
+        border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,7 +97,7 @@ class _PrivatePersonaEditorState extends State<PrivatePersonaEditor> {
           // Header
           Row(
             children: [
-              Icon(LucideIcons.userCog, color: AurealColors.hyperGold, size: 24),
+              Icon(LucideIcons.userCog, color: AelianaColors.hyperGold, size: 24),
               const SizedBox(width: 12),
               Text(
                 widget.existingPersona != null ? 'Edit Persona' : 'Create Persona',
@@ -181,7 +181,7 @@ class _PrivatePersonaEditorState extends State<PrivatePersonaEditor> {
             child: ElevatedButton(
               onPressed: _handleSave,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AurealColors.hyperGold,
+                backgroundColor: AelianaColors.hyperGold,
                 foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -229,20 +229,20 @@ class _PrivatePersonaEditorState extends State<PrivatePersonaEditor> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.3)),
-            prefixIcon: Icon(icon, color: AurealColors.plasmaCyan, size: 20),
+            prefixIcon: Icon(icon, color: AelianaColors.plasmaCyan, size: 20),
             filled: true,
-            fillColor: AurealColors.obsidian,
+            fillColor: AelianaColors.obsidian,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AurealColors.plasmaCyan.withOpacity(0.2)),
+              borderSide: BorderSide(color: AelianaColors.plasmaCyan.withOpacity(0.2)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AurealColors.plasmaCyan.withOpacity(0.2)),
+              borderSide: BorderSide(color: AelianaColors.plasmaCyan.withOpacity(0.2)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AurealColors.hyperGold),
+              borderSide: BorderSide(color: AelianaColors.hyperGold),
             ),
           ),
         ),
@@ -270,9 +270,9 @@ class _PrivatePersonaEditorState extends State<PrivatePersonaEditor> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: AurealColors.obsidian,
+            color: AelianaColors.obsidian,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AurealColors.plasmaCyan.withOpacity(0.2)),
+            border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.2)),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -282,7 +282,7 @@ class _PrivatePersonaEditorState extends State<PrivatePersonaEditor> {
                 style: GoogleFonts.inter(color: Colors.white.withOpacity(0.3)),
               ),
               isExpanded: true,
-              dropdownColor: AurealColors.carbon,
+              dropdownColor: AelianaColors.carbon,
               style: GoogleFonts.inter(color: Colors.white),
               items: options.map((opt) => DropdownMenuItem(
                 value: opt.toLowerCase(),

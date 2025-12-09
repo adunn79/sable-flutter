@@ -15,6 +15,8 @@ import 'package:sable/core/emotion/weather_service.dart';
 import 'package:sable/core/ai/providers/gemini_provider.dart';
 import 'package:sable/src/config/app_config.dart';
 import 'package:sable/core/photos/widgets/photo_picker_sheet.dart';
+import 'package:sable/core/media/now_playing_service.dart';
+import 'package:sable/core/news/headline_service.dart';
 
 /// Rich text journal editor with privacy toggle, mood, and tags
 class JournalEditorScreen extends StatefulWidget {
@@ -53,6 +55,13 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
   VoiceService? _voiceService;
   bool _isListening = false;
   
+  // P1+ Memory Fields
+  String? _nowPlayingTrack;
+  String? _nowPlayingArtist;
+  List<String> _taggedPeople = [];
+  bool _isGroupActivity = false;
+  String? _topHeadline;
+  
   @override
   void initState() {
     super.initState();
@@ -88,6 +97,12 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
         _isPrivate = _existingEntry!.isPrivate;
         _moodScore = _existingEntry!.moodScore;
         _tags = List.from(_existingEntry!.tags);
+        // Load existing P1+ data
+        _nowPlayingTrack = _existingEntry!.nowPlayingTrack;
+        _nowPlayingArtist = _existingEntry!.nowPlayingArtist;
+        _taggedPeople = List.from(_existingEntry!.taggedPeople ?? []);
+        _isGroupActivity = _existingEntry!.isGroupActivity ?? false;
+        _topHeadline = _existingEntry!.topHeadline;
       } else {
         _quillController = QuillController.basic();
       }
@@ -105,6 +120,10 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
       }
       // Default privacy based on bucket settings
       _isPrivate = _bucket?.isVault ?? !(_bucket?.avatarAccessDefault ?? true);
+      
+      // Auto-capture Now Playing music and Top Headline for new entries
+      _captureNowPlaying();
+      _fetchHeadline();
     }
     
     setState(() => _isLoading = false);
@@ -113,6 +132,37 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
     Future.delayed(const Duration(milliseconds: 300), () {
       _focusNode.requestFocus();
     });
+  }
+  
+  /// Auto-capture currently playing music
+  Future<void> _captureNowPlaying() async {
+    try {
+      final nowPlaying = await NowPlayingService.getCurrentTrack();
+      if (nowPlaying != null && mounted) {
+        setState(() {
+          _nowPlayingTrack = nowPlaying.title;
+          _nowPlayingArtist = nowPlaying.artist;
+        });
+        debugPrint('🎵 Journal: Captured now playing: ${nowPlaying.title} - ${nowPlaying.artist}');
+      }
+    } catch (e) {
+      debugPrint('🎵 Now playing capture failed: $e');
+    }
+  }
+  
+  /// Auto-fetch today's top headline
+  Future<void> _fetchHeadline() async {
+    try {
+      final headline = await HeadlineService.getTopHeadline();
+      if (headline != null && mounted) {
+        setState(() {
+          _topHeadline = headline;
+        });
+        debugPrint('📰 Journal: Headline captured: $headline');
+      }
+    } catch (e) {
+      debugPrint('📰 Headline fetch failed: $e');
+    }
   }
   
   @override
@@ -298,7 +348,7 @@ Guidelines:
           ),
         );
       } else {
-        // Create new with location and weather
+        // Create new with location, weather, and P1+ fields
         await JournalStorageService.createEntry(
           content: content,
           plainText: plainText,
@@ -310,6 +360,12 @@ Guidelines:
           latitude: position?.latitude,
           longitude: position?.longitude,
           weather: weather,
+          // P1+ Memory Fields
+          nowPlayingTrack: _nowPlayingTrack,
+          nowPlayingArtist: _nowPlayingArtist,
+          taggedPeople: _taggedPeople,
+          isGroupActivity: _isGroupActivity,
+          topHeadline: _topHeadline,
         );
       }
       
@@ -385,6 +441,135 @@ No hashtags, no explanations, just the tags.''',
         onClose: () => Navigator.pop(ctx),
         generateSuggestions: _generateTagSuggestions,
         tagController: _tagController,
+      ),
+    );
+  }
+  
+  /// Show dialog for tagging people in this entry
+  void _showPeopleTagDialog() {
+    final peopleController = TextEditingController();
+    // Common quick-add suggestions
+    final suggestions = ['Mom', 'Dad', 'Partner', 'Friend', 'Coworker', 'Family'];
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: Row(
+            children: [
+              Icon(LucideIcons.users, color: Colors.blue, size: 20),
+              const SizedBox(width: 8),
+              const Text('Tag People', style: TextStyle(color: Colors.white, fontSize: 16)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Quick suggestions
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: suggestions.map((person) {
+                  final isAdded = _taggedPeople.contains(person);
+                  return GestureDetector(
+                    onTap: () {
+                      if (!isAdded) {
+                        setState(() => _taggedPeople.add(person));
+                        setDialogState(() {});
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isAdded ? Colors.blue.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: isAdded ? Colors.blue : Colors.white24),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isAdded) const Icon(LucideIcons.check, size: 14, color: Colors.blue),
+                          if (isAdded) const SizedBox(width: 4),
+                          Text(person, style: TextStyle(color: isAdded ? Colors.blue : Colors.white70, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+              // Custom name input
+              TextField(
+                controller: peopleController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Add custom name...',
+                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+                  suffixIcon: IconButton(
+                    icon: const Icon(LucideIcons.plus, color: Colors.blue),
+                    onPressed: () {
+                      final name = peopleController.text.trim();
+                      if (name.isNotEmpty && !_taggedPeople.contains(name)) {
+                        setState(() => _taggedPeople.add(name));
+                        setDialogState(() {});
+                        peopleController.clear();
+                      }
+                    },
+                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.white24),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.blue),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                onSubmitted: (value) {
+                  final name = value.trim();
+                  if (name.isNotEmpty && !_taggedPeople.contains(name)) {
+                    setState(() => _taggedPeople.add(name));
+                    setDialogState(() {});
+                    peopleController.clear();
+                  }
+                },
+              ),
+              // Current tags display
+              if (_taggedPeople.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text('Tagged:', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: _taggedPeople.map((p) => Chip(
+                    label: Text(p, style: const TextStyle(fontSize: 11)),
+                    deleteIcon: const Icon(LucideIcons.x, size: 14),
+                    onDeleted: () {
+                      setState(() => _taggedPeople.remove(p));
+                      setDialogState(() {});
+                    },
+                    backgroundColor: Colors.blue.withOpacity(0.2),
+                    labelStyle: const TextStyle(color: Colors.blue),
+                    side: BorderSide.none,
+                    padding: EdgeInsets.zero,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  )).toList(),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Done', style: TextStyle(color: Colors.blue)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -759,6 +944,154 @@ No hashtags, no explanations, just the tags.''',
                                 ],
                               ),
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // P1+ Metadata Row (Now Playing, Top Headline, People Tags)
+            if (_nowPlayingTrack != null || _taggedPeople.isNotEmpty || _topHeadline != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    // Now Playing chip
+                    if (_nowPlayingTrack != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.music, size: 12, color: Colors.green.shade400),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${_nowPlayingTrack!}${_nowPlayingArtist != null ? " - $_nowPlayingArtist" : ""}',
+                              style: TextStyle(fontSize: 11, color: Colors.green.shade300),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () => setState(() {
+                                _nowPlayingTrack = null;
+                                _nowPlayingArtist = null;
+                              }),
+                              child: Icon(LucideIcons.x, size: 12, color: Colors.green.shade400),
+                            ),
+                          ],
+                        ),
+                      ),
+                    // Top Headline chip
+                    if (_topHeadline != null)
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 280),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.newspaper, size: 12, color: Colors.orange.shade400),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                _topHeadline!,
+                                style: TextStyle(fontSize: 11, color: Colors.orange.shade300),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () => setState(() => _topHeadline = null),
+                              child: Icon(LucideIcons.x, size: 12, color: Colors.orange.shade400),
+                            ),
+                          ],
+                        ),
+                      ),
+                    // People tags
+                    ..._taggedPeople.map((person) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.user, size: 12, color: Colors.blue.shade400),
+                          const SizedBox(width: 4),
+                          Text(person, style: TextStyle(fontSize: 11, color: Colors.blue.shade300)),
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () => setState(() => _taggedPeople.remove(person)),
+                            child: Icon(LucideIcons.x, size: 12, color: Colors.blue.shade400),
+                          ),
+                        ],
+                      ),
+                    )),
+                    // Group toggle if people tagged
+                    if (_taggedPeople.isNotEmpty)
+                      GestureDetector(
+                        onTap: () => setState(() => _isGroupActivity = !_isGroupActivity),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _isGroupActivity ? Colors.purple.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _isGroupActivity ? Colors.purple : Colors.white24),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(LucideIcons.users, size: 12, color: _isGroupActivity ? Colors.purple : Colors.white54),
+                              const SizedBox(width: 4),
+                              Text('Group', style: TextStyle(fontSize: 10, color: _isGroupActivity ? Colors.purple : Colors.white54)),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            
+            // Add People Button (always visible for easy tagging)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: _showPeopleTagDialog,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.userPlus, size: 14, color: Colors.white.withOpacity(0.5)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Tag people',
+                            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
                           ),
                         ],
                       ),

@@ -4,7 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/emotion/weather_service.dart';
 import 'package:sable/core/emotion/location_service.dart';
 import 'package:sable/src/config/app_config.dart';
-import 'package:sable/core/theme/aureal_theme.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 
 /// Global weather widget to display in app header
 class WeatherWidget extends StatefulWidget {

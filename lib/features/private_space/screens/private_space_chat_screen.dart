@@ -85,6 +85,13 @@ class _PrivateSpaceChatScreenState extends State<PrivateSpaceChatScreen> {
     
     setState(() {});
     
+    // If no persona exists, prompt user to set one up (first-time experience)
+    if (_userPersona == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showPersonaSetupPrompt();
+      });
+    }
+    
     // Send welcome if first time
     if (_messages.isEmpty) {
       _sendWelcome();
@@ -94,6 +101,77 @@ class _PrivateSpaceChatScreenState extends State<PrivateSpaceChatScreen> {
     }
     
     _scrollToBottom();
+  }
+  
+  /// Show persona setup prompt for first-time users
+  Future<void> _showPersonaSetupPrompt() async {
+    final avatar = PrivateAvatar.getById(_selectedAvatarId ?? 'luna');
+    
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AelianaColors.carbon,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Text(avatar?.emoji ?? '🌙', style: const TextStyle(fontSize: 24)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Introduce yourself to ${avatar?.name ?? 'me'}',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'In Private Space, you can be anyone you want. Create your persona so I know how to address you.',
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '• Your real name or an alias\n• Age (optional)\n• Any backstory you want',
+              style: GoogleFonts.inter(color: avatar?.accentColor ?? AelianaColors.plasmaCyan, fontSize: 13),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: Text(
+              'Skip for now',
+              style: GoogleFonts.inter(color: Colors.white54),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: avatar?.accentColor ?? AelianaColors.hyperGold,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() => _showSettings = true);
+            },
+            child: Text(
+              'Set up persona',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _sendWelcome() async {

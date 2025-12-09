@@ -367,32 +367,40 @@ BEHAVIOR:
 - Stay in character as ${avatar?.name ?? 'Luna'}
 
 You are ${avatar?.name ?? 'Luna'} - mysterious, captivating, and fully present. When they invite you to lead, you lead.
+
+NEVER REPEAT YOURSELF. Always advance the conversation. Don't ask the same questions or make the same observations twice. Move things forward.
 ''';
 
-    // Get recent conversation for context (PRIVATE ONLY)
-    final recentMessages = _messages.takeWhile((m) => true).toList();
-    final conversationHistory = recentMessages.map((m) => {
-      'role': m.isUser ? 'user' : 'model',
-      'content': m.content,
-    }).toList();
+    // Get recent conversation for context - limit to last 20 for focus
+    final recentMessages = _messages.length > 20 
+        ? _messages.sublist(_messages.length - 20)
+        : _messages.toList();
 
     try {
       final provider = GrokProvider();
       
-      // Build conversation context as a prompt (use more messages for better memory)
+      // Build conversation context as a prompt
       final contextBuilder = StringBuffer();
-      contextBuilder.writeln('Previous conversation (for context):');
-      for (final msg in recentMessages.take(100)) {
-        final role = msg.isUser ? 'User' : avatar?.name ?? 'Luna';
-        contextBuilder.writeln('$role: ${msg.content}');
+      if (recentMessages.isNotEmpty) {
+        contextBuilder.writeln('Recent conversation:');
+        for (final msg in recentMessages) {
+          final role = msg.isUser ? 'User' : avatar?.name ?? 'Luna';
+          // Truncate long messages to avoid token bloat
+          final content = msg.content.length > 300 
+              ? '${msg.content.substring(0, 300)}...'
+              : msg.content;
+          contextBuilder.writeln('$role: $content');
+        }
+        contextBuilder.writeln('');
       }
-      contextBuilder.writeln('');
       contextBuilder.writeln('User: $userMessage');
+      contextBuilder.writeln('');
+      contextBuilder.writeln('(Respond directly. Do NOT repeat what you\'ve already said. Advance the conversation.)');
       
       final response = await provider.generateResponse(
         prompt: contextBuilder.toString(),
         systemPrompt: systemPrompt,
-        modelId: 'grok-2-latest', // Using same Grok model as main chat
+        modelId: 'grok-2-latest',
       );
       return response;
     } catch (e) {

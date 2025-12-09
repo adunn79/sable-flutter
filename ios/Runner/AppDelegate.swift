@@ -232,6 +232,46 @@ import MediaPlayer
       }
     })
     
+    // Notes Channel (placeholder - Apple Notes doesn't have a public API)
+    // This provides a stub that can be enhanced with macOS AppleScript in the future
+    let notesChannel = FlutterMethodChannel(name: "com.sable.notes",
+                                            binaryMessenger: controller.binaryMessenger)
+    
+    notesChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      
+      switch call.method {
+      case "isAvailable":
+        // Notes integration not yet implemented on iOS
+        // Would require macOS AppleScript or third-party solution
+        result(false)
+        
+      case "hasPermission":
+        result(false)
+        
+      case "requestPermission":
+        // No permission model for Notes on iOS
+        result(false)
+        
+      case "getRecentNotes":
+        // Placeholder - would require native implementation
+        result([])
+        
+      case "searchNotes":
+        result([])
+        
+      case "createNote":
+        // Could open Notes app with URL scheme: mobilenotes://
+        if let url = URL(string: "mobilenotes://") {
+          UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        }
+        result(nil)
+        
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    })
+    
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
   

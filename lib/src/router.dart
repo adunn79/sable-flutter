@@ -11,6 +11,7 @@ import 'package:sable/features/vital_balance/screens/vital_balance_screen.dart';
 import 'package:sable/features/vital_balance/widgets/vital_balance_lock_screen.dart';
 import 'package:sable/features/private_space/screens/private_space_chat_screen.dart';
 import 'package:sable/features/private_space/screens/private_space_lock_screen.dart';
+import 'package:sable/features/today/screens/today_screen.dart';
 
 import 'package:sable/features/onboarding/onboarding_flow.dart';
 
@@ -34,7 +35,7 @@ GoRouter createAppRouter(String initialLocation) {
           ),
           GoRoute(path: '/welcome', builder: (context, state) => const PlaceholderPage(title: 'Welcome')),
           GoRoute(path: '/chat', builder: (context, state) => const ChatPage()),
-          GoRoute(path: '/today', builder: (context, state) => const PlaceholderPage(title: 'Today')),
+          GoRoute(path: '/today', builder: (context, state) => const TodayScreen()),
           GoRoute(path: '/journal', builder: (context, state) => const JournalLockScreen(child: JournalTimelineScreen())),
           GoRoute(path: '/vital-balance', builder: (context, state) => const VitalBalanceLockScreen(child: VitalBalanceScreen())),
           GoRoute(path: '/more', builder: (context, state) => const MoreScreen()),

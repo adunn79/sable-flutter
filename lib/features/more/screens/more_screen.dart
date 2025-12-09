@@ -6,6 +6,8 @@ import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/widgets/restart_widget.dart';
 import 'package:sable/features/private_space/services/private_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'about_screen.dart';
+import 'help_support_screen.dart';
 
 /// More screen - provides access to Settings and other options
 class MoreScreen extends StatelessWidget {
@@ -63,7 +65,10 @@ class MoreScreen extends StatelessWidget {
             icon: LucideIcons.helpCircle,
             title: 'Help & Support',
             subtitle: 'Get help with the app',
-            onTap: () {},
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
+            ),
           ),
           const SizedBox(height: 12),
           const SizedBox(height: 12),
@@ -72,7 +77,10 @@ class MoreScreen extends StatelessWidget {
             icon: LucideIcons.info,
             title: 'About',
             subtitle: 'App version and credits',
-            onTap: () {},
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AboutScreen()),
+            ),
           ),
           
           const SizedBox(height: 32),

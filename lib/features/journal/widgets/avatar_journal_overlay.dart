@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
+import 'package:sable/core/widgets/active_avatar_ring.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 
 class AvatarJournalOverlay extends StatefulWidget {
   final bool isPrivate;
   final String archetype;
+  final bool isActive; // True when AI is thinking or speaking
   final VoidCallback? onSparkTap;
   final VoidCallback? onAvatarTap;
 
@@ -13,6 +15,7 @@ class AvatarJournalOverlay extends StatefulWidget {
     super.key,
     required this.isPrivate,
     required this.archetype,
+    this.isActive = false,
     this.onSparkTap,
     this.onAvatarTap,
   });
@@ -21,24 +24,12 @@ class AvatarJournalOverlay extends StatefulWidget {
   State<AvatarJournalOverlay> createState() => _AvatarJournalOverlayState();
 }
 
-class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
+class _AvatarJournalOverlayState extends State<AvatarJournalOverlay> {
   String? _customAvatarUrl;
   
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    )..repeat(reverse: true);
-    
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-    
     _loadCustomAvatar();
   }
   
@@ -68,7 +59,6 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
 
   @override
   void dispose() {
-    _pulseController.dispose();
     super.dispose();
   }
 
@@ -77,97 +67,76 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
     return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Stack with avatar + pulse + privacy eye
+          // Stack with avatar + ring + privacy eye
           SizedBox(
             width: 80,
             height: 80,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                   // Pulse animation
-                  ScaleTransition(
-                    scale: _pulseAnimation,
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: widget.isPrivate 
-                            ? Colors.grey.withOpacity(0.1)
-                            : _avatarColor.withOpacity(0.2),
-                      ),
-                    ),
-                  ),
-
-                  // Main avatar circle with actual image
-                  GestureDetector(
-                    onTap: widget.onAvatarTap,
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: widget.isPrivate 
-                              ? Colors.grey 
-                              : _avatarColor,
-                          width: 3,
+                   // Use the standardized rotating rainbow ring
+                  ActiveAvatarRing(
+                    size: 70,
+                    isActive: widget.isActive,
+                    showRing: !widget.isPrivate, // Hide ring when in private/blind mode
+                    child: GestureDetector(
+                      onTap: widget.onAvatarTap,
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: widget.isPrivate ? Border.all(
+                            color: Colors.grey,
+                            width: 3,
+                          ) : null, // No border when using rainbow ring
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: widget.isPrivate 
-                                ? Colors.grey.withOpacity(0.2)
-                                : _avatarColor.withOpacity(0.4),
-                            blurRadius: 16,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: ClipOval(
-                        child: ColorFiltered(
-                          colorFilter: widget.isPrivate
-                              ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
-                              : const ColorFilter.mode(Colors.transparent, BlendMode.overlay),
-                          child: (_customAvatarUrl != null && _customAvatarUrl!.startsWith('http'))
-                            ? Image.network(
-                                _customAvatarUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stack) => Image.asset(
+                        child: ClipOval(
+                          child: ColorFiltered(
+                            colorFilter: widget.isPrivate
+                                ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
+                                : const ColorFilter.mode(Colors.transparent, BlendMode.overlay),
+                            child: (_customAvatarUrl != null && _customAvatarUrl!.startsWith('http'))
+                              ? Image.network(
+                                  _customAvatarUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stack) => Image.asset(
+                                    _avatarImagePath,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : Image.asset(
                                   _avatarImagePath,
                                   fit: BoxFit.cover,
-                                ),
-                              )
-                            : Image.asset(
-                                _avatarImagePath,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stack) {
-                                  // Fallback to original (non-professional) avatar
-                                  final arch = widget.archetype.toLowerCase();
-                                  final safeArch = (arch.isEmpty) ? 'sable' : arch;
-                                  return Image.asset(
-                                    'assets/images/archetypes/$safeArch.png',
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (ctx, err, stk) {
-                                      // Final fallback to colored circle with initial
-                                      return Container(
-                                        color: _avatarColor,
-                                        child: Center(
-                                          child: Text(
-                                            widget.archetype.isNotEmpty 
-                                                ? widget.archetype[0].toUpperCase() 
-                                                : 'S',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.bold,
+                                  errorBuilder: (context, error, stack) {
+                                    // Fallback to original (non-professional) avatar
+                                    final arch = widget.archetype.toLowerCase();
+                                    final safeArch = (arch.isEmpty) ? 'sable' : arch;
+                                    return Image.asset(
+                                      'assets/images/archetypes/$safeArch.png',
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (ctx, err, stk) {
+                                        // Final fallback to colored circle with initial
+                                        return Container(
+                                          color: _avatarColor,
+                                          child: Center(
+                                            child: Text(
+                                              widget.archetype.isNotEmpty 
+                                                  ? widget.archetype[0].toUpperCase() 
+                                                  : 'S',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                          ),
                         ),
                       ),
                     ),

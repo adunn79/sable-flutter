@@ -74,14 +74,17 @@ class _ActiveAvatarRingState extends State<ActiveAvatarRing>
                   height: widget.size,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: SweepGradient(
+                    gradient: const SweepGradient(
                       colors: [
-                        AelianaColors.plasmaCyan,
-                        AelianaColors.hyperGold,
-                        AelianaColors.plasmaCyan,
-                        AelianaColors.hyperGold, // Repeated for smooth loop
+                        Color(0xFF00D4FF), // Cyan
+                        Color(0xFF00FF88), // Green
+                        Color(0xFFFFD700), // Gold/Yellow
+                        Color(0xFFFF6B35), // Orange
+                        Color(0xFFFF1493), // Pink/Magenta
+                        Color(0xFF9B59B6), // Purple
+                        Color(0xFF00D4FF), // Cyan (loop back)
                       ],
-                      stops: const [0.0, 0.45, 0.55, 1.0],
+                      stops: [0.0, 0.17, 0.33, 0.5, 0.67, 0.83, 1.0],
                     ),
                   ),
                 ),

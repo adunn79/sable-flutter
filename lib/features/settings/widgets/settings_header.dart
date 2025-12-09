@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
+import 'package:sable/core/widgets/active_avatar_ring.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class SettingsHeader extends StatelessWidget {
@@ -222,28 +223,25 @@ class SettingsHeader extends StatelessWidget {
   }
 
   Widget _buildCompanionAvatar() {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: AelianaColors.plasmaCyan, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: AelianaColors.plasmaCyan.withOpacity(0.2),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: (avatarUrl != null && avatarUrl!.startsWith('http'))
-            ? Image.network(
-                avatarUrl!, 
-                fit: BoxFit.cover,
-                errorBuilder: (c, e, s) => _buildFallbackAsset(),
-              )
-            : _buildFallbackAsset(),
+    return ActiveAvatarRing(
+      size: 84, // Slightly larger to accommodate ring
+      isActive: false, // Settings screen doesn't have active state
+      showRing: true,
+      child: Container(
+        width: 72,
+        height: 72,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+        ),
+        child: ClipOval(
+          child: (avatarUrl != null && avatarUrl!.startsWith('http'))
+              ? Image.network(
+                  avatarUrl!, 
+                  fit: BoxFit.cover,
+                  errorBuilder: (c, e, s) => _buildFallbackAsset(),
+                )
+              : _buildFallbackAsset(),
+        ),
       ),
     );
   }

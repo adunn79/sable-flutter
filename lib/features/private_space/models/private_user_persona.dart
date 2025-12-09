@@ -30,6 +30,24 @@ class PrivateUserPersona extends HiveObject {
   @HiveField(7)
   DateTime createdAt;
 
+  @HiveField(8)
+  double libido; // 0.0 to 1.0
+
+  @HiveField(9)
+  double creativity;
+
+  @HiveField(10)
+  double empathy;
+
+  @HiveField(11)
+  double humor;
+
+  @HiveField(12)
+  String? avatarId; // Specific avatar for this persona
+
+  @HiveField(13)
+  double intelligence; // 0.0 to 1.0
+
   PrivateUserPersona({
     required this.id,
     required this.aliasName,
@@ -38,6 +56,12 @@ class PrivateUserPersona extends HiveObject {
     this.aliasDescription,
     this.aliasBackground,
     this.isActive = false,
+    this.libido = 0.5,
+    this.creativity = 0.7,
+    this.empathy = 0.8,
+    this.humor = 0.6,
+    this.avatarId,
+    this.intelligence = 0.7,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -66,6 +90,11 @@ class PrivateUserPersona extends HiveObject {
     if (aliasGender != null) parts.add('I identify as $aliasGender');
     if (aliasDescription != null) parts.add(aliasDescription!);
     if (aliasBackground != null) parts.add('Background: $aliasBackground');
+    
+    // Add personality/drive context for AI
+    parts.add('Libido/Drive Level: ${(libido * 100).toInt()}%');
+    parts.add('Desired Companion Vibe: Creativity ${(creativity * 100).toInt()}%, Empathy ${(empathy * 100).toInt()}%, Humor ${(humor * 100).toInt()}%');
+    
     return parts.join('. ') + '.';
   }
 
@@ -76,6 +105,12 @@ class PrivateUserPersona extends HiveObject {
     String? aliasDescription,
     String? aliasBackground,
     bool? isActive,
+    double? libido,
+    double? creativity,
+    double? empathy,
+    double? humor,
+    String? avatarId,
+    double? intelligence,
   }) {
     return PrivateUserPersona(
       id: id,
@@ -85,6 +120,12 @@ class PrivateUserPersona extends HiveObject {
       aliasDescription: aliasDescription ?? this.aliasDescription,
       aliasBackground: aliasBackground ?? this.aliasBackground,
       isActive: isActive ?? this.isActive,
+      libido: libido ?? this.libido,
+      creativity: creativity ?? this.creativity,
+      empathy: empathy ?? this.empathy,
+      humor: humor ?? this.humor,
+      avatarId: avatarId ?? this.avatarId,
+      intelligence: intelligence ?? this.intelligence,
       createdAt: createdAt,
     );
   }

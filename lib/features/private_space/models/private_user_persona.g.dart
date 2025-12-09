@@ -24,6 +24,12 @@ class PrivateUserPersonaAdapter extends TypeAdapter<PrivateUserPersona> {
       aliasDescription: fields[4] as String?,
       aliasBackground: fields[5] as String?,
       isActive: fields[6] as bool,
+      libido: fields[8] as double,
+      creativity: fields[9] as double,
+      empathy: fields[10] as double,
+      humor: fields[11] as double,
+      avatarId: fields[12] as String?,
+      intelligence: fields[13] as double,
       createdAt: fields[7] as DateTime?,
     );
   }
@@ -31,7 +37,7 @@ class PrivateUserPersonaAdapter extends TypeAdapter<PrivateUserPersona> {
   @override
   void write(BinaryWriter writer, PrivateUserPersona obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +53,19 @@ class PrivateUserPersonaAdapter extends TypeAdapter<PrivateUserPersona> {
       ..writeByte(6)
       ..write(obj.isActive)
       ..writeByte(7)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(8)
+      ..write(obj.libido)
+      ..writeByte(9)
+      ..write(obj.creativity)
+      ..writeByte(10)
+      ..write(obj.empathy)
+      ..writeByte(11)
+      ..write(obj.humor)
+      ..writeByte(12)
+      ..write(obj.avatarId)
+      ..writeByte(13)
+      ..write(obj.intelligence);
   }
 
   @override

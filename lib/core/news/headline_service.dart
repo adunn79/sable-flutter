@@ -9,6 +9,8 @@ class HeadlineService {
   static const String _cacheTimeKey = 'cached_headline_time';
   static const Duration _cacheDuration = Duration(hours: 6);
   
+  static const String _historyKey = 'headline_history';
+
   /// Get today's top headline (cached for 6 hours)
   static Future<String?> getTopHeadline({bool forceRefresh = false}) async {
     try {
@@ -38,6 +40,10 @@ class HeadlineService {
         // Cache the result
         await prefs.setString(_cacheKey, headline);
         await prefs.setInt(_cacheTimeKey, DateTime.now().millisecondsSinceEpoch);
+        
+        // Save to history
+        await _saveToHistory(headline, DateTime.now());
+        
         debugPrint('📰 Headline cached: $headline');
       }
       
@@ -46,6 +52,39 @@ class HeadlineService {
       debugPrint('📰 Headline fetch error: $e');
       return null;
     }
+  }
+
+  /// Get headline for a specific date from history
+  static Future<String?> getHeadlineForDate(DateTime date) async {
+    final history = await _getHistory();
+    // Normalize date to YYYY-MM-DD
+    final key = '${date.year}-${date.month}-${date.day}';
+    return history[key];
+  }
+
+  /// Save a headline to history manually
+  static Future<void> _saveToHistory(String headline, DateTime date) async {
+    final history = await _getHistory();
+    final key = '${date.year}-${date.month}-${date.day}';
+    history[key] = headline;
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_historyKey, jsonEncode(history));
+  }
+
+  static Future<Map<String, String>> _getHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final historyJson = prefs.getString(_historyKey);
+    
+    if (historyJson != null) {
+      try {
+        final Map<String, dynamic> decoded = jsonDecode(historyJson);
+        return decoded.map((key, value) => MapEntry(key, value.toString()));
+      } catch (e) {
+        debugPrint('❌ Error decoding headline history: $e');
+      }
+    }
+    return {};
   }
   
   /// Fetch headline using AI (Grok)

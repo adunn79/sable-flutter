@@ -104,7 +104,7 @@ class _AppShellState extends State<AppShell> {
             ),
             NavigationDestination(
               icon: Icon(LucideIcons.calendar),
-              label: 'Today',
+              label: 'Calendar',
             ),
             NavigationDestination(
               icon: Icon(LucideIcons.book),

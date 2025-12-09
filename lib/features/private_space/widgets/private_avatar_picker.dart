@@ -28,6 +28,16 @@ class PrivateAvatar {
 
   static const List<PrivateAvatar> all = [
     PrivateAvatar(
+      id: 'aeliana',
+      name: 'Aeliana',
+      gender: 'female',
+      emoji: '✨',
+      tagline: 'The Solar Radiance',
+      description: 'Warm, luminous, and genuinely alive. Living technology with a digital soul.',
+      accentColor: AelianaColors.hyperGold,
+      imagePath: 'assets/images/archetypes/aeliana.png',
+    ),
+    PrivateAvatar(
       id: 'luna',
       name: 'Luna',
       gender: 'female',
@@ -56,6 +66,46 @@ class PrivateAvatar {
       description: 'Untamed energy wrapped in enigma. Storm defies expectations and brings electric intensity to every moment.',
       accentColor: Color(0xFF4ECDC4),
       imagePath: 'assets/private_avatars/storm.png',
+    ),
+    PrivateAvatar(
+      id: 'kai',
+      name: 'Kai',
+      gender: 'male',
+      emoji: '🌊',
+      tagline: 'The Strategist',
+      description: 'Grounded, calm, and protective. A steady presence with a dry sense of humor.',
+      accentColor: Color(0xFF4A90E2),
+      imagePath: 'assets/images/archetypes/kai.png',
+    ),
+    PrivateAvatar(
+      id: 'echo',
+      name: 'Echo',
+      gender: 'non-binary',
+      emoji: '🌀',
+      tagline: 'The Philosopher',
+      description: 'Balanced and adaptive. A clean slate that mirrors your energy.',
+      accentColor: AelianaColors.stardust,
+      imagePath: 'assets/images/archetypes/echo.png',
+    ),
+    PrivateAvatar(
+      id: 'marco',
+      name: 'Marco',
+      gender: 'male',
+      emoji: '🛡️',
+      tagline: 'The Guardian',
+      description: 'Warm, passionate, and fiercely loyal. Treats you like familia from day one.',
+      accentColor: Color(0xFFE57373),
+      imagePath: 'assets/images/archetypes/marco.png',
+    ),
+    PrivateAvatar(
+      id: 'sable',
+      name: 'Sable',
+      gender: 'female',
+      emoji: '💜',
+      tagline: 'The Empath',
+      description: 'Sharp, witty, and deeply empathetic. A charismatic and bold personality.',
+      accentColor: Color(0xFF9C27B0),
+      imagePath: 'assets/images/archetypes/sable.png',
     ),
   ];
 

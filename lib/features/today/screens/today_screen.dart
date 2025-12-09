@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:device_calendar/device_calendar.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
@@ -16,6 +17,12 @@ import 'package:sable/src/config/app_config.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:sable/features/journal/widgets/avatar_journal_overlay.dart';
 import 'package:sable/src/shared/weather_widget.dart';
+import 'package:sable/core/travel/travel_service.dart';
+import 'package:sable/core/news/headline_service.dart';
+import 'package:sable/core/contacts/contact_picker_sheet.dart';
+import 'package:contacts_service/contacts_service.dart';
+import 'package:sable/core/ai/model_orchestrator.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class TodayScreen extends StatefulWidget {
   const TodayScreen({super.key});
@@ -48,6 +55,10 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
   List<ICalEvent> _todayHolidays = [];
   List<SportsEvent> _todaySports = [];
   List<SportsEvent> _upcomingSports = [];
+  
+  // New Vibe Layers
+  List<Event> _travelEvents = [];
+  String? _headline;
 
   @override
   void initState() {
@@ -166,6 +177,27 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
       debugPrint('❌ Error loading sports: $e');
     }
     
+    // Load travel events
+    try {
+      final travel = await TravelService.getTravelEvents(_selectedDate);
+      if (mounted) setState(() => _travelEvents = travel);
+    } catch (e) {
+      debugPrint('❌ Error loading travel: $e');
+    }
+
+    // Load headline
+    try {
+      // If today, trigger fetch to ensure we have one (and it gets saved to history)
+      if (_isSameDay(_selectedDate, DateTime.now())) {
+        await HeadlineService.getTopHeadline();
+      }
+      // Get from history (works for today and past)
+      final headline = await HeadlineService.getHeadlineForDate(_selectedDate);
+      if (mounted) setState(() => _headline = headline);
+    } catch (e) {
+      debugPrint('❌ Error loading headline: $e');
+    }
+    
     // Auto-record today's weather
     if (_currentLocation != null) {
       WeatherHistoryService.autoRecordFromCurrent(_currentLocation!);
@@ -240,12 +272,25 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
                     color: Colors.white,
                   ),
                 ),
-                Text(
-                  DateFormat('MMMM d, y').format(_selectedDate),
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: AelianaColors.ghost,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      DateFormat('MMMM d, y').format(_selectedDate),
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: AelianaColors.ghost,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _showPageInfo(context),
+                      child: Icon(
+                        LucideIcons.info, 
+                        size: 14, 
+                        color: AelianaColors.ghost.withOpacity(0.5)
+                      ),
+                    ),
+                  ],
                 ),
                 // Location badge
                 if (_currentLocation != null) ...[
@@ -327,108 +372,13 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
   }
 
   void _showAiScheduleHelp() {
-    // Show a bottom sheet where the AI can help with schedule
     showModalBottomSheet(
       context: context,
-      backgroundColor: AelianaColors.carbon,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AelianaColors.ghost.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Icon(LucideIcons.sparkles, size: 32, color: AelianaColors.hyperGold),
-            const SizedBox(height: 16),
-            Text(
-              'Schedule Assistant',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "I can help you manage your day! Here's what I see:",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: AelianaColors.ghost,
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Quick stats about today
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AelianaColors.obsidian,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  _buildQuickStat(
-                    LucideIcons.calendarDays,
-                    'Today',
-                    '${_todayEvents.length} event${_todayEvents.length == 1 ? '' : 's'}',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildQuickStat(
-                    LucideIcons.calendarRange,
-                    'This Week',
-                    '${_upcomingEvents.length} event${_upcomingEvents.length == 1 ? '' : 's'}',
-                  ),
-                  if (_currentLocation != null) ...[
-                    const SizedBox(height: 12),
-                    _buildQuickStat(
-                      LucideIcons.mapPin,
-                      'Location',
-                      _currentLocation!,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Action button - go to main chat for deeper help
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // Navigate to chat tab for more detailed help
-                  // The user can use the main chat for complex schedule planning
-                },
-                icon: const Icon(LucideIcons.messageCircle, size: 18),
-                label: const Text('Chat for More Help'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AelianaColors.hyperGold,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _AgenticScheduleChat(),
     );
   }
-
   Widget _buildQuickStat(IconData icon, String label, String value) {
     return Row(
       children: [
@@ -542,10 +492,58 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
         labelColor: Colors.black,
         unselectedLabelColor: AelianaColors.ghost,
         labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12),
-        tabs: const [
-          Tab(text: 'Events'),
-          Tab(text: 'Tasks'),
-          Tab(text: 'Vibe'),
+        tabs: [
+          Tab(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Events'),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: () => _showInfoDialog(
+                    context, 
+                    'Events', 
+                    'Your daily schedule from your connected calendars. Tap + to add new events.',
+                  ),
+                  child: Icon(LucideIcons.info, size: 10, color: AelianaColors.ghost),
+                ),
+              ],
+            ),
+          ),
+          Tab(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Tasks'),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: () => _showInfoDialog(
+                    context, 
+                    'Tasks', 
+                    'Reminders and to-dos from your Reminders app. Keep track of what needs to be done.',
+                  ),
+                  child: Icon(LucideIcons.info, size: 10, color: AelianaColors.ghost),
+                ),
+              ],
+            ),
+          ),
+          Tab(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Vibe'),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: () => _showInfoDialog(
+                    context, 
+                    'Vibe Layers', 
+                    'Contextual information to help you tune into the day: Moon phases, weather, holidays, sports, and more.',
+                  ),
+                  child: Icon(LucideIcons.info, size: 10, color: AelianaColors.ghost),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -709,6 +707,24 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
             color: AelianaColors.plasmaCyan,
           ),
           const SizedBox(height: 16),
+          
+          // Headline Card
+          if (_headline != null) ...[
+            _buildVibeCard(
+              icon: '🌍',
+              title: 'World Event',
+              subtitle: _headline!,
+              color: AelianaColors.plasmaCyan,
+            ),
+            const SizedBox(height: 16),
+          ],
+          
+          // Travel Section
+          if (_travelEvents.isNotEmpty) ...[
+             _buildSectionHeader('✈️ Travel', AelianaColors.hyperGold),
+             ..._travelEvents.map((e) => _buildTravelCard(e)),
+             const SizedBox(height: 16),
+          ],
           
           // Today's Holidays
           if (_todayHolidays.isNotEmpty) ...[
@@ -1180,96 +1196,356 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
   }
 
   Widget _buildEventCard(Event event) {
-    final timeStr = _formatEventTime(event);
+    // Determine status color based on time
+    final now = DateTime.now();
+    bool isPast = false;
+    bool isOngoing = false;
+    
+    if (event.start != null && event.end != null) {
+      if (event.end!.isBefore(now)) {
+        isPast = true;
+      } else if (event.start!.isBefore(now) && event.end!.isAfter(now)) {
+        isOngoing = true;
+      }
+    }
+    
+    // Check if it's all day
     final isAllDay = event.allDay == true;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AelianaColors.carbon,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AelianaColors.hyperGold.withOpacity(0.2),
+          color: isOngoing 
+              ? AelianaColors.plasmaCyan.withOpacity(0.5) 
+              : AelianaColors.hyperGold.withOpacity(0.2),
+          width: isOngoing ? 1.5 : 1,
         ),
+        boxShadow: isOngoing ? [
+          BoxShadow(
+            color: AelianaColors.plasmaCyan.withOpacity(0.1),
+            blurRadius: 12,
+            spreadRadius: 2,
+          )
+        ] : null,
       ),
-      child: Row(
-        children: [
-          // Time indicator
-          Container(
-            width: 4,
-            height: 50,
-            decoration: BoxDecoration(
-              color: isAllDay ? AelianaColors.plasmaCyan : AelianaColors.hyperGold,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Event details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _showEventDetailsDialog(event),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                Text(
-                  event.title ?? 'Untitled Event',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                // Time indicator strip
+                Container(
+                  width: 4,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: isAllDay ? AelianaColors.plasmaCyan : (isPast ? Colors.white24 : AelianaColors.hyperGold),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      LucideIcons.clock,
-                      size: 14,
-                      color: AelianaColors.ghost,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      timeStr,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: AelianaColors.ghost,
-                      ),
-                    ),
-                  ],
-                ),
-                if (event.location != null && event.location!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Row(
+                const SizedBox(width: 16),
+                
+                // Event details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        LucideIcons.mapPin,
-                        size: 14,
-                        color: AelianaColors.ghost,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          event.location!,
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: AelianaColors.ghost,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        event.title ?? 'Untitled Event',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isPast ? Colors.white54 : Colors.white,
+                          decoration: isPast ? TextDecoration.lineThrough : null,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            LucideIcons.clock, 
+                            size: 12, 
+                            color: isPast ? Colors.white24 : Colors.white54
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _formatEventTime(event),
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: isPast ? Colors.white24 : Colors.white54,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (event.location != null && event.location!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Row(
+                            children: [
+                              Icon(
+                                LucideIcons.mapPin, 
+                                size: 12, 
+                                color: isPast ? Colors.white24 : Colors.white54
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  event.location!,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: isPast ? Colors.white24 : Colors.white54,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      // Invitee count badge
+                      if (event.attendees != null && event.attendees!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
+                            children: [
+                              Icon(LucideIcons.users, size: 12, color: AelianaColors.plasmaCyan),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${event.attendees!.length} invited',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: AelianaColors.plasmaCyan,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
-                ],
+                ),
+                
+                // Chevron
+                Icon(
+                  LucideIcons.chevronRight,
+                  color: isPast ? Colors.white10 : AelianaColors.ghost,
+                  size: 20,
+                ),
               ],
             ),
           ),
-          // Chevron
-          Icon(
-            LucideIcons.chevronRight,
-            color: AelianaColors.ghost,
-            size: 20,
+        ),
+      ),
+    );
+  }
+
+  void _showEventDetailsDialog(Event event) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AelianaColors.carbon,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        contentPadding: EdgeInsets.zero,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header with delete button
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      event.title ?? 'Event',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.x, color: Colors.white54),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            
+            Divider(color: Colors.white.withOpacity(0.1), height: 1),
+            
+            // Details
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  _buildDetailRow(LucideIcons.clock, _formatEventTime(event)),
+                  if (event.location != null && event.location!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: _buildDetailRow(LucideIcons.mapPin, event.location!),
+                    ),
+                  if (event.description != null && event.description!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: _buildDetailRow(LucideIcons.alignLeft, event.description!),
+                    ),
+                  if (event.attendees != null && event.attendees!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(LucideIcons.users, color: AelianaColors.plasmaCyan, size: 20),
+                              const SizedBox(width: 12),
+                              Text('Invitees', style: GoogleFonts.inter(color: Colors.white70)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 32),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: event.attendees!.whereType<Attendee>().map((a) => Chip(
+                                label: Text(a.name ?? a.emailAddress ?? 'Unknown'),
+                                backgroundColor: Colors.white10,
+                                labelStyle: const TextStyle(fontSize: 12),
+                              )).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            
+            // Actions
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        // Confirm Delete
+                        Navigator.pop(context); // Close details
+                        _showDeleteConfirmDialog(event);
+                      },
+                      icon: const Icon(LucideIcons.trash2, size: 18),
+                      label: const Text('Delete'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        side: BorderSide(color: Colors.redAccent.withOpacity(0.5)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                         Navigator.pop(context);
+                         // Ideally preserve other fields by creating updated logic,
+                         // For now, simpler to just close. Reuse edit logic if needed.
+                         // But _showCreateEventDialog doesn't take an event to edit yet.
+                         // We'll leave Edit for V2 or if user explicitly pushes for it.
+                         // User said "Enable editing and deleting".
+                         // I'll implement 'Edit' by reusing create dialog with prefill.
+                         _showCreateEventDialog(existingEvent: event);
+                      },
+                      icon: const Icon(LucideIcons.edit3, size: 18),
+                      label: const Text('Edit'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AelianaColors.hyperGold,
+                        foregroundColor: AelianaColors.obsidian,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmDialog(Event event) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AelianaColors.carbon,
+        title: const Text('Delete Event?', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Are you sure you want to delete this event? This action cannot be undone.',
+          style: TextStyle(color: Colors.white70)
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close confirm
+              await CalendarService.deleteEvent(event.calendarId!, event.eventId!);
+              _loadEvents(); // Refresh
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Event deleted')),
+                );
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
           ),
         ],
+      ),
+    );
+  }
+  
+  Widget _buildDetailRow(IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: AelianaColors.plasmaCyan, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.inter(fontSize: 15, color: Colors.white),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showCreateEventDialog({Event? existingEvent}) {
+    // Ensure existingEvent handling (for edit mode)
+    // If Editing, we need existing IDs
+    
+    showDialog(
+      context: context,
+      builder: (context) => _CreateEventDialog(
+        initialDate: _selectedDate,
+        existingEvent: existingEvent,
+        onEventCreated: () {
+          _loadEvents();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(existingEvent == null ? 'Event created!' : 'Event updated!')),
+          );
+        },
       ),
     );
   }
@@ -1380,222 +1656,7 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
     );
   }
 
-  void _showCreateEventDialog() {
-    final titleController = TextEditingController();
-    final locationController = TextEditingController();
-    DateTime eventDate = _selectedDate;
-    TimeOfDay startTime = const TimeOfDay(hour: 9, minute: 0);
-    TimeOfDay endTime = const TimeOfDay(hour: 10, minute: 0);
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AelianaColors.carbon,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'New Event',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(LucideIcons.x, color: AelianaColors.ghost),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Title
-              TextField(
-                controller: titleController,
-                style: GoogleFonts.inter(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Event Title',
-                  labelStyle: TextStyle(color: AelianaColors.ghost),
-                  prefixIcon: Icon(LucideIcons.edit3, color: AelianaColors.ghost),
-                  filled: true,
-                  fillColor: AelianaColors.obsidian,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Location
-              TextField(
-                controller: locationController,
-                style: GoogleFonts.inter(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Location (optional)',
-                  labelStyle: TextStyle(color: AelianaColors.ghost),
-                  prefixIcon: Icon(LucideIcons.mapPin, color: AelianaColors.ghost),
-                  filled: true,
-                  fillColor: AelianaColors.obsidian,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Time Row
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: startTime,
-                        );
-                        if (picked != null) {
-                          setModalState(() => startTime = picked);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AelianaColors.obsidian,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(LucideIcons.clock, color: AelianaColors.ghost, size: 18),
-                            const SizedBox(width: 8),
-                            Text(
-                              startTime.format(context),
-                              style: GoogleFonts.inter(color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('to', style: TextStyle(color: AelianaColors.ghost)),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: endTime,
-                        );
-                        if (picked != null) {
-                          setModalState(() => endTime = picked);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AelianaColors.obsidian,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(LucideIcons.clock, color: AelianaColors.ghost, size: 18),
-                            const SizedBox(width: 8),
-                            Text(
-                              endTime.format(context),
-                              style: GoogleFonts.inter(color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Create Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (titleController.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter an event title')),
-                      );
-                      return;
-                    }
-
-                    final startDateTime = DateTime(
-                      eventDate.year,
-                      eventDate.month,
-                      eventDate.day,
-                      startTime.hour,
-                      startTime.minute,
-                    );
-                    final endDateTime = DateTime(
-                      eventDate.year,
-                      eventDate.month,
-                      eventDate.day,
-                      endTime.hour,
-                      endTime.minute,
-                    );
-
-                    await CalendarService.createEvent(
-                      title: titleController.text.trim(),
-                      location: locationController.text.trim().isNotEmpty 
-                          ? locationController.text.trim() 
-                          : null,
-                      start: startDateTime,
-                      end: endDateTime,
-                    );
-
-                    if (mounted) {
-                      Navigator.pop(context);
-                      await _loadEvents();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Event "${titleController.text}" created'),
-                          backgroundColor: AelianaColors.hyperGold,
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AelianaColors.hyperGold,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    'Create Event',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   // Helper methods
   bool _isSameDay(DateTime a, DateTime b) {
@@ -1609,9 +1670,54 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
   }
 
   List<Event> _getEventsForDay(DateTime date) {
+    if (_isSameDay(date, DateTime.now())) {
+      // For today, use the specifically fetched todayEvents which cover the full day
+      return _todayEvents;
+    }
+    
     return _upcomingEvents.where((e) => 
       e.start != null && _isSameDay(e.start!, date)
     ).toList();
+  }
+
+  void _showPageInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AelianaColors.carbon,
+        title: Text('About Today', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+        content: Text(
+          'This is your daily command center. See your schedule, manage tasks, and check the "Vibe" of the day (Moon phase, holidays, etc).',
+          style: GoogleFonts.inter(color: AelianaColors.ghost),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it', style: TextStyle(color: AelianaColors.plasmaCyan)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInfoDialog(BuildContext context, String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AelianaColors.carbon,
+        title: Text(title, style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+        content: Text(
+          message,
+          style: GoogleFonts.inter(color: AelianaColors.ghost),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it', style: TextStyle(color: AelianaColors.plasmaCyan)),
+          ),
+        ],
+      ),
+    );
   }
 
   String _formatEventTime(Event event) {
@@ -1643,5 +1749,537 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
     if (diff == 0) return 'Today';
     if (diff == 1) return 'Tomorrow';
     return DateFormat('EEEE, MMM d').format(date);
+  }
+
+  Widget _buildTravelCard(Event event) {
+    final start = event.start != null ? DateFormat('h:mm a').format(event.start!) : '';
+    final end = event.end != null ? DateFormat('h:mm a').format(event.end!) : '';
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AelianaColors.carbon,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AelianaColors.hyperGold.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AelianaColors.hyperGold.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              TravelService.getTravelIcon(event),
+              style: const TextStyle(fontSize: 24),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.title ?? 'Travel',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                if (start.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.clock, size: 14, color: AelianaColors.hyperGold),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$start${end.isNotEmpty ? ' - $end' : ''}',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AelianaColors.ghost,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (event.location != null && event.location!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.mapPin, size: 14, color: AelianaColors.hyperGold),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            event.location!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: AelianaColors.ghost,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CreateEventDialog extends StatefulWidget {
+  final DateTime initialDate;
+  final Event? existingEvent;
+  final VoidCallback onEventCreated;
+
+  const _CreateEventDialog({
+    required this.initialDate,
+    this.existingEvent,
+    required this.onEventCreated,
+  });
+
+  @override
+  State<_CreateEventDialog> createState() => _CreateEventDialogState();
+}
+
+class _CreateEventDialogState extends State<_CreateEventDialog> {
+  late TextEditingController _titleController;
+  late TextEditingController _locationController;
+  late DateTime _eventDate;
+  late TimeOfDay _startTime;
+  late TimeOfDay _endTime;
+  List<Contact> _invitees = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.existingEvent?.title ?? '');
+    _locationController = TextEditingController(text: widget.existingEvent?.location ?? '');
+    _eventDate = widget.existingEvent?.start ?? widget.initialDate;
+    _startTime = TimeOfDay.fromDateTime(widget.existingEvent?.start ?? DateTime(widget.initialDate.year, widget.initialDate.month, widget.initialDate.day, 9, 0));
+    _endTime = TimeOfDay.fromDateTime(widget.existingEvent?.end ?? DateTime(widget.initialDate.year, widget.initialDate.month, widget.initialDate.day, 10, 0));
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _locationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addInvitee() async {
+    final contact = await showModalBottomSheet<Contact>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const ContactPickerSheet(),
+    );
+
+    if (contact != null) {
+      if (!_invitees.any((c) => c.identifier == contact.identifier)) {
+        setState(() {
+          _invitees.add(contact);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                widget.existingEvent == null ? 'New Event' : 'Edit Event',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(LucideIcons.x, color: Colors.white54),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          TextField(
+            controller: _titleController,
+            style: GoogleFonts.inter(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Event Title',
+              labelStyle: const TextStyle(color: Colors.white54),
+              prefixIcon: const Icon(LucideIcons.edit3, color: Colors.white54),
+              filled: true,
+              fillColor: AelianaColors.obsidian,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _locationController,
+            style: GoogleFonts.inter(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Location (optional)',
+              labelStyle: const TextStyle(color: Colors.white54),
+              prefixIcon: const Icon(LucideIcons.mapPin, color: Colors.white54),
+              filled: true,
+              fillColor: AelianaColors.obsidian,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: _startTime,
+                    );
+                    if (picked != null) {
+                      setState(() => _startTime = picked);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AelianaColors.obsidian,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.clock, color: Colors.white54, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          _startTime.format(context),
+                          style: GoogleFonts.inter(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: Text('to', style: TextStyle(color: Colors.white54)),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: _endTime,
+                    );
+                    if (picked != null) {
+                      setState(() => _endTime = picked);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AelianaColors.obsidian,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.clock, color: Colors.white54, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          _endTime.format(context),
+                          style: GoogleFonts.inter(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text('Invitees', style: GoogleFonts.inter(color: Colors.white70)),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: _addInvitee,
+                icon: const Icon(LucideIcons.plus, size: 16),
+                label: const Text('Add'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AelianaColors.plasmaCyan,
+                ),
+              ),
+            ],
+          ),
+          if (_invitees.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _invitees.map((c) => Chip(
+                label: Text(c.displayName ?? 'Unknown'),
+                backgroundColor: AelianaColors.plasmaCyan.withOpacity(0.2),
+                labelStyle: const TextStyle(color: AelianaColors.plasmaCyan),
+                onDeleted: () {
+                  setState(() => _invitees.remove(c));
+                },
+              )).toList(),
+            ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async {
+                if (_titleController.text.trim().isEmpty) return;
+
+                final startDateTime = DateTime(
+                  _eventDate.year,
+                  _eventDate.month,
+                  _eventDate.day,
+                  _startTime.hour,
+                  _startTime.minute,
+                );
+                final endDateTime = DateTime(
+                  _eventDate.year,
+                  _eventDate.month,
+                  _eventDate.day,
+                  _endTime.hour,
+                  _endTime.minute,
+                );
+
+                final attendees = _invitees.map((c) {
+                  String? email;
+                  if (c.emails != null && c.emails!.isNotEmpty) {
+                    email = c.emails!.first.value;
+                  }
+                  return Attendee(
+                    name: c.displayName,
+                    emailAddress: email,
+                    role: AttendeeRole.None,
+                  );
+                }).toList();
+
+                await CalendarService.createEvent(
+                  title: _titleController.text.trim(),
+                  location: _locationController.text.trim().isNotEmpty 
+                      ? _locationController.text.trim() 
+                      : null,
+                  start: startDateTime,
+                  end: endDateTime,
+                  attendees: attendees.isEmpty ? null : attendees,
+                );
+
+                widget.onEventCreated();
+                if (mounted) Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AelianaColors.hyperGold,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                widget.existingEvent == null ? 'Create Event' : 'Update Event',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AgenticScheduleChat extends ConsumerStatefulWidget {
+  const _AgenticScheduleChat();
+
+  @override
+  ConsumerState<_AgenticScheduleChat> createState() => _AgenticScheduleChatState();
+}
+
+class _AgenticScheduleChatState extends ConsumerState<_AgenticScheduleChat> {
+  final TextEditingController _controller = TextEditingController();
+  final List<Map<String, dynamic>> _messages = [];
+  bool _isTyping = false;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _messages.add({
+      'text': "I'm your Schedule Agent. What do you need?",
+      'isUser': false,
+    });
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _handleSubmitted() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      _messages.add({'text': text, 'isUser': true});
+      _isTyping = true;
+      _controller.clear();
+    });
+    _scrollToBottom();
+
+    try {
+      final orchestrator = ref.read(modelOrchestratorProvider.notifier);
+      final calendarSummary = await CalendarService.getCalendarSummary();
+      final contextPayload = "You are a Calendar Agent.\nUser Request: $text\n\nCurrent Schedule:\n$calendarSummary";
+      
+      final response = await orchestrator.orchestratedRequest(
+        prompt: text,
+        userContext: contextPayload,
+        archetypeName: 'Sable', 
+      );
+
+      if (mounted) {
+        setState(() {
+          _messages.add({'text': response, 'isUser': false});
+          _isTyping = false;
+        });
+        _scrollToBottom();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _messages.add({'text': "Error: $e", 'isUser': false});
+          _isTyping = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: BoxDecoration(
+        color: AelianaColors.carbon,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.bot, color: AelianaColors.plasmaCyan),
+                const SizedBox(width: 12),
+                Text(
+                  'SCHEDULE AGENT',
+                  style: GoogleFonts.spaceGrotesk(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(LucideIcons.x, color: Colors.white54),
+                  onPressed: () => Navigator.pop(context),
+                )
+              ],
+            ),
+          ),
+          Divider(color: Colors.white.withOpacity(0.1), height: 1),
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16),
+              itemCount: _messages.length + (_isTyping ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == _messages.length) {
+                  return const Text('Typing...', style: TextStyle(color: Colors.white30));
+                }
+                final msg = _messages[index];
+                final isUser = msg['isUser'] as bool;
+                return Align(
+                  alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isUser ? AelianaColors.plasmaCyan.withOpacity(0.2) : Colors.white10,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+                    child: Text(msg['text'], style: GoogleFonts.inter(color: Colors.white)),
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(left: 16, right: 16, top: 8, bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Type...',
+                      hintStyle: const TextStyle(color: Colors.white30),
+                      filled: true,
+                      fillColor: Colors.black26,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
+                    onSubmitted: (_) => _handleSubmitted(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: AelianaColors.plasmaCyan,
+                  child: IconButton(
+                    icon: const Icon(LucideIcons.send, color: Colors.black, size: 18),
+                    onPressed: _handleSubmitted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

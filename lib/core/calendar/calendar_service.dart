@@ -116,7 +116,7 @@ class CalendarService {
     }
   }
   
-  /// Create a new calendar event
+  /// Create a new calendar event with optional invitees
   static Future<Event?> createEvent({
     required String title,
     String? description,
@@ -124,6 +124,7 @@ class CalendarService {
     required DateTime start,
     required DateTime end,
     bool allDay = false,
+    List<Attendee>? attendees,
   }) async {
     try {
       if (!await hasPermission()) {
@@ -137,8 +138,8 @@ class CalendarService {
         return null;
       }
       
-      // Use first calendar (typically the default calendar)
-      final calendar = calendars.first;
+      // Use first writable calendar (typically the default calendar)
+      final calendar = calendars.firstWhere((c) => c.isReadOnly == false, orElse: () => calendars.first);
       
       final event = Event(
         calendar.id,
@@ -148,20 +149,39 @@ class CalendarService {
         start: tz.TZDateTime.from(start, tz.local),
         end: tz.TZDateTime.from(end, tz.local),
         allDay: allDay,
+        attendees: attendees,
       );
       
       final createResult = await _deviceCalendarPlugin.createOrUpdateEvent(event);
       
       if (createResult?.isSuccess == true) {
         debugPrint('✅ Event created: $title');
+        // Return the created event (might need to fetch it back to get ID, but for now return this)
+        // actually device_calendar returns the ID string in data.
+        if (createResult!.data != null) {
+          event.eventId = createResult.data;
+        }
         return event;
       } else {
-        debugPrint('❌ Failed to create event');
+        debugPrint('❌ Failed to create event: ${createResult?.errors.map((e) => e.errorMessage).join(', ')}');
         return null;
       }
     } catch (e) {
       debugPrint('❌ Error creating event: $e');
       return null;
+    }
+  }
+
+  /// Delete a calendar event
+  static Future<bool> deleteEvent(String calendarId, String eventId) async {
+    try {
+      if (!await hasPermission()) return false;
+      
+      final result = await _deviceCalendarPlugin.deleteEvent(calendarId, eventId);
+      return result.isSuccess && result.data == true;
+    } catch (e) {
+      debugPrint('❌ Failed to delete event: $e');
+      return false;
     }
   }
   

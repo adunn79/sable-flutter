@@ -30,7 +30,7 @@ class _AboutScreenState extends State<AboutScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Email copied to clipboard: $email'),
+              content: Text('Email copied to clipboard: $email', style: const TextStyle(color: Colors.white)),
               backgroundColor: AelianaColors.obsidian,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

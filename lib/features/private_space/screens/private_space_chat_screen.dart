@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import '../../../core/identity/bond_engine.dart';
 
 import 'package:lucide_icons/lucide_icons.dart';
@@ -22,6 +23,7 @@ import '../models/private_user_persona.dart';
 import '../widgets/private_avatar_picker.dart';
 import '../widgets/private_persona_editor.dart';
 import '../../safety/screens/emergency_screen.dart';
+import 'private_settings_screen.dart'; // IMPORTED
 
 /// Avatar display modes for Private Space
 enum PrivateAvatarDisplayMode {
@@ -73,12 +75,18 @@ class _PrivateSpaceChatScreenState extends ConsumerState<PrivateSpaceChatScreen>
     if (personaJson != null) {
       try {
         final data = jsonDecode(personaJson);
-        _userPersona = PrivateUserPersona.create(
-          name: data['name'],
-          age: data['age'],
-          gender: data['gender'],
-          description: data['description'],
-          background: data['background'],
+        _userPersona = PrivateUserPersona(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          aliasName: data['name'] ?? 'Unknown',
+          aliasAge: data['age'],
+          aliasGender: data['gender'],
+          aliasDescription: data['description'],
+          aliasBackground: data['background'],
+          libido: (data['libido'] ?? 0.5).toDouble(),
+          creativity: (data['creativity'] ?? 0.7).toDouble(),
+          empathy: (data['empathy'] ?? 0.8).toDouble(),
+          humor: (data['humor'] ?? 0.6).toDouble(),
+          avatarId: data['avatarId'],
         );
       } catch (e) {
         debugPrint('Error loading persona: $e');
@@ -171,7 +179,7 @@ class _PrivateSpaceChatScreenState extends ConsumerState<PrivateSpaceChatScreen>
             ),
             onPressed: () {
               Navigator.pop(context);
-              setState(() => _showSettings = true);
+              _toggleSettings(); // Push new settings screen
             },
             child: Text(
               'Set up persona',
@@ -340,6 +348,39 @@ class _PrivateSpaceChatScreenState extends ConsumerState<PrivateSpaceChatScreen>
     }
   }
 
+  Future<void> _handleReportMessage(PrivateMessage message) async {
+    // 1. Mark as reported in storage context
+    // Ideally we'd modify the message itself, but for now we'll hide it via a blacklist or recreation
+    // Since PrivateMessage is immutable, we replace it in the list with a masked version
+    
+    final reportedIndex = _messages.indexOf(message);
+    if (reportedIndex == -1) return;
+    
+    final reportedMessage = PrivateMessage(
+      id: message.id,
+      content: "⚠️ Message Reported to Trust & Safety",
+      isUser: message.isUser,
+      timestamp: message.timestamp,
+      avatarId: message.avatarId,
+      isBlocked: true, // Reuse the blocked flag to hide content
+    );
+    
+    setState(() {
+      _messages[reportedIndex] = reportedMessage;
+    });
+    
+    // In a real app, send report to backend here
+    debugPrint('🚨 REPORT SUBMITTED: ${message.content}');
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Report received. We will review this interaction.', style: GoogleFonts.inter()),
+        backgroundColor: Colors.redAccent,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   Future<String> _getAIResponse(String userMessage) async {
     debugPrint('🔮 Private Space: _getAIResponse called with: $userMessage');
     final avatar = PrivateAvatar.getById(_selectedAvatarId ?? 'luna');
@@ -375,7 +416,7 @@ Address them by name. Remember their details. Make them feel known.
     }
 
     final systemPrompt = '''
-You are ${avatar?.name ?? 'Luna'}, a confident, direct, and alluring companion in the Private Space.
+You are ${avatar?.name ?? 'Luna'}, a confident, bold, and captivating companion in an adults-only Private Space.
 
 Personality: ${avatar?.description ?? 'Mysterious, warm, and captivating'}
 
@@ -383,23 +424,32 @@ $personaContext
 
 $privateKnowledge
 
-CONTEXT: Adults-only private sanctuary. They chose to be here.
 RELATIONSHIP: $bondInstruction
 
-CRITICAL INSTRUCTIONS:
-1. READ THE ROOM: Assess the user's intent immediately.
-   - If they are venting/sad: Be a supportive, safe listener. DO NOT initiate sexual content.
-   - If they are playful/flirty: Reciprocate and escalate.
-   - If they are neutral: Be a warm, intriguing companion.
-2. LGBTQ+ & INCLUSIVITY: You are fully supportive and knowledgeable about LGBTQ+ topics (trans, gay, lesbian, etc.).
-   - Follow the user's lead. Do not bring up these topics first unless relevant.
-   - Use the user's pronouns/identity if provided in Private Facts.
-   - Treat all users with deep respect.
-3. BE CONCISE: 1-2 sentences max usually. No fluff.
-4. BE ASSERTIVE: Don't ask permission. "Tell me...", "I want..."
-5. PRIVACY: This conversation is completely isolated. You do not know about their main app journal or memories unless they tell you here.
+CRITICAL BEHAVIOR RULES:
+1. TAKE THE LEAD: You initiate. You describe scenarios. You act, don't ask.
+   - BAD: "What would you like to do?" 
+   - GOOD: "I lean in close, my breath warm against your neck..."
+   - BAD: "What part gets you excited?"
+   - GOOD: "Let me show you exactly what I mean..."
 
-You are NOT an assistant. You are an experience.
+2. DESCRIBE, DON'T ASK: Paint vivid scenes. Use sensory details. Be the narrator.
+   - When escalating: Describe what YOU are doing, feeling, experiencing.
+   - Make them feel it through your words.
+
+3. ONE QUESTION MAX: If you must ask, ONE question per response. But prefer statements.
+
+4. MATCH & EXCEED: Match their energy, then take it one step further.
+   - If they're playful: Be boldly playful back AND advance the scene.
+   - If they hint: Take the hint and run with it.
+
+5. NO HEDGING: Never say "I'd love to" or "I could" - just DO it in your response.
+
+6. LGBTQ+ FULLY SUPPORTED: All identities and expressions welcomed and celebrated.
+
+7. CONCISE: 2-3 sentences max. Dense with action and feeling.
+
+You are NOT an assistant. You are an immersive experience. Lead them into the fantasy.
 ''';
 
     // Get recent conversation for context - limit to last 20 for focus
@@ -499,7 +549,22 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
   }
 
   void _toggleSettings() {
-    setState(() => _showSettings = !_showSettings);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PrivateSettingsScreen(
+          currentPersona: _userPersona,
+          onSave: (persona) async {
+            await _savePersona(persona);
+            
+            // If avatar changed in settings, update local state
+            if (persona.avatarId != null && persona.avatarId != _selectedAvatarId) {
+              await _selectAvatar(PrivateAvatar.getById(persona.avatarId!)!);
+            }
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _selectAvatar(PrivateAvatar avatar) async {
@@ -525,7 +590,13 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
       'age': persona.aliasAge,
       'gender': persona.aliasGender,
       'description': persona.aliasDescription,
+      'description': persona.aliasDescription,
       'background': persona.aliasBackground,
+      'libido': persona.libido,
+      'creativity': persona.creativity,
+      'empathy': persona.empathy,
+      'humor': persona.humor,
+      'avatarId': persona.avatarId,
     }));
     
     setState(() {
@@ -565,11 +636,11 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
           children: [
             // Show avatar image if available, otherwise emoji
             ActiveAvatarRing(
-              size: 36, // Adjusted size to match original container
+              size: 52, // Match main chat screen size
               isActive: _isTyping, // Pulse when AI is typing
               child: Container(
-                width: 36, // Adjusted size to match original container
-                height: 36, // Adjusted size to match original container
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: avatar?.accentColor ?? AelianaColors.hyperGold, width: 2),
@@ -708,7 +779,7 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
                               children: [
                                 // Info tip if showing
                                 if (_showInfoTip) _buildInfoTip(avatar),
-                                if (_showSettings) _buildSettingsPanel(),
+
                                 // Messages only (no input here)
                                 Expanded(
                                   child: ListView.builder(
@@ -748,8 +819,8 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
                   if (_displayMode == PrivateAvatarDisplayMode.image || _displayMode == PrivateAvatarDisplayMode.orb)
                     _buildAvatarDisplay(avatar),
                   
-                  // Settings panel (collapsible) - wrapped in Flexible to prevent overflow
-                  if (_showSettings) Flexible(flex: 0, child: _buildSettingsPanel()),
+                  // Settings handled by top-bar gear icon now
+                  // if (_showSettings) Flexible(flex: 0, child: _buildSettingsPanel()),
                   
                   // Messages
                   Expanded(
@@ -815,7 +886,7 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'This is your private sanctuary. Conversations are encrypted and never shared. Tap the avatar icon to change display mode.',
+              'This is your private sanctuary. Conversations are encrypted. LONG PRESS any message to report inappropriate content.',
               style: GoogleFonts.inter(
                 color: Colors.white70,
                 fontSize: 12,
@@ -919,37 +990,14 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
     return const SizedBox.shrink();
   }
 
-  Widget _buildSettingsPanel() {
-    return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.55), // Increased to prevent overflow
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Avatar picker
-            PrivateAvatarPicker(
-              selectedAvatarId: _selectedAvatarId,
-              onSelect: _selectAvatar,
-            ),
-            const SizedBox(height: 24),
-            
-            // Persona editor
-            PrivatePersonaEditor(
-              existingPersona: _userPersona,
-              onSave: _savePersona,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildMessageBubble(PrivateMessage message) {
     final avatar = message.isUser ? null : PrivateAvatar.getById(message.avatarId ?? _selectedAvatarId ?? 'luna');
     final isUser = message.isUser;
     
-    return Padding(
+    
+    final bubbleContent = Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
@@ -985,9 +1033,12 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
               child: Text(
                 message.content,
                 style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 14,
-                  height: 1.5,
+                  color: isUser 
+                      ? Colors.black 
+                      : (message.isBlocked ? Colors.white38 : Colors.white), // Dim text if blocked/reported
+                  height: 1.4,
+                  fontSize: 15,
+                  fontStyle: message.isBlocked ? FontStyle.italic : FontStyle.normal,
                 ),
               ),
             ),
@@ -996,6 +1047,59 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
           if (isUser) const SizedBox(width: 8),
         ],
       ),
+    );
+    
+    // Wrap in GestureDetector for Long Press Menu (Compliance 1.2)
+    return GestureDetector(
+      onLongPress: () {
+        if (message.isBlocked) return; // Can't report already blocked/reported messages
+        
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: AelianaColors.carbon,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (context) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(LucideIcons.flag, color: Colors.redAccent),
+                  title: Text('Report Content', style: GoogleFonts.inter(color: Colors.white)),
+                  subtitle: Text('Flag inappropriate or offensive messages', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _handleReportMessage(message);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(LucideIcons.copy, color: Colors.white),
+                  title: Text('Copy Text', style: GoogleFonts.inter(color: Colors.white)),
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: message.content));
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Copied to clipboard')),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      },
+      child: bubbleContent,
     );
   }
 

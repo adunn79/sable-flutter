@@ -6,7 +6,7 @@ part of 'bond_engine.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$bondEngineHash() => r'89d000d2cab043934bc4a20f8e3436409c655f7f';
+String _$bondEngineHash() => r'a377e07d339bc412ce1ec2125c039c42cfc494bd';
 
 /// See also [BondEngine].
 @ProviderFor(BondEngine)

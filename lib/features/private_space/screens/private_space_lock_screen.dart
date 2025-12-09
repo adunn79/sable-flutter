@@ -300,13 +300,27 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AelianaColors.hyperGold.withOpacity(0.3)),
                 ),
-                child: Text(
-                  'Upgrade to Silver or higher to unlock your private sanctuary with Luna, Dante, and Storm.',
-                  style: GoogleFonts.inter(
-                    color: Colors.white.withOpacity(0.7),
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
+                child: Column(
+                  children: [
+                    Text(
+                      'Access Restricted',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'This area is a dedicated space for personalized adult conversations with advanced AI personas.\n\nTo ensure age-appropriate usage and maintain platform integrity, access is reserved for verified Silver Tier 17+ year old subscribers and above.',
+                      style: GoogleFonts.inter(
+                        color: Colors.white.withOpacity(0.7),
+                        height: 1.5,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
@@ -320,7 +334,7 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text('View Plans', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w600)),
+                child: Text('Subscribe Now', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w600)),
               ),
             ],
           ),

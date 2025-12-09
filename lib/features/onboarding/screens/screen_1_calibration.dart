@@ -20,7 +20,6 @@ class Screen1Calibration extends StatefulWidget {
 class _Screen1CalibrationState extends State<Screen1Calibration> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _locationController = TextEditingController(); // Birth place
   DateTime? _selectedDate;
   String? _genderIdentity;
 
@@ -29,41 +28,86 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
   @override
   void dispose() {
     _nameController.dispose();
-    _locationController.dispose();
     super.dispose();
   }
 
 
 
-  Future<void> _selectDate() async {
-    // Default to 18 years ago if no date selected
-    final initialDate = _selectedDate ?? DateTime.now().subtract(const Duration(days: 365 * 18));
+  void _selectDate() {
+    // Show Cupertino date picker in a bottom sheet
+    final initialDate = _selectedDate ?? DateTime.now().subtract(const Duration(days: 365 * 25));
+    DateTime tempDate = initialDate;
     
-    // Use Material DatePicker - works with mouse clicks on web and all platforms
-    final picked = await showDatePicker(
+    showCupertinoModalPopup(
       context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: ColorScheme.dark(
-              primary: AelianaColors.plasmaCyan,
-              surface: AelianaColors.carbon,
-              onSurface: AelianaColors.stardust,
+      builder: (context) => Container(
+        height: 300,
+        decoration: BoxDecoration(
+          color: AelianaColors.carbon,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Header with Done button
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AelianaColors.obsidian,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: Text('Cancel', style: GoogleFonts.inter(color: AelianaColors.ghost)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  Text(
+                    'Date of Birth',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: AelianaColors.plasmaCyan,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: Text('Done', style: GoogleFonts.inter(color: AelianaColors.plasmaCyan, fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      setState(() => _selectedDate = tempDate);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
             ),
-            dialogBackgroundColor: AelianaColors.carbon,
-          ),
-          child: child!,
-        );
-      },
+            // Date picker
+            Expanded(
+              child: CupertinoTheme(
+                data: CupertinoThemeData(
+                  brightness: Brightness.dark,
+                  primaryColor: AelianaColors.plasmaCyan,
+                  textTheme: CupertinoTextThemeData(
+                    dateTimePickerTextStyle: GoogleFonts.inter(
+                      color: AelianaColors.stardust,
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: initialDate,
+                  minimumDate: DateTime(1900),
+                  maximumDate: DateTime.now(),
+                  backgroundColor: AelianaColors.carbon,
+                  onDateTimeChanged: (date) => tempDate = date,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
-    if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
   }
 
   void _handleContinue() {
@@ -82,7 +126,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
       final profile = UserProfile(
         name: _nameController.text.trim(),
         dateOfBirth: _selectedDate!,
-        location: _locationController.text.trim(),
+        location: '', // Removed birthplace field
         currentLocation: null, // Will be set by GPS later
         genderIdentity: _genderIdentity,
         selectedVoiceId: null, // Will be set on avatar screen
@@ -113,20 +157,22 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                 const SizedBox(height: 40),
 
                 // Title
-                Text(
-                  'THE CALIBRATION',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AelianaColors.plasmaCyan,
-                    letterSpacing: 2,
+                Center(
+                  child: Text(
+                    'THE CALIBRATION',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: AelianaColors.plasmaCyan,
+                      letterSpacing: 2,
+                    ),
                   ),
                 ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
 
                 const SizedBox(height: 12),
 
                 Text(
-                  'This helps me get to know you right away. It\'s part of our bonding—understanding who you are, where you come from, and how to connect with you.',
+                  'This helps me get to know you right away. It\'s part of our bonding—understanding who you are and how to connect with you.',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: AelianaColors.ghost,
@@ -161,77 +207,6 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                     return null;
                   },
                 ).animate(delay: 500.ms).fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
-
-                const SizedBox(height: 32),
-
-                // Location Field
-                Row(
-                  children: [
-                    Text(
-                      'Where were you born?',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: AelianaColors.ghost,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            backgroundColor: AelianaColors.carbon,
-                            title: Text(
-                              'About Location',
-                              style: GoogleFonts.spaceGrotesk(
-                                color: AelianaColors.plasmaCyan,
-                              ),
-                            ),
-                            content: Text(
-                              'This helps the avatar know a little about you. You can skip this if you like.',
-                              style: GoogleFonts.inter(
-                                color: AelianaColors.stardust,
-                              ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text(
-                                  'Got it',
-                                  style: GoogleFonts.inter(
-                                    color: AelianaColors.plasmaCyan,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AelianaColors.plasmaCyan.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ).animate(delay: 600.ms).fadeIn(duration: 400.ms),
-
-                const SizedBox(height: 8),
-
-                TextFormField(
-                  controller: _locationController,
-                  style: GoogleFonts.inter(color: AelianaColors.stardust),
-                  decoration: const InputDecoration(
-                    hintText: 'City, Country',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Birth location is required';
-                    }
-                    return null;
-                  },
-                ).animate(delay: 700.ms).fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
 
                 const SizedBox(height: 32),
 

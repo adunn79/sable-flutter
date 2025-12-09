@@ -35,7 +35,7 @@ class _PrivateAvatarCustomizeScreenState extends State<PrivateAvatarCustomizeScr
   // Avatar customization fields - PRIVATE SPACE ISOLATED
   int _apparentAge = 28;
   String _origin = 'United States, California';
-  String _race = 'Sable (Synthetic Human)';
+  String _race = 'Synthetic Human';
   String _gender = 'Female';
   String _build = 'Athletic';
   String _skinTone = 'Golden/Tan';
@@ -234,7 +234,7 @@ class _PrivateAvatarCustomizeScreenState extends State<PrivateAvatarCustomizeScr
                     _buildDropdown(
                       value: _race,
                       items: [
-                        'Sable (Synthetic Human)',
+                        'Synthetic Human',
                         'Caucasian / White',
                         'Black / African American',
                         'Asian',

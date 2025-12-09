@@ -121,6 +121,15 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     }
   }
 
+  void _previousPage() {
+    if (_currentPage > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,6 +161,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
             ),
           ScreenRecoverySetup(
             onComplete: _handleRecoveryComplete,
+            onBack: _previousPage,
           ),
         ],
       ),

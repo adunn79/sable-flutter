@@ -71,13 +71,15 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // What Sable Is
-                    Text(
-                      '💫 WHAT I AM',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AelianaColors.plasmaCyan,
-                        letterSpacing: 1.5,
+                    Center(
+                      child: Text(
+                        '💫 WHAT I AM',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AelianaColors.plasmaCyan,
+                          letterSpacing: 1.5,
+                        ),
                       ),
                     ),
 
@@ -106,13 +108,15 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                     const SizedBox(height: 12),
 
                     // Privacy Pledge
-                    Text(
-                      '🔒 YOUR PRIVACY',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AelianaColors.plasmaCyan,
-                        letterSpacing: 1.5,
+                    Center(
+                      child: Text(
+                        '🔒 YOUR PRIVACY',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AelianaColors.plasmaCyan,
+                          letterSpacing: 1.5,
+                        ),
                       ),
                     ),
 
@@ -135,13 +139,15 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                     const SizedBox(height: 12),
 
                     // Tier Disclosure
-                    Text(
-                      '💎 ACCESS TIERS',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AelianaColors.plasmaCyan,
-                        letterSpacing: 1.5,
+                    Center(
+                      child: Text(
+                        '💎 ACCESS TIERS',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AelianaColors.plasmaCyan,
+                          letterSpacing: 1.5,
+                        ),
                       ),
                     ),
 

@@ -110,6 +110,16 @@ class SettingsHeader extends StatelessWidget {
                     color: AelianaColors.plasmaCyan,
                   ),
                 ),
+                // Pronunciation for Aeliana
+                if (archetypeId.toLowerCase() == 'aeliana')
+                  Text(
+                    '(Ay-lee-AH-na)',
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: AelianaColors.ghost,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
               ],
             ),
           ],

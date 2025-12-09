@@ -68,13 +68,16 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                     const SizedBox(height: 40),
 
                     // Title
-                    Text(
-                      'ENHANCE THE CONNECTION',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AelianaColors.plasmaCyan,
-                        letterSpacing: 2,
+                    Center(
+                      child: Text(
+                        'ENHANCE THE CONNECTION',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: AelianaColors.plasmaCyan,
+                          letterSpacing: 2,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
 

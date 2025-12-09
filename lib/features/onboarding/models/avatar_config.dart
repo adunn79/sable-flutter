@@ -71,7 +71,7 @@ class AvatarConfig {
       gender: json['gender'] as String? ?? 'Female', // Default for backward compatibility
       apparentAge: json['apparentAge'] as int,
       origin: json['origin'] as String,
-      race: json['race'] as String? ?? 'Sable (Synthetic Human)', // Default
+      race: json['race'] as String? ?? 'Synthetic Human', // Default
       build: json['build'] as String,
       skinTone: json['skinTone'] as String,
       eyeColor: json['eyeColor'] as String,

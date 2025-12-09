@@ -46,13 +46,15 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                     const SizedBox(height: 40),
 
                     // Title
-                    Text(
-                      'THE FOUNDRY',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AelianaColors.hyperGold,
-                        letterSpacing: 2,
+                    Center(
+                      child: Text(
+                        'THE FOUNDRY',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: AelianaColors.hyperGold,
+                          letterSpacing: 2,
+                        ),
                       ),
                     ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
 
@@ -133,6 +135,16 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                       'Grounded, calm, and protective. A steady presence with a dry sense of humor.',
                       'assets/images/archetypes/kai.png',
                       delay: 500,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    _buildArchetypeCard(
+                      'Marco',
+                      'The Guardian • He/Him',
+                      'Warm, passionate, and fiercely loyal. Treats you like familia from day one.',
+                      'assets/images/archetypes/marco.png',
+                      delay: 550,
                     ),
 
                     const SizedBox(height: 16),

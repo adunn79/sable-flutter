@@ -85,7 +85,22 @@ class _AelianaSplashScreenState extends State<AelianaSplashScreen> {
             .fadeIn(delay: 500.ms, duration: 600.ms)
             .slideY(begin: 0.2, end: 0),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
+
+            // PRONUNCIATION
+            Text(
+              "(Ay-lee-AH-na)",
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AelianaColors.ghost,
+                letterSpacing: 1.0,
+                fontStyle: FontStyle.italic,
+              ),
+            )
+            .animate()
+            .fadeIn(delay: 700.ms, duration: 400.ms),
+
+            const SizedBox(height: 16),
 
             // TAGLINE - Three-part reveal
             Column(

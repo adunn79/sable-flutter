@@ -1225,7 +1225,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       ),
       child: Scaffold(
         backgroundColor: _avatarDisplayMode == AvatarDisplaySettings.modeIcon
-            ? (_backgroundColor == AvatarDisplaySettings.colorWhite ? Colors.white : Colors.black)
+            ? (_backgroundColor == AvatarDisplaySettings.colorWhite ? Colors.white : AelianaColors.obsidian)
             : AelianaColors.obsidian,
         extendBodyBehindAppBar: true,
         resizeToAvoidBottomInset: true, // Explicitly handle keyboard
@@ -1785,11 +1785,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left side: Name + Weather
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          // Left side: Name + pronunciation for Aeliana
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Avatar name
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1806,9 +1806,26 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ),
                 ],
               ),
-              // Weather next to name
+              // Pronunciation for Aeliana
+              if (_archetypeId.toLowerCase() == 'aeliana')
+                Padding(
+                  padding: const EdgeInsets.only(left: 24),
+                  child: Text(
+                    '(Ay-lee-AH-na)',
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: AelianaColors.ghost,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          // Right side: Weather + Voice toggle
+          Row(
+            children: [
+              // Weather on right side
               if (_weatherTemp != null) ...[
-                const SizedBox(width: 16),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
@@ -1845,11 +1862,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
               ],
-            ],
-          ),
-          Row(
-            children: [
               // Voice toggle button
               FutureBuilder<bool>(
                 future: _voiceService?.getAutoSpeakEnabled() ?? Future.value(false),

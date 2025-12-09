@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/aeliana_theme.dart';
@@ -7,8 +8,13 @@ import '../../../core/services/recovery_service.dart';
 /// Recovery setup screen for onboarding - collects email/phone for PIN reset
 class ScreenRecoverySetup extends StatefulWidget {
   final VoidCallback onComplete;
+  final VoidCallback? onBack;
 
-  const ScreenRecoverySetup({super.key, required this.onComplete});
+  const ScreenRecoverySetup({
+    super.key, 
+    required this.onComplete,
+    this.onBack,
+  });
 
   @override
   State<ScreenRecoverySetup> createState() => _ScreenRecoverySetupState();
@@ -169,36 +175,50 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
     return Scaffold(
       backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 40),
+              // Back button
+              if (widget.onBack != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    onPressed: widget.onBack,
+                    icon: Icon(LucideIcons.arrowLeft, color: Colors.white70),
+                  ),
+                ),
               
-              // Icon
-              Container(
+              const SizedBox(height: 16),
+              
+              // Icon - centered
+              Center(
+                child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AelianaColors.plasmaCyan.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  LucideIcons.shieldCheck,
-                  size: 40,
-                  color: AelianaColors.plasmaCyan,
+                  child: Icon(
+                    LucideIcons.shieldCheck,
+                    size: 40,
+                    color: AelianaColors.plasmaCyan,
+                  ),
                 ),
               ),
               
               const SizedBox(height: 24),
               
-              // Title
-              Text(
-                'Account Recovery',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              // Title - centered
+              Center(
+                child: Text(
+                  'Account Recovery',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               
@@ -239,9 +259,39 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
                 isVerified: _phoneVerified,
                 error: _phoneError,
                 onVerify: _verifyPhone,
+                inputFormatters: [_PhoneInputFormatter()],
               ),
               
-              const Spacer(),
+              const SizedBox(height: 24),
+              
+              // Info warning
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(LucideIcons.alertTriangle, color: Colors.orange, size: 18),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Please confirm this information is accurate. You will not be able to recover your account unless we can send password resets to these contacts.',
+                        style: GoogleFonts.inter(
+                          color: Colors.orange.shade100,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 32),
               
               // Continue button
               SizedBox(
@@ -261,7 +311,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
                     ),
                   ),
                   child: Text(
-                    hasAnyVerified ? 'Continue' : 'Continue Without Recovery',
+                    hasAnyVerified ? 'I Have Verified My Email/Phone' : 'Continue Without Recovery',
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -303,6 +353,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
     required bool isVerified,
     required String? error,
     required VoidCallback onVerify,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,6 +394,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
                   controller: controller,
                   keyboardType: keyboardType,
                   enabled: !isVerified,
+                  inputFormatters: inputFormatters,
                   style: GoogleFonts.inter(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: hint,
@@ -358,20 +410,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
               if (isVerified)
                 Padding(
                   padding: const EdgeInsets.only(right: 16),
-                  child: Row(
-                    children: [
-                      Icon(LucideIcons.checkCircle, color: Colors.green, size: 18),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Verified',
-                        style: GoogleFonts.inter(
-                          color: Colors.green,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: Icon(LucideIcons.checkCircle, color: Colors.green, size: 20),
                 )
               else
                 Padding(
@@ -379,7 +418,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
                   child: TextButton(
                     onPressed: _isLoading ? null : onVerify,
                     child: Text(
-                      'Verify',
+                      'Confirm',
                       style: GoogleFonts.inter(
                         color: AelianaColors.plasmaCyan,
                         fontWeight: FontWeight.w600,
@@ -398,6 +437,52 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Formats phone numbers as +1 (XXX) XXX-XXXX
+class _PhoneInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Remove all non-digits
+    final digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    
+    if (digitsOnly.isEmpty) {
+      return const TextEditingValue(text: '');
+    }
+    
+    final buffer = StringBuffer();
+    int index = 0;
+    
+    // Format: +1 (XXX) XXX-XXXX
+    if (digitsOnly.length > 0) {
+      buffer.write('+1 (');
+      final areaCode = digitsOnly.substring(0, digitsOnly.length.clamp(0, 3));
+      buffer.write(areaCode);
+      index = areaCode.length;
+    }
+    
+    if (digitsOnly.length > 3) {
+      buffer.write(') ');
+      final prefix = digitsOnly.substring(3, digitsOnly.length.clamp(3, 6));
+      buffer.write(prefix);
+      index = 3 + prefix.length;
+    }
+    
+    if (digitsOnly.length > 6) {
+      buffer.write('-');
+      final suffix = digitsOnly.substring(6, digitsOnly.length.clamp(6, 10));
+      buffer.write(suffix);
+    }
+    
+    final formatted = buffer.toString();
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

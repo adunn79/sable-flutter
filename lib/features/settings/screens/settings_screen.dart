@@ -746,42 +746,60 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            // 2x2 Grid for 4 avatars
-                            GridView.count(
-                              crossAxisCount: 4,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              crossAxisSpacing: 8,
-                              mainAxisSpacing: 8,
-                              childAspectRatio: 0.7,
+                            // Top row: 3 avatars
+                            Row(
                               children: [
-                                // Aeliana (Flagship)
-                                _buildAvatarOption(
-                                  'aeliana',
-                                  'Aeliana',
-                                  'assets/images/archetypes/aeliana.png',
-                                  isFemale: true,
+                                Expanded(
+                                  child: _buildAvatarOption(
+                                    'aeliana',
+                                    'Aeliana',
+                                    'assets/images/archetypes/aeliana.png',
+                                    isFemale: true,
+                                  ),
                                 ),
-                                // Sable (Female)
-                                _buildAvatarOption(
-                                  'sable',
-                                  'Sable',
-                                  'assets/images/archetypes/sable.png',
-                                  isFemale: true,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildAvatarOption(
+                                    'sable',
+                                    'Sable',
+                                    'assets/images/archetypes/sable.png',
+                                    isFemale: true,
+                                  ),
                                 ),
-                                // Kai (Male)
-                                _buildAvatarOption(
-                                  'kai',
-                                  'Kai',
-                                  'assets/images/archetypes/kai.png',
-                                  isFemale: false,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildAvatarOption(
+                                    'kai',
+                                    'Kai',
+                                    'assets/images/archetypes/kai.png',
+                                    isFemale: false,
+                                  ),
                                 ),
-                                // Echo (Female)
-                                _buildAvatarOption(
-                                  'echo',
-                                  'Echo',
-                                  'assets/images/archetypes/echo.png',
-                                  isFemale: true,
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            // Bottom row: 2 avatars centered
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: MediaQuery.of(context).size.width * 0.25,
+                                  child: _buildAvatarOption(
+                                    'marco',
+                                    'Marco',
+                                    'assets/images/archetypes/marco.png',
+                                    isFemale: false,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  width: MediaQuery.of(context).size.width * 0.25,
+                                  child: _buildAvatarOption(
+                                    'echo',
+                                    'Echo',
+                                    'assets/images/archetypes/echo.png',
+                                    isFemale: true,
+                                  ),
                                 ),
                               ],
                             ),
@@ -1106,7 +1124,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                      child: Container(
                                        padding: const EdgeInsets.symmetric(vertical: 12),
                                        decoration: BoxDecoration(
-                                         color: Colors.black,
+                                         color: AelianaColors.obsidian,
                                          border: Border.all(
                                            color: _backgroundColor == AvatarDisplaySettings.colorBlack
                                                ? AelianaColors.hyperGold
@@ -1117,7 +1135,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                        ),
                                        child: Center(
                                          child: Text(
-                                           'Black',
+                                           'Dark',
                                            style: GoogleFonts.inter(
                                              color: Colors.white,
                                              fontWeight: FontWeight.w600,
@@ -1139,20 +1157,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                      child: Container(
                                        padding: const EdgeInsets.symmetric(vertical: 12),
                                        decoration: BoxDecoration(
-                                         color: Colors.white,
+                                         color: AelianaColors.stardust,
                                          border: Border.all(
                                            color: _backgroundColor == AvatarDisplaySettings.colorWhite
                                                ? AelianaColors.hyperGold
-                                               : Colors.black26,
+                                               : AelianaColors.carbon,
                                            width: 2,
                                          ),
                                          borderRadius: BorderRadius.circular(8),
                                        ),
                                        child: Center(
                                          child: Text(
-                                           'White',
+                                           'Light',
                                            style: GoogleFonts.inter(
-                                             color: Colors.black,
+                                             color: AelianaColors.obsidian,
                                              fontWeight: FontWeight.w600,
                                            ),
                                          ),
@@ -3745,6 +3763,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               textAlign: TextAlign.center,
             ),
+            // Pronunciation for Aeliana
+            if (archetypeId.toLowerCase() == 'aeliana')
+              Text(
+                '(Ay-lee-AH-na)',
+                style: GoogleFonts.inter(
+                  color: AelianaColors.ghost,
+                  fontSize: 7,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
           ],
         ),
       ),

@@ -483,6 +483,8 @@ class OnboardingStateService {
   
   static const String _keyAvatarGeneratedAge = 'avatar_generated_age';
   static const String _keyAvatarGallery = 'avatar_gallery';
+  static const String _keyStructuredAvatarGallery = 'structured_avatar_gallery';
+  static const String _keyArchetypeAvatars = 'archetype_avatars'; // Maps archetype -> avatar URL
   static const String _keyAvatarRegenerationDismissed = 'avatar_regen_dismissed_at';
   static const String _keyAvatarRegenCountYear = 'avatar_regen_count_year';
   static const String _keyAvatarRegenCount = 'avatar_regen_count';
@@ -495,25 +497,135 @@ class OnboardingStateService {
     await _prefs.setInt(_keyAvatarGeneratedAge, age);
   }
   
-  /// Get all saved avatar URLs (gallery)
+  /// Get all saved avatar URLs (legacy - simple list for backwards compatibility)
   List<String> get avatarGallery {
     return _prefs.getStringList(_keyAvatarGallery) ?? [];
   }
   
-  /// Add an avatar URL to the gallery
-  Future<void> addToAvatarGallery(String url) async {
-    final gallery = avatarGallery;
-    if (!gallery.contains(url)) {
-      gallery.add(url);
-      await _prefs.setStringList(_keyAvatarGallery, gallery);
+  /// Get structured avatar gallery with metadata
+  List<SavedAvatar> get structuredAvatarGallery {
+    final jsonList = _prefs.getStringList(_keyStructuredAvatarGallery);
+    if (jsonList == null || jsonList.isEmpty) {
+      // Migrate from legacy format if exists
+      final legacyList = avatarGallery;
+      if (legacyList.isNotEmpty) {
+        return legacyList.map((url) => SavedAvatar(
+          url: url,
+          archetypeId: selectedArchetypeId, // Default to current archetype
+          isLocked: false,
+          createdAt: DateTime.now(),
+        )).toList();
+      }
+      return [];
+    }
+    
+    return jsonList.map((json) => SavedAvatar.fromJson(json)).toList();
+  }
+  
+  /// Save structured avatar gallery
+  Future<void> _saveStructuredGallery(List<SavedAvatar> avatars) async {
+    final jsonList = avatars.map((a) => a.toJson()).toList();
+    await _prefs.setStringList(_keyStructuredAvatarGallery, jsonList);
+  }
+  
+  /// Add an avatar to the gallery with metadata
+  Future<void> addToAvatarGallery(String url, {String? archetypeId}) async {
+    final avatars = structuredAvatarGallery;
+    
+    // Check if already exists
+    if (avatars.any((a) => a.url == url)) return;
+    
+    avatars.add(SavedAvatar(
+      url: url,
+      archetypeId: archetypeId ?? selectedArchetypeId,
+      isLocked: false,
+      createdAt: DateTime.now(),
+    ));
+    
+    await _saveStructuredGallery(avatars);
+    
+    // Also update legacy list for backwards compatibility
+    final legacy = avatarGallery;
+    if (!legacy.contains(url)) {
+      legacy.add(url);
+      await _prefs.setStringList(_keyAvatarGallery, legacy);
     }
   }
   
-  /// Remove an avatar URL from the gallery
-  Future<void> removeFromAvatarGallery(String url) async {
-    final gallery = avatarGallery;
-    gallery.remove(url);
-    await _prefs.setStringList(_keyAvatarGallery, gallery);
+  /// Remove an avatar from the gallery
+  Future<bool> removeFromAvatarGallery(String url) async {
+    final avatars = structuredAvatarGallery;
+    final avatar = avatars.firstWhere((a) => a.url == url, orElse: () => SavedAvatar.empty());
+    
+    // Don't delete if locked
+    if (avatar.isLocked) return false;
+    
+    avatars.removeWhere((a) => a.url == url);
+    await _saveStructuredGallery(avatars);
+    
+    // Also update legacy list
+    final legacy = avatarGallery;
+    legacy.remove(url);
+    await _prefs.setStringList(_keyAvatarGallery, legacy);
+    
+    return true;
+  }
+  
+  /// Toggle lock status for an avatar
+  Future<void> setAvatarLocked(String url, bool locked) async {
+    final avatars = structuredAvatarGallery;
+    final index = avatars.indexWhere((a) => a.url == url);
+    
+    if (index >= 0) {
+      avatars[index] = avatars[index].copyWith(isLocked: locked);
+      await _saveStructuredGallery(avatars);
+    }
+  }
+  
+  /// Check if avatar is locked
+  bool isAvatarLocked(String url) {
+    final avatars = structuredAvatarGallery;
+    final avatar = avatars.firstWhere((a) => a.url == url, orElse: () => SavedAvatar.empty());
+    return avatar.isLocked;
+  }
+  
+  /// Get avatars for a specific archetype
+  List<SavedAvatar> getAvatarsForArchetype(String archetypeId) {
+    return structuredAvatarGallery.where((a) => a.archetypeId == archetypeId).toList();
+  }
+  
+  /// Set avatar for a specific archetype
+  Future<void> setArchetypeAvatar(String archetypeId, String url) async {
+    final map = _prefs.getString(_keyArchetypeAvatars);
+    Map<String, String> archetypeMap = {};
+    
+    if (map != null) {
+      try {
+        final decoded = Map<String, dynamic>.from(
+          Uri.splitQueryString(map).map((k, v) => MapEntry(k, v)),
+        );
+        archetypeMap = decoded.map((k, v) => MapEntry(k, v.toString()));
+      } catch (_) {}
+    }
+    
+    archetypeMap[archetypeId] = url;
+    
+    // Store as query string format for simplicity
+    final encoded = archetypeMap.entries.map((e) => '${e.key}=${e.value}').join('&');
+    await _prefs.setString(_keyArchetypeAvatars, encoded);
+  }
+  
+  /// Get avatar URL for a specific archetype
+  String? getArchetypeAvatar(String archetypeId) {
+    final map = _prefs.getString(_keyArchetypeAvatars);
+    if (map == null) return null;
+    
+    try {
+      final decoded = Uri.splitQueryString(map);
+      return decoded[archetypeId];
+    } catch (_) {
+      return null;
+    }
   }
   
   /// Get regeneration count for current year (resets each year)
@@ -605,3 +717,62 @@ class OnboardingStateService {
   }
 }
 
+/// Saved avatar with metadata for gallery management
+class SavedAvatar {
+  final String url;
+  final String archetypeId;
+  final bool isLocked;
+  final DateTime createdAt;
+  
+  const SavedAvatar({
+    required this.url,
+    required this.archetypeId,
+    required this.isLocked,
+    required this.createdAt,
+  });
+  
+  /// Create an empty/placeholder avatar
+  factory SavedAvatar.empty() => SavedAvatar(
+    url: '',
+    archetypeId: '',
+    isLocked: false,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+  );
+  
+  /// Create from JSON string
+  factory SavedAvatar.fromJson(String json) {
+    try {
+      final parts = json.split('|');
+      return SavedAvatar(
+        url: parts[0],
+        archetypeId: parts.length > 1 ? parts[1] : 'sable',
+        isLocked: parts.length > 2 ? parts[2] == 'true' : false,
+        createdAt: parts.length > 3 
+            ? DateTime.tryParse(parts[3]) ?? DateTime.now()
+            : DateTime.now(),
+      );
+    } catch (_) {
+      return SavedAvatar.empty();
+    }
+  }
+  
+  /// Convert to JSON string
+  String toJson() {
+    return '$url|$archetypeId|$isLocked|${createdAt.toIso8601String()}';
+  }
+  
+  /// Create a copy with updated fields
+  SavedAvatar copyWith({
+    String? url,
+    String? archetypeId,
+    bool? isLocked,
+    DateTime? createdAt,
+  }) {
+    return SavedAvatar(
+      url: url ?? this.url,
+      archetypeId: archetypeId ?? this.archetypeId,
+      isLocked: isLocked ?? this.isLocked,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+}

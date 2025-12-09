@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:sable/core/theme/aeliana_theme.dart';
 
 /// A magical orb widget with flowing, shifting colors
 /// Responds to speech activity with more intense animations
@@ -118,21 +119,20 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
   }
 
   Color _getGlowColor(double shift) {
-    final colors = [
-      const Color(0xFF8B5CF6), // Purple
-      const Color(0xFF06B6D4), // Cyan
-      const Color(0xFFEC4899), // Pink
-      const Color(0xFF8B5CF6), // Purple
+    // Use app theme colors
+    const colors = [
+      AelianaColors.plasmaCyan,    // Teal
+      AelianaColors.hyperGold,     // Lavender
+      AelianaColors.plasmaCyan,    // Teal
     ];
     return _interpolateColors(colors, shift);
   }
 
   Color _getSecondaryColor(double shift) {
-    final colors = [
-      const Color(0xFF06B6D4), // Cyan
-      const Color(0xFFEC4899), // Pink
-      const Color(0xFF8B5CF6), // Purple
-      const Color(0xFF06B6D4), // Cyan
+    const colors = [
+      AelianaColors.hyperGold,     // Lavender
+      AelianaColors.plasmaCyan,    // Teal
+      AelianaColors.hyperGold,     // Lavender
     ];
     return _interpolateColors(colors, shift);
   }
@@ -160,53 +160,53 @@ class _OrbPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // Base orb gradient (dark purple background)
+    // Base orb gradient (obsidian/carbon background matching app theme)
     final basePaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFF1E1B4B),
-          const Color(0xFF0F0A1F),
+          AelianaColors.carbon,      // Slate blue center
+          AelianaColors.obsidian,    // Deep navy edge
         ],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
     canvas.drawCircle(center, radius, basePaint);
 
-    // Flowing color layer 1 (cyan/teal wave)
+    // Flowing color layer 1 (plasmaCyan/teal wave)
     _drawFlowingLayer(
       canvas,
       center,
       radius,
       rotation,
       [
-        const Color(0xFF06B6D4).withOpacity(0.6),
-        const Color(0xFF0891B2).withOpacity(0.3),
+        AelianaColors.plasmaCyan.withOpacity(0.6),
+        AelianaColors.plasmaCyan.withOpacity(0.3),
         Colors.transparent,
       ],
       0.3,
     );
 
-    // Flowing color layer 2 (pink/magenta wave)
+    // Flowing color layer 2 (hyperGold/lavender wave)
     _drawFlowingLayer(
       canvas,
       center,
       radius,
       rotation + math.pi * 0.7,
       [
-        const Color(0xFFEC4899).withOpacity(0.5),
-        const Color(0xFFF472B6).withOpacity(0.2),
+        AelianaColors.hyperGold.withOpacity(0.5),
+        AelianaColors.hyperGold.withOpacity(0.2),
         Colors.transparent,
       ],
       0.4,
     );
 
-    // Flowing color layer 3 (purple wave)
+    // Flowing color layer 3 (plasmaCyan darker wave)
     _drawFlowingLayer(
       canvas,
       center,
       radius,
       rotation + math.pi * 1.4,
       [
-        const Color(0xFF8B5CF6).withOpacity(0.4),
-        const Color(0xFFA78BFA).withOpacity(0.2),
+        AelianaColors.plasmaCyan.withOpacity(0.4),
+        AelianaColors.plasmaCyan.withOpacity(0.15),
         Colors.transparent,
       ],
       0.35,
@@ -228,14 +228,14 @@ class _OrbPainter extends CustomPainter {
       ).createShader(Rect.fromCircle(center: highlightOffset, radius: radius * 0.4));
     canvas.drawCircle(highlightOffset, radius * 0.4, highlightPaint);
 
-    // Rim light
+    // Rim light (app theme colors)
     final rimPaint = Paint()
       ..shader = SweepGradient(
         colors: [
-          const Color(0xFF8B5CF6).withOpacity(0.6),
-          const Color(0xFF06B6D4).withOpacity(0.4),
-          const Color(0xFFEC4899).withOpacity(0.5),
-          const Color(0xFF8B5CF6).withOpacity(0.6),
+          AelianaColors.hyperGold.withOpacity(0.6),
+          AelianaColors.plasmaCyan.withOpacity(0.4),
+          AelianaColors.hyperGold.withOpacity(0.5),
+          AelianaColors.plasmaCyan.withOpacity(0.6),
         ],
         transform: GradientRotation(rotation),
       ).createShader(Rect.fromCircle(center: center, radius: radius))

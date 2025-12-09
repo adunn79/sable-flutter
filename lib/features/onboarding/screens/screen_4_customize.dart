@@ -30,7 +30,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
   int _apparentAge = 25;
   String _origin = 'United States, California';
-  String _race = 'Sable (Synthetic Human)';
+  String _race = 'Synthetic Human';
   String _gender = 'Female'; // Default
   String _build = 'Athletic';
   String _skinTone = 'Golden/Tan';
@@ -77,10 +77,10 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
         _race = 'Black / African American';
         break;
       case 'Custom':
-        _race = 'Sable (Synthetic Human)'; // Or whatever default
+        _race = 'Synthetic Human'; // Or whatever default
         break;
       default:
-        _race = 'Sable (Synthetic Human)';
+        _race = 'Synthetic Human';
     }
   }
 
@@ -195,14 +195,14 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
 
   void _handleUseAsIs() {
     // Check if the user selected a race that REQUIRES generation
-    // Sable Default: 'Sable (Synthetic Human)' or 'Caucasian'
+    // Sable Default: 'Synthetic Human' or 'Caucasian'
     // Kai Default: 'Black / African American' (New Default) or 'Caucasian' (Old) - Let's stick to the new identity
     // Echo Default: Any (Echo is neutral, but let's assume 'Caucasian' or 'Sable' is default asset)
     
     bool isDefaultRace = false;
     
     if (widget.archetype == 'Sable') {
-      if (_race == 'Sable (Synthetic Human)' || _race.contains('Caucasian') || _race.contains('White')) {
+      if (_race == 'Synthetic Human' || _race.contains('Caucasian') || _race.contains('White')) {
         isDefaultRace = true;
       }
     } else if (widget.archetype == 'Kai') {
@@ -212,7 +212,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
       }
     } else if (widget.archetype == 'Echo') {
        // Echo is usually depicted as white/synthetic in assets
-       if (_race == 'Sable (Synthetic Human)' || _race.contains('Caucasian') || _race.contains('White')) {
+       if (_race == 'Synthetic Human' || _race.contains('Caucasian') || _race.contains('White')) {
          isDefaultRace = true;
        }
     }
@@ -342,6 +342,16 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
           ],
         ),
         actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Go back to archetype selection
+            },
+            child: Text(
+              'Back',
+              style: GoogleFonts.inter(color: AelianaColors.ghost),
+            ),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
@@ -493,7 +503,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                         style: GoogleFonts.inter(color: AelianaColors.stardust, fontSize: 16),
                         icon: const Icon(Icons.keyboard_arrow_down, color: AelianaColors.plasmaCyan),
                         items: [
-                          'Sable (Synthetic Human)',
+                          'Synthetic Human',
                           'Caucasian / White',
                           'Black / African American',
                           'Asian',
@@ -521,6 +531,19 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                   ],
                 ),
               ).animate(delay: 300.ms).fadeIn(duration: 600.ms),
+
+              const SizedBox(height: 12),
+
+              // Note about race selection
+              Text(
+                'ℹ️ "Synthetic Human" uses Aeliana\'s original look. Selecting any other race will generate an AI variation that stays as close to the original character as possible.',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: AelianaColors.ghost,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ).animate(delay: 350.ms).fadeIn(duration: 400.ms),
 
               const SizedBox(height: 24),
               
@@ -835,7 +858,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                     _buildDropdown(
                       value: _race,
                       items: [
-                        'Sable (Synthetic Human)',
+                        'Synthetic Human',
                         'Caucasian / White',
                         'Black / African American',
                         'Asian',

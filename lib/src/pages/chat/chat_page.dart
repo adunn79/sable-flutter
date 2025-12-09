@@ -1776,7 +1776,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       // Keep text below avatar face/orb in all modes
                       padding: EdgeInsets.only(
                         top: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
-                            ? MediaQuery.of(context).size.height * 0.18 // Below the orb (22% - some overlap)
+                            ? MediaQuery.of(context).size.height * 0.22 // Just below orb with small gap
                             : _avatarDisplayMode == AvatarDisplaySettings.modePortrait
                                 ? MediaQuery.of(context).size.height * 0.28 // Below portrait (32% - some overlap)
                                 : 10, // Default small gap for other modes

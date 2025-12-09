@@ -94,13 +94,16 @@ class _PrivateSpaceChatScreenState extends State<PrivateSpaceChatScreen> {
     
     // Send welcome if first time
     if (_messages.isEmpty) {
-      _sendWelcome();
+      await _sendWelcome();
     } else {
       // Check for trial expiration reminder
       _checkAndShowTrialReminder();
     }
     
+    // Scroll to bottom after all messages loaded
     _scrollToBottom();
+    // Additional delayed scroll to ensure layout complete
+    Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
   }
   
   /// Show persona setup prompt for first-time users
@@ -399,14 +402,17 @@ You are ${avatar?.name ?? 'Luna'} - mysterious, captivating, and fully present. 
   }
 
   void _scrollToBottom() {
+    // Double post-frame callback ensures layout is complete
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     });
   }
 

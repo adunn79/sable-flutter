@@ -748,8 +748,8 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
                   if (_displayMode == PrivateAvatarDisplayMode.image || _displayMode == PrivateAvatarDisplayMode.orb)
                     _buildAvatarDisplay(avatar),
                   
-                  // Settings panel (collapsible)
-                  if (_showSettings) _buildSettingsPanel(),
+                  // Settings panel (collapsible) - wrapped in Flexible to prevent overflow
+                  if (_showSettings) Flexible(flex: 0, child: _buildSettingsPanel()),
                   
                   // Messages
                   Expanded(

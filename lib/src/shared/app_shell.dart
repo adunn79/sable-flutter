@@ -112,7 +112,7 @@ class _AppShellState extends State<AppShell> {
             ),
             NavigationDestination(
               icon: Icon(LucideIcons.heartPulse),
-              label: 'Vitals',
+              label: 'Vital Balance',
             ),
             NavigationDestination(
               icon: Icon(LucideIcons.menu),

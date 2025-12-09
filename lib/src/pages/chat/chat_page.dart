@@ -398,15 +398,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       
       // AUTO-SWITCH VOICE BASED ON GENDER (Fix for Marco sounding like a girl)
       if (_voiceService != null && _stateService != null) {
-        final currentPersonalityId = _stateService!.selectedPersonalityId;
-        final archetype = PersonalityService.getById(currentPersonalityId); // This now has .gender
+        // Use archetypeId NOT personalityId - Marco is an archetype, not a personality
+        final currentArchetypeId = _stateService!.selectedArchetypeId;
+        final archetype = PersonalityService.getById(currentArchetypeId); // This now has .gender
         
         final bestVoiceId = _voiceService!.getBestVoiceForGender(archetype.gender);
         // Only switch if we are clearly on the wrong voice type or using a default
         // For now, let's FORCE it to ensure consistency, unless user manually overrode it recently?
         // Let's just set it. The user can change it back in settings if they really want.
         await _voiceService!.setVoice(bestVoiceId);
-        debugPrint('🎙️ Auto-switched voice to $bestVoiceId for gender ${archetype.gender}');
+        debugPrint('🎙️ Auto-switched voice to $bestVoiceId for gender ${archetype.gender} (archetype: $currentArchetypeId)');
       }
 
     // Initialize Local Vibe Service
@@ -1362,32 +1363,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                         ),
                       ),
                     ),
-                    // Active Avatar Ring Overlay
-                    Center(
-                        child: Container(
-                            margin: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.15), // approximate center of top 30%
-                            child: ActiveAvatarRing(
-                                size: 160,
-                                isActive: _isTyping || _isListening, // Pulse when thinking/speaking
-                                showRing: true,
-                                child: const SizedBox(), // Ring is overlay on circle? No, portrait mode is rectangular.
-                                // Actually user said "This ring should be standard in all tabs... NOT the avatar picture... circular ring coloration"
-                                // Portrait mode is a big rectangle. Maybe we add a small ring indicator near the name?
-                                // Or maybe the user means the ORB mode? 
-                                // "Standard in all tabs" -> Chat/Journal/Private. 
-                                // In Chat Portrait Mode, maybe we wrap a small avatar in the header?
-                                // No, let's look at Conversation Mode.
-                            ),
-                        ),
-                    ),
-                    // Rest of the screen
+                    // Rest of the screen (no ring overlay in Portrait Mode - it's a full rectangular image)
                     Expanded(child: Container()),
                   ],
                 ),
               )
-              // NOTE: For Portrait Mode, the ring is less obvious where to put it since it's a full rect image.
-              // I will focus on enforcing it in "Conversation Mode" (Side-by-side) where the user likely saw the issue.
-              // And Orb mode.
+              // Portrait mode does not use the circular ring - it's a full rectangular image
             else if (_avatarDisplayMode == AvatarDisplaySettings.modeClock && !_showChatOverClock)
               // Clock mode - avatar with clock face
               Builder(
@@ -2721,44 +2702,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           if (!isUser && _avatarDisplayMode == AvatarDisplaySettings.modeIcon)
             Padding(
               padding: const EdgeInsets.only(right: 10, top: 4),
-              child: Container(
-                width: 68,
-                height: 68,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const SweepGradient(
-                    colors: [
-                      Color(0xFF06B6D4), // Cyan
-                      Color(0xFF8B5CF6), // Purple
-                      Color(0xFFF59E0B), // Amber
-                      Color(0xFF10B981), // Emerald
-                      Color(0xFF06B6D4), // Back to cyan
-                    ],
-                    stops: [0.0, 0.25, 0.5, 0.75, 1.0],
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF0F172A),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: CircleAvatar(
-                        radius: 26,
-                        backgroundColor: Colors.white,
-                        backgroundImage: (_stateService?.avatarUrl != null && _stateService!.avatarUrl!.startsWith('http'))
-                            ? NetworkImage(_stateService!.avatarUrl!) as ImageProvider
-                            : AssetImage(_stateService?.avatarUrl ?? 'assets/images/archetypes/$_archetypeId.png'),
-                        onBackgroundImageError: (_, __) {},
-                        child: (_stateService?.avatarUrl != null) 
-                            ? null // Don't show icon if we have a custom avatar
-                            : const Icon(LucideIcons.sparkles, size: 24, color: Colors.black),
-                      ),
-                    ),
-                  ),
+              child: ActiveAvatarRing(
+                size: 68,
+                isActive: _isTyping || _isListening,
+                showRing: true,
+                child: CircleAvatar(
+                  radius: 26,
+                  backgroundColor: Colors.white,
+                  backgroundImage: (_stateService?.avatarUrl != null && _stateService!.avatarUrl!.startsWith('http'))
+                      ? NetworkImage(_stateService!.avatarUrl!) as ImageProvider
+                      : AssetImage(_stateService?.avatarUrl ?? 'assets/images/archetypes/$_archetypeId.png'),
+                  onBackgroundImageError: (_, __) {},
+                  child: (_stateService?.avatarUrl != null) 
+                      ? null // Don't show icon if we have a custom avatar
+                      : const Icon(LucideIcons.sparkles, size: 24, color: Colors.black),
                 ),
               ),
             ),

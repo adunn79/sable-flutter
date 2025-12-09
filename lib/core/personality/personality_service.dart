@@ -190,7 +190,7 @@ INSTRUCTION:
 
   static PersonalityArchetype getById(String id) {
     return archetypes.firstWhere(
-      (p) => p.id == id,
+      (p) => p.id.toLowerCase() == id.toLowerCase(),
       orElse: () => archetypes[1], // Default to Sassy Realist
     );
   }

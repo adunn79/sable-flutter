@@ -62,7 +62,8 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
   String get _avatarImagePath {
     final arch = widget.archetype.toLowerCase();
     final safeArch = (arch.isEmpty) ? 'sable' : arch;
-    return 'assets/images/archetypes/$safeArch.png';
+    // Use professional/photorealistic avatar for Journal and Wellness tabs
+    return 'assets/images/archetypes/${safeArch}_professional.png';
   }
 
   @override
@@ -140,21 +141,30 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay>
                                 _avatarImagePath,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stack) {
-                                  // Fallback to colored circle with initial
-                                  return Container(
-                                    color: _avatarColor,
-                                    child: Center(
-                                      child: Text(
-                                        widget.archetype.isNotEmpty 
-                                            ? widget.archetype[0].toUpperCase() 
-                                            : 'S',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.bold,
+                                  // Fallback to original (non-professional) avatar
+                                  final arch = widget.archetype.toLowerCase();
+                                  final safeArch = (arch.isEmpty) ? 'sable' : arch;
+                                  return Image.asset(
+                                    'assets/images/archetypes/$safeArch.png',
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (ctx, err, stk) {
+                                      // Final fallback to colored circle with initial
+                                      return Container(
+                                        color: _avatarColor,
+                                        child: Center(
+                                          child: Text(
+                                            widget.archetype.isNotEmpty 
+                                                ? widget.archetype[0].toUpperCase() 
+                                                : 'S',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ),
+                                      );
+                                    },
                                   );
                                 },
                               ),

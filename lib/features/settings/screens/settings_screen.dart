@@ -3679,11 +3679,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         await stateService.setArchetypeId(archetypeId);
         
         // Handle voice switching based on gender change
-        final wasKai = previousArchetype == 'kai';
-        final isKai = archetypeId.toLowerCase() == 'kai';
+        // Male archetypes: Kai, Marco
+        final maleArchetypes = ['kai', 'marco'];
+        final wasMale = maleArchetypes.contains(previousArchetype);
+        final isMale = maleArchetypes.contains(archetypeId.toLowerCase());
         
-        if (wasKai && !isKai) {
-          // Switching FROM male (Kai) to female
+        if (wasMale && !isMale) {
+          // Switching FROM male to female
           final aiOrigin = stateService.aiOrigin ?? 'United States';
           final femaleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'female');
           if (femaleVoice != null) {
@@ -3694,8 +3696,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             });
             return;
           }
-        } else if (!wasKai && isKai) {
-          // Switching TO male (Kai) from female
+        } else if (!wasMale && isMale) {
+          // Switching TO male from female
           final aiOrigin = stateService.aiOrigin ?? 'United States';
           final maleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'male');
           if (maleVoice != null) {

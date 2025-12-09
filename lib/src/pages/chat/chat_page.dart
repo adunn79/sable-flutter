@@ -1543,11 +1543,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                           // No spacing - KAI at very top
                           // Header with name and weather
                           Padding(
-                            padding: const EdgeInsets.only(left: 16, right: 8),
-                            child: Column(
+                            padding: const EdgeInsets.only(left: 16, right: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // Left: Companion name
                                 Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(LucideIcons.triangle, color: AelianaColors.hyperGold, size: 16),
                                     const SizedBox(width: 8),
@@ -1562,50 +1565,47 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                     ),
                                   ],
                                 ),
-                                // Weather under companion name
+                                // Right: Weather
                                 if (_weatherTemp != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          LucideIcons.cloudSun,
-                                          color: Colors.white.withOpacity(0.8),
-                                          size: 16,
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        LucideIcons.cloudSun,
+                                        color: Colors.white.withOpacity(0.8),
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        _weatherTemp!,
+                                        style: GoogleFonts.inter(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
                                         ),
+                                      ),
+                                      if (_weatherCondition != null) ...[
                                         const SizedBox(width: 6),
                                         Text(
-                                          _weatherTemp!,
+                                          _weatherCondition!,
                                           style: GoogleFonts.inter(
-                                            color: Colors.white,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white.withOpacity(0.75),
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                        if (_weatherCondition != null) ...[
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            _weatherCondition!,
-                                            style: GoogleFonts.inter(
-                                              color: Colors.white.withOpacity(0.75),
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                        if (_weatherHighLow != null) ...[
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _weatherHighLow!,
-                                            style: GoogleFonts.inter(
-                                              color: Colors.white.withOpacity(0.6),
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
                                       ],
-                                    ),
+                                      if (_weatherHighLow != null) ...[
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _weatherHighLow!,
+                                          style: GoogleFonts.inter(
+                                            color: Colors.white.withOpacity(0.6),
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                               ],
                             ),

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sable/core/memory/models/chat_message.dart';
 import 'package:sable/core/memory/models/extracted_memory.dart';
 import 'package:sable/core/memory/models/health_entry.dart';
+import 'package:sable/core/memory/vector_memory_service.dart';
 
 
 /// Unified Memory Service
@@ -26,6 +27,7 @@ class UnifiedMemoryService {
   Box<ChatMessage>? _chatBox;
   Box<ExtractedMemory>? _memoryBox;
   Box<HealthEntry>? _healthBox;
+  final VectorMemoryService _vectorService = VectorMemoryService();
   
   bool _initialized = false;
   
@@ -73,7 +75,10 @@ class UnifiedMemoryService {
     print('✅ UnifiedMemoryService initialized (ALL ENCRYPTED)');
     print('📂 Chat messages: ${_chatBox?.length ?? 0}');
     print('🧠 Extracted memories: ${_memoryBox?.length ?? 0}');
-    print('🔐 Health entries: ${_healthBox?.length ?? 0}');
+    print('    🔐 Health entries: ${_healthBox?.length ?? 0}');
+    
+    // Initialize vector service (fire and forget)
+    _vectorService.initialize();
   }
   
   /// Get or create encryption key for health data
@@ -254,6 +259,9 @@ class UnifiedMemoryService {
     
     await _memoryBox!.add(memory);
     print('🧠 Stored memory: $content');
+
+    // Sync to Vector Cloud (Fire and Forget)
+    _vectorService.upsertToCloud(memory);
   }
   
   /// Get all memories
@@ -292,6 +300,19 @@ class UnifiedMemoryService {
     }
     
     buffer.writeln('[END KNOWLEDGE]');
+    return buffer.toString();
+  }
+
+  /// Get relevant vector memories for a query (Infinite Recall)
+  Future<String> getVectorContext(String query) async {
+    final matches = await _vectorService.searchCloud(query);
+    if (matches.isEmpty) return '';
+
+    final buffer = StringBuffer('[DEEP RECALL]\n');
+    for (var match in matches) {
+      buffer.writeln('- ${match.content} (Confidence: High)');
+    }
+    buffer.writeln('[END DEEP RECALL]');
     return buffer.toString();
   }
   
@@ -381,14 +402,23 @@ class UnifiedMemoryService {
     };
   }
   
-  /// Export all memories to JSON for backup
-  String exportAllMemoriesToJson() {
+  /// Export ALL data to JSON for backup (GDPR/Trust)
+  Future<String> exportFullDataDump() async {
+    if (_chatBox == null || _memoryBox == null || _healthBox == null) await initialize();
+
     final memories = getAllMemories();
+    final chat = getAllChatMessages();
+    final health = getAllHealthEntries();
+
     final export = {
       'exportedAt': DateTime.now().toIso8601String(),
       'version': '1.0',
-      'totalMemories': memories.length,
-      'memories': memories.map((m) => m.toJson()).toList(),
+      'stats': getStats(),
+      'data': {
+        'memories': memories.map((m) => m.toJson()).toList(),
+        'chatHistory': chat.map((c) => c.toJson()).toList(),
+        'healthData': health.map((h) => h.toJson()).toList(),
+      }
     };
     return const JsonEncoder.withIndent('  ').convert(export);
   }
@@ -498,6 +528,56 @@ class UnifiedMemoryService {
     print('🗑️ All memory data cleared');
   }
   
+  /// Delete all data created within the last [duration]
+  Future<int> deleteDataFromTimeRange(Duration duration) async {
+    if (_chatBox == null || _memoryBox == null || _healthBox == null) await initialize();
+    
+    final cutoff = DateTime.now().subtract(duration);
+    int deletedCount = 0;
+    
+    // 1. Delete Chat Messages
+    final chatKeysToDelete = <dynamic>[];
+    for (var i = 0; i < _chatBox!.length; i++) {
+        final msg = _chatBox!.getAt(i);
+        if (msg != null && msg.timestamp.isAfter(cutoff)) {
+            chatKeysToDelete.add(_chatBox!.keyAt(i));
+        }
+    }
+    for (var key in chatKeysToDelete) {
+        await _chatBox!.delete(key);
+    }
+    deletedCount += chatKeysToDelete.length;
+    
+    // 2. Delete Extracted Memories
+    final memoryKeysToDelete = <dynamic>[];
+    for (var i = 0; i < _memoryBox!.length; i++) {
+        final mem = _memoryBox!.getAt(i);
+        if (mem != null && mem.extractedAt.isAfter(cutoff)) {
+            memoryKeysToDelete.add(_memoryBox!.keyAt(i));
+        }
+    }
+    for (var key in memoryKeysToDelete) {
+        await _memoryBox!.delete(key);
+    }
+    deletedCount += memoryKeysToDelete.length;
+    
+    // 3. Delete Health Entries
+    final healthKeysToDelete = <dynamic>[];
+    for (var i = 0; i < _healthBox!.length; i++) {
+        final entry = _healthBox!.getAt(i);
+        if (entry != null && entry.timestamp.isAfter(cutoff)) {
+            healthKeysToDelete.add(_healthBox!.keyAt(i));
+        }
+    }
+    for (var key in healthKeysToDelete) {
+        await _healthBox!.delete(key);
+    }
+    deletedCount += healthKeysToDelete.length;
+    
+    print('🧹 Memory Audit: Deleted $deletedCount items created after $cutoff');
+    return deletedCount;
+  }
+
   /// Get stats
   Map<String, int> getStats() {
     return {

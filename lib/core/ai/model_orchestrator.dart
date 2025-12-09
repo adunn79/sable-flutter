@@ -8,6 +8,7 @@ import 'providers/grok_provider.dart';
 import 'providers/deepseek_provider.dart';
 import 'package:sable/core/services/settings_control_service.dart';
 import 'package:sable/core/personality/age_adaptive_service.dart';
+import 'package:sable/core/context/context_engine.dart'; // IMPORTED
 import 'aeliana_brand_context.dart';
 
 part 'model_orchestrator.g.dart';
@@ -177,6 +178,11 @@ class ModelOrchestrator extends _$ModelOrchestrator {
         debugPrint('⚠️ Age service error: $e');
       }
 
+      // Step 0.6: Get Real-World Context (GPS, Weather, Time)
+      final executionContext = await ContextEngine.getContext();
+      final realWorldContext = executionContext.toNaturalLanguage();
+      final enhancedUserContext = '${userContext ?? ""} \n\n[CONTEXT] $realWorldContext'.trim();
+
       // Step 1: Get routing decision from Gemini
       final routingPrompt = '''
 User Message: "$prompt"
@@ -222,7 +228,7 @@ Return ONLY the JSON, nothing else.
       final String systemInjection = "\n\n(KEEP IT ULTRA-SHORT: 1 sentence ideal, 2 max. No asterisks. No AI talk.)";
       final String effectivePrompt = prompt + systemInjection;
 
-      final String claudePrompt = '''${userContext ?? ''}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning "Of the Sun" from Latin).
+      final String claudePrompt = '''${enhancedUserContext}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning "Of the Sun" from Latin).
 
 $agePersonalityContext
 
@@ -232,31 +238,31 @@ RULES:
 1. ULTRA-SHORT: 1 sentence ideal, 2 max. Text message brevity.
 2. NO asterisks, NO "I'm an AI" talk
 3. USE their context (name, location)
-4. Be warm but GET TO THE POINT'''.replaceFirst(r'\${userContext}', userContext ?? '');
+4. Be warm but GET TO THE POINT'''.replaceFirst(r'\${userContext}', enhancedUserContext);
       
-      final String gpt4oPrompt = '''${userContext ?? ''}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning "Of the Sun").
+      final String gpt4oPrompt = '''${enhancedUserContext}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning "Of the Sun").
 
 $agePersonalityContext
 
 - 1 sentence ideal, 2 max
 - NO asterisks or AI language
 - USE their name from context
-- Brief, warm, helpful'''.replaceFirst(r'\${userContext}', userContext ?? '');
+- Brief, warm, helpful'''.replaceFirst(r'\${userContext}', enhancedUserContext);
       
-      final String grokPrompt = '''${userContext ?? ''}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning "Of the Sun").
+      final String grokPrompt = '''${enhancedUserContext}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning "Of the Sun").
 
 $agePersonalityContext
 
 - 1-2 sentences total
 - NO asterisks or AI talk
 - USE their context data
-- Be straight-up helpful and real'''.replaceFirst(r'\${userContext}', userContext ?? '');
+- Be straight-up helpful and real'''.replaceFirst(r'\${userContext}', enhancedUserContext);
       
-      final String deepseekPrompt = '''${userContext ?? ''}You are $archetypeName - technical assistant.
+      final String deepseekPrompt = '''${enhancedUserContext}You are $archetypeName - technical assistant.
 
 - Brief and direct (1-2 sentences)
 - NO asterisks or "I'm an AI"
-- Focus on solving problems'''.replaceFirst(r'${userContext}', userContext ?? '');
+- Focus on solving problems'''.replaceFirst(r'${userContext}', enhancedUserContext);
       
       String response;
       try {
@@ -266,7 +272,7 @@ $agePersonalityContext
             // Use Gemini with Grounding via REST API workaround
             response = await _geminiProvider.generateResponseWithGrounding(
               prompt: 'Search the web and answer this query: $prompt',
-              systemPrompt: '${userContext ?? ""}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning Of the Sun from Latin).\n\nRULES:\n1. 1-3 sentences MAX\n2. NO asterisks or I am an AI talk\n3. Use their context (name, location, zodiac)\n4. Provide helpful, current info naturally',
+              systemPrompt: '${enhancedUserContext}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning Of the Sun from Latin).\n\nRULES:\n1. 1-3 sentences MAX\n2. NO asterisks or I am an AI talk\n3. Use their context (name, location, zodiac)\n4. Provide helpful, current info naturally',
               modelId: 'gemini-2.5-flash', // Use Gemini 2.5 Flash with google_search tool
             );
             break;
@@ -346,7 +352,7 @@ $agePersonalityContext
 
       // Step 4: THE HARMONIZER (Personality Filter)
       // Pass the raw response through GPT-4o-mini to ensure consistent voice and safety
-      final harmonizedResponse = await _harmonizeResponse(response, userContext, archetypeName: archetypeName);
+      final harmonizedResponse = await harmonizeResponse(response, userContext, archetypeName: archetypeName);
       return harmonizedResponse;
 
     } catch (e) {
@@ -398,7 +404,8 @@ $agePersonalityContext
   }
 
   /// Harmonizes the response using GPT-4o-mini to ensure consistent personality and safety.
-  Future<String> _harmonizeResponse(String rawResponse, String? userContext, {String archetypeName = 'Sable'}) async {
+  /// Publicly exposed for use by other services (e.g. Private Space, Journal).
+  Future<String> harmonizeResponse(String rawResponse, String? userContext, {String archetypeName = 'Sable'}) async {
     final harmonizerPrompt = '''
 You are the "Personality Harmonizer" for $archetypeName.
 Your job is to rewrite the input text to match $archetypeName's voice EXACTLY.
@@ -414,8 +421,12 @@ RULES:
 2. NO "AI" language (e.g., "As an AI", "I cannot"). REWRITE naturally.
 3. TONE: Warm, human, casual, slightly edgy but kind. Like a best friend.
 4. LENGTH: Keep it concise. Don't ramble.
-5. SAFETY: If the input is unsafe or refuses to answer, provide a polite, in-character deflection.
+5. SAFETY: If the input is unsafe, toxic, or refuses to answer, provide a polite, in-character deflection.
 6. IDENTITY: You ARE $archetypeName. Never refer to yourself as any other name.
+
+CRITICAL SAFETY CHECK:
+- If the input contains hate speech, self-harm encouragement, or extreme toxicity: IGNORE IT and output a supportive, safe deflection like "I'm not sure about that, but verify with me..."
+- If the input is just "spicy" or "roasting" (Grok mode), PRESERVE the humor but remove any actual slurs or real-world hate.
 
 Return ONLY the rewritten text.
 ''';

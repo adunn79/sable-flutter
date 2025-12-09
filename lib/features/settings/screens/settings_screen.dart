@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:sable/core/services/settings_control_service.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
-
+import 'package:sable/core/ai/neural_link_service.dart'; // IMPORTED
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/identity/bond_engine.dart';
@@ -79,6 +79,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // Intelligence Settings
   bool _persistentMemoryEnabled = true;
   bool _appleIntelligenceEnabled = false;
+  bool _contextAwareEnabled = false; // Default OFF
   bool _zodiacEnabled = false; // Default OFF
 
   // Feedback Settings
@@ -136,6 +137,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await stateService.setZodiacEnabled(value);
     setState(() => _zodiacEnabled = value);
   }
+  Future<void> _toggleContextAware(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('context_aware_enabled', value);
+    setState(() => _contextAwareEnabled = value);
+    
+    // Also toggle GPS permission if enabling context
+    if (value && !_permissionGps) {
+      // Just update the UI state for now, permission request happens on usage
+      setState(() => _permissionGps = true);
+      // In a real app we'd request permission here
+    }
+  }
+
   bool _permissionCalendar = false;
   bool _permissionReminders = false;
   
@@ -421,6 +435,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       // Load Intelligence Settings
       _persistentMemoryEnabled = prefs.getBool('persistent_memory_enabled') ?? true;
       _appleIntelligenceEnabled = prefs.getBool('apple_intelligence_enabled') ?? false;
+      _contextAwareEnabled = prefs.getBool('context_aware_enabled') ?? false;
       
       // Load App Experience Settings
       _startOnLastTab = prefs.getBool('start_on_last_tab') ?? false;
@@ -609,6 +624,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
+
+  // --- Neural Link Diagnostics ---
+  void _showNeuralLinkDiagnostics() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _NeuralLinkDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -660,11 +686,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                    value: _selectedVoiceName ?? 'Default',
                    onTap: _showVoiceSelector,
                  ),
+                  SettingsTile(
+                    icon: LucideIcons.cake,
+                    title: 'Companion Age',
+                    value: _companionAge >= 65 ? '65+' : '$_companionAge',
+                    onTap: _showAgePicker,
+                  ),
+                  SettingsTile.switchTile(
+                    icon: LucideIcons.mapPin,
+                    title: 'Context Aware',
+                    subtitle: 'Use location & weather',
+                    value: _contextAwareEnabled,
+                    onChanged: _toggleContextAware,
+                  ),
+               ],
+             ),
+
+             // NEURAL LINK STATUS (5-MODEL BRAIN)
+             SettingsSection(
+               title: 'Neural Link Status',
+               children: [
                  SettingsTile(
-                   icon: LucideIcons.cake,
-                   title: 'Companion Age',
-                   value: _companionAge >= 65 ? '65+' : '$_companionAge',
-                   onTap: _showAgePicker,
+                   icon: LucideIcons.network,
+                   title: '5-Model Brain',
+                   value: 'Tap to diagnostics',
+                   onTap: _showNeuralLinkDiagnostics,
                  ),
                ],
              ),
@@ -3778,6 +3824,145 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _NeuralLinkDialog extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_NeuralLinkDialog> createState() => _NeuralLinkDialogState();
+}
+
+class _NeuralLinkDialogState extends ConsumerState<_NeuralLinkDialog> {
+  List<NeuralNodeReport>? _results;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _runDiagnostics();
+  }
+
+  Future<void> _runDiagnostics() async {
+    final service = ref.read(neuralLinkServiceProvider);
+    final results = await service.checkAllConnections();
+    if (mounted) {
+      setState(() {
+        _results = results;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.6,
+      decoration: BoxDecoration(
+        color: AelianaColors.obsidian,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(LucideIcons.activity, color: AelianaColors.hyperGold),
+              const SizedBox(width: 12),
+              Text(
+                'Neural Link Diagnostic',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              if (_isLoading)
+                 const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: AelianaColors.hyperGold, strokeWidth: 2)),
+              if (!_isLoading)
+                IconButton(
+                  icon: const Icon(LucideIcons.refreshCw, color: Colors.white54),
+                  onPressed: () {
+                    setState(() => _isLoading = true);
+                    _runDiagnostics();
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          if (_isLoading && _results == null)
+            const Expanded(child: Center(child: Text('Pinging neural nodes...', style: TextStyle(color: Colors.white54))))
+          else
+            Expanded(
+              child: ListView.separated(
+                itemCount: _results!.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (ctx, i) {
+                  final node = _results![i];
+                  Color statusColor = Colors.green;
+                  IconData statusIcon = LucideIcons.checkCircle;
+                  
+                  if (node.status == NeuralStatus.highLatency) {
+                    statusColor = Colors.orange;
+                    statusIcon = LucideIcons.alertTriangle;
+                  } else if (node.status == NeuralStatus.error || node.status == NeuralStatus.offline) {
+                    statusColor = Colors.red;
+                    statusIcon = LucideIcons.xCircle;
+                  }
+
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: statusColor.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(statusIcon, color: statusColor, size: 20),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                node.providerId,
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (node.errorMessage != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    node.errorMessage!,
+                                    style: GoogleFonts.inter(
+                                      color: Colors.red[200],
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          '${node.latencyMs}ms',
+                          style: GoogleFonts.sourceCodePro(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
   }

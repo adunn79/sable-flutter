@@ -8,6 +8,7 @@ import 'screens/screen_1.5_permissions.dart';
 import 'screens/screen_2_protocol.dart';
 import 'screens/screen_3_archetype.dart';
 import 'screens/screen_4_customize.dart';
+import 'screens/screen_4.5_origin_ritual.dart';
 import 'screens/screen_recovery_setup.dart';
 
 class OnboardingFlow extends StatefulWidget {
@@ -101,7 +102,12 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     
     await stateService.completeOnboarding();
 
-    // Move to recovery setup screen
+    // Move to ritual screen instead of recovery setup
+    // But since _nextPage() is bound to a hardcoded limit, check implementation below
+    _nextPage();
+  }
+
+  void _handleRitualComplete() {
     _nextPage();
   }
 
@@ -113,7 +119,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
 
 
   void _nextPage() {
-    if (_currentPage < 5) { // 6 screens total (0-5)
+    if (_currentPage < 6) { // 7 screens total (0-6) including 4.5
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -159,6 +165,12 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
               archetype: _selectedArchetype!,
               onComplete: _handleScreen4Complete,
             ),
+          if (_avatarConfig != null)
+             Screen45OriginRitual(
+               config: _avatarConfig!,
+               avatarImageUrl: _avatarImageUrl ?? '', // Should be non-null if flow is correct
+               onComplete: _handleRitualComplete,
+             ),
           ScreenRecoverySetup(
             onComplete: _handleRecoveryComplete,
             onBack: _previousPage,

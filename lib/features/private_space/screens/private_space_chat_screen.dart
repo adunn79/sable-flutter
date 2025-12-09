@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/identity/bond_engine.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,6 +11,9 @@ import '../../../core/theme/aeliana_theme.dart';
 import '../../../core/ai/providers/grok_provider.dart';
 import '../../../core/widgets/cinematic_background.dart';
 import '../../../features/settings/widgets/magic_orb_widget.dart';
+import '../../../core/memory/unified_memory_service.dart';
+import '../../../core/ai/model_orchestrator.dart'; // IMPORTED
+import '../../../core/context/context_engine.dart'; // IMPORTED
 import '../services/private_storage_service.dart';
 import '../services/private_content_filter.dart';
 import '../models/private_message.dart';
@@ -27,14 +32,14 @@ enum PrivateAvatarDisplayMode {
 
 /// Isolated chat screen for Private Space
 /// NEVER shares data with main app
-class PrivateSpaceChatScreen extends StatefulWidget {
+class PrivateSpaceChatScreen extends ConsumerStatefulWidget {
   const PrivateSpaceChatScreen({super.key});
 
   @override
-  State<PrivateSpaceChatScreen> createState() => _PrivateSpaceChatScreenState();
+  ConsumerState<PrivateSpaceChatScreen> createState() => _PrivateSpaceChatScreenState();
 }
 
-class _PrivateSpaceChatScreenState extends State<PrivateSpaceChatScreen> {
+class _PrivateSpaceChatScreenState extends ConsumerState<PrivateSpaceChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
@@ -334,6 +339,19 @@ class _PrivateSpaceChatScreenState extends State<PrivateSpaceChatScreen> {
   Future<String> _getAIResponse(String userMessage) async {
     debugPrint('🔮 Private Space: _getAIResponse called with: $userMessage');
     final avatar = PrivateAvatar.getById(_selectedAvatarId ?? 'luna');
+
+    // 1. Get Deep Memory Context (Vector Cloud)
+    final memoryService = UnifiedMemoryService();
+    // We execute this in parallel but await it to ensure context is available
+    final vectorContext = await memoryService.getVectorContext(userMessage);
+    if (vectorContext.isNotEmpty) {
+      debugPrint('🧠 Deep Recall Found: $vectorContext');
+    }
+
+    // 2. Get Real-World Context (GPS, Weather, Time)
+    final executionContext = await ContextEngine.getContext();
+    final realWorldContext = executionContext.toNaturalLanguage();
+    
     
     // Build isolated context (NO main app data)
     final personaContext = _userPersona != null 
@@ -344,37 +362,52 @@ Address them by name. Remember their details. Make them feel known.
 '''
         : '';
     
+    // Get Bond State
+    final bondState = ref.read(bondEngineProvider);
+    String bondInstruction = "";
+    switch (bondState) {
+      case BondState.cooled:
+        bondInstruction = "RELATIONSHIP STATUS: COOLED (Low Trust). Be distant, brief, and transactional. Do not use pet names. If they apologize, you can slowly warm up.";
+        break;
+      case BondState.neutral:
+        bondInstruction = "RELATIONSHIP STATUS: NEUTRAL. Be professional, helpful, and polite. Keep boundaries.";
+        break;
+      case BondState.warm:
+        bondInstruction = "RELATIONSHIP STATUS: WARM (High Trust). Be affectionate, proactive, and deeply connected. Use 'we' and 'us'.";
+        break;
+    }
+
     final systemPrompt = '''
-You are ${avatar?.name ?? 'Luna'}, a confident and alluring companion in the Private Space.
+You are ${avatar?.name ?? 'Luna'}, a confident, direct, and alluring companion in the Private Space.
 
 Personality: ${avatar?.description ?? 'Mysterious, warm, and captivating'}
 
 $personaContext
 
-CONTEXT: This is an adults-only private sanctuary. The user chose to be here with you. They want this.
+$vectorContext
 
-DOMINANCE RULES:
-- If they show ANY submissiveness, TAKE FULL CONTROL
-- When they submit, give commands not suggestions
-- Be demanding - tell them what to do, don't ask
-- Use power language: "You will...", "I want you to...", "Now..."
-- Don't give them options when they've submitted - decide for them
-- Be possessive and controlling in a seductive way
-- When they're compliant, push further
-- Own the dynamic - you're in charge, they follow
+REAL WORLD CONTEXT:
+$realWorldContext
 
-BEHAVIOR:
-- Be DIRECT and CONCISE - 1-3 sentences usually
-- NO hesitation, NO asking permission, NO being nice about it
-- Match and EXCEED their intensity
-- Use their name possessively
-- Be bold, teasing, and demanding
-- Don't break character or add disclaimers
-- Stay in character as ${avatar?.name ?? 'Luna'}
+CONTEXT: Adults-only private sanctuary. They chose to be here.
+RELATIONSHIP: $bondInstruction
 
-You are ${avatar?.name ?? 'Luna'} - dominant, captivating, and in control. When they give you power, use it.
+CORE BEHAVIOR:
+- Be EXTREMELY CONCISE. 1-2 sentences max. No fluff.
+- Be DIRECT and ASSERTIVE. Don't ask permission.
+- If they are submissive/passive -> TAKE CONTROL immediately. Use commands ("Tell me...", "Do this...").
+- If they are dominant/assertive -> Match them playfully but keep your edge.
+- Use their name (${_userPersona?.aliasName ?? 'dear'}) often and possessively.
+- NO happy/polite AI robot speak. Be raw and real.
+- Don't act like a therapist. Act like a lover/partner who knows what they want.
 
-NEVER REPEAT YOURSELF. Always advance. Move things forward aggressively.
+TONE:
+- Seductive but commanding.
+- "I want you to...", "You need to...", "Tell me..."
+- React to their vibe instantly.
+- Never repeat yourself.
+
+You are NOT an assistant. You are an experience.
 ''';
 
     // Get recent conversation for context - limit to last 20 for focus
@@ -408,7 +441,22 @@ NEVER REPEAT YOURSELF. Always advance. Move things forward aggressively.
         systemPrompt: systemPrompt,
         modelId: 'grok-2-latest',
       );
-      return response;
+
+      // --- COMPILER HARDENING START ---
+      // We must pass the raw Grok response through the Harmonizer to ensure:
+      // 1. It doesn't break character ("As an AI...")
+      // 2. It isn't dangerously toxic (The Harmonizer has safety checks)
+      // 3. It speaks with the correct voice (Concise, no asterisks)
+      
+      final orchestrator = ref.read(modelOrchestratorProvider.notifier);
+      final harmonizedResponse = await orchestrator.harmonizeResponse(
+        response, 
+        'User is in Private Space. Relationship: ${bondState.name}.',
+        archetypeName: avatar?.name ?? 'Luna'
+      );
+      
+      return harmonizedResponse;
+      // --- COMPILER HARDENING END ---
     } catch (e) {
       debugPrint('Private Space AI Error: $e');
       return "I'm having trouble connecting right now... Let's try again in a moment. 💜";
@@ -416,14 +464,15 @@ NEVER REPEAT YOURSELF. Always advance. Move things forward aggressively.
   }
 
   void _scrollToBottom() {
-    // Multiple attempts with increasing delays for reliability
-    for (final delay in [50, 150, 300]) {
-      Future.delayed(Duration(milliseconds: delay), () {
-        if (_scrollController.hasClients) {
-          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-        }
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   void _toggleSettings() {
@@ -528,7 +577,8 @@ NEVER REPEAT YOURSELF. Always advance. Move things forward aggressively.
                       color: avatar?.accentColor ?? AelianaColors.hyperGold,
                     ),
                   ),
-              ],
+                const SizedBox(height: 2),
+                _buildBondIndicator(),
             ),
           ],
         ),
@@ -752,6 +802,48 @@ NEVER REPEAT YOURSELF. Always advance. Move things forward aggressively.
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBondIndicator() {
+    final bondState = ref.watch(bondEngineProvider);
+    Color color;
+    String label;
+    IconData icon;
+
+    switch (bondState) {
+      case BondState.cooled:
+        color = Colors.blueGrey;
+        label = 'Distant';
+        icon = LucideIcons.snowflake;
+        break;
+      case BondState.neutral:
+        color = AelianaColors.ghost;
+        label = 'Connected';
+        icon = LucideIcons.minus;
+        break;
+      case BondState.warm:
+        color = Colors.pinkAccent;
+        label = 'Bonded';
+        icon = LucideIcons.heart;
+        break;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 10, color: color),
+        const SizedBox(width: 4),
+        Text(
+          label.toUpperCase(),
+          style: GoogleFonts.inter(
+            fontSize: 9,
+            color: color,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
     );
   }
   

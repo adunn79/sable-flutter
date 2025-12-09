@@ -8,11 +8,14 @@ import 'package:geolocator/geolocator.dart';
 import '../services/journal_storage_service.dart';
 import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
+import '../services/music_service.dart';
 import '../widgets/avatar_journal_overlay.dart';
 import 'package:sable/core/voice/voice_service.dart';
 import 'package:sable/core/emotion/location_service.dart';
 import 'package:sable/core/emotion/weather_service.dart';
 import 'package:sable/core/ai/providers/gemini_provider.dart';
+import 'package:sable/core/ai/model_orchestrator.dart'; // IMPORTED
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Need for ConsumerStatefulWidget
 import 'package:sable/src/config/app_config.dart';
 import 'package:sable/core/photos/widgets/photo_picker_sheet.dart';
 import 'package:sable/core/media/now_playing_service.dart';
@@ -148,6 +151,83 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
     } catch (e) {
       debugPrint('🎵 Now playing capture failed: $e');
     }
+  }
+
+  /// Show music dialog: Auto-detect or Manual Search
+  void _showMusicDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Add Music', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(LucideIcons.music, color: Colors.green),
+              title: const Text('Auto-Detect Playing', style: TextStyle(color: Colors.white)),
+              subtitle: const Text('Capture from Spotify/Apple Music', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _captureNowPlaying();
+              },
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.search, color: Colors.blue),
+              title: const Text('Manual Search', style: TextStyle(color: Colors.white)),
+              subtitle: const Text('Search by song title', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showMusicSearchDialog();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMusicSearchDialog() {
+    final searchController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: const Text('Search Song', style: TextStyle(color: Colors.white)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    hintText: 'Song Title...',
+                    hintStyle: TextStyle(color: Colors.grey),
+                    prefixIcon: Icon(LucideIcons.search, color: Colors.white54),
+                  ),
+                  onSubmitted: (query) async {
+                    // In a real app, this would update a list in the state
+                    // For now we just pick the first result to simulate
+                    final results = await MusicService.searchTrack(query);
+                    if (results.isNotEmpty && mounted) {
+                      setState(() {
+                         _nowPlayingTrack = results.first['track'];
+                         _nowPlayingArtist = results.first['artist'];
+                      });
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                const Text('Enter title and press Enter', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              ],
+            ),
+          );
+        }
+      ),
+    );
   }
   
   /// Auto-fetch today's top headline
@@ -1075,6 +1155,7 @@ No hashtags, no explanations, just the tags.''',
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(
                 children: [
+
                   GestureDetector(
                     onTap: _showPeopleTagDialog,
                     child: Container(
@@ -1097,6 +1178,56 @@ No hashtags, no explanations, just the tags.''',
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // Add Music Button
+                  if (_nowPlayingTrack == null)
+                    GestureDetector(
+                      onTap: _showMusicDialog,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withOpacity(0.1)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.music, size: 14, color: Colors.white.withOpacity(0.5)),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Add Song',
+                              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (_nowPlayingTrack == null) const SizedBox(width: 8),
+                  // Add Headline Button
+                  if (_topHeadline == null)
+                    GestureDetector(
+                      onTap: _fetchHeadline,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withOpacity(0.1)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.newspaper, size: 14, color: Colors.white.withOpacity(0.5)),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Headline',
+                              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -1251,7 +1382,7 @@ No hashtags, no explanations, just the tags.''',
 }
 
 /// Inline chat sheet for journal coaching
-class _JournalChatSheet extends StatefulWidget {
+class _JournalChatSheet extends ConsumerStatefulWidget {
   final String initialPrompt;
   final String archetype;
   final String journalContext;
@@ -1263,10 +1394,10 @@ class _JournalChatSheet extends StatefulWidget {
   });
   
   @override
-  State<_JournalChatSheet> createState() => _JournalChatSheetState();
+  ConsumerState<_JournalChatSheet> createState() => _JournalChatSheetState();
 }
 
-class _JournalChatSheetState extends State<_JournalChatSheet> {
+class _JournalChatSheetState extends ConsumerState<_JournalChatSheet> {
   final TextEditingController _replyController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<Map<String, String>> _messages = [];
@@ -1350,9 +1481,18 @@ CRITICAL - Your tone must:
         modelId: 'gemini-2.0-flash-exp',
       );
       
+      // --- COMPILER HARDENING START ---
+      final orchestrator = ref.read(modelOrchestratorProvider.notifier);
+      final harmonizedResponse = await orchestrator.harmonizeResponse(
+        response, 
+        'Journal Context: ${widget.journalContext}',
+        archetypeName: widget.archetype[0].toUpperCase() + widget.archetype.substring(1)
+      );
+      // --- COMPILER HARDENING END ---
+      
       if (mounted) {
         setState(() {
-          _messages.add({'role': 'assistant', 'content': response});
+          _messages.add({'role': 'assistant', 'content': harmonizedResponse});
           _isLoading = false;
         });
         _scrollToBottom();

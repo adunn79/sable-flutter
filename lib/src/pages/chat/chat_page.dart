@@ -1565,47 +1565,39 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                     ),
                                   ],
                                 ),
-                                // Right: Weather
+                                // Right: Weather - wrapped in Flexible to prevent overflow
                                 if (_weatherTemp != null)
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        LucideIcons.cloudSun,
-                                        color: Colors.white.withOpacity(0.8),
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        _weatherTemp!,
-                                        style: GoogleFonts.inter(
-                                          color: Colors.white,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w700,
+                                  Flexible(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Icon(
+                                          LucideIcons.cloudSun,
+                                          color: Colors.white.withOpacity(0.8),
+                                          size: 16,
                                         ),
-                                      ),
-                                      if (_weatherCondition != null) ...[
-                                        const SizedBox(width: 6),
+                                        const SizedBox(width: 4),
                                         Text(
-                                          _weatherCondition!,
+                                          _weatherTemp!,
                                           style: GoogleFonts.inter(
-                                            color: Colors.white.withOpacity(0.75),
+                                            color: Colors.white,
                                             fontSize: 14,
-                                            fontWeight: FontWeight.w600,
+                                            fontWeight: FontWeight.w700,
                                           ),
                                         ),
-                                      ],
-                                      if (_weatherHighLow != null) ...[
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          _weatherHighLow!,
-                                          style: GoogleFonts.inter(
-                                            color: Colors.white.withOpacity(0.6),
-                                            fontSize: 12,
+                                        if (_weatherHighLow != null) ...[
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            _weatherHighLow!,
+                                            style: GoogleFonts.inter(
+                                              color: Colors.white.withOpacity(0.6),
+                                              fontSize: 11,
+                                            ),
                                           ),
-                                        ),
+                                        ],
                                       ],
-                                    ],
+                                    ),
                                   ),
                               ],
                             ),

@@ -180,15 +180,36 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Back button
-              if (widget.onBack != null)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    onPressed: widget.onBack,
-                    icon: Icon(LucideIcons.arrowLeft, color: Colors.white70),
+              // Back button - always visible and more prominent
+              Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: widget.onBack ?? () => Navigator.maybePop(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.arrowLeft, color: Colors.white70, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Back',
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+              ),
               
               const SizedBox(height: 16),
               

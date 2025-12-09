@@ -75,6 +75,70 @@ class OnboardingStateService {
   static const String _keyLastInteractionDate = 'last_interaction_date';
   static const String _keyNewsEnabled = 'news_enabled';
   static const String _keyNewsCategories = 'news_categories';
+  
+  // ============================================
+  // VOICE CREDITS SYSTEM
+  // ============================================
+  static const String _keyVoiceCreditsUsed = 'voice_credits_used';
+  static const String _keyVoiceCreditsDate = 'voice_credits_date';
+  static const String _keyPremiumVoice = 'premium_voice_enabled';
+  static const int _dailyVoiceCreditsLimit = 10; // Free tier limit
+  
+  /// Check if user has premium voice (unlimited)
+  bool get hasPremiumVoice => _prefs.getBool(_keyPremiumVoice) ?? false;
+  
+  /// Set premium voice status
+  Future<void> setPremiumVoice(bool enabled) async {
+    await _prefs.setBool(_keyPremiumVoice, enabled);
+  }
+  
+  /// Get remaining voice credits for today
+  int get remainingVoiceCredits {
+    if (hasPremiumVoice) return 999; // Unlimited for premium
+    
+    _resetCreditsIfNewDay();
+    final used = _prefs.getInt(_keyVoiceCreditsUsed) ?? 0;
+    return (_dailyVoiceCreditsLimit - used).clamp(0, _dailyVoiceCreditsLimit);
+  }
+  
+  /// Get voice credits used today
+  int get voiceCreditsUsedToday {
+    _resetCreditsIfNewDay();
+    return _prefs.getInt(_keyVoiceCreditsUsed) ?? 0;
+  }
+  
+  /// Check if user can use voice (has credits remaining)
+  bool get canUseVoice {
+    if (hasPremiumVoice) return true;
+    return remainingVoiceCredits > 0;
+  }
+  
+  /// Use one voice credit (returns false if none remaining)
+  Future<bool> useVoiceCredit() async {
+    if (hasPremiumVoice) return true; // Premium always allowed
+    
+    _resetCreditsIfNewDay();
+    final used = _prefs.getInt(_keyVoiceCreditsUsed) ?? 0;
+    
+    if (used >= _dailyVoiceCreditsLimit) return false;
+    
+    await _prefs.setInt(_keyVoiceCreditsUsed, used + 1);
+    return true;
+  }
+  
+  /// Reset credits if it's a new day
+  void _resetCreditsIfNewDay() {
+    final storedDate = _prefs.getString(_keyVoiceCreditsDate);
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    
+    if (storedDate != today) {
+      _prefs.setInt(_keyVoiceCreditsUsed, 0);
+      _prefs.setString(_keyVoiceCreditsDate, today);
+    }
+  }
+  
+  /// Daily voice credits limit for display
+  int get dailyVoiceCreditsLimit => hasPremiumVoice ? 999 : _dailyVoiceCreditsLimit;
 
   /// Save user profile data
   Future<void> saveUserProfile({

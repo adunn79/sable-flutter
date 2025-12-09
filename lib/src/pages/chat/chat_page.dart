@@ -997,12 +997,32 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         });
         _scrollToBottom();
         
-        // Auto-speak AI response if not muted (mute button is the quick toggle)
+        // Auto-speak AI response if not muted and has voice credits
         debugPrint('🔊 Voice debug: _isMuted=$_isMuted, voiceService=${_voiceService != null}');
         if (!_isMuted && _voiceService != null) {
-          debugPrint('🔊 Attempting to speak response...');
-          await _voiceService!.speak(sanitizedResponse);
-          debugPrint('🔊 Speak completed');
+          // Check voice credits before speaking
+          final hasCredits = await _stateService?.useVoiceCredit() ?? true;
+          if (hasCredits) {
+            debugPrint('🔊 Attempting to speak response...');
+            await _voiceService!.speak(sanitizedResponse);
+            debugPrint('🔊 Speak completed');
+          } else {
+            debugPrint('🔊 No voice credits remaining');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Voice limit reached (${_stateService?.dailyVoiceCreditsLimit ?? 10}/day). Upgrade for unlimited voice!'),
+                  action: SnackBarAction(
+                    label: 'Upgrade',
+                    onPressed: () {
+                      // TODO: Navigate to premium upgrade
+                    },
+                  ),
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            }
+          }
         }
         
         // Update emotional state based on interaction
@@ -1188,11 +1208,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       
       _scrollToBottom();
       
-      // Auto-speak if enabled
+      // Auto-speak if enabled and has voice credits
       final autoSpeak = await _voiceService?.getAutoSpeakEnabled() ?? true;
       if (autoSpeak && _voiceService != null) {
-        // Speak a shortened version
-        await _voiceService!.speak("Here's your daily update. Check out the latest news.");
+        final hasCredits = await _stateService?.useVoiceCredit() ?? true;
+        if (hasCredits) {
+          await _voiceService!.speak("Here's your daily update. Check out the latest news.");
+        }
       }
       
     } catch (e) {
@@ -2378,10 +2400,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         });
         _scrollToBottom();
         
-        // Auto-speak if enabled
+        // Auto-speak if enabled and has voice credits
         final autoSpeak = await _voiceService?.getAutoSpeakEnabled() ?? true;
         if (autoSpeak && _voiceService != null) {
-          await _voiceService!.speak("Here's the local vibe for your area.");
+          final hasCredits = await _stateService?.useVoiceCredit() ?? true;
+          if (hasCredits) {
+            await _voiceService!.speak("Here's the local vibe for your area.");
+          }
         }
       }
     } catch (e) {

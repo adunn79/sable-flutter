@@ -26,6 +26,31 @@ class SettingsTile extends StatelessWidget {
     this.showChevron = true,
   });
 
+  factory SettingsTile.switchTile({
+    Key? key,
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    Color? iconColor,
+  }) {
+    return SettingsTile(
+      key: key,
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      iconColor: iconColor,
+      showChevron: false,
+      onTap: () => onChanged(!value),
+      trailing: Switch(
+        value: value,
+        onChanged: onChanged,
+        activeColor: AelianaColors.hyperGold,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Material(

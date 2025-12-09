@@ -42,7 +42,7 @@ class NeuralLinkService {
   Future<List<NeuralNodeReport>> checkAllConnections() async {
     final results = await Future.wait([
       _pingProvider('Claude (Personality)', _anthropic, 'claude-3-haiku-20240307'),
-      _pingProvider('Gemini (Agentic)', _gemini, 'gemini-1.5-flash'),
+      _pingProvider('Gemini (Agentic)', _gemini, 'gemini-2.0-flash'),
       _pingProvider('GPT-4o (Logic)', _openai, 'gpt-4o-mini'),
       _pingProvider('Grok (Realist)', _grok, 'grok-2-latest'),
       _pingProvider('DeepSeek (Coding)', _deepseek, 'deepseek-chat'),

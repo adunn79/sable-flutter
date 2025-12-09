@@ -12,9 +12,11 @@ class PrivateStorageService {
   static const String _boxName = 'private_space_messages';
   static const String _encryptionKeyName = 'private_space_encryption_key';
   static const String _photosBoxName = 'private_space_photos';
+  static const String _factsBoxName = 'private_space_facts';
   
   Box<PrivateMessage>? _messagesBox;
   Box<String>? _photosBox; // Stores base64 encoded photos
+  Box<String>? _factsBox; // Stores private facts (e.g. preferences, pronouns)
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   
   PrivateStorageService._();
@@ -54,6 +56,11 @@ class PrivateStorageService {
       
       _photosBox = await Hive.openBox<String>(
         _photosBoxName,
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      );
+
+      _factsBox = await Hive.openBox<String>(
+        _factsBoxName,
         encryptionCipher: HiveAesCipher(encryptionKey),
       );
       
@@ -109,11 +116,40 @@ class PrivateStorageService {
   Future<void> clearAllPhotos() async {
     await _photosBox?.clear();
   }
+
+  // Facts (Simple strings for preferences/context)
+  Future<void> saveFact(String fact) async {
+    if (_factsBox == null) return;
+    // Simple dedup
+    if (!_factsBox!.values.contains(fact)) {
+      await _factsBox!.add(fact);
+    }
+  }
+
+  List<String> getFacts() {
+    return _factsBox?.values.toList() ?? [];
+  }
+
+  Future<void> removeFact(String fact) async {
+    if (_factsBox == null) return;
+    final map = _factsBox!.toMap();
+    for (final key in map.keys) {
+      if (map[key] == fact) {
+        await _factsBox!.delete(key);
+        break; // Only delete one instance
+      }
+    }
+  }
+
+  Future<void> clearAllFacts() async {
+    await _factsBox?.clear();
+  }
   
   // Nuclear option - delete everything
   Future<void> deleteAllPrivateData() async {
     await clearAllMessages();
     await clearAllPhotos();
+    await clearAllFacts();
     
     // Also clear private space preferences
     final prefs = await SharedPreferences.getInstance();

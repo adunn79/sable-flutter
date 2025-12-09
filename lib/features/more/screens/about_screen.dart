@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
+import 'package:sable/core/constants/legal_constants.dart';
+import 'package:sable/features/more/screens/legal_viewer_screen.dart';
 
 /// About Screen - App info, version, and credits
 class AboutScreen extends StatefulWidget {
@@ -20,9 +22,37 @@ class _AboutScreenState extends State<AboutScreen> {
   
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      // Fallback for email links if no mail app is installed
+      if (url.startsWith('mailto:')) {
+        final email = url.replaceFirst('mailto:', '');
+        await Clipboard.setData(ClipboardData(text: email));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Email copied to clipboard: $email'),
+              backgroundColor: AelianaColors.obsidian,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              action: SnackBarAction(
+                label: 'OK',
+                textColor: AelianaColors.hyperGold,
+                onPressed: () {},
+              ),
+            ),
+          );
+        }
+      }
     }
+  }
+
+  void _openLegalDoc(String title, String content) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LegalViewerScreen(title: title, content: content),
+      ),
+    );
   }
   
   @override
@@ -91,7 +121,7 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Your AI Companion',
+              'Your Companion for the Digital Age',
               style: GoogleFonts.inter(
                 color: Colors.white60,
                 fontSize: 16,
@@ -119,7 +149,7 @@ class _AboutScreenState extends State<AboutScreen> {
               child: Column(
                 children: [
                   Text(
-                    'Aeliana is your personal AI companion designed to support your emotional wellbeing, help you reflect on your thoughts, and be there whenever you need someone to talk to.',
+                    'Your digital life is fractured: a news app for the world, a meditation app for your mind, a calendar for your day, and a journal for your memories. Aeliana unifies them all into one living ecosystem.\n\nIt is the world’s first "AI Life Companion"—an intelligent platform where "Hyper-Human" avatars don\'t just record your life, they help you live it. From your morning news briefing to your evening reflection, Aeliana is the interface for your entire day.',
                     style: GoogleFonts.inter(
                       color: Colors.white70,
                       fontSize: 15,
@@ -145,21 +175,21 @@ class _AboutScreenState extends State<AboutScreen> {
               icon: LucideIcons.fileText,
               title: 'Privacy Policy',
               subtitle: 'How we protect your data',
-              onTap: () => _launchUrl('https://aeliana.ai/privacy'),
+              onTap: () => _openLegalDoc('Privacy Policy', LegalConstants.privacyPolicy),
             ),
             const SizedBox(height: 12),
             _buildLinkItem(
               icon: LucideIcons.shield,
               title: 'Terms of Service',
               subtitle: 'Usage guidelines',
-              onTap: () => _launchUrl('https://aeliana.ai/terms'),
+              onTap: () => _openLegalDoc('Terms of Service', LegalConstants.termsOfService),
             ),
             const SizedBox(height: 12),
             _buildLinkItem(
               icon: LucideIcons.mail,
               title: 'Contact Support',
-              subtitle: 'support@aeliana.ai',
-              onTap: () => _launchUrl('mailto:support@aeliana.ai'),
+              subtitle: 'Support@Aeliana.ai',
+              onTap: () => _launchUrl('mailto:Support@Aeliana.ai'),
             ),
             
             const SizedBox(height: 32),
@@ -184,7 +214,7 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '© 2024 Aeliana AI, LLC. All rights reserved.',
+              '© 2025 Aeliana AI, LLC. All rights reserved.',
               style: GoogleFonts.inter(
                 color: Colors.white38,
                 fontSize: 12,

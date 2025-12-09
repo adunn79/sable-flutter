@@ -147,6 +147,14 @@ class SettingsControlService {
       type: SettingType.toggle,
       keywords: ['clock', 'face', 'digital'],
     ),
+    const SettingDefinition(
+      key: 'use_photorealistic_avatars',
+      title: 'Photorealistic Avatars',
+      subtitle: 'Show hyper-real portraits in Journal/Wellness',
+      section: 'DISPLAY',
+      type: SettingType.toggle,
+      keywords: ['avatar', 'photo', 'portrait', 'realistic', 'professional', 'image'],
+    ),
 
     // APP LAUNCH
     const SettingDefinition(
@@ -220,6 +228,10 @@ class SettingsControlService {
         return prefs.getBool('auto_speak') ?? true;
       case 'daily_briefing_trigger':
         return prefs.getString('daily_briefing_trigger') ?? 'time';
+      case 'use_photorealistic_avatars':
+        return prefs.getBool('use_photorealistic_avatars') ?? true; // Default ON
+      case 'start_on_last_tab':
+        return prefs.getBool('start_on_last_tab') ?? true;
       default:
         return null;
     }
@@ -283,6 +295,9 @@ class SettingsControlService {
           break;
         case 'start_on_last_tab':
           await prefs.setBool('start_on_last_tab', value as bool);
+          break;
+        case 'use_photorealistic_avatars':
+          await prefs.setBool('use_photorealistic_avatars', value as bool);
           break;
         default:
           debugPrint('Unhandled setting update: $key');

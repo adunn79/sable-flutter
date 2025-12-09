@@ -8,7 +8,8 @@ import 'providers/grok_provider.dart';
 import 'providers/deepseek_provider.dart';
 import 'package:sable/core/services/settings_control_service.dart';
 import 'package:sable/core/personality/age_adaptive_service.dart';
-import 'package:sable/core/context/context_engine.dart'; // IMPORTED
+import 'package:sable/core/context/context_engine.dart';
+import 'package:sable/core/ai/fact_check_service.dart'; // IMPORTED
 import 'aeliana_brand_context.dart';
 
 part 'model_orchestrator.g.dart';
@@ -203,8 +204,10 @@ Y for these queries.
 - GPT4O: Fast facts, summaries, lists, simple queries
 - GROK: Unfiltered opinions, "roast me", edgy humor
 - DEEPSEEK: Coding, technical debugging, math, logic puzzles
+- FACT_CHECK: Use when the user explicitly asks "Is it true that...", "Fact check this", or makes a doubtful claim that needs verification.
 
 IMPORTANT: If the user asks about current/recent events or news, ALWAYS choose GEMINI.
+IMPORTANT: If the user asks to verify a specific claim, choose FACT_CHECK.
 
 Return ONLY the JSON, nothing else.
 ''';
@@ -273,7 +276,7 @@ $agePersonalityContext
             response = await _geminiProvider.generateResponseWithGrounding(
               prompt: 'Search the web and answer this query: $prompt',
               systemPrompt: '${enhancedUserContext}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning Of the Sun from Latin).\n\nRULES:\n1. 1-3 sentences MAX\n2. NO asterisks or I am an AI talk\n3. Use their context (name, location, zodiac)\n4. Provide helpful, current info naturally',
-              modelId: 'gemini-2.5-flash', // Use Gemini 2.5 Flash with google_search tool
+              modelId: 'gemini-2.0-flash', // Use Gemini 2.0 Flash for speed
             );
             break;
             
@@ -318,6 +321,21 @@ $agePersonalityContext
               modelId: state.codingModelId,
             );
             break;
+
+          case 'FACT_CHECK':
+            final factService = FactCheckService();
+            final result = await factService.verifyClaim(prompt);
+            if (result.isAccurate) {
+               response = "That's true. ${result.correction}";
+            } else {
+               response = "Actually, that's incorrectly stated. ${result.correction}";
+            }
+            // Append confidence if not high
+            if (result.confidenceScore != 'High') {
+              response += " (Confidence: ${result.confidenceScore})";
+            }
+            break;
+
           default:
             // Default to Claude with failover
             try {

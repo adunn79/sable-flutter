@@ -44,6 +44,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:sable/core/audio/button_sound_service.dart';
 import 'package:sable/core/widgets/interactive_button.dart';
 import 'package:sable/features/onboarding/widgets/avatar_regeneration_dialog.dart';
+import 'package:sable/core/widgets/active_avatar_ring.dart'; // IMPORTED
 
 
 class ChatPage extends ConsumerStatefulWidget {
@@ -393,6 +394,21 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         });
       }
 
+
+      
+      // AUTO-SWITCH VOICE BASED ON GENDER (Fix for Marco sounding like a girl)
+      if (_voiceService != null && _stateService != null) {
+        final currentPersonalityId = _stateService!.selectedPersonalityId;
+        final archetype = PersonalityService.getById(currentPersonalityId); // This now has .gender
+        
+        final bestVoiceId = _voiceService!.getBestVoiceForGender(archetype.gender);
+        // Only switch if we are clearly on the wrong voice type or using a default
+        // For now, let's FORCE it to ensure consistency, unless user manually overrode it recently?
+        // Let's just set it. The user can change it back in settings if they really want.
+        await _voiceService!.setVoice(bestVoiceId);
+        debugPrint('🎙️ Auto-switched voice to $bestVoiceId for gender ${archetype.gender}');
+      }
+
     // Initialize Local Vibe Service
     final webSearchService = ref.read(webSearchServiceProvider);
     _localVibeService = await LocalVibeService.create(webSearchService);
@@ -413,9 +429,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         }
       });
       
-    // Load message history from persistent storage
-      final storedMessages = _memoryService!.getAllMessages();
-      debugPrint('📂 Stored messages count: ${storedMessages.length}');
+
       
       if (storedMessages.isNotEmpty) {
         setState(() {
@@ -1267,7 +1281,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               Container(
                 color: _backgroundColor == AvatarDisplaySettings.colorWhite 
                     ? Colors.white 
-                    : Colors.black,
+                    : AelianaColors.obsidian,
                 child: Column(
                   children: [
                     // Top 22% for the orb
@@ -1277,10 +1291,23 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       child: SafeArea(
                         bottom: false,
                         child: Padding(
-                          padding: const EdgeInsets.only(top: 120),
-                          child: MagicOrbWidget(
-                            size: 145,
-                            isActive: _isTyping || _isListening,
+                          padding: EdgeInsets.zero, // No padding - let alignment center the orb
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Active Ring
+                              ActiveAvatarRing(
+                                size: 165, // Slightly larger than orb (145)
+                                isActive: _isTyping || _isListening,
+                                showRing: true,
+                                child: const SizedBox(),
+                              ),
+                              // The Orb
+                              MagicOrbWidget(
+                                size: 145,
+                                isActive: _isTyping || _isListening,
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -1295,7 +1322,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               Container(
                 color: _backgroundColor == AvatarDisplaySettings.colorWhite 
                     ? Colors.white 
-                    : Colors.black,
+                    : AelianaColors.obsidian,
                 child: Column(
                   children: [
                     // Top 30% for the avatar portrait
@@ -1335,11 +1362,32 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                         ),
                       ),
                     ),
+                    // Active Avatar Ring Overlay
+                    Center(
+                        child: Container(
+                            margin: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.15), // approximate center of top 30%
+                            child: ActiveAvatarRing(
+                                size: 160,
+                                isActive: _isTyping || _isListening, // Pulse when thinking/speaking
+                                showRing: true,
+                                child: const SizedBox(), // Ring is overlay on circle? No, portrait mode is rectangular.
+                                // Actually user said "This ring should be standard in all tabs... NOT the avatar picture... circular ring coloration"
+                                // Portrait mode is a big rectangle. Maybe we add a small ring indicator near the name?
+                                // Or maybe the user means the ORB mode? 
+                                // "Standard in all tabs" -> Chat/Journal/Private. 
+                                // In Chat Portrait Mode, maybe we wrap a small avatar in the header?
+                                // No, let's look at Conversation Mode.
+                            ),
+                        ),
+                    ),
                     // Rest of the screen
                     Expanded(child: Container()),
                   ],
                 ),
               )
+              // NOTE: For Portrait Mode, the ring is less obvious where to put it since it's a full rect image.
+              // I will focus on enforcing it in "Conversation Mode" (Side-by-side) where the user likely saw the issue.
+              // And Orb mode.
             else if (_avatarDisplayMode == AvatarDisplaySettings.modeClock && !_showChatOverClock)
               // Clock mode - avatar with clock face
               Builder(
@@ -1552,7 +1600,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(LucideIcons.triangle, color: AelianaColors.hyperGold, size: 16),
+                                    const Icon(LucideIcons.sparkles, color: AelianaColors.hyperGold, size: 16),
                                     const SizedBox(width: 8),
                                     Text(
                                       _companionName,
@@ -1709,32 +1757,35 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               Container(
                 color: _backgroundColor == AvatarDisplaySettings.colorWhite 
                     ? Colors.white 
-                    : Colors.black,
+                    : AelianaColors.obsidian,
               ),
 
             // 3. Content - Hide when in clock or conversation mode (unless temporarily showing chat)
             if (_avatarDisplayMode != AvatarDisplaySettings.modeClock && 
-                _avatarDisplayMode != AvatarDisplaySettings.modeConversation || 
-                _showChatOverClock)
+                (_avatarDisplayMode != AvatarDisplaySettings.modeConversation || 
+                _showChatOverClock))
             SafeArea(
               top: false, // Disable top SafeArea to handle it manually with padding
               child: Column(
                 children: [
-                  const SizedBox(height: 60), // Added manual spacing for header
+                  // Dynamic spacing for Status Bar + Header gap
+                  SizedBox(height: MediaQuery.of(context).padding.top + 20), 
                   _buildHeader(),
                   Expanded(
                     child: Padding(
                       // Keep text below avatar face/orb in all modes
                       padding: EdgeInsets.only(
                         top: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
-                            ? 0 // Text moved up
-                            : 0, // Text moved up
+                            ? MediaQuery.of(context).size.height * 0.18 // Below the orb (22% - some overlap)
+                            : _avatarDisplayMode == AvatarDisplaySettings.modePortrait
+                                ? MediaQuery.of(context).size.height * 0.28 // Below portrait (32% - some overlap)
+                                : 10, // Default small gap for other modes
                       ),
                       child: ListView.builder(
                         controller: _scrollController,
                         reverse: true, // Start at bottom like a proper chat app
-                        // Internal padding: bottom for input area, top small
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                        // Internal padding: bottom for input area
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
                       // Only show the most recent 25 messages for better performance
                       itemCount: _messages.length > 25 ? 25 : _messages.length,
                       itemBuilder: (context, index) {
@@ -1807,7 +1858,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(LucideIcons.triangle, color: AelianaColors.hyperGold, size: 16),
+                  const Icon(LucideIcons.sparkles, color: AelianaColors.hyperGold, size: 16),
                   const SizedBox(width: 8),
                   Text(
                     _companionName,

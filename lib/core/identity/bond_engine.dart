@@ -24,23 +24,7 @@ class BondEngine extends _$BondEngine {
     return BondState.warm;
   }
 
-  /// Triggers the "Respect Protocol" -> transitions to Cooled state.
-  /// Should be called when the user violates safety/respect guidelines.
-  void triggerRespectProtocol() {
-    state = BondState.cooled;
-  }
 
-  /// Resets the bond to Neutral.
-  /// Useful for professional contexts or manual resets.
-  void resetToNeutral() {
-    state = BondState.neutral;
-  }
-
-  /// Restores the bond to Warm.
-  /// Should be called after a cooldown period or positive interaction.
-  void restoreWarmth() {
-    state = BondState.warm;
-  }
 
   bool get isProactive => state == BondState.warm;
 

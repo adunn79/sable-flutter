@@ -91,7 +91,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
   
   Future<void> _exportMemories() async {
     try {
-      final jsonExport = _memoryService.exportAllMemoriesToJson();
+      final jsonExport = await _memoryService.exportAllMemoriesToJson();
       final directory = await getApplicationDocumentsDirectory();
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final file = File('${directory.path}/knowledge_export_$timestamp.json');
@@ -327,7 +327,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  weather!,
+                                  weather,
                                   style: GoogleFonts.inter(fontSize: 11, color: Colors.blueGrey.shade300),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -343,7 +343,7 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  nowPlayingTrack!,
+                                  nowPlayingTrack,
                                   style: GoogleFonts.inter(fontSize: 11, color: Colors.green.shade400),
                                   overflow: TextOverflow.ellipsis,
                                 ),

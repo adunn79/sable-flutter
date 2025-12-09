@@ -269,6 +269,28 @@ class VoiceService {
     // Fallback to first available voice
     return voices.isNotEmpty ? voices.first['name'] : null;
   }
+
+  /// Get best voice ID for a specific gender (Male/Female/Neutral)
+  String getBestVoiceForGender(String gender) {
+    // ElevenLabs IDs (Standard Quality)
+    // Josh (Male)
+    const maleId = 'TxGEqnHWrfWFTfGW9XjX'; 
+    // Rachel (Female)
+    const femaleId = '21m00Tcm4TlvDq8ikWAM';
+    // Adam (Neutral/Male-leaning) -> Or Mimi (Female-leaning)? 
+    // Echo is "Reflective/Mirror" -> Adam is good.
+    const neutralId = 'pNInz6obpgDQGcFmaJgB'; 
+
+    switch (gender.toLowerCase()) {
+      case 'male':
+        return maleId;
+      case 'female':
+        return femaleId;
+      case 'neutral':
+      default:
+        return neutralId;
+    }
+  }
   
   /// Set voice by ID
   Future<void> setVoice(String voiceId) async {

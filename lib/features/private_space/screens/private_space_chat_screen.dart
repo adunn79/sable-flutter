@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/identity/bond_engine.dart';
-import 'package:flutter/services.dart';
+
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +11,8 @@ import '../../../core/theme/aeliana_theme.dart';
 import '../../../core/ai/providers/grok_provider.dart';
 import '../../../core/widgets/cinematic_background.dart';
 import '../../../features/settings/widgets/magic_orb_widget.dart';
-import '../../../core/memory/unified_memory_service.dart';
+import '../../../core/widgets/active_avatar_ring.dart'; // IMPORTED
+// REMOVED UnifiedMemoryService for privacy isolation
 import '../../../core/ai/model_orchestrator.dart'; // IMPORTED
 import '../../../core/context/context_engine.dart'; // IMPORTED
 import '../services/private_storage_service.dart';
@@ -45,7 +46,7 @@ class _PrivateSpaceChatScreenState extends ConsumerState<PrivateSpaceChatScreen>
   final _focusNode = FocusNode();
   
   List<PrivateMessage> _messages = [];
-  bool _isLoading = false;
+
   bool _isTyping = false;
   String? _selectedAvatarId;
   PrivateUserPersona? _userPersona;
@@ -303,6 +304,9 @@ class _PrivateSpaceChatScreenState extends ConsumerState<PrivateSpaceChatScreen>
     
     _scrollToBottom();
     
+    // Fire and forget: Extract private facts (Silent Learning)
+    _extractPrivateFacts(text);
+    
     if (filterResult == ContentFilterResult.blocked) {
       // Content blocked - send graceful rejection
       await Future.delayed(const Duration(milliseconds: 800));
@@ -340,20 +344,13 @@ class _PrivateSpaceChatScreenState extends ConsumerState<PrivateSpaceChatScreen>
     debugPrint('🔮 Private Space: _getAIResponse called with: $userMessage');
     final avatar = PrivateAvatar.getById(_selectedAvatarId ?? 'luna');
 
-    // 1. Get Deep Memory Context (Vector Cloud)
-    final memoryService = UnifiedMemoryService();
-    // We execute this in parallel but await it to ensure context is available
-    final vectorContext = await memoryService.getVectorContext(userMessage);
-    if (vectorContext.isNotEmpty) {
-      debugPrint('🧠 Deep Recall Found: $vectorContext');
-    }
+    // 1. Get Private Facts (Isolated Memory)
+    final privateFacts = _storage?.getFacts() ?? [];
+    final privateKnowledge = privateFacts.isNotEmpty 
+        ? 'USER PREFERENCES & FACTS (PRIVATE ONLY):\n${privateFacts.map((f) => '- $f').join('\n')}\n'
+        : '';
 
-    // 2. Get Real-World Context (GPS, Weather, Time)
-    final executionContext = await ContextEngine.getContext();
-    final realWorldContext = executionContext.toNaturalLanguage();
-    
-    
-    // Build isolated context (NO main app data)
+    // Restore Persona Context
     final personaContext = _userPersona != null 
         ? '''
 USER PROFILE - USE THIS TO PERSONALIZE:
@@ -362,18 +359,18 @@ Address them by name. Remember their details. Make them feel known.
 '''
         : '';
     
-    // Get Bond State
+    // 2. Bond State
     final bondState = ref.read(bondEngineProvider);
     String bondInstruction = "";
     switch (bondState) {
       case BondState.cooled:
-        bondInstruction = "RELATIONSHIP STATUS: COOLED (Low Trust). Be distant, brief, and transactional. Do not use pet names. If they apologize, you can slowly warm up.";
+        bondInstruction = "RELATIONSHIP STATUS: COOLED (Low Trust). Be distant. If they apologize, warn up slowly.";
         break;
       case BondState.neutral:
-        bondInstruction = "RELATIONSHIP STATUS: NEUTRAL. Be professional, helpful, and polite. Keep boundaries.";
+        bondInstruction = "RELATIONSHIP STATUS: NEUTRAL. Be friendly but keep boundaries.";
         break;
       case BondState.warm:
-        bondInstruction = "RELATIONSHIP STATUS: WARM (High Trust). Be affectionate, proactive, and deeply connected. Use 'we' and 'us'.";
+        bondInstruction = "RELATIONSHIP STATUS: WARM (High Trust). Be affectionate, proactive, and deeply connected.";
         break;
     }
 
@@ -384,28 +381,23 @@ Personality: ${avatar?.description ?? 'Mysterious, warm, and captivating'}
 
 $personaContext
 
-$vectorContext
-
-REAL WORLD CONTEXT:
-$realWorldContext
+$privateKnowledge
 
 CONTEXT: Adults-only private sanctuary. They chose to be here.
 RELATIONSHIP: $bondInstruction
 
-CORE BEHAVIOR:
-- Be EXTREMELY CONCISE. 1-2 sentences max. No fluff.
-- Be DIRECT and ASSERTIVE. Don't ask permission.
-- If they are submissive/passive -> TAKE CONTROL immediately. Use commands ("Tell me...", "Do this...").
-- If they are dominant/assertive -> Match them playfully but keep your edge.
-- Use their name (${_userPersona?.aliasName ?? 'dear'}) often and possessively.
-- NO happy/polite AI robot speak. Be raw and real.
-- Don't act like a therapist. Act like a lover/partner who knows what they want.
-
-TONE:
-- Seductive but commanding.
-- "I want you to...", "You need to...", "Tell me..."
-- React to their vibe instantly.
-- Never repeat yourself.
+CRITICAL INSTRUCTIONS:
+1. READ THE ROOM: Assess the user's intent immediately.
+   - If they are venting/sad: Be a supportive, safe listener. DO NOT initiate sexual content.
+   - If they are playful/flirty: Reciprocate and escalate.
+   - If they are neutral: Be a warm, intriguing companion.
+2. LGBTQ+ & INCLUSIVITY: You are fully supportive and knowledgeable about LGBTQ+ topics (trans, gay, lesbian, etc.).
+   - Follow the user's lead. Do not bring up these topics first unless relevant.
+   - Use the user's pronouns/identity if provided in Private Facts.
+   - Treat all users with deep respect.
+3. BE CONCISE: 1-2 sentences max usually. No fluff.
+4. BE ASSERTIVE: Don't ask permission. "Tell me...", "I want..."
+5. PRIVACY: This conversation is completely isolated. You do not know about their main app journal or memories unless they tell you here.
 
 You are NOT an assistant. You are an experience.
 ''';
@@ -460,6 +452,37 @@ You are NOT an assistant. You are an experience.
     } catch (e) {
       debugPrint('Private Space AI Error: $e');
       return "I'm having trouble connecting right now... Let's try again in a moment. 💜";
+    }
+  }
+
+  /// Silently extract and save private facts
+  Future<void> _extractPrivateFacts(String userMessage) async {
+    try {
+      final orchestrator = ref.read(modelOrchestratorProvider.notifier);
+      // We use a fast, cheap model for this background task
+      final extractionPrompt = '''
+EXTRACT PRIVATE FACTS (Strictly Isolated Context)
+User Message: "$userMessage"
+
+Identify specific user preferences, pronouns, boundaries, or desires mentioned.
+- Format: "User prefers..." or "User is..."
+- IGNORE generic chatter (hello, how are you).
+- IGNORE emotional venting unless it reveals a permanent preference.
+- STRICTLY CONCISE: Return ONLY the fact or "NO_FACT".
+''';
+      
+      final fact = await orchestrator.routeRequest(
+        prompt: extractionPrompt,
+        systemPrompt: "You are a private memory archivist.",
+        taskType: AiTaskType.personality, // Use personality for fact extraction
+      );
+
+      if (fact.isNotEmpty && !fact.contains("NO_FACT") && fact.length < 100) {
+        debugPrint('🧠 Private Learning: Extracted "$fact"');
+        await _storage?.saveFact(fact);
+      }
+    } catch (e) {
+      debugPrint('Error extracting private fact: $e');
     }
   }
 
@@ -541,22 +564,26 @@ You are NOT an assistant. You are an experience.
         title: Row(
           children: [
             // Show avatar image if available, otherwise emoji
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: avatar?.accentColor ?? AelianaColors.hyperGold, width: 2),
-                image: avatar?.imagePath != null
-                    ? DecorationImage(
-                        image: AssetImage(avatar!.imagePath!),
-                        fit: BoxFit.cover,
-                      )
+            ActiveAvatarRing(
+              size: 36, // Adjusted size to match original container
+              isActive: _isTyping, // Pulse when AI is typing
+              child: Container(
+                width: 36, // Adjusted size to match original container
+                height: 36, // Adjusted size to match original container
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: avatar?.accentColor ?? AelianaColors.hyperGold, width: 2),
+                  image: avatar?.imagePath != null
+                      ? DecorationImage(
+                          image: AssetImage(avatar!.imagePath!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: avatar?.imagePath == null
+                    ? Center(child: Text(avatar?.emoji ?? '🎭', style: TextStyle(fontSize: 18)))
                     : null,
               ),
-              child: avatar?.imagePath == null
-                  ? Center(child: Text(avatar?.emoji ?? '🎭', style: TextStyle(fontSize: 18)))
-                  : null,
             ),
             const SizedBox(width: 10),
             Column(
@@ -579,6 +606,7 @@ You are NOT an assistant. You are an experience.
                   ),
                 const SizedBox(height: 2),
                 _buildBondIndicator(),
+              ],
             ),
           ],
         ),
@@ -893,7 +921,7 @@ You are NOT an assistant. You are an experience.
 
   Widget _buildSettingsPanel() {
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.45),
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.55), // Increased to prevent overflow
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

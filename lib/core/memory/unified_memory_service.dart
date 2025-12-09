@@ -401,6 +401,15 @@ class UnifiedMemoryService {
       'totalTags': memories.expand((m) => m.tags).toSet().length,
     };
   }
+
+  /// Export only extracted memories to JSON
+  Future<String> exportAllMemoriesToJson() async {
+    if (_memoryBox == null) await initialize();
+    final memories = getAllMemories();
+    return const JsonEncoder.withIndent('  ').convert(
+      memories.map((m) => m.toJson()).toList()
+    );
+  }
   
   /// Export ALL data to JSON for backup (GDPR/Trust)
   Future<String> exportFullDataDump() async {

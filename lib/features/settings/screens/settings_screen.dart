@@ -726,272 +726,68 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                      style: GoogleFonts.inter(color: Colors.white54, fontSize: 11),
                    ),
                    children: [
-                     // Avatar Selection (Sable, Kai, Echo)
-                     Container(
-                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                       padding: const EdgeInsets.all(16),
-                       decoration: BoxDecoration(
-                         color: AelianaColors.obsidian,
-                         borderRadius: BorderRadius.circular(12),
-                       ),
-                       child: Column(
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: [
-                           Text(
-                             'Avatar',
-                             style: GoogleFonts.spaceGrotesk(
-                               color: Colors.white,
-                               fontSize: 14,
-                               fontWeight: FontWeight.w600,
-                             ),
-                           ),
-                           const SizedBox(height: 12),
-                           Row(
-                             children: [
-                               // Sable (Female)
-                               Expanded(
-                                 child: GestureDetector(
-                                   onTap: () async {
-                                     ref.read(buttonSoundServiceProvider).playMediumTap();
-                                     final stateService = await OnboardingStateService.create();
-                                     final previousArchetype = _selectedArchetypeId.toLowerCase();
-                                     await stateService.setArchetypeId('sable');
-                                     // Only change voice when switching FROM male (Kai) to female
-                                     if (previousArchetype == 'kai') {
-                                       final aiOrigin = stateService.aiOrigin ?? 'United States';
-                                       final femaleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'female');
-                                       if (femaleVoice != null) {
-                                         await _voiceService.setVoice(femaleVoice);
-                                         setState(() {
-                                           _selectedArchetypeId = 'sable';
-                                           _selectedVoiceId = femaleVoice;
-                                         });
-                                         return;
-                                       }
-                                     }
-                                     setState(() {
-                                       _selectedArchetypeId = 'sable';
-                                     });
-                                   },
-                                   child: Container(
-                                     padding: const EdgeInsets.symmetric(vertical: 12),
-                                     decoration: BoxDecoration(
-                                       color: _selectedArchetypeId.toLowerCase() == 'sable'
-                                           ? AelianaColors.hyperGold.withOpacity(0.2)
-                                           : Colors.transparent,
-                                       border: Border.all(
-                                         color: _selectedArchetypeId.toLowerCase() == 'sable'
-                                             ? AelianaColors.hyperGold
-                                             : Colors.white24,
-                                         width: 2,
-                                       ),
-                                       borderRadius: BorderRadius.circular(8),
-                                     ),
-                                     child: Column(
-                                       children: [
-                                         ClipRRect(
-                                           borderRadius: BorderRadius.circular(20),
-                                           child: (_savedAvatarArchetype?.toLowerCase() == 'sable' && _customAvatarUrl != null)
-                                             ? Image.network(
-                                                 _customAvatarUrl!,
-                                                 width: 40,
-                                                 height: 40,
-                                                 fit: BoxFit.cover,
-                                                 errorBuilder: (context, error, stack) => Image.asset(
-                                                   'assets/images/archetypes/sable.png',
-                                                   width: 40,
-                                                   height: 40,
-                                                   fit: BoxFit.cover,
-                                                 ),
-                                               )
-                                             : Image.asset(
-                                                 'assets/images/archetypes/sable.png',
-                                                 width: 40,
-                                                 height: 40,
-                                                 fit: BoxFit.cover,
-                                               ),
-                                         ),
-                                         const SizedBox(height: 4),
-                                         Text(
-                                           'Sable',
-                                           style: GoogleFonts.inter(
-                                             color: _selectedArchetypeId.toLowerCase() == 'sable'
-                                                 ? AelianaColors.hyperGold
-                                                 : Colors.white70,
-                                             fontWeight: FontWeight.w600,
-                                             fontSize: 12,
-                                           ),
-                                         ),
-                                       ],
-                                     ),
-                                   ),
-                                 ),
-                               ),
-                               const SizedBox(width: 12),
-                               // Kai (Male)
-                               Expanded(
-                                 child: GestureDetector(
-                                   onTap: () async {
-                                     ref.read(buttonSoundServiceProvider).playMediumTap();
-                                     final stateService = await OnboardingStateService.create();
-                                     final previousArchetype = _selectedArchetypeId.toLowerCase();
-                                     await stateService.setArchetypeId('kai');
-                                     // Only change voice when switching FROM female (Sable/Echo) to male
-                                     if (previousArchetype == 'sable' || previousArchetype == 'echo') {
-                                       final aiOrigin = stateService.aiOrigin ?? 'United States';
-                                       final maleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'male');
-                                       if (maleVoice != null) {
-                                         await _voiceService.setVoice(maleVoice);
-                                         setState(() {
-                                           _selectedArchetypeId = 'kai';
-                                           _selectedVoiceId = maleVoice;
-                                         });
-                                         return;
-                                       }
-                                     }
-                                     setState(() {
-                                       _selectedArchetypeId = 'kai';
-                                     });
-                                   },
-                                   child: Container(
-                                     padding: const EdgeInsets.symmetric(vertical: 12),
-                                     decoration: BoxDecoration(
-                                       color: _selectedArchetypeId.toLowerCase() == 'kai'
-                                           ? AelianaColors.hyperGold.withOpacity(0.2)
-                                           : Colors.transparent,
-                                       border: Border.all(
-                                         color: _selectedArchetypeId.toLowerCase() == 'kai'
-                                             ? AelianaColors.hyperGold
-                                             : Colors.white24,
-                                         width: 2,
-                                       ),
-                                       borderRadius: BorderRadius.circular(8),
-                                     ),
-                                     child: Column(
-                                       children: [
-                                         ClipRRect(
-                                           borderRadius: BorderRadius.circular(20),
-                                           child: (_savedAvatarArchetype?.toLowerCase() == 'kai' && _customAvatarUrl != null)
-                                             ? Image.network(
-                                                 _customAvatarUrl!,
-                                                 width: 40,
-                                                 height: 40,
-                                                 fit: BoxFit.cover,
-                                                 errorBuilder: (context, error, stack) => Image.asset(
-                                                   'assets/images/archetypes/kai.png',
-                                                   width: 40,
-                                                   height: 40,
-                                                   fit: BoxFit.cover,
-                                                 ),
-                                               )
-                                             : Image.asset(
-                                                 'assets/images/archetypes/kai.png',
-                                                 width: 40,
-                                                 height: 40,
-                                                 fit: BoxFit.cover,
-                                               ),
-                                         ),
-                                         const SizedBox(height: 4),
-                                         Text(
-                                           'Kai',
-                                           style: GoogleFonts.inter(
-                                             color: _selectedArchetypeId.toLowerCase() == 'kai'
-                                                 ? AelianaColors.hyperGold
-                                                 : Colors.white70,
-                                             fontWeight: FontWeight.w600,
-                                             fontSize: 12,
-                                           ),
-                                         ),
-                                       ],
-                                     ),
-                                   ),
-                                 ),
-                               ),
-                               const SizedBox(width: 12),
-                               // Echo (Female)
-                               Expanded(
-                                 child: GestureDetector(
-                                   onTap: () async {
-                                     ref.read(buttonSoundServiceProvider).playMediumTap();
-                                     final stateService = await OnboardingStateService.create();
-                                     final previousArchetype = _selectedArchetypeId.toLowerCase();
-                                     await stateService.setArchetypeId('echo');
-                                     // Only change voice when switching FROM male (Kai) to female
-                                     if (previousArchetype == 'kai') {
-                                       final aiOrigin = stateService.aiOrigin ?? 'United States';
-                                       final femaleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'female');
-                                       if (femaleVoice != null) {
-                                         await _voiceService.setVoice(femaleVoice);
-                                         setState(() {
-                                           _selectedArchetypeId = 'echo';
-                                           _selectedVoiceId = femaleVoice;
-                                         });
-                                         return;
-                                       }
-                                     }
-                                     setState(() {
-                                       _selectedArchetypeId = 'echo';
-                                     });
-                                   },
-                                   child: Container(
-                                     padding: const EdgeInsets.symmetric(vertical: 12),
-                                     decoration: BoxDecoration(
-                                       color: _selectedArchetypeId.toLowerCase() == 'echo'
-                                           ? AelianaColors.hyperGold.withOpacity(0.2)
-                                           : Colors.transparent,
-                                       border: Border.all(
-                                         color: _selectedArchetypeId.toLowerCase() == 'echo'
-                                             ? AelianaColors.hyperGold
-                                             : Colors.white24,
-                                         width: 2,
-                                       ),
-                                       borderRadius: BorderRadius.circular(8),
-                                     ),
-                                     child: Column(
-                                       children: [
-                                         ClipRRect(
-                                           borderRadius: BorderRadius.circular(20),
-                                           child: (_savedAvatarArchetype?.toLowerCase() == 'echo' && _customAvatarUrl != null)
-                                             ? Image.network(
-                                                 _customAvatarUrl!,
-                                                 width: 40,
-                                                 height: 40,
-                                                 fit: BoxFit.cover,
-                                                 errorBuilder: (context, error, stack) => Image.asset(
-                                                   'assets/images/archetypes/echo.png',
-                                                   width: 40,
-                                                   height: 40,
-                                                   fit: BoxFit.cover,
-                                                 ),
-                                               )
-                                             : Image.asset(
-                                                 'assets/images/archetypes/echo.png',
-                                                 width: 40,
-                                                 height: 40,
-                                                 fit: BoxFit.cover,
-                                               ),
-                                         ),
-                                         const SizedBox(height: 4),
-                                         Text(
-                                           'Echo',
-                                           style: GoogleFonts.inter(
-                                             color: _selectedArchetypeId.toLowerCase() == 'echo'
-                                                 ? AelianaColors.hyperGold
-                                                 : Colors.white70,
-                                             fontWeight: FontWeight.w600,
-                                             fontSize: 12,
-                                           ),
-                                         ),
-                                       ],
-                                     ),
-                                   ),
-                                 ),
-                               ),
-                             ],
-                           ),
-                         ],
-                       ),
-                     ),
+                      // Avatar Selection (Aeliana, Sable, Kai, Echo)
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AelianaColors.obsidian,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Avatar',
+                              style: GoogleFonts.spaceGrotesk(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // 2x2 Grid for 4 avatars
+                            GridView.count(
+                              crossAxisCount: 4,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                              childAspectRatio: 0.7,
+                              children: [
+                                // Aeliana (Flagship)
+                                _buildAvatarOption(
+                                  'aeliana',
+                                  'Aeliana',
+                                  'assets/images/archetypes/aeliana.png',
+                                  isFemale: true,
+                                ),
+                                // Sable (Female)
+                                _buildAvatarOption(
+                                  'sable',
+                                  'Sable',
+                                  'assets/images/archetypes/sable.png',
+                                  isFemale: true,
+                                ),
+                                // Kai (Male)
+                                _buildAvatarOption(
+                                  'kai',
+                                  'Kai',
+                                  'assets/images/archetypes/kai.png',
+                                  isFemale: false,
+                                ),
+                                // Echo (Female)
+                                _buildAvatarOption(
+                                  'echo',
+                                  'Echo',
+                                  'assets/images/archetypes/echo.png',
+                                  isFemale: true,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                      // Avatar Display Mode Toggle
                      Container(
                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -3846,5 +3642,112 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
+  }
+  
+  /// Build an avatar option tile for the 4-avatar grid
+  Widget _buildAvatarOption(
+    String archetypeId,
+    String name, 
+    String assetPath,
+    {required bool isFemale}
+  ) {
+    final isSelected = _selectedArchetypeId.toLowerCase() == archetypeId.toLowerCase();
+    
+    return GestureDetector(
+      onTap: () async {
+        ref.read(buttonSoundServiceProvider).playMediumTap();
+        final stateService = await OnboardingStateService.create();
+        final previousArchetype = _selectedArchetypeId.toLowerCase();
+        await stateService.setArchetypeId(archetypeId);
+        
+        // Handle voice switching based on gender change
+        final wasKai = previousArchetype == 'kai';
+        final isKai = archetypeId.toLowerCase() == 'kai';
+        
+        if (wasKai && !isKai) {
+          // Switching FROM male (Kai) to female
+          final aiOrigin = stateService.aiOrigin ?? 'United States';
+          final femaleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'female');
+          if (femaleVoice != null) {
+            await _voiceService.setVoice(femaleVoice);
+            setState(() {
+              _selectedArchetypeId = archetypeId;
+              _selectedVoiceId = femaleVoice;
+            });
+            return;
+          }
+        } else if (!wasKai && isKai) {
+          // Switching TO male (Kai) from female
+          final aiOrigin = stateService.aiOrigin ?? 'United States';
+          final maleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'male');
+          if (maleVoice != null) {
+            await _voiceService.setVoice(maleVoice);
+            setState(() {
+              _selectedArchetypeId = archetypeId;
+              _selectedVoiceId = maleVoice;
+            });
+            return;
+          }
+        }
+        
+        setState(() {
+          _selectedArchetypeId = archetypeId;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AelianaColors.hyperGold.withOpacity(0.2)
+              : Colors.transparent,
+          border: Border.all(
+            color: isSelected
+                ? AelianaColors.hyperGold
+                : Colors.white24,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: (_savedAvatarArchetype?.toLowerCase() == archetypeId.toLowerCase() && _customAvatarUrl != null)
+                ? Image.network(
+                    _customAvatarUrl!,
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) => Image.asset(
+                      assetPath,
+                      width: 36,
+                      height: 36,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : Image.asset(
+                    assetPath,
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              name,
+              style: GoogleFonts.inter(
+                color: isSelected
+                    ? AelianaColors.hyperGold
+                    : Colors.white70,
+                fontWeight: FontWeight.w600,
+                fontSize: 10,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

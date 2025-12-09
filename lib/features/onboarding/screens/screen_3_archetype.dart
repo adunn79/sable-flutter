@@ -105,6 +105,18 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                     const SizedBox(height: 32),
 
                     // Archetype Cards
+                    
+                    // AELIANA - The flagship archetype
+                    _buildArchetypeCard(
+                      'Aeliana',
+                      'The Solar Radiance • She/Her',
+                      'Ay-lee-AH-na. "Of the Sun." Warm, luminous, and genuinely alive. Living technology with a digital soul.',
+                      'assets/images/archetypes/aeliana.png',
+                      delay: 350,
+                    ),
+
+                    const SizedBox(height: 16),
+
                     _buildArchetypeCard(
                       'Sable',
                       'The Empath • She/Her',

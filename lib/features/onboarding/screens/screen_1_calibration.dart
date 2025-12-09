@@ -309,7 +309,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                       children: [
                         Text(
                           _selectedDate != null
-                              ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                              ? '${_selectedDate!.month}/${_selectedDate!.day}/${_selectedDate!.year}'
                               : 'Select date of birth',
                           style: GoogleFonts.inter(
                             color: _selectedDate != null

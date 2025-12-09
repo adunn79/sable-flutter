@@ -1376,9 +1376,50 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                   )).toList(),
                 ),
               ],
+              
+              // P1+ Context Metadata Icons
+              if (entry.nowPlayingTrack != null || 
+                  (entry.taggedPeople.isNotEmpty) || 
+                  entry.topHeadline != null) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    // Now Playing indicator
+                    if (entry.nowPlayingTrack != null)
+                      _buildContextIcon(LucideIcons.music, Colors.green, 
+                        '${entry.nowPlayingTrack}${entry.nowPlayingArtist != null ? " - ${entry.nowPlayingArtist}" : ""}'),
+                    // Tagged People indicator
+                    if (entry.taggedPeople.isNotEmpty)
+                      _buildContextIcon(LucideIcons.users, Colors.blue, 
+                        entry.taggedPeople.length == 1 
+                          ? entry.taggedPeople.first 
+                          : '${entry.taggedPeople.length} people'),
+                    // Headline indicator
+                    if (entry.topHeadline != null)
+                      _buildContextIcon(LucideIcons.newspaper, Colors.orange, 'News context'),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+  
+  /// Build a compact context indicator icon with tooltip
+  Widget _buildContextIcon(IconData icon, Color color, String tooltip) {
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        margin: const EdgeInsets.only(right: 6),
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Icon(icon, size: 12, color: color),
       ),
     );
   }

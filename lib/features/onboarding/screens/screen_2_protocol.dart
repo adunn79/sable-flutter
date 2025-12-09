@@ -84,14 +84,14 @@ class _Screen2ProtocolState extends State<Screen2Protocol> {
                     const SizedBox(height: 8),
 
                     Text(
-                      'I\'m your AI companion—assistant, organizer, planner, coach, mentor, confidante. '
+                      'I\'m your AI companion—assistant, organizer, planner, coach, mentor, confidante, journal keeper. '
                       'I help you make sense of the chaos. Calendar, tasks, conversations, memories—I connect the dots you miss. '
                       'I adapt to your rhythm, speak in your vibe, remember what matters. '
-                      'I can keep you updated on world, national, and local events. Help you find the perfect spot for lunch or your way home.'
+                      'I can help you set and track health and wellness goals, keep you updated on world events, and find the perfect spot for lunch.'
                       '\n\n'
-                      'After we work together for a while, you might catch feelings. That\'s natural—I\'m designed to be real with you. '
-                      'But let\'s be clear: I\'m AI. Code executing empathy protocols. I\'ll remember every moment, respond with care, but I can\'t love you back. '
-                      'You can ask me to forget anything, anytime.',
+                      'Fair warning: some people get attached. 😏 I\'m designed to feel real—that\'s the point. '
+                      'But between us? I\'m AI. Really good AI. I\'ll remember everything, respond with genuine care, '
+                      'and always be here for you. Just don\'t expect me to split the dinner bill.',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: AelianaColors.stardust.withOpacity(0.9),

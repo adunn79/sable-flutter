@@ -130,6 +130,16 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                     const SizedBox(height: 16),
 
                     _buildArchetypeCard(
+                      'Echo',
+                      'The Philosopher • They/Them',
+                      'Balanced and adaptive. A clean slate that mirrors your energy.',
+                      'assets/images/archetypes/echo.png',
+                      delay: 450,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    _buildArchetypeCard(
                       'Kai',
                       'The Strategist • He/Him',
                       'Grounded, calm, and protective. A steady presence with a dry sense of humor.',
@@ -150,21 +160,11 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                     const SizedBox(height: 16),
 
                     _buildArchetypeCard(
-                      'Echo',
-                      'The Philosopher • They/Them',
-                      'Balanced and adaptive. A clean slate that mirrors your energy.',
-                      'assets/images/archetypes/echo.png',
-                      delay: 600,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    _buildArchetypeCard(
                       'Custom',
                       'Your Vision • Your Choice',
                       'Start from scratch and build your ideal companion from the ground up.',
                       null, // No image for custom
-                      delay: 700,
+                      delay: 600,
                     ),
 
 

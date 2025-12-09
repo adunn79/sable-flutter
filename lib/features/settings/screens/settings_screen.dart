@@ -769,10 +769,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: _buildAvatarOption(
-                                    'kai',
-                                    'Kai',
-                                    'assets/images/archetypes/kai.png',
-                                    isFemale: false,
+                                    'echo',
+                                    'Echo',
+                                    'assets/images/archetypes/echo.png',
+                                    isFemale: true,
                                   ),
                                 ),
                               ],
@@ -785,9 +785,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 SizedBox(
                                   width: MediaQuery.of(context).size.width * 0.25,
                                   child: _buildAvatarOption(
-                                    'marco',
-                                    'Marco',
-                                    'assets/images/archetypes/marco.png',
+                                    'kai',
+                                    'Kai',
+                                    'assets/images/archetypes/kai.png',
                                     isFemale: false,
                                   ),
                                 ),
@@ -795,10 +795,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 SizedBox(
                                   width: MediaQuery.of(context).size.width * 0.25,
                                   child: _buildAvatarOption(
-                                    'echo',
-                                    'Echo',
-                                    'assets/images/archetypes/echo.png',
-                                    isFemale: true,
+                                    'marco',
+                                    'Marco',
+                                    'assets/images/archetypes/marco.png',
+                                    isFemale: false,
                                   ),
                                 ),
                               ],

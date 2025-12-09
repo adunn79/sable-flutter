@@ -41,7 +41,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
     showCupertinoModalPopup(
       context: context,
       builder: (context) => Container(
-        height: 300,
+        height: 350,
         decoration: BoxDecoration(
           color: AelianaColors.carbon,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -50,28 +50,30 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
           children: [
             // Header with Done button
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
               decoration: BoxDecoration(
                 color: AelianaColors.obsidian,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   CupertinoButton(
-                    padding: EdgeInsets.zero,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text('Cancel', style: GoogleFonts.inter(color: AelianaColors.ghost)),
                     onPressed: () => Navigator.pop(context),
                   ),
+                  const Spacer(),
                   Text(
-                    'Date of Birth',
+                    'Birthday',
                     style: GoogleFonts.spaceGrotesk(
                       color: AelianaColors.plasmaCyan,
                       fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   ),
+                  const Spacer(),
                   CupertinoButton(
-                    padding: EdgeInsets.zero,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text('Done', style: GoogleFonts.inter(color: AelianaColors.plasmaCyan, fontWeight: FontWeight.bold)),
                     onPressed: () {
                       setState(() => _selectedDate = tempDate);

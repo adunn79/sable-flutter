@@ -242,6 +242,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
     // Use archetype image as default
     final imageUrl = 'assets/images/archetypes/${widget.archetype.toLowerCase()}.png';
     _stateService?.saveAvatarUrl(imageUrl);
+    _stateService?.addToAvatarGallery(imageUrl, archetypeId: widget.archetype.toLowerCase());
     widget.onComplete(config, imageUrl);
   }
 
@@ -364,6 +365,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
           ElevatedButton(
             onPressed: () {
               _stateService?.saveAvatarUrl(imageUrl);
+              _stateService?.addToAvatarGallery(imageUrl, archetypeId: widget.archetype.toLowerCase());
               Navigator.pop(context);
               widget.onComplete(config, imageUrl);
             },
@@ -412,6 +414,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
               );
               final imageUrl = 'assets/images/archetypes/${widget.archetype.toLowerCase()}.png';
               _stateService?.saveAvatarUrl(imageUrl);
+              _stateService?.addToAvatarGallery(imageUrl, archetypeId: widget.archetype.toLowerCase());
               widget.onComplete(config, imageUrl);
             },
             child: Text(

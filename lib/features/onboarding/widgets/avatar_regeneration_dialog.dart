@@ -384,11 +384,11 @@ class _AvatarRegenerationDialogState extends State<AvatarRegenerationDialog> {
       // Save old avatar to gallery before replacing
       final oldUrl = widget.stateService.avatarUrl;
       if (oldUrl != null) {
-        await widget.stateService.addToAvatarGallery(oldUrl);
+        await widget.stateService.addToAvatarGallery(oldUrl, archetypeId: config.archetype.toLowerCase());
       }
       
       // Save new avatar to gallery
-      await widget.stateService.addToAvatarGallery(newUrl);
+      await widget.stateService.addToAvatarGallery(newUrl, archetypeId: config.archetype.toLowerCase());
       
       // Increment generation count
       await widget.stateService.incrementRegenerationCount();

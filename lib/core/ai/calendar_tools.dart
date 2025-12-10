@@ -1,7 +1,6 @@
-import 'package:device_calendar/device_calendar.dart';
 import 'package:intl/intl.dart';
 import '../calendar/calendar_service.dart';
-import '../ai/tool_registry.dart';
+import 'tool_registry.dart';
 
 /// AI Tools for calendar event management
 class CalendarTools {
@@ -25,7 +24,7 @@ class CalendarTools {
           return ToolResult.error(
           'Calendar permission denied',
           userMessage: 'I don\'t have permission to access your calendar. You can grant access in Settings > Aeliana > Calendar.',
-          };
+          );
         }
       }
 
@@ -77,145 +76,6 @@ class CalendarTools {
     }
   }
 
-  /// Update an existing calendar event
-  static Future<Map<String, dynamic>> updateCalendarEvent({
-    required String eventId,
-    String? title,
-    String? description,
-    String? location,
-    DateTime? startTime,
-    DateTime? endTime,
-  }) async {
-    try {
-      if (!await CalendarService.hasPermission()) {
-        return {
-          'success': false,
-          'error': 'Calendar permission denied',
-          'user_message': 'I don\'t have permission to access your calendar.',
-        };
-      }
-
-      final event = await CalendarService.updateEvent(
-        eventId: eventId,
-        title: title,
-        description: description,
-        location: location,
-        start: startTime,
-        end: endTime,
-      );
-
-      if (event == null) {
-        return {
-          'success': false,
-          'error': 'Failed to update calendar event',
-          'user_message': 'I couldn\'t update that calendar event.',
-        };
-      }
-
-      return {
-        'success': true,
-        'event_id': eventId,
-        'message': 'Event updated successfully',
-        'user_message': '✅ Calendar event updated',
-      };
-    } catch (e) {
-      return {
-        'success': false,
-        'error': 'Error updating event: $e',
-        'user_message': 'I encountered an error while updating the event.',
-      };
-    }
-  }
-
-  /// Delete a calendar event
-  static Future<Map<String, dynamic>> deleteCalendarEvent({
-    required String eventId,
-  }) async {
-    try {
-      if (!await CalendarService.hasPermission()) {
-        return {
-          'success': false,
-          'error': 'Calendar permission denied',
-          'user_message': 'I don\'t have permission to access your calendar.',
-        };
-      }
-
-      final success = await CalendarService.deleteEvent(eventId);
-
-      if (!success) {
-        return {
-          'success': false,
-          'error': 'Failed to delete calendar event',
-          'user_message': 'I couldn\'t delete that calendar event.',
-        };
-      }
-
-      return {
-        'success': true,
-        'event_id': eventId,
-        'message': 'Event deleted successfully',
-        'user_message': '✅ Calendar event deleted',
-      };
-    } catch (e) {
-      return {
-        'success': false,
-        'error': 'Error deleting event: $e',
-        'user_message': 'I encountered an error while deleting the event.',
-      };
-    }
-  }
-
-  /// Get events for a specific date range
-  static Future<Map<String, dynamic>> getCalendarEvents({
-    required DateTime startDate,
-    required DateTime endDate,
-  }) async {
-    try {
-      if (!await CalendarService.hasPermission()) {
-        return {
-          'success': false,
-          'error': 'Calendar permission denied',
-          'user_message': 'I don\'t have permission to access your calendar.',
-        };
-      }
-
-      final events = await CalendarService.getEvents(startDate, endDate);
-
-      if (events.isEmpty) {
-        return {
-          'success': true,
-          'events': [],
-          'count': 0,
-          'message': 'No events found for this date range',
-          'user_message': 'You have no events scheduled for that time period.',
-        };
-      }
-
-      // Format events for AI consumption
-      final formattedEvents = events.map((e) {
-        return {
-          'event_id': e.eventId,
-          'title': e.title,
-          'description': e.description,
-          'location': e.location,
-          'start': e.start?.toIso8601String(),
-          'end': e.end?.toIso8601String(),
-          'all_day': e.allDay ?? false,
-        };
-      }).toList();
-
-      return {
-        'success': true,
-        'events': formattedEvents,
-        'count': events.length,
-        'message': 'Found ${events.length} event(s)',
-      };
-    } catch (e) {
-      return {
-        'success': false,
-        'error': 'Error fetching events: $e',
-        'user_message': 'I encountered an error while checking your calendar.',
-      };
-    }
-  }
+  // TODO: Implement update/delete/get calendar events
+  // These require additions to CalendarService first
 }

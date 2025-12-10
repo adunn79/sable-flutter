@@ -13,6 +13,7 @@ import 'core/widgets/restart_widget.dart';
 import 'features/journal/services/journal_storage_service.dart';
 import 'features/journal/screens/journal_timeline_screen.dart';
 import 'core/memory/unified_memory_service.dart';
+import 'core/ai/room_brain_initializer.dart';
 
 void main() async {
   String initialRoute = '/chat'; // Define outside try block for scope visibility
@@ -37,6 +38,10 @@ void main() async {
     // Initialize unified memory service (chat, memories, health)
     await UnifiedMemoryService().initialize();
     debugPrint('✅ Unified memory service initialized');
+    
+    // Initialize Room Brain System (Memory Spine + Tools)
+    await RoomBrainInitializer.initialize();
+    debugPrint('✅ Room Brain System initialized');
     
     // Check for startup route
     final prefs = await SharedPreferences.getInstance();

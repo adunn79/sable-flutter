@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import '../../../core/identity/bond_engine.dart';
-
+import '../../../../core/safety/deterministic_safety_filter.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -57,12 +57,58 @@ class _PrivateSpaceChatScreenState extends ConsumerState<PrivateSpaceChatScreen>
   PrivateAvatarDisplayMode _displayMode = PrivateAvatarDisplayMode.image;
   bool _showInfoTip = true; // Show info blobs on first use
 
+  // Voice Consent State
+  bool _hasVoiceConsent = false;
+
   @override
   void initState() {
     super.initState();
+    _checkVoiceConsentStatus();
     _initialize();
   }
 
+  Future<void> _checkVoiceConsentStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _hasVoiceConsent = prefs.getBool('voice_consent_given') ?? false;
+    });
+  }
+
+  Future<bool> _requestVoiceConsent() async {
+    if (_hasVoiceConsent) return true;
+    
+    final consent = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AelianaColors.carbon,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Enable Voice Mode?', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+        content: Text(
+          'Voice interaction uses ElevenLabs technology to generate lifelike audio. Your voice data is processed securely to generate responses.\n\nDo you consent to using this feature?',
+          style: GoogleFonts.inter(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Not Now', style: GoogleFonts.inter(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('I Agree', style: GoogleFonts.inter(color: AelianaColors.hyperGold, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (consent == true) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('voice_consent_given', true);
+      setState(() => _hasVoiceConsent = true);
+      return true;
+    }
+    return false;
+  }
+  
   Future<void> _initialize() async {
     debugPrint('🔮 Private Space: _initialize() starting...');
     _storage = await PrivateStorageService.getInstance();
@@ -300,6 +346,28 @@ class _PrivateSpaceChatScreenState extends ConsumerState<PrivateSpaceChatScreen>
       );
       return;
     }
+    // 0. Deterministic Safety Filter (Apple Compliance)
+    if (!DeterministicSafetyFilter.isContentSafe(text)) {
+      await Future.delayed(const Duration(milliseconds: 600)); // Simulate thinking
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Message blocked by safety filter.', style: GoogleFonts.inter()),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      // Add a canned refusal message as an AI response
+      final avatar = PrivateAvatar.getById(_selectedAvatarId ?? 'luna');
+      final refusalMessage = PrivateMessage.ai(
+        "I can't engage with that specific topic due to safety guidelines, but I'm here for you otherwise.",
+        avatar?.id ?? 'luna',
+      );
+      await _storage?.saveMessage(refusalMessage);
+      setState(() {
+        _messages.add(refusalMessage);
+      });
+      _scrollToBottom();
+      return;
+    }
     
     // Save user message
     final userMessage = PrivateMessage.user(text);
@@ -497,7 +565,10 @@ You are NOT an assistant. You are an immersive experience. Lead them into the fa
         archetypeName: avatar?.name ?? 'Luna'
       );
       
-      return harmonizedResponse;
+      // FINAL SAFETY CHECK: Deterministic filter on AI output (App Store Compliance)
+      final sanitizedResponse = DeterministicSafetyFilter.sanitizeAiResponse(harmonizedResponse);
+      
+      return sanitizedResponse;
       // --- COMPILER HARDENING END ---
     } catch (e) {
       debugPrint('Private Space AI Error: $e');
@@ -1174,14 +1245,11 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
       ),
       child: Row(
         children: [
+          // Text Input
           Expanded(
             child: TextField(
-              controller: _controller,
-              focusNode: _focusNode,
+              controller: _textController,
               style: GoogleFonts.inter(color: Colors.white),
-              maxLines: 4,
-              minLines: 1,
-              textInputAction: TextInputAction.send,
               decoration: InputDecoration(
                 hintText: 'Message ${avatar?.name ?? 'Luna'}...',
                 hintStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.4)),
@@ -1193,28 +1261,44 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
+              minLines: 1,
+              maxLines: 4,
+              textInputAction: TextInputAction.send,
+              textCapitalization: TextCapitalization.sentences,
               onSubmitted: (_) => _sendMessage(),
             ),
           ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: _sendMessage,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: avatar?.accentColor ?? AelianaColors.hyperGold,
-              ),
-              child: Icon(
-                LucideIcons.send,
+          const SizedBox(width: 8),
+          
+          // Send / Mic Button
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: avatar?.accentColor ?? AelianaColors.hyperGold,
+            ),
+            child: IconButton(
+              icon: Icon(
+                _textController.text.isEmpty ? LucideIcons.mic : LucideIcons.send,
                 color: Colors.white,
                 size: 20,
               ),
+              onPressed: () async {
+                if (_textController.text.isEmpty) {
+                  // Voice Mode
+                  if (!await _requestVoiceConsent()) return;
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Voice input coming soon!')),
+                  );
+                } else {
+                  _sendMessage();
+                }
+              },
             ),
           ),
         ],
       ),
     );
   }
-}

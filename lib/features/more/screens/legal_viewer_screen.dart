@@ -3,16 +3,28 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
+import 'package:sable/core/constants/legal_constants.dart';
+
+enum LegalContentType { privacy, terms }
 
 class LegalViewerScreen extends StatelessWidget {
   final String title;
-  final String content;
+  final LegalContentType contentType;
 
   const LegalViewerScreen({
     super.key,
     required this.title,
-    required this.content,
+    required this.contentType,
   });
+
+  String get _content {
+    switch (contentType) {
+      case LegalContentType.privacy:
+        return LegalConstants.privacyPolicy;
+      case LegalContentType.terms:
+        return LegalConstants.termsOfService;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +47,7 @@ class LegalViewerScreen extends StatelessWidget {
         ),
       ),
       body: Markdown(
-        data: content,
+        data: _content,
         styleSheet: MarkdownStyleSheet(
           h1: GoogleFonts.spaceGrotesk(
             color: AelianaColors.hyperGold,
@@ -69,3 +81,4 @@ class LegalViewerScreen extends StatelessWidget {
     );
   }
 }
+

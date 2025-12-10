@@ -222,7 +222,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            price == 0 ? 'Free' : '\$${price.toStringAsFixed(2)}/mo',
+            tier == SubscriptionTier.free ? 'Free' : '$price/mo',
             style: GoogleFonts.inter(
               color: Colors.white,
               fontSize: 24,
@@ -252,13 +252,42 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: isCurrent ? null : () => _service!.setTier(tier),
+              onPressed: isCurrent ? null : () async {
+                // Show loading
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(color: AelianaColors.plasmaCyan),
+                  ),
+                );
+
+                final success = await _service!.purchaseSubscription(tier);
+
+                if (!mounted) return;
+                Navigator.pop(context); // Close loading
+
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('✅ Purchase initiated! Complete in app store.'),
+                      backgroundColor: AelianaColors.hyperGold,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('❌ Purchase failed. Please try again.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: isCurrent ? Colors.white10 : AelianaColors.plasmaCyan,
                 foregroundColor: isCurrent ? Colors.white : AelianaColors.obsidian,
                 disabledBackgroundColor: Colors.white10,
                 disabledForegroundColor: Colors.white30,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               child: Text(isCurrent ? 'CURRENT PLAN' : 'UPGRADE'),
             ),

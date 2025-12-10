@@ -46,11 +46,11 @@ class _AboutScreenState extends State<AboutScreen> {
     }
   }
 
-  void _openLegalDoc(String title, String content) {
+  void _openLegalDoc(String title, LegalContentType contentType) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => LegalViewerScreen(title: title, content: content),
+        builder: (context) => LegalViewerScreen(title: title, contentType: contentType),
       ),
     );
   }
@@ -175,14 +175,14 @@ class _AboutScreenState extends State<AboutScreen> {
               icon: LucideIcons.fileText,
               title: 'Privacy Policy',
               subtitle: 'How we protect your data',
-              onTap: () => _openLegalDoc('Privacy Policy', LegalConstants.privacyPolicy),
+              onTap: () => _openLegalDoc('Privacy Policy', LegalContentType.privacy),
             ),
             const SizedBox(height: 12),
             _buildLinkItem(
               icon: LucideIcons.shield,
               title: 'Terms of Service',
               subtitle: 'Usage guidelines',
-              onTap: () => _openLegalDoc('Terms of Service', LegalConstants.termsOfService),
+              onTap: () => _openLegalDoc('Terms of Service', LegalContentType.terms),
             ),
             const SizedBox(height: 12),
             _buildLinkItem(

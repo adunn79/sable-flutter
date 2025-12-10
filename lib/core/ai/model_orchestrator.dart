@@ -44,13 +44,17 @@ class ModelConfig {
   final String heavyLiftingModelId;
   final String realistModelId;
   final String codingModelId;
+  final String fastRoutingModelId; // For orchestrator routing decisions
+  final String fastHarmonizerModelId; // For personality harmonization
 
   const ModelConfig({
     this.personalityModelId = 'claude-3-haiku-20240307',
     this.agenticModelId = 'o1', // Controller (GPT-5.1)
-    this.heavyLiftingModelId = 'gpt-4o-mini', // Harmonizer
-    this.realistModelId = 'grok-2-latest',
+    this.heavyLiftingModelId = 'gpt-4o-mini', // Heavy lifting only
+    this.realistModelId = 'grok-beta', // SPEED: Changed from grok-2-latest
     this.codingModelId = 'deepseek-chat',
+    this.fastRoutingModelId = 'gemini-2.0-flash', // SPEED: Fast routing
+    this.fastHarmonizerModelId = 'gemini-2.0-flash', // SPEED: Fast harmonizer
   });
 }
 
@@ -212,10 +216,10 @@ IMPORTANT: If the user asks to verify a specific claim, choose FACT_CHECK.
 Return ONLY the JSON, nothing else.
 ''';
 
-      final routingResponse = await _openAiProvider.generateResponse(
+      final routingResponse = await _geminiProvider.generateResponse(
         prompt: routingPrompt,
         systemPrompt: 'You are THE ORCHESTRATOR. Analyze user intent and select the best model. Return only JSON.',
-        modelId: state.heavyLiftingModelId, // gpt-4o-mini for routing
+        modelId: state.fastRoutingModelId, // gemini-2.0-flash for fast routing
       );
 
       // Step 2: Parse routing decision
@@ -460,9 +464,9 @@ Return ONLY the rewritten text.
     }
 
     try {
-      return await _openAiProvider.generateResponse(
+      return await _geminiProvider.generateResponse(
         prompt: harmonizerPrompt,
-        modelId: state.heavyLiftingModelId, // GPT-4o-mini
+        modelId: state.fastHarmonizerModelId, // gemini-2.0-flash for speed
       );
     } catch (e) {
       debugPrint('Harmonizer failed: $e');

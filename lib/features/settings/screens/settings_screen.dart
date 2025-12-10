@@ -736,7 +736,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                    SettingsTile(
                      icon: LucideIcons.trash2,
                      title: 'Delete Account',
-                     titleColor: Colors.red[300],
+                     isDestructive: true,
                      onTap: () => _confirmDeleteAccount(),
                    ),
                 ],

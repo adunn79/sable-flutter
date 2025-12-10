@@ -182,6 +182,7 @@ class IAPService extends ChangeNotifier {
       (p) => p.status == PurchaseStatus.purchased && _productIds.contains(p.productID),
       orElse: () => PurchaseDetails(
         productID: '',
+        status: PurchaseStatus.canceled,
         verificationData: PurchaseVerificationData(
           localVerificationData: '',
           serverVerificationData: '',

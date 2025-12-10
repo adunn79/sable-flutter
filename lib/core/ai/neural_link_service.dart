@@ -38,15 +38,33 @@ class NeuralLinkService {
   final GrokProvider _grok = GrokProvider();
   final DeepSeekProvider _deepseek = DeepSeekProvider();
 
+  // SPEED: Cache results for 2 minutes
+  List<NeuralNodeReport>? _cachedResults;
+  DateTime? _cacheTime;
+  static const _cacheDuration = Duration(minutes: 2);
+
   /// Pings all 5 models with a lightweight "Hello" packet
-  Future<List<NeuralNodeReport>> checkAllConnections() async {
+  /// Uses cached results if available and fresh (< 2 min old)
+  Future<List<NeuralNodeReport>> checkAllConnections({bool forceRefresh = false}) async {
+    // Return cached results if fresh
+    if (!forceRefresh && _cachedResults != null && _cacheTime != null) {
+      if (DateTime.now().difference(_cacheTime!) < _cacheDuration) {
+        return _cachedResults!;
+      }
+    }
+
+    // SPEED: Use fastest models for ping (not production models)
     final results = await Future.wait([
       _pingProvider('Claude (Personality)', _anthropic, 'claude-3-haiku-20240307'),
       _pingProvider('Gemini (Agentic)', _gemini, 'gemini-2.0-flash'),
       _pingProvider('GPT-4o (Logic)', _openai, 'gpt-4o-mini'),
-      _pingProvider('Grok (Realist)', _grok, 'grok-2-latest'),
+      _pingProvider('Grok (Realist)', _grok, 'grok-beta'), // SPEED: grok-beta instead of grok-2-latest
       _pingProvider('DeepSeek (Coding)', _deepseek, 'deepseek-chat'),
     ]);
+
+    // Cache results
+    _cachedResults = results;
+    _cacheTime = DateTime.now();
 
     return results;
   }
@@ -54,12 +72,14 @@ class NeuralLinkService {
   Future<NeuralNodeReport> _pingProvider(String name, dynamic provider, String modelId) async {
     final stopwatch = Stopwatch()..start();
     try {
-      // Send a minimal token packet
+      // SPEED: Add 5-second timeout to fail fast
       await provider.generateResponse(
         prompt: "ping",
         systemPrompt: "Reply with 'pong' only.",
         modelId: modelId,
-      );
+      ).timeout(const Duration(seconds: 5), onTimeout: () {
+        throw Exception('Timeout');
+      });
       
       stopwatch.stop();
       final ms = stopwatch.elapsedMilliseconds;
@@ -84,3 +104,4 @@ class NeuralLinkService {
 final neuralLinkServiceProvider = Provider<NeuralLinkService>((ref) {
   return NeuralLinkService();
 });
+

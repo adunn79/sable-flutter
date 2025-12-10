@@ -549,7 +549,7 @@ You are NOT an assistant. You are an immersive experience. Lead them into the fa
       final response = await provider.generateResponse(
         prompt: contextBuilder.toString(),
         systemPrompt: systemPrompt,
-        modelId: 'grok-2-latest',
+        modelId: 'grok-beta', // SPEED: Faster than grok-2-latest
       );
 
       // --- COMPILER HARDENING START ---
@@ -1248,7 +1248,7 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
           // Text Input
           Expanded(
             child: TextField(
-              controller: _textController,
+              controller: _controller,
               style: GoogleFonts.inter(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Message ${avatar?.name ?? 'Luna'}...',
@@ -1280,12 +1280,12 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
             ),
             child: IconButton(
               icon: Icon(
-                _textController.text.isEmpty ? LucideIcons.mic : LucideIcons.send,
+                _controller.text.isEmpty ? LucideIcons.mic : LucideIcons.send,
                 color: Colors.white,
                 size: 20,
               ),
               onPressed: () async {
-                if (_textController.text.isEmpty) {
+                if (_controller.text.isEmpty) {
                   // Voice Mode
                   if (!await _requestVoiceConsent()) return;
                   
@@ -1302,3 +1302,4 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
       ),
     );
   }
+}

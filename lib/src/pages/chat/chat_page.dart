@@ -45,6 +45,11 @@ import 'package:sable/core/audio/button_sound_service.dart';
 import 'package:sable/core/widgets/interactive_button.dart';
 import 'package:sable/features/onboarding/widgets/avatar_regeneration_dialog.dart';
 import 'package:sable/core/widgets/active_avatar_ring.dart'; // IMPORTED
+// Room Brain System
+import 'package:sable/core/ai/room_brain_initializer.dart';
+import 'package:sable/core/ai/room_brain/chat_brain.dart';
+import 'package:sable/core/ai/agent_context.dart';
+import 'package:sable/core/ai/character_personality.dart';
 
 
 class ChatPage extends ConsumerStatefulWidget {
@@ -94,6 +99,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   // Voice mute toggle
   bool _isMuted = false;
   bool _isAvatarSettingsLoaded = false;
+  
+  // Room Brain System
+  ChatBrain? _chatBrain;
+  CharacterPersonality? _currentPersonality;
   
   final List<Map<String, dynamic>> _messages = [];
 
@@ -416,6 +425,24 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     
     // Pre-fetch Local Vibe IN BACKGROUND so it's ready instantly (after service init)
     _prefetchLocalVibe();
+    
+    // Initialize Room Brain System (Chat Brain with calendar tools)
+    try {
+      final memorySpine = RoomBrainInitializer.getMemorySpine();
+      final toolRegistry = RoomBrainInitializer.getToolRegistry();
+      _chatBrain = ChatBrain(
+        memorySpine: memorySpine,
+        tools: toolRegistry,
+      );
+      
+      // Get current character personality
+      _currentPersonality = CharacterPersonality.getById(_archetypeId) ?? 
+                           CharacterPersonality.aeliana;
+      
+      debugPrint('✅ Chat Brain initialized with ${_currentPersonality?.name} personality');
+    } catch (e) {
+      debugPrint('⚠️ Chat Brain initialization failed: $e - falling back to legacy system');
+    }
 
     // Load stored messages
     final storedMessages = _memoryService!.getRecentMessages(50);
@@ -716,6 +743,51 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final sentiment = SentimentAnalyzer.analyze(text);
     debugPrint('Sentiment: ${sentiment.polarity}, Mistreatment: ${sentiment.isMistreatment}, Positive: ${sentiment.isPositive}');
 
+    // 🧠 ROOM BRAIN INTERCEPTION: Check if Chat Brain can handle this query
+    // This prevents AI hallucinations by handling calendar/tasks BEFORE AI gets the query
+    if (_chatBrain != null && _currentPersonality != null) {
+      try {
+        final context = AgentContext(
+          userId: _stateService?.userName ?? 'user',
+          currentLocation: _stateService?.userCurrentLocation ?? _currentGpsLocation,
+        );
+        
+        // Ask Chat Brain if it can handle this query
+        final brainResponse = await _chatBrain!.processQuery(text, context);
+        
+        // If brain requires tool execution, it means it detected an intent (e.g., calendar creation)
+        if (brainResponse.requiresToolExecution) {
+          debugPrint('🎯 Chat Brain detected intent: ${brainResponse.toolCall?['name']}');
+          
+          // Execute through the brain's respond method (which calls the tool and applies personality)
+          final response = await _chatBrain!.respond(
+            query: text,
+            personality: _currentPersonality!,
+            context: context,
+          );
+          
+          // Save AI response
+          await _memoryService?.addMessage(message: response, isUser: false);
+          await _unifiedMemoryService?.addChatMessage(
+            message: response,
+            isUser: false,
+            emotionalContext: null,
+          );
+          
+          if (mounted) {
+            setState(() {\n              _messages.add({'message': _sanitizeResponse(response), 'isUser': false});
+              _isTyping = false;
+            });
+            _scrollToBottom();
+          }
+          
+          debugPrint('✅ Chat Brain handled query successfully');
+          return; // EXIT EARLY - Brain handled it, no need for AI orchestrator
+        }
+      } catch (e) {
+        debugPrint('⚠️ Chat Brain error: $e - falling through to AI orchestrator');
+      }
+    }
 
     try {
       // Build comprehensive user context string

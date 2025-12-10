@@ -1,18 +1,29 @@
 import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 /// Service for handling device calendar integration
 /// Provides permission management, event fetching, and AI context formatting
 class CalendarService {
   static final DeviceCalendarPlugin _deviceCalendarPlugin = DeviceCalendarPlugin();
+  static const String _permissionCacheKey = 'calendar_permission_granted';
   
   /// Request calendar permission from the user
   static Future<bool> requestPermission() async {
     try {
       final permissionsGranted = await _deviceCalendarPlugin.requestPermissions();
-      debugPrint('📅 Calendar permission granted: ${permissionsGranted.isSuccess && permissionsGranted.data == true}');
-      return permissionsGranted.isSuccess && permissionsGranted.data == true;
+      final granted = permissionsGranted.isSuccess && permissionsGranted.data == true;
+      debugPrint('📅 Calendar permission granted: $granted');
+      
+      if (granted) {
+        // Cache the permission state
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_permissionCacheKey, true);
+        debugPrint('📅 Permission cached to SharedPreferences');
+      }
+      
+      return granted;
     } catch (e) {
       debugPrint('❌ Calendar permission request failed: $e');
       return false;
@@ -20,10 +31,35 @@ class CalendarService {
   }
   
   /// Check if calendar permission has been granted
+  /// Uses both device check AND cached value to work around iOS simulator bugs
   static Future<bool> hasPermission() async {
     try {
+      // First check device calendar plugin
       final permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
-      return permissionsGranted.isSuccess && permissionsGranted.data == true;
+      final hasIt = permissionsGranted.isSuccess && permissionsGranted.data == true;
+      debugPrint('📅 Calendar hasPermission check: plugin=$hasIt');
+      
+      if (hasIt) return true;
+      
+      // Fallback: check cached value (works around iOS simulator reset bug)
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getBool(_permissionCacheKey) ?? false;
+      debugPrint('📅 Calendar hasPermission cached: $cached');
+      
+      // If cached says yes, try to verify by attempting to get calendars
+      if (cached) {
+        try {
+          final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
+          if (calendarsResult.isSuccess && calendarsResult.data != null && calendarsResult.data!.isNotEmpty) {
+            debugPrint('📅 Permission verified via calendar retrieval');
+            return true;
+          }
+        } catch (e) {
+          debugPrint('📅 Calendar verification failed: $e');
+        }
+      }
+      
+      return hasIt;
     } catch (e) {
       debugPrint('❌ Calendar permission check failed: $e');
       return false;
@@ -31,8 +67,32 @@ class CalendarService {
   }
   
   /// Get all calendars from the device
+  /// Works around iOS simulator permission bug by trying direct retrieval
   static Future<List<Calendar>> getCalendars() async {
     try {
+      // First, try direct retrieval (works around permission check bug)
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getBool(_permissionCacheKey) ?? false;
+      
+      if (cached) {
+        debugPrint('📅 Cached permission found, trying direct calendar retrieval...');
+        try {
+          final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
+          if (calendarsResult.isSuccess && calendarsResult.data != null) {
+            debugPrint('📅 Direct retrieval succeeded: ${calendarsResult.data!.length} calendars');
+            return calendarsResult.data!;
+          }
+        } catch (e) {
+          debugPrint('📅 Direct retrieval failed: $e');
+          // Clear cached permission if retrieval fails with 401
+          if (e.toString().contains('401')) {
+            debugPrint('📅 Clearing cached permission due to 401 error');
+            await prefs.setBool(_permissionCacheKey, false);
+          }
+        }
+      }
+      
+      // Standard path: check permission, then retrieve
       if (!await hasPermission()) {
         debugPrint('⚠️ No calendar permission');
         return [];
@@ -131,12 +191,25 @@ class CalendarService {
     Availability? availability,
   }) async {
     try {
-      if (!await hasPermission()) {
-        debugPrint('⚠️ Cannot create event: no calendar permission');
+      debugPrint('📅 createEvent called: $title at $start');
+      
+      // Check permission, request if needed
+      var hasPerm = await hasPermission();
+      debugPrint('📅 Initial hasPermission: $hasPerm');
+      
+      if (!hasPerm) {
+        debugPrint('📅 No permission, requesting...');
+        hasPerm = await requestPermission();
+        debugPrint('📅 After request: $hasPerm');
+      }
+      
+      if (!hasPerm) {
+        debugPrint('⚠️ Cannot create event: no calendar permission after request');
         return null;
       }
       
       final calendars = await getCalendars();
+      debugPrint('📅 Found ${calendars.length} calendars');
       if (calendars.isEmpty) {
         debugPrint('⚠️ No calendars available');
         return null;
@@ -145,13 +218,48 @@ class CalendarService {
       // Use first writable calendar (typically the default calendar)
       final calendar = calendars.firstWhere((c) => c.isReadOnly == false, orElse: () => calendars.first);
       
+      // Create a timezone location matching the device's offset
+      // This ensures the event displays at the correct local time
+      final offset = start.timeZoneOffset;
+      
+      // Try to find a matching timezone in the database
+      final tzLocation = tz.timeZoneDatabase.locations.values.firstWhere(
+        (loc) {
+          final now = tz.TZDateTime.now(loc);
+          return now.timeZoneOffset == offset;
+        },
+        orElse: () => tz.UTC, // Fallback to UTC if no match
+      );
+      
+      debugPrint('📍 Using timezone: ${tzLocation.name} (offset: ${offset.inHours}h)');
+      
       final event = Event(
         calendar.id,
         title: title,
         description: description,
         location: location,
-        start: tz.TZDateTime.from(start, tz.local),
-        end: tz.TZDateTime.from(end, tz.local),
+        start: tz.TZDateTime(
+          tzLocation,
+          start.year,
+          start.month,
+          start.day,
+          start.hour,
+          start.minute,
+          start.second,
+          start.millisecond,
+          start.microsecond,
+        ),
+        end: tz.TZDateTime(
+          tzLocation,
+          end.year,
+          end.month,
+          end.day,
+          end.hour,
+          end.minute,
+          end.second,
+          end.millisecond,
+          end.microsecond,
+        ),
         allDay: allDay,
         attendees: attendees,
         recurrenceRule: recurrenceRule,

@@ -730,62 +730,77 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _sendMessage() async {
-    debugPrint('🚀🚀🚀 _sendMessage CALLED! 🚀🚀🚀');
-    ref.read(feedbackServiceProvider).medium();
-    debugPrint('🔘 Feedback triggered');
+    debugPrint('🔥🔥🔥 _sendMessage CALLED (Clean) 🔥🔥🔥');
     final text = _controller.text.trim();
-    debugPrint('📝 Message text: "$text"');
     if (text.isEmpty) return;
 
-    // Save user message to persistent memory (both old and new services)
-    await _memoryService?.addMessage(message: text, isUser: true);
-    await _unifiedMemoryService?.addChatMessage(
-      message: text,
-      isUser: true,
-      emotionalContext: null,
-    );
-    
-    setState(() {
-      _messages.add({'message': text, 'isUser': true});
-      _isTyping = true;
-      _controller.clear();
-    });
-    _scrollToBottom();
+    // FORCE PRINT TO CONSOLE
+    print('\n\n🔥🔥🔥 _sendMessage EXECUTING 🔥🔥🔥');
+    print('📝 Text: "$text"');
 
-    // Analyze sentiment of user message
+    _controller.clear();
+    setState(() => _isTyping = true);
+
+    // Declare sentiment outside try block so it's visible later
     final sentiment = SentimentAnalyzer.analyze(text);
-    debugPrint('Sentiment: ${sentiment.polarity}, Mistreatment: ${sentiment.isMistreatment}, Positive: ${sentiment.isPositive}');
-
-    // 🧠 ROOM BRAIN INTERCEPTION: Check if Chat Brain can handle this query
-    // This prevents AI hallucinations by handling calendar/tasks BEFORE AI gets the query
-    debugPrint('🔍 INTERCEPT: Checking Chat Brain availability...');
-    debugPrint('🔍 _chatBrain is null? ${_chatBrain == null}');
-    debugPrint('🔍 _currentPersonality is null? ${_currentPersonality == null}');
     
-    if (_chatBrain != null && _currentPersonality != null) {
-      debugPrint('✅ Chat Brain available, proceeding with query: "$text"');
-      try {
+    // Log sentiment (don't call updateMoodFromInput as it doesn't exist)
+    print('Sentiment: polarity=${sentiment.polarity}, positive=${sentiment.isPositive}');
+
+    try {
+      // 1. Add to Memory
+      print('💾 Adding to memory service...');
+      await _memoryService?.addMessage(message: text, isUser: true);
+      await _unifiedMemoryService?.addChatMessage(
+        message: text,
+        isUser: true,
+        emotionalContext: null,
+      );
+      
+      // Update UI with user message
+      if (mounted) {
+        setState(() {
+          _messages.add({'message': text, 'isUser': true});
+        });
+        _scrollToBottom();
+      }
+
+      // 3. 🧠 ROOM BRAIN INTERCEPTION
+      print('🧠 CHECKING CHAT BRAIN INTERCEPTION...');
+      print('   _chatBrain exists: ${_chatBrain != null}');
+      print('   _currentPersonality exists: ${_currentPersonality != null}');
+
+      if (_chatBrain != null && _currentPersonality != null) {
+        // Fix: Use AgentContext and userName
         final context = AgentContext(
-          userId: _stateService?.userName ?? 'user',
+          userId: _stateService?.userName ?? 'unknown',
           currentLocation: _stateService?.userCurrentLocation ?? _currentGpsLocation,
         );
         
-        debugPrint('🔍 Calling Chat Brain processQuery...');
-        // Ask Chat Brain if it can handle this query
+        print('🧠 Calling processQuery...');
         final brainResponse = await _chatBrain!.processQuery(text, context);
+        print('🧠 brainResponse.requiresToolExecution: ${brainResponse.requiresToolExecution}');
         
-        debugPrint('🔍 Brain response received. Requires tool execution? ${brainResponse.requiresToolExecution}');
-        
-        // If brain requires tool execution, it means it detected an intent (e.g., calendar creation)
         if (brainResponse.requiresToolExecution) {
-          debugPrint('🎯 Chat Brain detected intent: ${brainResponse.toolCall?['name']}');
+          final toolName = brainResponse.toolCall?['name'] as String?;
+          final toolParams = brainResponse.toolCall?['params'] as Map<String, dynamic>?;
           
-          // Execute through the brain's respond method (which calls the tool and applies personality)
-          final response = await _chatBrain!.respond(
-            query: text,
-            personality: _currentPersonality!,
-            context: context,
+          print('🚀 EXECUTING TOOL: $toolName with params: $toolParams');
+          
+          // Actually execute the tool via ToolRegistry
+          final toolRegistry = RoomBrainInitializer.getToolRegistry();
+          final toolResult = await toolRegistry.execute(
+            toolName!,
+            toolParams!,
+            callingBrain: 'chat',
           );
+          
+          print('✅ Tool execution complete. Success: ${toolResult.success}');
+          print('📝 Tool message: ${toolResult.userMessage}');
+          
+          // Use the tool's user message as the response
+          final response = toolResult.userMessage ?? 
+            (toolResult.success ? 'Done!' : 'Something went wrong.');
           
           // Save AI response
           await _memoryService?.addMessage(message: response, isUser: false);
@@ -802,21 +817,22 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             });
             _scrollToBottom();
           }
-          
-          debugPrint('✅ Chat Brain handled query successfully');
-          return; // EXIT EARLY - Brain handled it, no need for AI orchestrator
+          print('🏁 Tool executed and response saved. Exiting _sendMessage.');
+          return; // EXIT EARLY - Tool executed
         } else {
-          debugPrint('ℹ️ Chat Brain did not detect actionable intent, falling through to AI orchestrator');
+          print('ℹ️ No intent detected by Chat Brain.');
         }
-      } catch (e, stackTrace) {
-        debugPrint('⚠️ Chat Brain error: $e');
-        debugPrint('Stack trace: $stackTrace');
-        debugPrint('Falling through to AI orchestrator');
+      } else {
+        print('⚠️ ChatBrain or Personality is NULL. Skipping interception.');
       }
-    } else {
-      debugPrint('⚠️ Chat Brain NOT available (_chatBrain: ${_chatBrain != null}, _personality: ${_currentPersonality != null})');
-      debugPrint('Skipping brain interception, going straight to AI orchestrator');
+
+    } catch (e, stack) {
+      print('❌ ERROR in _sendMessage preamble: $e');
+      print(stack);
+      // Fall through to normal AI if possible
     }
+
+    print('🤖 Falling through to ModelOrchestrator...');
 
     try {
       // Build comprehensive user context string
@@ -2824,7 +2840,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           Flexible(
             child: Container(
               margin: const EdgeInsets.only(bottom: 16),
-              constraints: const BoxConstraints(maxWidth: 300),
+              constraints: const BoxConstraints(maxWidth: 380),
               padding: const EdgeInsets.all(12),
               decoration: isUser 
                   ? BoxDecoration(
@@ -3082,16 +3098,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Rewrite button (Apple Intelligence)
-                  GestureDetector(
-                    onTap: _handleRewrite,
-                    child: Icon(
-                      LucideIcons.wand2,
-                      color: _controller.text.isNotEmpty 
-                          ? AelianaColors.hyperGold 
-                          : AelianaColors.plasmaCyan.withOpacity(0.6),
-                      size: 22,
-                    ),
+                GestureDetector(
+                  onTap: _handleRewrite,
+                  child: Icon(
+                    LucideIcons.wand2,
+                    color: _controller.text.isNotEmpty 
+                        ? AelianaColors.hyperGold 
+                        : AelianaColors.plasmaCyan.withOpacity(0.6),
+                    size: 22,
                   ),
+                ),
                   const SizedBox(width: 24),
                   // Microphone button
                   GestureDetector(

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../calendar/calendar_service.dart';
 import 'tool_registry.dart';
@@ -7,6 +8,7 @@ class CalendarTools {
   /// Create a calendar event
   /// Returns JSON with success/failure and event details
   static Future<ToolResult> createCalendarEvent(Map<String, dynamic> params) async {
+    debugPrint('🗓️ CalendarTools.createCalendarEvent called with: $params');
     final title = params['title'] as String;
     final startTimeStr = params['startTime'] as String;
     final startTime = DateTime.parse(startTimeStr);
@@ -18,20 +20,25 @@ class CalendarTools {
     final allDay = params['allDay'] as bool? ?? false;
     try {
       // Check permissions first
+      debugPrint('🗓️ Checking calendar permission...');
       if (!await CalendarService.hasPermission()) {
+        debugPrint('🗓️ No permission, requesting...');
         final granted = await CalendarService.requestPermission();
         if (!granted) {
+          debugPrint('❌ Calendar permission denied');
           return ToolResult.error(
           'Calendar permission denied',
           userMessage: 'I don\'t have permission to access your calendar. You can grant access in Settings > Aeliana > Calendar.',
           );
         }
       }
+      debugPrint('✅ Calendar permission OK');
 
       // Set end time if not provided (1 hour after start)
       final eventEnd = endTime ?? startTime.add(const Duration(hours: 1));
 
       // Create the event
+      debugPrint('🗓️ Creating event: $title at $startTime (IsUTC: ${startTime.isUtc}, TZ: ${startTime.timeZoneName})');
       final event = await CalendarService.createEvent(
         title: title,
         description: description,
@@ -42,11 +49,13 @@ class CalendarTools {
       );
 
       if (event == null) {
+        debugPrint('❌ CalendarService.createEvent returned null');
         return ToolResult.error(
           'Failed to create calendar event',
           userMessage: 'I couldn\'t create the calendar event. Make sure you have a calendar set up on your device.',
         );
       }
+      debugPrint('✅ Event created successfully: ${event.eventId}');
 
       // Format success message
       final dateFormatter = DateFormat('EEEE, MMM d');

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:sable/core/ai/room_brain/room_brain_base.dart';
 import 'package:sable/core/ai/agent_context.dart';
@@ -105,6 +106,16 @@ class ChatBrain extends RoomBrain {
       'plan',
       'put on my calendar',
       'remind me',
+      'try',       // Added
+      'lets',      // Added
+      'let\'s',    // Added
+      'can you',   // Added
+      'please',    // Added
+      'want to',   // Added
+      'need to',   // Added
+      'put',       // Added
+      'have',      // Added
+      'need',      // Added
     ];
 
     final eventIndicators = [
@@ -112,6 +123,7 @@ class ChatBrain extends RoomBrain {
       'lunch',
       'meeting',
       'appointment',
+      'appt',      // Added
       'event',
       'calendar',
       'tomorrow',
@@ -141,7 +153,15 @@ class ChatBrain extends RoomBrain {
                             query.contains('next week');
     
     debugPrint('🔍 hasTimeReference: $hasTimeReference');
-    final result = (hasCreateWord && hasEventWord) || (hasCreateWord && hasTimeReference);
+    
+    // Allow if:
+    // 1. Explicit create word + event indicator (e.g. "schedule meeting")
+    // 2. Explicit create word + time reference (e.g. "schedule tomorrow")
+    // 3. Event indicator + time reference (e.g. "dinner tomorrow") <-- IMPLICIT INTENT
+    final result = (hasCreateWord && hasEventWord) || 
+                   (hasCreateWord && hasTimeReference) ||
+                   (hasEventWord && hasTimeReference);
+                   
     debugPrint('🔍 Final intent result: $result');
     
     return result;
@@ -166,17 +186,40 @@ class ChatBrain extends RoomBrain {
     // TODO: Use NLP/LLM for better parsing
     
     try {
-      // Extract title (everything before time indicator)
       String? title;
       DateTime? startTime;
       String? location;
 
-      // Try to find title and location
-      final titleMatch = RegExp(r'(?:add|create|schedule|book)\s+(.+?)(?:\s+(?:at|on|tomorrow|tonight|for))', 
-        caseSensitive: false).firstMatch(query);
-      
+      // Extract title - capture event type + details (e.g., "meeting with the team")
+      final titlePattern = RegExp(
+        r'(?:add|create|schedule|book|put)\s+(?:an?\s+)?(?:(event|meeting|appt|appointment|lunch|dinner|call|interview)\s+)?(.+?)\s+(?:tonight|tomorrow|at\s+\d)',
+        caseSensitive: false,
+      );
+      final titleMatch = titlePattern.firstMatch(query);
       if (titleMatch != null) {
-        title = titleMatch.group(1)?.trim();
+        final eventType = titleMatch.group(1)?.trim(); // meeting, lunch, dinner, etc.
+        final details = titleMatch.group(2)?.trim(); // with the team, etc.
+        
+        // Combine event type + details
+        if (eventType != null && details != null) {
+          // Capitalize event type
+          final capitalizedType = eventType[0].toUpperCase() + eventType.substring(1);
+          title = '$capitalizedType $details';
+        } else if (details != null) {
+          title = details;  
+        } else if (eventType != null) {
+          title = eventType[0].toUpperCase() + eventType.substring(1);
+        }
+        
+        // Clean up title: remove "in [location]" if it got captured
+        title = title?.replaceAll(RegExp(r'\s+in\s+[a-zA-Z\s,]+$', caseSensitive: false), '');
+      }
+      
+      // Extract location
+      final locationPattern = RegExp(r'in\s+([a-zA-Z\s,]+?)(?:\s+(?:at|with|on|to|$))', caseSensitive: false);
+      final locationMatch = locationPattern.firstMatch(query);
+      if (locationMatch != null) {
+        location = locationMatch.group(1)?.trim();
       }
 
       // Try to find time
@@ -235,17 +278,11 @@ class ChatBrain extends RoomBrain {
             minute,
           );
           
-          debugPrint('🕐 Final parsed time: ${startTime.toString()}');
+          debugPrint('🕐 Final parsed time: ${startTime.toString()} (IsUTC: ${startTime.isUtc}, TZ: ${startTime.timeZoneName})');
           break;
         }
       }
 
-      // Try to find location
-      final locationMatch = RegExp(r'at\s+([A-Z][a-zA-Z\s]+?)(?:\s+(?:in|on|for|tomorrow|tonight))', 
-        caseSensitive: true).firstMatch(query);
-      if (locationMatch != null) {
-        location = locationMatch.group(1)?.trim();
-      }
 
       // Must have at least title and time
       if (title != null && startTime != null) {

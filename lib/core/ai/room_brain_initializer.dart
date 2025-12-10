@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:sable/core/ai/tool_registry.dart';
 import 'package:sable/core/ai/calendar_tools.dart';
 import 'package:sable/core/ai/memory_spine.dart';
+import 'package:sable/core/ai/room_brain/chat_brain.dart';
+import 'package:sable/core/ai/room_brain/journal_brain.dart';
+import 'package:sable/core/ai/room_brain/vital_balance_brain.dart';
+import 'package:sable/core/ai/room_brain/settings_brain.dart';
 
 /// Initializes the Room Brain system
 /// Call this once during app startup
@@ -44,9 +48,9 @@ class RoomBrainInitializer {
       debugPrint('✅ Calendar tools registered');
 
       // TODO: Register more tools as we build them
-      // - Journal tools
-      // - Health tools
-      // - Settings tools
+      // - Journal tools (mood tracking, prompts)
+      // - Health tools (biometrics, goals)
+      // - Settings tools (toggle features, export)
 
       _initialized = true;
       debugPrint('🎉 Room Brain System ready!');
@@ -70,5 +74,37 @@ class RoomBrainInitializer {
       throw Exception('Room Brain System not initialized. Call initialize() first.');
     }
     return MemorySpine();
+  }
+  
+  /// Create a Chat Brain instance (for main chat tab)
+  static ChatBrain createChatBrain() {
+    return ChatBrain(
+      memorySpine: getMemorySpine(),
+      tools: getToolRegistry(),
+    );
+  }
+  
+  /// Create a Journal Brain instance (for journal tab)
+  static JournalBrain createJournalBrain() {
+    return JournalBrain(
+      memorySpine: getMemorySpine(),
+      tools: getToolRegistry(),
+    );
+  }
+  
+  /// Create a Vital Balance Brain instance (for vital balance tab)
+  static VitalBalanceBrain createVitalBalanceBrain() {
+    return VitalBalanceBrain(
+      memorySpine: getMemorySpine(),
+      tools: getToolRegistry(),
+    );
+  }
+  
+  /// Create a Settings Brain instance (for settings/more tabs)
+  static SettingsBrain createSettingsBrain() {
+    return SettingsBrain(
+      memorySpine: getMemorySpine(),
+      tools: getToolRegistry(),
+    );
   }
 }

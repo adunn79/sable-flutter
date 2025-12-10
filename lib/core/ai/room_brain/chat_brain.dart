@@ -222,12 +222,50 @@ class ChatBrain extends RoomBrain {
         location = locationMatch.group(1)?.trim();
       }
 
-      // Try to find time
-      // Pattern: "tomorrow at 7pm" or "tonight at 8" or "Friday at 2pm"
+      // STEP 1: Determine the DATE first (independent of time)
+      DateTime? baseDate;
+      final now = DateTime.now();
+      
+      // Check for day-of-week references (Sunday, Monday, etc.)
+      final dayOfWeekPattern = RegExp(
+        r'(this|next)?\s*(sunday|monday|tuesday|wednesday|thursday|friday|saturday)',
+        caseSensitive: false,
+      );
+      final dayMatch = dayOfWeekPattern.firstMatch(query.toLowerCase());
+      
+      if (dayMatch != null) {
+        final dayName = dayMatch.group(2)!;
+        final modifier = dayMatch.group(1); // "this" or "next"
+        
+        // Map day names to weekday numbers (1=Monday, 7=Sunday)
+        final dayMap = {
+          'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4,
+          'friday': 5, 'saturday': 6, 'sunday': 7,
+        };
+        
+        final targetWeekday = dayMap[dayName]!;
+        final currentWeekday = now.weekday;
+        
+        // Calculate days until target
+        int daysUntil = targetWeekday - currentWeekday;
+        if (daysUntil <= 0 || modifier == 'next') {
+          daysUntil += 7; // Next week
+        }
+        
+        baseDate = now.add(Duration(days: daysUntil));
+        debugPrint('📅 Parsed "$dayName" as ${baseDate.year}-${baseDate.month}-${baseDate.day}');
+      } else if (query.toLowerCase().contains('tomorrow')) {
+        baseDate = now.add(const Duration(days: 1));
+        debugPrint('📅 Parsed "tomorrow" as ${baseDate.year}-${baseDate.month}-${baseDate.day}');
+      } else if (query.toLowerCase().contains('tonight')) {
+        baseDate = now;
+        debugPrint('📅 Parsed "tonight" as ${baseDate.year}-${baseDate.month}-${baseDate.day}');
+      }
+
+      // STEP 2: Try to find the TIME
       final timePatterns = [
-        RegExp(r'tomorrow\s+at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?', caseSensitive: false),
-        RegExp(r'tonight\s+at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?', caseSensitive: false),
         RegExp(r'at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?', caseSensitive: false),
+        RegExp(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)', caseSensitive: false),
       ];
 
       for (final pattern in timePatterns) {
@@ -243,26 +281,13 @@ class ChatBrain extends RoomBrain {
             if (ampm == 'am' && hour == 12) hour = 0;
           } else {
             // Default: if hour < 8, assume PM (dinner/evening time)
-            // BUT only if hour is reasonable dinner time (5-11)
             if (hour >= 5 && hour <= 11) {
               hour += 12; // Convert to PM
             }
           }
 
-          // Determine date
-          DateTime baseDate;
-          final now = DateTime.now();
-          
-          if (query.toLowerCase().contains('tomorrow')) {
-            // Tomorrow = current date + 1 day
-            baseDate = now.add(const Duration(days: 1));
-            debugPrint('📅 Parsed "tomorrow" as ${baseDate.year}-${baseDate.month}-${baseDate.day}');
-          } else if (query.toLowerCase().contains('tonight')) {
-            // Tonight = today
-            baseDate = now;
-            debugPrint('📅 Parsed "tonight" as ${baseDate.year}-${baseDate.month}-${baseDate.day}');
-          } else {
-            // Default to today if time hasn't passed, otherwise tomorrow
+          // Use the baseDate we determined earlier, or default to today
+          if (baseDate == null) {
             final candidateTime = DateTime(now.year, now.month, now.day, hour, minute);
             baseDate = candidateTime.isBefore(now) 
               ? now.add(const Duration(days: 1))

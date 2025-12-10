@@ -199,23 +199,32 @@ class ChatBrain extends RoomBrain {
             if (ampm == 'pm' && hour < 12) hour += 12;
             if (ampm == 'am' && hour == 12) hour = 0;
           } else {
-            // Default: if hour < 8, assume PM (dinner time)
-            if (hour < 8) hour += 12;
+            // Default: if hour < 8, assume PM (dinner/evening time)
+            // BUT only if hour is reasonable dinner time (5-11)
+            if (hour >= 5 && hour <= 11) {
+              hour += 12; // Convert to PM
+            }
           }
 
           // Determine date
           DateTime baseDate;
+          final now = DateTime.now();
+          
           if (query.toLowerCase().contains('tomorrow')) {
-            baseDate = DateTime.now().add(const Duration(days: 1));
+            // Tomorrow = current date + 1 day
+            baseDate = now.add(const Duration(days: 1));
+            debugPrint('📅 Parsed "tomorrow" as ${baseDate.year}-${baseDate.month}-${baseDate.day}');
           } else if (query.toLowerCase().contains('tonight')) {
-            baseDate = DateTime.now();
+            // Tonight = today
+            baseDate = now;
+            debugPrint('📅 Parsed "tonight" as ${baseDate.year}-${baseDate.month}-${baseDate.day}');
           } else {
             // Default to today if time hasn't passed, otherwise tomorrow
-            final now = DateTime.now();
             final candidateTime = DateTime(now.year, now.month, now.day, hour, minute);
             baseDate = candidateTime.isBefore(now) 
               ? now.add(const Duration(days: 1))
               : now;
+            debugPrint('📅 No explicit date, using ${baseDate.year}-${baseDate.month}-${baseDate.day}');
           }
 
           startTime = DateTime(
@@ -225,6 +234,8 @@ class ChatBrain extends RoomBrain {
             hour,
             minute,
           );
+          
+          debugPrint('🕐 Final parsed time: ${startTime.toString()}');
           break;
         }
       }

@@ -730,9 +730,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _sendMessage() async {
+    debugPrint('🚀🚀🚀 _sendMessage CALLED! 🚀🚀🚀');
     ref.read(feedbackServiceProvider).medium();
     debugPrint('🔘 Feedback triggered');
     final text = _controller.text.trim();
+    debugPrint('📝 Message text: "$text"');
     if (text.isEmpty) return;
 
     // Save user message to persistent memory (both old and new services)
@@ -756,15 +758,23 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
     // 🧠 ROOM BRAIN INTERCEPTION: Check if Chat Brain can handle this query
     // This prevents AI hallucinations by handling calendar/tasks BEFORE AI gets the query
+    debugPrint('🔍 INTERCEPT: Checking Chat Brain availability...');
+    debugPrint('🔍 _chatBrain is null? ${_chatBrain == null}');
+    debugPrint('🔍 _currentPersonality is null? ${_currentPersonality == null}');
+    
     if (_chatBrain != null && _currentPersonality != null) {
+      debugPrint('✅ Chat Brain available, proceeding with query: "$text"');
       try {
         final context = AgentContext(
           userId: _stateService?.userName ?? 'user',
           currentLocation: _stateService?.userCurrentLocation ?? _currentGpsLocation,
         );
         
+        debugPrint('🔍 Calling Chat Brain processQuery...');
         // Ask Chat Brain if it can handle this query
         final brainResponse = await _chatBrain!.processQuery(text, context);
+        
+        debugPrint('🔍 Brain response received. Requires tool execution? ${brainResponse.requiresToolExecution}');
         
         // If brain requires tool execution, it means it detected an intent (e.g., calendar creation)
         if (brainResponse.requiresToolExecution) {
@@ -795,10 +805,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           
           debugPrint('✅ Chat Brain handled query successfully');
           return; // EXIT EARLY - Brain handled it, no need for AI orchestrator
+        } else {
+          debugPrint('ℹ️ Chat Brain did not detect actionable intent, falling through to AI orchestrator');
         }
-      } catch (e) {
-        debugPrint('⚠️ Chat Brain error: $e - falling through to AI orchestrator');
+      } catch (e, stackTrace) {
+        debugPrint('⚠️ Chat Brain error: $e');
+        debugPrint('Stack trace: $stackTrace');
+        debugPrint('Falling through to AI orchestrator');
       }
+    } else {
+      debugPrint('⚠️ Chat Brain NOT available (_chatBrain: ${_chatBrain != null}, _personality: ${_currentPersonality != null})');
+      debugPrint('Skipping brain interception, going straight to AI orchestrator');
     }
 
     try {

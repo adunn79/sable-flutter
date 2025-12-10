@@ -43,10 +43,10 @@ Keep the facts the same, just change the tone to match your personality.
 ''';
 
     // Use fast model for tone harmonization
-    final harmonized = await orchestrator.routeRequest(
-      message: harmonizationPrompt,
-      taskType: AiTaskType.personality,
-      systemContext: systemPromptSuffix,
+    final harmonized = await orchestrator.orchestratedRequest(
+      prompt: harmonizationPrompt,
+      userContext: '',
+      archetypeName: name,
     );
 
     return harmonized;

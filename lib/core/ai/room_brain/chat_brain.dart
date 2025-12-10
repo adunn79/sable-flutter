@@ -36,15 +36,23 @@ class ChatBrain extends RoomBrain {
   @override
   Future<BrainResponse> processQuery(String query, AgentContext context) async {
     final lowerQuery = query.toLowerCase();
+    
+    debugPrint('🧠 Chat Brain processQuery called with: "$query"');
+    debugPrint('🧠 Lowercase: "$lowerQuery"');
 
     // Intent detection - Calendar related?
-    if (_isCalendarCreateIntent(lowerQuery)) {
+    final isCalendarIntent = _isCalendarCreateIntent(lowerQuery);
+    debugPrint('🧠 Is calendar intent? $isCalendarIntent');
+    
+    if (isCalendarIntent) {
       debugPrint('🗓️ Chat Brain: Calendar creation intent detected');
       
       // Parse calendar details from query
       final calendarParams = await _parseCalendarIntent(query);
+      debugPrint('🗓️ Parsed params: $calendarParams');
       
       if (calendarParams != null) {
+        debugPrint('🎯 Returning BrainResponse with tool call!');
         return BrainResponse.withToolCall(
           toolName: 'create_calendar_event',
           params: calendarParams,
@@ -120,6 +128,8 @@ class ChatBrain extends RoomBrain {
     final hasCreateWord = createKeywords.any((kw) => query.contains(kw));
     final hasEventWord = eventIndicators.any((kw) => query.contains(kw));
     
+    debugPrint('🔍 hasCreateWord: $hasCreateWord, hasEventWord: $hasEventWord');
+    
     // OR if it mentions time/date (strong signal)
     final hasTimeReference = query.contains('tomorrow') ||
                             query.contains('today') ||
@@ -130,7 +140,11 @@ class ChatBrain extends RoomBrain {
                             query.contains('on tuesday') ||
                             query.contains('next week');
     
-    return (hasCreateWord && hasEventWord) || (hasCreateWord && hasTimeReference);
+    debugPrint('🔍 hasTimeReference: $hasTimeReference');
+    final result = (hasCreateWord && hasEventWord) || (hasCreateWord && hasTimeReference);
+    debugPrint('🔍 Final intent result: $result');
+    
+    return result;
   }
 
   bool _isCalendarUpdateIntent(String query) {

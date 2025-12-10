@@ -775,7 +775,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           );
           
           if (mounted) {
-            setState(() {\n              _messages.add({'message': _sanitizeResponse(response), 'isUser': false});
+            setState(() {
+              _messages.add({'message': _sanitizeResponse(response), 'isUser': false});
               _isTyping = false;
             });
             _scrollToBottom();

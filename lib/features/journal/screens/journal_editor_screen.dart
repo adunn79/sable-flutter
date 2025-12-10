@@ -10,6 +10,9 @@ import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
 import '../services/music_service.dart';
 import '../widgets/avatar_journal_overlay.dart';
+import '../widgets/template_picker_sheet.dart';
+import '../widgets/prompt_picker_sheet.dart';
+import '../models/journal_template.dart';
 import 'package:sable/core/voice/voice_service.dart';
 import 'package:sable/core/emotion/location_service.dart';
 import 'package:sable/core/emotion/weather_service.dart';
@@ -701,6 +704,92 @@ No hashtags, no explanations, just the tags.''',
     );
   }
   
+  /// Show template picker and apply selected template
+  void _showTemplatePicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => TemplatePickerSheet(
+        onTemplateSelected: _applyTemplate,
+      ),
+    );
+  }
+  
+  /// Apply template to editor by inserting formatted fields
+  void _applyTemplate(JournalTemplate template) {
+    // Clear current content if empty, otherwise add template after existing content
+    final currentText = _quillController.document.toPlainText().trim();
+    final startIndex = currentText.isEmpty ? 0 : _quillController.document.length - 1;
+    
+    // Build template text
+    final buffer = StringBuffer();
+    if (currentText.isNotEmpty) {
+      buffer.writeln('\n\n'); // Space after existing content
+    }
+    
+    // Add template name as header
+    buffer.writeln('📋 ${template.name}\n');
+    
+    // Add each field with placeholder
+    for (final field in template.fields) {
+      buffer.writeln('${field.label}');
+      if (field.placeholder.isNotEmpty) {
+        buffer.writeln('${field.placeholder}\n');
+      } else {
+        buffer.writeln();
+      }
+    }
+    
+    // Insert into editor
+    _quillController.document.insert(startIndex, buffer.toString());
+    _quillController.updateSelection(
+      TextSelection.collapsed(offset: startIndex + buffer.length),
+      ChangeSource.local,
+    );
+    
+    // Focus editor
+    _focusNode.requestFocus();
+    
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('✨ ${template.name} applied!'),
+        duration: const Duration(seconds: 2),
+        backgroundColor: const Color(0xFF5DD9C1),
+      ),
+    );
+  }
+  
+  /// Show prompt picker and insert selected prompt
+  void _showPromptPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => PromptPickerSheet(
+        onPromptSelected: (prompt) {
+          // Insert prompt at cursor position
+          final index = _quillController.selection.baseOffset;
+          _quillController.document.insert(index, '\n$prompt\n\n');
+          _quillController.updateSelection(
+            TextSelection.collapsed(offset: index + prompt.length + 3),
+            ChangeSource.local,
+          );
+          _focusNode.requestFocus();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✨ Prompt added!'),
+              duration: Duration(seconds: 2),
+              backgroundColor: Color(0xFFB8A9D9),
+            ),
+          );
+        },
+      ),
+    );
+  }
+  
   Widget _buildMoodOption(int score, String emoji, String label) {
     final isSelected = _moodScore == score;
     return GestureDetector(
@@ -909,6 +998,18 @@ No hashtags, no explanations, just the tags.''',
         ),
         centerTitle: true,
         actions: [
+          // Template button
+          IconButton(
+            icon: const Icon(LucideIcons.layoutTemplate, color: Color(0xFF5DD9C1)),
+            tooltip: 'Use Template',
+            onPressed: _showTemplatePicker,
+          ),
+          // Prompt button
+          IconButton(
+            icon: const Icon(LucideIcons.sparkles, color: Color(0xFFB8A9D9)),
+            tooltip: 'Get Writing Prompt',
+            onPressed: _showPromptPicker,
+          ),
           // Privacy toggle (eye icon)
           if (!isVault) // Hide toggle for vault (always private)
             IconButton(

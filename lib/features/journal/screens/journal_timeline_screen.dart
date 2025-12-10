@@ -9,6 +9,9 @@ import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
 import '../widgets/avatar_journal_overlay.dart';
 import 'journal_editor_screen.dart';
+import 'insights_dashboard_screen.dart';
+import 'gratitude_mode_screen.dart';
+import 'voice_journaling_screen.dart';
 import 'journal_calendar_screen.dart';
 
 // Soothing color palette (matching Vital Balance)
@@ -333,6 +336,18 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                           ),
                         ),
                         const Spacer(),
+                        // Insights button
+                        IconButton(
+                          icon: const Icon(LucideIcons.barChart3, color: Color(0xFFB8A9D9), size: 20),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const InsightsDashboardScreen()),
+                            );
+                          },
+                          tooltip: 'AI Insights',
+                        ),
+                        const SizedBox(width: 8),
                         // Streak badge (compact)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -504,7 +519,6 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
                     ],
                   ),
                 ),
-              
               // "On This Day" memories card
               if (_onThisDayEntries.isNotEmpty)
                 Container(

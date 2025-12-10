@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:sable/src/config/app_config.dart';
 
@@ -11,40 +12,37 @@ class WeatherService {
   /// Returns a WeatherCondition or null if unable to fetch
   static Future<WeatherCondition?> getWeather(String location) async {
     try {
-      // First, we need coordinates for the location name
-      // We can use the LocationService's geocoding if we had it exposed, 
-      // but for now let's assume 'location' might be a city name.
-      // Open-Meteo requires lat/long.
+      debugPrint('🌤️ WeatherService: Fetching weather for "$location"');
       
-      // Since we don't have a direct city-to-latlong here without another API call,
-      // and we want to be robust, let's rely on the fact that we usually get
-      // coordinates from the device GPS in LocationService.
-      
-      // However, this method takes a String location name.
-      // To fix this properly without adding more API keys, we should
-      // ideally pass lat/long to this service.
-      
-      // For now, let's try to geocode the city name using a free geocoding API
-      // or just fail gracefully if we can't.
-      
-      // BETTER APPROACH: Use the device's current position directly if available.
-      // But this method signature takes a String.
-      
-      // Let's use the Open-Meteo Geocoding API to get coords for the city name
+      // Use the Open-Meteo Geocoding API to get coords for the city name
       final geoUrl = Uri.https(
         'geocoding-api.open-meteo.com',
         '/v1/search',
         {'name': location, 'count': '1', 'language': 'en', 'format': 'json'},
       );
       
-      final geoResponse = await http.get(geoUrl);
-      if (geoResponse.statusCode != 200) return null;
+      final geoResponse = await http.get(geoUrl).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('❌ WeatherService: Geocoding timeout for "$location"');
+          return http.Response('{"error": "timeout"}', 408);
+        },
+      );
+      
+      if (geoResponse.statusCode != 200) {
+        debugPrint('❌ WeatherService: Geocoding failed with ${geoResponse.statusCode}');
+        return null;
+      }
       
       final geoData = jsonDecode(geoResponse.body);
-      if (geoData['results'] == null || (geoData['results'] as List).isEmpty) return null;
+      if (geoData['results'] == null || (geoData['results'] as List).isEmpty) {
+        debugPrint('❌ WeatherService: No geocoding results for "$location"');
+        return null;
+      }
       
       final lat = geoData['results'][0]['latitude'];
       final lon = geoData['results'][0]['longitude'];
+      debugPrint('🌤️ WeatherService: Geocoded to $lat, $lon');
       
       // Now fetch weather with daily forecast for high/low
       final url = Uri.https(
@@ -60,7 +58,13 @@ class WeatherService {
         },
       );
 
-      final response = await http.get(url);
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('❌ WeatherService: Weather API timeout');
+          return http.Response('{"error": "timeout"}', 408);
+        },
+      );
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -79,6 +83,8 @@ class WeatherService {
           tempLow = (daily['temperature_2m_min'][0] as num?)?.toDouble();
         }
         
+        debugPrint('✅ WeatherService: Got weather - ${temp.round()}°F, ${_getWmoDescription(code)}');
+        
         return WeatherCondition(
           condition: _mapWmoCode(code),
           temperature: temp,
@@ -89,8 +95,10 @@ class WeatherService {
         );
       }
       
+      debugPrint('❌ WeatherService: Weather API returned ${response.statusCode}');
       return null;
     } catch (e) {
+      debugPrint('❌ WeatherService: Exception - $e');
       return null;
     }
   }

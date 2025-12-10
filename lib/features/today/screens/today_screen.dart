@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,8 @@ import 'package:sable/core/calendar/sports_schedule_service.dart';
 import 'package:sable/core/calendar/weather_history_service.dart';
 import 'package:sable/core/contacts/birthday_service.dart';
 import 'package:sable/core/reminders/reminders_service.dart' as reminders_svc;
+import 'package:sable/core/entertainment/tv_entertainment_service.dart';
+import 'package:sable/core/notes/daily_note_service.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/emotion/location_service.dart';
 import 'package:sable/src/config/app_config.dart';
@@ -23,6 +26,7 @@ import 'package:sable/core/contacts/contact_picker_sheet.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sable/features/today/widgets/comprehensive_event_dialog.dart';
 
 class TodayScreen extends StatefulWidget {
   const TodayScreen({super.key});
@@ -59,6 +63,10 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
   // New Vibe Layers
   List<Event> _travelEvents = [];
   String? _headline;
+  List<EntertainmentEvent> _todayEntertainment = [];
+  List<EntertainmentEvent> _upcomingEntertainment = [];
+  String _dailyNote = '';
+  final TextEditingController _noteController = TextEditingController(); // For daily note editing
 
   @override
   void initState() {
@@ -196,6 +204,37 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
       if (mounted) setState(() => _headline = headline);
     } catch (e) {
       debugPrint('❌ Error loading headline: $e');
+    }
+    
+    // Load Entertainment
+    try {
+      // For specific date
+      final entertainment = await TvEntertainmentService.getReleasesForDate(_selectedDate, subscribedOnly: true);
+      
+      // For upcoming (only needed if on Today's date technically, but fine to fetch)
+      final upcomingEnt = await TvEntertainmentService.getUpcomingReleases(subscribedOnly: true);
+      
+      if (mounted) {
+        setState(() {
+          _todayEntertainment = entertainment;
+          _upcomingEntertainment = upcomingEnt;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading entertainment: $e');
+    }
+
+    // Load Daily Note
+    try {
+      final note = await DailyNoteService.getNote(_selectedDate);
+      if (mounted) {
+        setState(() {
+          _dailyNote = note ?? '';
+          _noteController.text = _dailyNote;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading daily note: $e');
     }
     
     // Auto-record today's weather
@@ -376,7 +415,12 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const _AgenticScheduleChat(),
+      builder: (context) => _AgenticScheduleChat(
+        onEventCreated: () {
+          // Refresh the calendar after event creation
+          _loadEvents();
+        },
+      ),
     );
   }
   Widget _buildQuickStat(IconData icon, String label, String value) {
@@ -699,6 +743,14 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // AI Context Summary
+          _buildAIContextSummary(),
+          const SizedBox(height: 16),
+          
+          // Weather Card
+          _buildWeatherCard(),
+          const SizedBox(height: 16),
+          
           // Moon Phase Card
           _buildVibeCard(
             icon: _moonEmoji,
@@ -706,6 +758,10 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
             subtitle: MoonPhaseService.getPhaseDescription(_moonPhase),
             color: AelianaColors.plasmaCyan,
           ),
+          const SizedBox(height: 16),
+          
+          // Daily Note Card
+          _buildDailyNoteCard(),
           const SizedBox(height: 16),
           
           // Headline Card
@@ -716,6 +772,18 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
               subtitle: _headline!,
               color: AelianaColors.plasmaCyan,
             ),
+            const SizedBox(height: 16),
+          ],
+          
+          // TV & Entertainment
+          if (_todayEntertainment.isNotEmpty) ...[
+            _buildSectionHeader('📺 Today\'s Releases', AelianaColors.hyperGold),
+            ..._todayEntertainment.map((e) => _buildEntertainmentCard(e)),
+            const SizedBox(height: 16),
+          ],
+           if (_upcomingEntertainment.where((e) => !_todayEntertainment.any((t) => t.id == e.id)).isNotEmpty) ...[
+            _buildSectionHeader('🍿 Upcoming Watchlist', AelianaColors.ghost),
+            ..._upcomingEntertainment.where((e) => !_todayEntertainment.any((t) => t.id == e.id)).take(5).map((e) => _buildEntertainmentCard(e)),
             const SizedBox(height: 16),
           ],
           
@@ -801,6 +869,7 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
             children: [
               _buildSubscribeChip('🎄 Holidays', () => _showHolidaySubscriptions()),
               _buildSubscribeChip('🏈 Sports', () => _showSportsSubscriptions()),
+              _buildSubscribeChip('🎬 Entertainment', () => _showEntertainmentSubscriptions()),
             ],
           ),
         ],
@@ -1514,6 +1583,189 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
       ),
     );
   }
+
+  Widget _buildDailyNoteCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AelianaColors.carbon,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('📝', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Text(
+                'Daily Note',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+             padding: const EdgeInsets.symmetric(horizontal: 12),
+             decoration: BoxDecoration(
+               color: Colors.black26, 
+               borderRadius: BorderRadius.circular(12),
+             ),
+             child: TextField(
+               controller: _noteController,
+               maxLines: 4,
+               minLines: 2,
+               style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+               decoration: InputDecoration(
+                 border: InputBorder.none,
+                 hintText: 'Capture a thought, mood, or memory for today...',
+                 hintStyle: GoogleFonts.inter(color: Colors.white24),
+               ),
+               onChanged: (value) => _saveDailyNote(value),
+             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _saveDailyNote(String content) {
+    DailyNoteService.saveNote(_selectedDate, content);
+  }
+
+  Widget _buildEntertainmentCard(EntertainmentEvent event) {
+    final isReleased = event.releaseDate.isBefore(DateTime.now());
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AelianaColors.carbon,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AelianaColors.plasmaCyan.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(event.emoji, style: const TextStyle(fontSize: 20)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.title,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '${event.network ?? event.type} • ${isReleased ? 'Released' : DateFormat('MMM d').format(event.releaseDate)}',
+                  style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          if (!isReleased)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AelianaColors.obsidian,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AelianaColors.ghost.withOpacity(0.3)),
+              ),
+              child: Text(
+                'Soon',
+                style: GoogleFonts.inter(fontSize: 10, color: AelianaColors.ghost),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showEntertainmentSubscriptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AelianaColors.carbon,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => FutureBuilder<List<String>>(
+        future: TvEntertainmentService.getSubscribedIds(),
+        builder: (context, snapshot) {
+          final subscribed = snapshot.data ?? [];
+          return DraggableScrollableSheet(
+            initialChildSize: 0.6,
+            maxChildSize: 0.9,
+            minChildSize: 0.4,
+            expand: false,
+            builder: (context, scrollController) => Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Text(
+                    'TV & Movies',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                     'Follow releases for what you love.',
+                     style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      children: TvEntertainmentService.getCatalog().map((item) => ListTile(
+                        leading: Text(item.emoji, style: const TextStyle(fontSize: 24)),
+                        title: Text(item.title, style: GoogleFonts.inter(color: Colors.white)),
+                        subtitle: Text('${item.type} • ${item.network ?? "TBA"}', style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12)),
+                        trailing: Switch(
+                          value: subscribed.contains(item.id),
+                          activeColor: AelianaColors.hyperGold,
+                          onChanged: (value) async {
+                            if (value) {
+                              await TvEntertainmentService.subscribe(item.id);
+                            } else {
+                              await TvEntertainmentService.unsubscribe(item.id);
+                            }
+                            Navigator.pop(context);
+                            _loadVibeLayers();
+                          },
+                        ),
+                      )).toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
   
   Widget _buildDetailRow(IconData icon, String text) {
     return Row(
@@ -1532,19 +1784,15 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
   }
 
   void _showCreateEventDialog({Event? existingEvent}) {
-    // Ensure existingEvent handling (for edit mode)
-    // If Editing, we need existing IDs
-    
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => _CreateEventDialog(
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ComprehensiveEventDialog(
         initialDate: _selectedDate,
         existingEvent: existingEvent,
         onEventCreated: () {
           _loadEvents();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(existingEvent == null ? 'Event created!' : 'Event updated!')),
-          );
         },
       ),
     );
@@ -1834,6 +2082,139 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
       ),
     );
   }
+
+  Widget _buildAIContextSummary() {
+    //Generate AI-powered vibe summary
+    final eventCount = _todayEvents.length;
+    final birthdayCount = _todayBirthdays.length;
+    final sportsCount = _todaySports.length;
+    final reminderCount = _reminders.where((r) => !r.isCompleted && r.dueDate != null && _isSameDay(r.dueDate!, DateTime.now())).length;
+    
+    String vibe = 'Balanced';
+    IconData vibeIcon = LucideIcons.sun;
+    Color vibeColor = AelianaColors.plasmaCyan;
+    
+    if (eventCount > 4 || reminderCount > 5) {
+      vibe = 'Busy';
+      vibeIcon = LucideIcons.zap;
+      vibeColor = Colors.orange;
+    } else if (eventCount == 0 && reminderCount == 0) {
+      vibe = 'Chill';
+      vibeIcon = LucideIcons.coffee;
+      vibeColor = AelianaColors.hyperGold;
+    } else if (birthdayCount > 0 || sportsCount > 0) {
+      vibe = 'Eventful';
+      vibeIcon = LucideIcons.sparkles;
+      vibeColor = AelianaColors.plasmaCyan;
+    }
+    
+    final summaryParts = <String>[];
+    if (eventCount > 0) summaryParts.add('$eventCount event${eventCount > 1 ? 's' : ''}');
+    if (reminderCount > 0) summaryParts.add('$reminderCount task${reminderCount > 1 ? 's' : ''}');
+    if (birthdayCount > 0) summaryParts.add('${birthdayCount == 1 ? '1 birthday' : '$birthdayCount birthdays'}');
+    if (sportsCount > 0) summaryParts.add('${_todaySports.first.team} game');
+    
+    final summaryText = summaryParts.isNotEmpty 
+        ? summaryParts.join(', ') + '. Moon: ${MoonPhaseService.getPhaseName(_moonPhase)}.'
+        : 'Nothing scheduled. Moon: ${MoonPhaseService.getPhaseName(_moonPhase)}.';
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [vibeColor.withOpacity(0.2), vibeColor.withOpacity(0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: vibeColor.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(vibeIcon, color: vibeColor, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                'Today\'s Vibe: $vibe',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            summaryText,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.white70,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeatherCard() {
+    // Simple weather card - you can enhance this with actual weather data
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AelianaColors.carbon,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          const Text('☀️', style: TextStyle(fontSize: 48)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _currentLocation ?? 'San Francisco',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Sunny, 72°F',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AelianaColors.ghost,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AelianaColors.plasmaCyan.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '👕 Light layers recommended',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AelianaColors.plasmaCyan,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _CreateEventDialog extends StatefulWidget {
@@ -1854,9 +2235,12 @@ class _CreateEventDialog extends StatefulWidget {
 class _CreateEventDialogState extends State<_CreateEventDialog> {
   late TextEditingController _titleController;
   late TextEditingController _locationController;
+  late TextEditingController _descriptionController;
   late DateTime _eventDate;
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
+  bool _isAllDay = false;
+  int? _alertMinutesBefore;
   List<Contact> _invitees = [];
 
   @override
@@ -1864,7 +2248,9 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
     super.initState();
     _titleController = TextEditingController(text: widget.existingEvent?.title ?? '');
     _locationController = TextEditingController(text: widget.existingEvent?.location ?? '');
+    _descriptionController = TextEditingController(text: widget.existingEvent?.description ?? '');
     _eventDate = widget.existingEvent?.start ?? widget.initialDate;
+    _isAllDay = widget.existingEvent?.allDay ?? false;
     _startTime = TimeOfDay.fromDateTime(widget.existingEvent?.start ?? DateTime(widget.initialDate.year, widget.initialDate.month, widget.initialDate.day, 9, 0));
     _endTime = TimeOfDay.fromDateTime(widget.existingEvent?.end ?? DateTime(widget.initialDate.year, widget.initialDate.month, widget.initialDate.day, 10, 0));
   }
@@ -1873,6 +2259,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
   void dispose() {
     _titleController.dispose();
     _locationController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -1924,34 +2311,85 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
             ],
           ),
           const SizedBox(height: 20),
-          TextField(
-            controller: _titleController,
-            style: GoogleFonts.inter(color: Colors.white),
-            decoration: InputDecoration(
-              labelText: 'Event Title',
-              labelStyle: const TextStyle(color: Colors.white54),
-              prefixIcon: const Icon(LucideIcons.edit3, color: Colors.white54),
-              filled: true,
-              fillColor: AelianaColors.obsidian,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+          Material(
+            color: Colors.transparent,
+            child: TextField(
+              controller: _titleController,
+              style: GoogleFonts.inter(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Event Title',
+                labelStyle: const TextStyle(color: Colors.white54),
+                prefixIcon: const Icon(LucideIcons.edit3, color: Colors.white54),
+                filled: true,
+                fillColor: AelianaColors.obsidian,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: _locationController,
-            style: GoogleFonts.inter(color: Colors.white),
-            decoration: InputDecoration(
-              labelText: 'Location (optional)',
-              labelStyle: const TextStyle(color: Colors.white54),
-              prefixIcon: const Icon(LucideIcons.mapPin, color: Colors.white54),
-              filled: true,
-              fillColor: AelianaColors.obsidian,
-              border: OutlineInputBorder(
+          Material(
+            color: Colors.transparent,
+            child: TextField(
+              controller: _locationController,
+              style: GoogleFonts.inter(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Location (optional)',
+                labelStyle: const TextStyle(color: Colors.white54),
+                prefixIcon: const Icon(LucideIcons.mapPin, color: Colors.white54),
+                filled: true,
+                fillColor: AelianaColors.obsidian,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Date picker
+          GestureDetector(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _eventDate,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2030),
+                builder: (context, child) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: ColorScheme.dark(
+                        primary: AelianaColors.hyperGold,
+                        onPrimary: Colors.black,
+                        surface: AelianaColors.carbon,
+                        onSurface: Colors.white,
+                      ),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+              if (picked != null) {
+                setState(() => _eventDate = picked);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AelianaColors.obsidian,
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+              ),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.calendar, color: Colors.white54, size: 18),
+                  const SizedBox(width: 12),
+                  Text(
+                    DateFormat('EEEE, MMMM d, y').format(_eventDate),
+                    style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
+                  ),
+                ],
               ),
             ),
           ),
@@ -2120,7 +2558,9 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
 }
 
 class _AgenticScheduleChat extends ConsumerStatefulWidget {
-  const _AgenticScheduleChat();
+  final VoidCallback? onEventCreated;
+  
+  const _AgenticScheduleChat({this.onEventCreated});
 
   @override
   ConsumerState<_AgenticScheduleChat> createState() => _AgenticScheduleChatState();
@@ -2167,12 +2607,137 @@ class _AgenticScheduleChatState extends ConsumerState<_AgenticScheduleChat> {
     try {
       final orchestrator = ref.read(modelOrchestratorProvider.notifier);
       final calendarSummary = await CalendarService.getCalendarSummary();
-      final contextPayload = "You are a Calendar Agent.\nUser Request: $text\n\nCurrent Schedule:\n$calendarSummary";
+      
+      // Step 1: Ask AI to extract event details if this looks like an event creation request
+      final lowerText = text.toLowerCase();
+      final isEventRequest = lowerText.contains('schedule') || 
+                             lowerText.contains('create') ||
+                             lowerText.contains('add') ||
+                             lowerText.contains('remind') ||
+                             lowerText.contains('meeting') ||
+                             lowerText.contains('appointment') ||
+                             lowerText.contains('drive') ||
+                             lowerText.contains('trip') ||
+                             lowerText.contains('event') ||
+                             lowerText.contains('tomorrow') ||
+                             lowerText.contains('at ') && (lowerText.contains('am') || lowerText.contains('pm'));
+      
+      if (isEventRequest) {
+        // Use AI to extract event details
+        final now = DateTime.now();
+        final extractionPrompt = '''
+Extract event details from this user request. Today is ${DateFormat('EEEE, MMMM d, yyyy').format(now)}.
+
+User Request: "$text"
+
+Return ONLY valid JSON in this exact format (no explanation):
+{
+  "title": "Event title",
+  "description": "Optional description or null",
+  "date": "YYYY-MM-DD",
+  "time": "HH:MM" (24-hour format),
+  "duration_hours": 1,
+  "location": "Location or null"
+}
+
+If you cannot extract a valid event, return: {"error": "reason"}
+''';
+
+        final extractionResponse = await orchestrator.routeRequest(
+          prompt: extractionPrompt,
+          taskType: AiTaskType.agentic,
+          systemPrompt: 'You are an event extraction assistant. Only return valid JSON.',
+        ).timeout(const Duration(seconds: 15), onTimeout: () => '{"error": "timeout"}');
+        
+        debugPrint('📅 Extraction response: $extractionResponse');
+        
+        // Parse the JSON
+        try {
+          final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(extractionResponse);
+          if (jsonMatch != null) {
+            final eventData = jsonDecode(jsonMatch.group(0)!);
+            
+            if (eventData['error'] == null && eventData['title'] != null) {
+              // Parse date and time
+              final dateStr = eventData['date'] as String;
+              final timeStr = eventData['time'] as String?;
+              
+              final dateParts = dateStr.split('-');
+              final year = int.parse(dateParts[0]);
+              final month = int.parse(dateParts[1]);
+              final day = int.parse(dateParts[2]);
+              
+              int hour = 10; // Default to 10 AM
+              int minute = 0;
+              if (timeStr != null && timeStr.contains(':')) {
+                final timeParts = timeStr.split(':');
+                hour = int.parse(timeParts[0]);
+                minute = int.parse(timeParts[1]);
+              }
+              
+              final startTime = DateTime(year, month, day, hour, minute);
+              final durationHours = (eventData['duration_hours'] as num?)?.toDouble() ?? 1.0;
+              final endTime = startTime.add(Duration(hours: durationHours.toInt()));
+              
+              // Actually create the event
+              final createdEvent = await CalendarService.createEvent(
+                title: eventData['title'] as String,
+                description: eventData['description'] as String?,
+                location: eventData['location'] as String?,
+                start: startTime,
+                end: endTime,
+              );
+              
+              if (createdEvent != null) {
+                final formattedDate = DateFormat('EEEE, MMMM d').format(startTime);
+                final formattedTime = DateFormat('h:mm a').format(startTime);
+                
+                // Trigger parent calendar refresh
+                widget.onEventCreated?.call();
+                
+                if (mounted) {
+                  setState(() {
+                    _messages.add({
+                      'text': "Done! I've added \"${eventData['title']}\" to your calendar for $formattedDate at $formattedTime. ✅",
+                      'isUser': false
+                    });
+                    _isTyping = false;
+                  });
+                  _scrollToBottom();
+                }
+                return; // Success!
+              } else {
+                // Calendar permission might be missing
+                if (mounted) {
+                  setState(() {
+                    _messages.add({
+                      'text': "I understood your request but couldn't create the event. Please make sure calendar access is enabled in Settings.",
+                      'isUser': false
+                    });
+                    _isTyping = false;
+                  });
+                  _scrollToBottom();
+                }
+                return;
+              }
+            }
+          }
+        } catch (parseError) {
+          debugPrint('❌ Event parsing error: $parseError');
+          // Fall through to regular chat response
+        }
+      }
+      
+      // Fallback: Regular conversational response
+      final contextPayload = "You are a Calendar Agent. Help the user manage their schedule. If they want to create an event, ask for details.\nUser Request: $text\n\nCurrent Schedule:\n$calendarSummary";
       
       final response = await orchestrator.orchestratedRequest(
         prompt: text,
         userContext: contextPayload,
         archetypeName: 'Sable', 
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => "I'm having trouble connecting right now. Please try again.",
       );
 
       if (mounted) {
@@ -2183,9 +2748,10 @@ class _AgenticScheduleChatState extends ConsumerState<_AgenticScheduleChat> {
         _scrollToBottom();
       }
     } catch (e) {
+      debugPrint('❌ Schedule Agent error: $e');
       if (mounted) {
         setState(() {
-          _messages.add({'text': "Error: $e", 'isUser': false});
+          _messages.add({'text': "Sorry, I hit a snag: ${e.toString().split('\n').first}", 'isUser': false});
           _isTyping = false;
         });
       }
@@ -2253,18 +2819,21 @@ class _AgenticScheduleChatState extends ConsumerState<_AgenticScheduleChat> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Type...',
-                      hintStyle: const TextStyle(color: Colors.white30),
-                      filled: true,
-                      fillColor: Colors.black26,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: TextField(
+                      controller: _controller,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Type...',
+                        hintStyle: const TextStyle(color: Colors.white30),
+                        filled: true,
+                        fillColor: Colors.black26,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      onSubmitted: (_) => _handleSubmitted(),
                     ),
-                    onSubmitted: (_) => _handleSubmitted(),
                   ),
                 ),
                 const SizedBox(width: 8),

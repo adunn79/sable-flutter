@@ -116,7 +116,7 @@ class CalendarService {
     }
   }
   
-  /// Create a new calendar event with optional invitees
+  /// Create a new calendar event with optional invitees, recurrence, and reminders
   static Future<Event?> createEvent({
     required String title,
     String? description,
@@ -125,6 +125,10 @@ class CalendarService {
     required DateTime end,
     bool allDay = false,
     List<Attendee>? attendees,
+    RecurrenceRule? recurrenceRule,
+    List<Reminder>? reminders,
+    String? url,
+    Availability? availability,
   }) async {
     try {
       if (!await hasPermission()) {
@@ -150,7 +154,15 @@ class CalendarService {
         end: tz.TZDateTime.from(end, tz.local),
         allDay: allDay,
         attendees: attendees,
+        recurrenceRule: recurrenceRule,
+        reminders: reminders,
+        url: url != null ? Uri.parse(url) : null,
       );
+      
+      // Set availability if provided (it's not nullable in the Event constructor)
+      if (availability != null) {
+        event.availability = availability;
+      }
       
       final createResult = await _deviceCalendarPlugin.createOrUpdateEvent(event);
       

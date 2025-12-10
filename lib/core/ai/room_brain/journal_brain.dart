@@ -127,7 +127,7 @@ class JournalBrain extends RoomBrain {
     if (moodScore >= 3.5) return 'good and content';
     if (moodScore >= 2.5) return 'balanced and steady';
     if (moodScore >= 2.0) return 'a bit low, but managing';
-    return 'challenging, but you're reflecting';
+    return 'challenging, but you are reflecting';
   }
 
   String _getJournalPrompt() {

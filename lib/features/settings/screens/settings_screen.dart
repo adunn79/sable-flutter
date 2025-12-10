@@ -713,45 +713,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                    onTap: _showNeuralLinkDiagnostics,
                  ),
                ],
-             ),
+              ),
 
-              // 5. Legal & Support
-              SettingsSection(
-                title: 'Legal & Support',
-                children: [
-                   SettingsTile(
-                     icon: LucideIcons.shieldCheck, 
-                     title: 'Privacy Policy',
-                     onTap: () {
-                        // Launch Privacy Policy
-                        // url_launcher would be ideal, but for now we'll push to a viewer or use a specific route
-                        context.push('/legal/privacy');
-                     },
-                   ),
-                   SettingsTile(
-                     icon: LucideIcons.fileText, 
-                     title: 'Terms of Service',
-                     onTap: () => context.push('/legal/terms'),
-                   ),
-                   SettingsTile(
-                     icon: LucideIcons.trash2,
-                     title: 'Delete Account',
-                     isDestructive: true,
-                     onTap: () => _confirmDeleteAccount(),
-                   ),
-                ],
-              ),
-              
-              const SizedBox(height: 40),
-              
-              Center(
-                child: Text(
-                  'AELIANA v0.9.5 (Build 100)',
-                  style: GoogleFonts.spaceGrotesk(color: Colors.white24, fontSize: 12),
-                ),
-              ),
-              const SizedBox(height: 20),
-             
              // Personality Tuning
               Padding(
                padding: const EdgeInsets.only(left: 16, top: 24, bottom: 8),
@@ -1912,16 +1875,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                    },
                  ),
                ],
-             ),
-             
-             // Version
-             const SizedBox(height: 32),
-             Center(
-               child: Text(
-                 'Sable v1.0.0 (Build 142)',
-                 style: GoogleFonts.inter(color: Colors.white24, fontSize: 12),
-               ),
-             ),
+              ),
+              
+              // Legal & Support (at bottom)
+              SettingsSection(
+                title: 'Legal & Support',
+                children: [
+                   SettingsTile(
+                     icon: LucideIcons.shieldCheck, 
+                     title: 'Privacy Policy',
+                     onTap: () => context.push('/legal/privacy'),
+                   ),
+                   SettingsTile(
+                     icon: LucideIcons.fileText, 
+                     title: 'Terms of Service',
+                     onTap: () => context.push('/legal/terms'),
+                   ),
+                ],
+              ),
+              
+              // Version
+              const SizedBox(height: 32),
+              Center(
+                child: Text(
+                  'AELIANA v1.0.0 (Build 142)',
+                  style: GoogleFonts.inter(color: Colors.white24, fontSize: 12),
+                ),
+              ),
           ],
         ),
       ),

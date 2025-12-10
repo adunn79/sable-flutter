@@ -47,8 +47,8 @@ The App is intended for users **17+**. We do not knowingly collect personal info
 ## 6. Contact Us
 
 If you have questions about this Privacy Policy, please contact us at:
-**Email:** support@aeliana.ai
-**Website:** https://aeliana.ai
+**Email:** [support@aeliana.ai](mailto:support@aeliana.ai)
+**Website:** [https://aeliana.ai](https://aeliana.ai)
 ''';
 
   static const String termsOfService = '''
@@ -100,7 +100,7 @@ To the fullest extent permitted by law, Aeliana AI, LLC shall not be liable for 
 ## 8. Contact Information
 
 **Aeliana AI, LLC**
-Email: support@aeliana.ai
-Website: https://aeliana.ai
+Email: [support@aeliana.ai](mailto:support@aeliana.ai)
+Website: [https://aeliana.ai](https://aeliana.ai)
 ''';
 }

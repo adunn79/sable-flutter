@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/constants/legal_constants.dart';
 
@@ -23,6 +24,20 @@ class LegalViewerScreen extends StatelessWidget {
         return LegalConstants.privacyPolicy;
       case LegalContentType.terms:
         return LegalConstants.termsOfService;
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    // Handle email links
+    final Uri uri;
+    if (url.contains('@') && !url.startsWith('mailto:')) {
+      uri = Uri.parse('mailto:$url');
+    } else {
+      uri = Uri.parse(url);
+    }
+    
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -48,6 +63,11 @@ class LegalViewerScreen extends StatelessWidget {
       ),
       body: Markdown(
         data: _content,
+        onTapLink: (text, href, title) {
+          if (href != null) {
+            _launchUrl(href);
+          }
+        },
         styleSheet: MarkdownStyleSheet(
           h1: GoogleFonts.spaceGrotesk(
             color: AelianaColors.hyperGold,
@@ -69,6 +89,10 @@ class LegalViewerScreen extends StatelessWidget {
             fontSize: 15,
             height: 1.6,
           ),
+          a: GoogleFonts.inter(
+            color: AelianaColors.plasmaCyan,
+            decoration: TextDecoration.underline,
+          ),
           strong: GoogleFonts.inter(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -81,4 +105,3 @@ class LegalViewerScreen extends StatelessWidget {
     );
   }
 }
-

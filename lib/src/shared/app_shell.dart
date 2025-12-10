@@ -68,7 +68,7 @@ class _AppShellState extends State<AppShell> {
         children: [
           widget.child,
           // Weather widget - only show on Today screens (hide everywhere else for cleaner UI)
-          if (!isChatPage && !isSettingsPage && !isJournalPage && !isMorePage && !isPrivateSpace && !isOnboarding && !location.startsWith('/vital-balance'))
+          if (!isChatPage && !isSettingsPage && !isJournalPage && !isMorePage && !isPrivateSpace && !isOnboarding && !location.startsWith('/vital-balance') && !location.startsWith('/legal'))
             Positioned(
               top: MediaQuery.of(context).padding.top + 8,
               left: 16,

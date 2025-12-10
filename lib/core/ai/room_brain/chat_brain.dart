@@ -99,7 +99,7 @@ class ChatBrain extends RoomBrain {
       'remind me',
     ];
 
-    final calendarKeywords = [
+    final eventIndicators = [
       'dinner',
       'lunch',
       'meeting',

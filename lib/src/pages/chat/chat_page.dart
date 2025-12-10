@@ -500,15 +500,26 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   /// Map archetype ID to display name
   String _getArchetypeDisplayName(String archetypeId) {
+    // Use CharacterPersonality for accurate names
+    final personality = CharacterPersonality.getById(archetypeId.toLowerCase());
+    if (personality != null) {
+      return personality.name.toUpperCase();  // Display as uppercase
+    }
+    
+    // Fallback for unknown IDs
     switch (archetypeId.toLowerCase()) {
       case 'sable':
         return 'SABLE';
-      case 'kai':
-        return 'KAI';
+      case 'aeliana':
+        return 'AELIANA';
+      case 'marco':
+        return 'MARCO';
       case 'echo':
         return 'ECHO';
+      case 'kai':
+        return 'KAI';
       default:
-        return archetypeId.toUpperCase();
+        return 'SABLE'; // Default fallback
     }
   }
 

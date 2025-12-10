@@ -111,13 +111,26 @@ class ChatBrain extends RoomBrain {
       'at',
       'pm',
       'am',
+      'reminder',
+      'call',
+      'visit',
     ];
-
-    // Must have at least one create keyword AND one calendar keyword
-    final hasCreateKeyword = createKeywords.any((kw) => query.contains(kw));
-    final hasCalendarKeyword = calendarKeywords.any((kw) => query.contains(kw));
-
-    return hasCreateKeyword && hasCalendarKeyword;
+    
+    // Check if query has BOTH a creation verb AND an event indicator
+    final hasCreateWord = createKeywords.any((kw) => query.contains(kw));
+    final hasEventWord = eventIndicators.any((kw) => query.contains(kw));
+    
+    // OR if it mentions time/date (strong signal)
+    final hasTimeReference = query.contains('tomorrow') ||
+                            query.contains('today') ||
+                            query.contains('pm') ||
+                            query.contains('am') ||
+                            query.contains('at ') ||
+                            query.contains('on monday') ||
+                            query.contains('on tuesday') ||
+                            query.contains('next week');
+    
+    return (hasCreateWord && hasEventWord) || (hasCreateWord && hasTimeReference);
   }
 
   bool _isCalendarUpdateIntent(String query) {

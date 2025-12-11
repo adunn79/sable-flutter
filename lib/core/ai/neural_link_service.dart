@@ -58,7 +58,7 @@ class NeuralLinkService {
       _pingProvider('Claude (Personality)', _anthropic, 'claude-3-haiku-20240307'),
       _pingProvider('Gemini (Agentic)', _gemini, 'gemini-2.0-flash'),
       _pingProvider('GPT-4o (Logic)', _openai, 'gpt-4o-mini'),
-      _pingProvider('Grok (Realist)', _grok, 'grok-beta'), // SPEED: grok-beta instead of grok-2-latest
+      _pingProvider('Grok (Realist)', _grok, 'grok-3'), // Updated: grok-beta deprecated, use grok-3
       _pingProvider('DeepSeek (Coding)', _deepseek, 'deepseek-chat'),
     ]);
 

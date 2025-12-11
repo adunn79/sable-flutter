@@ -550,7 +550,7 @@ You are NOT an assistant. You are an immersive experience. Lead them into the fa
       final response = await provider.generateResponse(
         prompt: contextBuilder.toString(),
         systemPrompt: systemPrompt,
-        modelId: 'grok-beta', // SPEED: Faster than grok-2-latest
+        modelId: 'grok-3', // Updated: grok-beta deprecated, use grok-3
       );
 
       // --- COMPILER HARDENING START ---

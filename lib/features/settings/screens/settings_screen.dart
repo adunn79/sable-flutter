@@ -51,6 +51,7 @@ import 'package:sable/core/memory/unified_memory_service.dart';
 import 'package:sable/features/clock/widgets/clock_face_widget.dart';
 import 'package:sable/core/services/idle_detection_service.dart';
 import 'package:sable/features/settings/widgets/music_settings_widget.dart';
+import 'package:sable/features/settings/widgets/apple_intelligence_settings_widget.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -1089,6 +1090,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                      
                      // MUSIC INTEGRATION (Phase 6)
                      const MusicSettingsWidget(),
+                     
+                     // APPLE INTELLIGENCE (Siri Shortcuts)
+                     const AppleIntelligenceSettingsWidget(),
                      
                      // CLOCK MODE (separate section)
                      Container(

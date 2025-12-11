@@ -24,12 +24,14 @@ class AgentContext {
 class BrainResponse {
   final String content;
   final bool requiresToolExecution;
+  final bool passToOrchestrator;
   final Map<String, dynamic>? toolCall;
   final Map<String, dynamic> metadata;
 
   BrainResponse({
     required this.content,
     this.requiresToolExecution = false,
+    this.passToOrchestrator = false,
     this.toolCall,
     this.metadata = const {},
   });
@@ -45,5 +47,11 @@ class BrainResponse {
     content: '',  // Will be filled after tool execution
     requiresToolExecution: true,
     toolCall: {'name': toolName, 'params': params},
+  );
+
+  /// Delegate this query to the ModelOrchestrator for general AI conversation
+  factory BrainResponse.delegateToOrchestrator() => BrainResponse(
+    content: '',
+    passToOrchestrator: true,
   );
 }

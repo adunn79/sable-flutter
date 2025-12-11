@@ -50,7 +50,7 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
   // Avatar and privacy state
   String? _avatarUrl;
   String _archetypeId = 'sable';
-  bool _keepConversationsPrivate = true; // Default: private
+  bool _keepConversationsPrivate = false; // Default: NOT private (observing)
   
   // Metrics Data
   List<HealthMetric> _metrics = [];
@@ -138,7 +138,7 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
     setState(() {
       _avatarUrl = stateService.avatarUrl;
       _archetypeId = stateService.selectedArchetypeId;
-      _keepConversationsPrivate = prefs.getBool(_keyPrivateConversations) ?? true;
+      _keepConversationsPrivate = prefs.getBool(_keyPrivateConversations) ?? false;
       _metrics = metrics;
       _latestValues = values;
       _profile = profile;

@@ -78,7 +78,7 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay> {
                   ActiveAvatarRing(
                     size: 70,
                     isActive: widget.isActive,
-                    showRing: !widget.isPrivate, // Hide ring when in private/blind mode
+                    showRing: !widget.isPrivate, // Hide ring when in private mode
                     child: GestureDetector(
                       onTap: widget.onAvatarTap,
                       child: Container(
@@ -173,7 +173,7 @@ class _AvatarJournalOverlayState extends State<AvatarJournalOverlay> {
           // State label
           const SizedBox(height: 6),
           Text(
-            widget.isPrivate ? 'Blind' : 'Observing',
+            widget.isPrivate ? 'Private' : 'Observing',
             style: TextStyle(
               color: widget.isPrivate 
                   ? Colors.red[400] 

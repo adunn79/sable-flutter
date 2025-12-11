@@ -729,6 +729,66 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return 'Capricorn';
   }
 
+  // Calendar Helper Methods
+  bool _isMealEvent(String? title) {
+    if (title == null) return false;
+    return RegExp(r'\b(dinner|lunch|breakfast|brunch)\b', caseSensitive: false).hasMatch(title);
+  }
+
+  DateTime _getNextWeekday(int weekday) {
+    final now = DateTime.now();
+    int daysUntil = weekday - now.weekday;
+    if (daysUntil <= 0) daysUntil += 7;
+    return now.add(Duration(days: daysUntil));
+  }
+
+  Future<List<String>> _checkCalendarConflicts(DateTime startTime) async {
+    // Use real conflict detection from CalendarService
+    final endTime = startTime.add(const Duration(hours: 1));
+    final conflicts = await CalendarService.checkConflicts(
+      start: startTime,
+      end: endTime,
+      bufferMinutes: 0,
+    );
+    return conflicts.map((e) => e.title ?? 'Untitled').toList();
+  }
+
+  String _formatTime(DateTime time) {
+    final hour = time.hour > 12 ? time.hour - 12 : time.hour;
+    final amPm = time.hour >= 12 ? 'PM' : 'AM';
+    return '${hour == 0 ? 12 : hour}:${time.minute.toString().padLeft(2, '0')} $amPm';
+  }
+
+  Map<String, String?> _parseCalendarDetails(String text) {
+    final details = <String, String?>{
+      'location': null,
+      'invites': null,
+      'duration': null,
+    };
+    
+    // Extract location - look for "at [place]" pattern
+    final atMatch = RegExp(r'\bat\s+([A-Z][^,\.]+)', caseSensitive: false).firstMatch(text);
+    if (atMatch != null) {
+      details['location'] = atMatch.group(1)?.trim();
+    }
+    
+    // Extract invitees - look for "with [name]"
+    final withMatch = RegExp(r'\bwith\s+([A-Z][a-zA-Z\s]+?)(?:\s*,|\s+and\s+|\s+it\s+)', caseSensitive: false).firstMatch(text);
+    if (withMatch != null) {
+      details['invites'] = withMatch.group(1)?.trim();
+    }
+    
+    // Extract duration - look for "last for X hours"
+    final durationMatch = RegExp(r'last\s+(?:for\s+)?(?:about\s+)?(\d+|an?)\s*(hour|minute)', caseSensitive: false).firstMatch(text);
+    if (durationMatch != null) {
+      final amount = durationMatch.group(1) == 'a' || durationMatch.group(1) == 'an' ? '1' : durationMatch.group(1);
+      final unit = durationMatch.group(2)?.contains('min') == true ? 'minutes' : 'hours';
+      details['duration'] = '$amount $unit';
+    }
+    
+    return details;
+  }
+
   Future<void> _sendMessage() async {
     debugPrint('🔥🔥🔥 _sendMessage CALLED (Clean) 🔥🔥🔥');
     final text = _controller.text.trim();
@@ -780,6 +840,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         print('🧠 Calling processQuery...');
         final brainResponse = await _chatBrain!.processQuery(text, context);
         print('🧠 brainResponse.requiresToolExecution: ${brainResponse.requiresToolExecution}');
+        print('🧠 brainResponse.passToOrchestrator: ${brainResponse.passToOrchestrator}');
+        print('🧠 brainResponse.content: "${brainResponse.content}"');
         
         if (brainResponse.requiresToolExecution) {
           final toolName = brainResponse.toolCall?['name'] as String?;
@@ -819,8 +881,31 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           }
           print('🏁 Tool executed and response saved. Exiting _sendMessage.');
           return; // EXIT EARLY - Tool executed
+        } else if (brainResponse.content.isNotEmpty && !brainResponse.passToOrchestrator) {
+          // ChatBrain has a direct response (e.g., follow-up question for calendar flow)
+          print('📝 Using ChatBrain response: "${brainResponse.content}"');
+          
+          final response = brainResponse.content;
+          
+          // Save AI response
+          await _memoryService?.addMessage(message: response, isUser: false);
+          await _unifiedMemoryService?.addChatMessage(
+            message: response,
+            isUser: false,
+            emotionalContext: null,
+          );
+          
+          if (mounted) {
+            setState(() {
+              _messages.add({'message': _sanitizeResponse(response), 'isUser': false});
+              _isTyping = false;
+            });
+            _scrollToBottom();
+          }
+          print('🏁 ChatBrain response saved. Exiting _sendMessage.');
+          return; // EXIT EARLY - ChatBrain handled it
         } else {
-          print('ℹ️ No intent detected by Chat Brain.');
+          print('ℹ️ ChatBrain delegating to orchestrator.');
         }
       } else {
         print('⚠️ ChatBrain or Personality is NULL. Skipping interception.');
@@ -1102,9 +1187,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         archetypeName: _companionName,
       );
 
+      // NOTE: Calendar intent detection moved to ChatBrain for proper multi-turn conversation support
+      // The ChatBrain handles: parsing, follow-up questions, skip/cancel detection, and event creation
+      var finalResponse = response;
+
       if (mounted) {
         // Sanitize the response ONCE for both display and speech
-        final sanitizedResponse = _sanitizeResponse(response);
+        final sanitizedResponse = _sanitizeResponse(finalResponse);
         
         // Save AI response to persistent memory (both old and new services)
         await _memoryService?.addMessage(message: sanitizedResponse, isUser: false);

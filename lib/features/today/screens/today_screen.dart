@@ -95,10 +95,19 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
   }
 
   Future<void> _requestPermission() async {
-    final granted = await CalendarService.requestPermission();
-    if (granted) {
+    // Request permission via system dialog
+    await CalendarService.requestPermission();
+    
+    // Always recheck permission state after dialog dismisses
+    // This handles cases where the permission result doesn't match actual state
+    final hasPermission = await CalendarService.hasPermission();
+    
+    if (hasPermission) {
       setState(() => _hasPermission = true);
       await _loadEvents();
+    } else {
+      // Force a rebuild to update UI even if still no permission
+      setState(() {});
     }
   }
 

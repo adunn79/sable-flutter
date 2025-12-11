@@ -295,16 +295,79 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
         _isGenerating = false;
       });
       
+      // Show dialog with option to use default image
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to generate avatar: $e',
-                style: GoogleFonts.inter()),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showGenerationFailedDialog(e.toString());
       }
     }
+  }
+  
+  void _showGenerationFailedDialog(String error) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AelianaColors.carbon,
+        title: Text(
+          'Avatar Generation Unavailable',
+          style: GoogleFonts.spaceGrotesk(
+            color: AelianaColors.hyperGold,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'The avatar generation service is temporarily unavailable.',
+              style: GoogleFonts.inter(color: AelianaColors.stardust),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'You can continue with the default avatar and customize it later in Settings.',
+              style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 13),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Try Again',
+              style: GoogleFonts.inter(color: AelianaColors.ghost),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              final config = AvatarConfig(
+                archetype: widget.archetype,
+                gender: _gender,
+                apparentAge: _apparentAge,
+                origin: _origin,
+                race: _race,
+                build: _build,
+                skinTone: _skinTone,
+                eyeColor: _eyeColor,
+                hairStyle: _hairStyle,
+                fashionAesthetic: _fashionAesthetic,
+                distinguishingMark: _distinguishingMark,
+                selectedVoiceId: _selectedVoiceId,
+              );
+              final imageUrl = 'assets/images/archetypes/${widget.archetype.toLowerCase()}.png';
+              _stateService?.saveAvatarUrl(imageUrl);
+              _stateService?.addToAvatarGallery(imageUrl, archetypeId: widget.archetype.toLowerCase());
+              widget.onComplete(config, imageUrl);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AelianaColors.plasmaCyan,
+            ),
+            child: const Text('Use Default Avatar'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showGeneratedAvatar(AvatarConfig config, String imageUrl) {

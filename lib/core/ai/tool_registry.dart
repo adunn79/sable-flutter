@@ -7,19 +7,33 @@ class ToolResult {
   final dynamic data;
   final String? error;
   final String? userMessage;  // User-friendly message
+  final String? missingField; // Field needed to continue
+  final bool needsInput;  // True if we need user input before executing
 
   ToolResult.success(this.data, {this.userMessage})
       : success = true,
-        error = null;
+        error = null,
+        missingField = null,
+        needsInput = false;
 
   ToolResult.error(this.error, {this.userMessage})
       : success = false,
-        data = null;
+        data = null,
+        missingField = null,
+        needsInput = false;
+
+  ToolResult.needsMoreInfo(this.missingField, {this.userMessage})
+      : success = false,
+        data = null,
+        error = null,
+        needsInput = true;
 
   @override
   String toString() => success 
     ? 'ToolResult.success: $data' 
-    : 'ToolResult.error: $error';
+    : needsInput 
+      ? 'ToolResult.needsMoreInfo: $missingField'
+      : 'ToolResult.error: $error';
 }
 
 /// A tool function signature

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:sable/core/calendar/calendar_service.dart';
 import '../models/permissions_config.dart';
 import '../services/onboarding_state_service.dart';
 
@@ -21,6 +22,7 @@ class Screen15Permissions extends StatefulWidget {
 class _Screen15PermissionsState extends State<Screen15Permissions> {
   bool _gpsEnabled = false;
   bool _webAccessEnabled = false;
+  bool _calendarEnabled = false;
   bool _isLoading = true;
 
   @override
@@ -44,10 +46,25 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
     }
   }
 
+  Future<void> _handleCalendarToggle(bool value) async {
+    if (value) {
+      // Request actual OS permission when enabling
+      final granted = await CalendarService.requestPermission();
+      setState(() {
+        _calendarEnabled = granted;
+      });
+    } else {
+      setState(() {
+        _calendarEnabled = false;
+      });
+    }
+  }
+
   void _handleContinue() {
     final config = PermissionsConfig(
       gpsEnabled: _gpsEnabled,
       webAccessEnabled: _webAccessEnabled,
+      calendarEnabled: _calendarEnabled,
     );
     widget.onComplete(config);
   }
@@ -124,6 +141,18 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                       delay: 600,
                     ),
 
+                    const SizedBox(height: 16),
+
+                    // Calendar Access Card
+                    _buildPermissionCard(
+                      icon: Icons.calendar_month_outlined,
+                      title: 'Calendar Access',
+                      description: 'Allow calendar access to create events, check availability, and provide scheduling assistance.',
+                      value: _calendarEnabled,
+                      onChanged: _handleCalendarToggle,
+                      delay: 800,
+                    ),
+
                     const SizedBox(height: 32),
 
                     // Information Note
@@ -157,7 +186,7 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                           ),
                         ],
                       ),
-                    ).animate(delay: 800.ms).fadeIn(duration: 600.ms),
+                    ).animate(delay: 1000.ms).fadeIn(duration: 600.ms),
                   ],
                 ),
               ),
@@ -173,7 +202,7 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                   child: const Text('CONTINUE'),
                 ),
               ),
-            ).animate(delay: 1000.ms).fadeIn(duration: 600.ms),
+            ).animate(delay: 1200.ms).fadeIn(duration: 600.ms),
           ],
         ),
       ),

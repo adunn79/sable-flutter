@@ -11,6 +11,8 @@ import 'package:sable/core/ai/room_brain/settings_brain.dart';
 /// Call this once during app startup
 class RoomBrainInitializer {
   static bool _initialized = false;
+  static ToolRegistry? _toolRegistry;
+  static MemorySpine? _memorySpine;
 
   /// Initialize Memory Spine and register all tools
   static Future<void> initialize() async {
@@ -19,16 +21,16 @@ class RoomBrainInitializer {
     debugPrint('🧠 Initializing Room Brain System...');
 
     try {
-      // 1. Initialize Memory Spine
-      final memorySpine = MemorySpine();
-      await memorySpine.initialize();
+      // 1. Initialize Memory Spine (SINGLETON)
+      _memorySpine = MemorySpine();
+      await _memorySpine!.initialize();
       debugPrint('✅ Memory Spine initialized');
 
-      // 2. Create Tool Registry
-      final toolRegistry = ToolRegistry();
+      // 2. Create Tool Registry (SINGLETON)
+      _toolRegistry = ToolRegistry();
 
       // 3. Register Calendar Tools
-      toolRegistry.register(
+      _toolRegistry!.register(
         createTool(
           name: 'create_calendar_event',
           description: 'Creates a new calendar event with title, time, and optional location',
@@ -40,7 +42,7 @@ class RoomBrainInitializer {
             'description': {'type': 'string', 'required': false},
             'allDay': {'type': 'boolean', 'required': false},
           },
-          allowedBrains: ['chat'], // Only Chat Brain can create calendar events
+          allowedBrains: ['chat', 'orchestrator'], // Chat Brain and orchestrator can create calendar events
           function: CalendarTools.createCalendarEvent,
         ),
       );
@@ -60,20 +62,20 @@ class RoomBrainInitializer {
     }
   }
 
-  /// Get the global Tool Registry instance
+  /// Get the global Tool Registry instance (SINGLETON)
   static ToolRegistry getToolRegistry() {
-    if (!_initialized) {
+    if (!_initialized || _toolRegistry == null) {
       throw Exception('Room Brain System not initialized. Call initialize() first.');
     }
-    return ToolRegistry();
+    return _toolRegistry!;
   }
 
-  /// Get the global Memory Spine instance
+  /// Get the global Memory Spine instance (SINGLETON)
   static MemorySpine getMemorySpine() {
-    if (!_initialized) {
+    if (!_initialized || _memorySpine == null) {
       throw Exception('Room Brain System not initialized. Call initialize() first.');
     }
-    return MemorySpine();
+    return _memorySpine!;
   }
   
   /// Create a Chat Brain instance (for main chat tab)

@@ -4,14 +4,43 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/widgets/restart_widget.dart';
+import 'package:sable/core/widgets/active_avatar_ring.dart';
 import 'package:sable/features/private_space/services/private_storage_service.dart';
+import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'about_screen.dart';
 import 'help_support_screen.dart';
 
 /// More screen - provides access to Settings and other options
-class MoreScreen extends StatelessWidget {
+class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key});
+
+  @override
+  State<MoreScreen> createState() => _MoreScreenState();
+}
+
+class _MoreScreenState extends State<MoreScreen> {
+  OnboardingStateService? _stateService;
+  String? _avatarUrl;
+  String _archetypeId = 'aeliana';
+  String _userName = 'there';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvatarSettings();
+  }
+
+  Future<void> _loadAvatarSettings() async {
+    final service = await OnboardingStateService.create();
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _stateService = service;
+      _avatarUrl = service.avatarUrl;
+      _archetypeId = service.selectedArchetypeId ?? 'aeliana';
+      _userName = prefs.getString('user_name') ?? 'there';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +65,9 @@ class MoreScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // AI Avatar Header
+          _buildAvatarHeader(),
+          const SizedBox(height: 24),
           _buildMenuItem(
             context,
             icon: LucideIcons.settings,
@@ -199,6 +231,82 @@ class MoreScreen extends StatelessWidget {
               ),
             ),
             const Icon(LucideIcons.chevronRight, color: Colors.white38, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatarHeader() {
+    final imagePath = _avatarUrl ?? 'assets/images/archetypes/$_archetypeId.png';
+    
+    return GestureDetector(
+      onTap: () => context.go('/chat'),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AelianaColors.carbon,
+              AelianaColors.obsidian,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AelianaColors.plasmaCyan.withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          children: [
+            // Avatar with animated ring
+            ActiveAvatarRing(
+              size: 80,
+              isActive: true,  // Always show the ring animation
+              showRing: true,
+              child: CircleAvatar(
+                radius: 32,
+                backgroundImage: (imagePath.startsWith('http'))
+                    ? NetworkImage(imagePath) as ImageProvider
+                    : AssetImage(imagePath),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Text and tap hint
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _archetypeId.toUpperCase(),
+                    style: GoogleFonts.spaceGrotesk(
+                      color: AelianaColors.hyperGold,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Hey $_userName! Need anything?',
+                    style: GoogleFonts.inter(
+                      color: AelianaColors.stardust,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap to chat →',
+                    style: GoogleFonts.inter(
+                      color: AelianaColors.plasmaCyan,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

@@ -18,6 +18,10 @@ class CalendarTools {
       ? DateTime.parse(params['endTime'] as String)
       : null;
     final allDay = params['allDay'] as bool? ?? false;
+    
+    // Location is optional for all events including meals
+    // User can add location in original request or skip it
+    
     try {
       // Check permissions first
       debugPrint('🗓️ Checking calendar permission...');
@@ -57,14 +61,26 @@ class CalendarTools {
       }
       debugPrint('✅ Event created successfully: ${event.eventId}');
 
-      // Format success message
+      // Format rich success message
       final dateFormatter = DateFormat('EEEE, MMM d');
       final timeFormatter = DateFormat('h:mm a');
+      final endTimeFormatter = DateFormat('h:mm a');
       final dateStr = dateFormatter.format(startTime);
-      final timeStr = allDay ? 'All day' : timeFormatter.format(startTime);
+      final startTimeStr = allDay ? 'All day' : timeFormatter.format(startTime);
+      final endTimeStr = endTimeFormatter.format(eventEnd);
       
-      final locationPart = location != null ? ' at $location' : '';
-      final message = '✅ Event "$title" created for $dateStr at $timeStr$locationPart';
+      // Build detailed message
+      final buffer = StringBuffer();
+      buffer.writeln('✅ Created: $title');
+      buffer.writeln('📅 $dateStr at $startTimeStr - $endTimeStr');
+      if (location != null && location.isNotEmpty) {
+        buffer.writeln('📍 $location');
+      }
+      if (description != null && description.isNotEmpty) {
+        buffer.writeln('📝 $description');
+      }
+      
+      final message = buffer.toString().trim();
 
       return ToolResult.success(
         {

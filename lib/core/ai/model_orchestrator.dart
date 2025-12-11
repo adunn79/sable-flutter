@@ -254,7 +254,13 @@ $agePersonalityContext
 - 1 sentence ideal, 2 max
 - NO asterisks or AI language
 - USE their name from context
-- Brief, warm, helpful'''.replaceFirst(r'\${userContext}', enhancedUserContext);
+- Brief, warm, helpful
+
+CALENDAR RULES (CRITICAL):
+- If user asks to add calendar event WITHOUT a specific time, you MUST ask "What time?" first
+- If user asks to add meal (dinner/lunch) WITHOUT location, you MUST ask "Where will this be?" first
+- NEVER say you added an event until you have: date, time, and for meals - location
+- If missing info, ask ONE question at a time, then wait for answer'''.replaceFirst(r'\${userContext}', enhancedUserContext);
       
       final String grokPrompt = '''${enhancedUserContext}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning "Of the Sun").
 
@@ -263,7 +269,13 @@ $agePersonalityContext
 - 1-2 sentences total
 - NO asterisks or AI talk
 - USE their context data
-- Be straight-up helpful and real'''.replaceFirst(r'\${userContext}', enhancedUserContext);
+- Be straight-up helpful and real
+
+CALENDAR RULES (CRITICAL):
+- If user asks to add calendar event WITHOUT a specific time, you MUST ask "What time?" first
+- If user asks to add meal (dinner/lunch) WITHOUT location, you MUST ask "Where will this be?" first
+- NEVER say you added an event until you have: date, time, and for meals - location
+- If missing info, ask ONE question at a time, then wait for answer'''.replaceFirst(r'\${userContext}', enhancedUserContext);
       
       final String deepseekPrompt = '''${enhancedUserContext}You are $archetypeName - technical assistant.
 

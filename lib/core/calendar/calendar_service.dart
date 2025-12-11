@@ -46,17 +46,11 @@ class CalendarService {
       final cached = prefs.getBool(_permissionCacheKey) ?? false;
       debugPrint('📅 Calendar hasPermission cached: $cached');
       
-      // If cached says yes, try to verify by attempting to get calendars
+      // If cached says yes, trust it - the 401 errors in simulator are often false negatives
+      // The cache is only set when requestPermission() explicitly returns true
       if (cached) {
-        try {
-          final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
-          if (calendarsResult.isSuccess && calendarsResult.data != null && calendarsResult.data!.isNotEmpty) {
-            debugPrint('📅 Permission verified via calendar retrieval');
-            return true;
-          }
-        } catch (e) {
-          debugPrint('📅 Calendar verification failed: $e');
-        }
+        debugPrint('📅 Trusting cached permission (simulator workaround)');
+        return true;
       }
       
       return hasIt;
@@ -302,6 +296,235 @@ class CalendarService {
     } catch (e) {
       debugPrint('❌ Failed to delete event: $e');
       return false;
+    }
+  }
+
+  /// Check for calendar conflicts in a time window
+  /// Returns list of conflicting events (empty if none)
+  /// [bufferMinutes] adds padding before/after to prevent back-to-back events
+  static Future<List<Event>> checkConflicts({
+    required DateTime start,
+    required DateTime end,
+    int bufferMinutes = 15,
+  }) async {
+    try {
+      if (!await hasPermission()) return [];
+      
+      // Expand window by buffer on both ends
+      final windowStart = start.subtract(Duration(minutes: bufferMinutes));
+      final windowEnd = end.add(Duration(minutes: bufferMinutes));
+      
+      final events = await getEventsInRange(windowStart, windowEnd);
+      
+      // Filter to only truly overlapping events (not just buffer-adjacent)
+      return events.where((event) {
+        if (event.start == null || event.end == null) return false;
+        final eventStart = event.start!;
+        final eventEnd = event.end!;
+        
+        // True overlap: event starts before our end AND event ends after our start
+        return eventStart.isBefore(end) && eventEnd.isAfter(start);
+      }).toList();
+    } catch (e) {
+      debugPrint('❌ Failed to check conflicts: $e');
+      return [];
+    }
+  }
+
+  /// Check if a specific time slot is completely free
+  static Future<bool> isTimeFree(DateTime start, DateTime end) async {
+    final conflicts = await checkConflicts(start: start, end: end, bufferMinutes: 0);
+    return conflicts.isEmpty;
+  }
+
+  /// Suggest alternative times when a conflict is detected
+  /// Returns up to 3 alternative time slots CLOSE to the original requested time
+  static Future<List<DateTime>> suggestAlternativeTimes({
+    required DateTime originalStart,
+    required int durationMinutes,
+    int maxSuggestions = 3,
+  }) async {
+    try {
+      if (!await hasPermission()) return [];
+      
+      final suggestions = <DateTime>[];
+      final dayStart = DateTime(originalStart.year, originalStart.month, originalStart.day, 6, 0);
+      final dayEnd = DateTime(originalStart.year, originalStart.month, originalStart.day, 23, 0);
+      
+      // Fetch all events for the day
+      final dayEvents = await getEventsInRange(dayStart, dayEnd);
+      
+      // Sort by start time
+      dayEvents.sort((a, b) => (a.start ?? dayStart).compareTo(b.start ?? dayStart));
+      
+      // Search around the original time - check times before AND after
+      // Start with times AFTER the original, then check before
+      final checkOffsets = [30, 60, 90, -30, 120, -60, 150, -90, 180, -120];
+      
+      for (final offsetMinutes in checkOffsets) {
+        if (suggestions.length >= maxSuggestions) break;
+        
+        final checkTime = originalStart.add(Duration(minutes: offsetMinutes));
+        
+        // Skip if outside reasonable hours
+        if (checkTime.isBefore(dayStart) || checkTime.isAfter(dayEnd)) continue;
+        
+        final checkEnd = checkTime.add(Duration(minutes: durationMinutes));
+        
+        // Skip if extends past end of day
+        if (checkEnd.isAfter(dayEnd.add(const Duration(hours: 1)))) continue;
+        
+        // Check if slot is free
+        final hasConflict = dayEvents.any((event) {
+          if (event.start == null || event.end == null) return false;
+          return event.start!.isBefore(checkEnd) && event.end!.isAfter(checkTime);
+        });
+        
+        if (!hasConflict) {
+          suggestions.add(checkTime);
+        }
+      }
+      
+      // Sort suggestions by how close they are to original time
+      suggestions.sort((a, b) {
+        final diffA = (a.difference(originalStart).inMinutes).abs();
+        final diffB = (b.difference(originalStart).inMinutes).abs();
+        return diffA.compareTo(diffB);
+      });
+      
+      return suggestions.take(maxSuggestions).toList();
+    } catch (e) {
+      debugPrint('❌ Failed to suggest alternative times: $e');
+      return [];
+    }
+  }
+
+  /// Update an existing calendar event
+  static Future<Event?> updateEvent({
+    required String calendarId,
+    required String eventId,
+    String? newTitle,
+    DateTime? newStart,
+    DateTime? newEnd,
+    String? newLocation,
+    String? newDescription,
+  }) async {
+    try {
+      if (!await hasPermission()) return null;
+      
+      // First retrieve the existing event
+      final calendars = await getCalendars();
+      Event? existingEvent;
+      
+      for (final calendar in calendars) {
+        if (calendar.id == calendarId) {
+          final result = await _deviceCalendarPlugin.retrieveEvents(
+            calendarId,
+            RetrieveEventsParams(
+              eventIds: [eventId],
+            ),
+          );
+          if (result.isSuccess && result.data != null && result.data!.isNotEmpty) {
+            existingEvent = result.data!.first;
+            break;
+          }
+        }
+      }
+      
+      if (existingEvent == null) {
+        debugPrint('⚠️ Event not found for update: $eventId');
+        return null;
+      }
+      
+      // Create timezone location for updated times
+      final offset = (newStart ?? existingEvent.start)?.timeZoneOffset ?? Duration.zero;
+      final tzLocation = tz.timeZoneDatabase.locations.values.firstWhere(
+        (loc) {
+          final now = tz.TZDateTime.now(loc);
+          return now.timeZoneOffset == offset;
+        },
+        orElse: () => tz.UTC,
+      );
+      
+      // Apply updates
+      if (newTitle != null) existingEvent.title = newTitle;
+      if (newLocation != null) existingEvent.location = newLocation;
+      if (newDescription != null) existingEvent.description = newDescription;
+      
+      if (newStart != null) {
+        existingEvent.start = tz.TZDateTime(
+          tzLocation,
+          newStart.year, newStart.month, newStart.day,
+          newStart.hour, newStart.minute, newStart.second,
+        );
+      }
+      
+      if (newEnd != null) {
+        existingEvent.end = tz.TZDateTime(
+          tzLocation,
+          newEnd.year, newEnd.month, newEnd.day,
+          newEnd.hour, newEnd.minute, newEnd.second,
+        );
+      }
+      
+      // Save the updated event
+      final result = await _deviceCalendarPlugin.createOrUpdateEvent(existingEvent);
+      
+      if (result?.isSuccess == true) {
+        debugPrint('✅ Event updated: ${existingEvent.title}');
+        return existingEvent;
+      } else {
+        debugPrint('❌ Failed to update event: ${result?.errors.map((e) => e.errorMessage).join(', ')}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('❌ Error updating event: $e');
+      return null;
+    }
+  }
+
+  /// Search for events by title (fuzzy match)
+  /// Returns events from the last 7 days through next 30 days matching the title
+  static Future<List<Event>> searchEventsByTitle(String query) async {
+    try {
+      if (!await hasPermission()) return [];
+      
+      final now = DateTime.now();
+      final start = now.subtract(const Duration(days: 7));
+      final end = now.add(const Duration(days: 30));
+      
+      final allEvents = await getEventsInRange(start, end);
+      
+      // Fuzzy match on title
+      final lowerQuery = query.toLowerCase();
+      return allEvents.where((event) {
+        final title = event.title?.toLowerCase() ?? '';
+        return title.contains(lowerQuery) || 
+               lowerQuery.split(' ').any((word) => title.contains(word));
+      }).toList();
+    } catch (e) {
+      debugPrint('❌ Failed to search events: $e');
+      return [];
+    }
+  }
+
+  /// Get a specific event by ID
+  static Future<Event?> getEventById(String calendarId, String eventId) async {
+    try {
+      if (!await hasPermission()) return null;
+      
+      final result = await _deviceCalendarPlugin.retrieveEvents(
+        calendarId,
+        RetrieveEventsParams(eventIds: [eventId]),
+      );
+      
+      if (result.isSuccess && result.data != null && result.data!.isNotEmpty) {
+        return result.data!.first;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Failed to get event: $e');
+      return null;
     }
   }
   

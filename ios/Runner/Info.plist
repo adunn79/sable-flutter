@@ -54,7 +54,9 @@
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 		<string>We need your location to provide local weather updates and context-aware responses.</string>
 		<key>NSCalendarsUsageDescription</key>
-		<string>Sable helps organize your schedule and provides intelligent reminders.</string>
+		<string>Aeliana helps organize your schedule and provides intelligent reminders.</string>
+		<key>NSCalendarsFullAccessUsageDescription</key>
+		<string>Aeliana needs full calendar access to create, edit, and manage events on your behalf.</string>
 		<key>NSContactsUsageDescription</key>
 		<string>Sable helps manage your contacts and suggests people to reach out to.</string>
 		<key>NSPhotoLibraryUsageDescription</key>

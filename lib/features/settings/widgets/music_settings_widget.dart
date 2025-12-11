@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/media/unified_music_service.dart';
-import 'package:sable/core/media/spotify_service.dart';
+import 'package:sable/core/widgets/feature_help_sheet.dart';
 
 /// Music Settings Widget for Settings Screen
 /// Allows user to connect/disconnect Spotify and Apple Music
@@ -43,6 +43,19 @@ class _MusicSettingsWidgetState extends ConsumerState<MusicSettingsWidget> {
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              // Help button
+              GestureDetector(
+                onTap: () => FeatureHelpSheet.showMusic(context),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(LucideIcons.helpCircle, color: Colors.white54, size: 16),
                 ),
               ),
             ],

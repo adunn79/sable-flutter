@@ -17,6 +17,7 @@ import 'package:sable/features/onboarding/onboarding_flow.dart';
 
 import 'package:sable/features/safety/screens/emergency_screen.dart';
 import 'package:sable/features/more/screens/legal_viewer_screen.dart';
+import 'package:sable/features/clock/screens/clock_mode_screen.dart';
 
 // Export a factory function to create the router with a specific initial location
 GoRouter createAppRouter(String initialLocation) {
@@ -54,6 +55,15 @@ GoRouter createAppRouter(String initialLocation) {
 
           GoRoute(path: '/emergency', builder: (context, state) => const EmergencyScreen()),
           GoRoute(path: '/private-space', builder: (context, state) => const PrivateSpaceLockScreen(child: PrivateSpaceChatScreen())),
+          
+          // Clock Mode - Full screen clock/nightstand display
+          GoRoute(
+            path: '/clock',
+            builder: (context, state) => ClockModeScreen(
+              archetypeId: 'aeliana', // Default, will be pulled from settings
+              onExit: () => context.go('/more'),
+            ),
+          ),
           
           // Legal Routes
           GoRoute(

@@ -68,10 +68,8 @@ class _JournalLockScreenState extends State<JournalLockScreen> {
     try {
       final authenticated = await _localAuth.authenticate(
         localizedReason: 'Unlock your journal',
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          stickyAuth: true,
-        ),
+        biometricOnly: true,
+        persistAcrossBackgrounding: true,
       );
       if (authenticated) {
         setState(() => _isUnlocked = true);

@@ -1337,11 +1337,9 @@ No hashtags, no explanations, just the tags.''',
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: QuillEditor(
-                  focusNode: _focusNode,
-                  scrollController: _editorScrollController,
-                  configurations: QuillEditorConfigurations(
-                    controller: _quillController,
+                child: QuillEditor.basic(
+                  controller: _quillController,
+                  config: QuillEditorConfig(
                     placeholder: 'Start writing...',
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     autoFocus: false, // Prevent auto-focus causing cursor issues
@@ -1416,9 +1414,9 @@ No hashtags, no explanations, just the tags.''',
                   ),
                   // Quill toolbar (formatting)
                   Expanded(
-                    child: QuillToolbar.simple(
-                configurations: QuillSimpleToolbarConfigurations(
-                  controller: _quillController,
+                    child: QuillSimpleToolbar(
+                controller: _quillController,
+                config: QuillSimpleToolbarConfig(
                   showFontFamily: false,
                   showFontSize: false,
                   showBackgroundColorButton: false,

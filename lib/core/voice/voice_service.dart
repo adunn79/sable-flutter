@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
@@ -97,6 +98,45 @@ class VoiceService {
     if (_isListening) {
       await _speech.stop();
       _isListening = false;
+    }
+  }
+  
+  /// Listen for speech and return the recognized text (Future-based)
+  /// Use this for simple one-shot speech recognition
+  Future<String?> listenForSpeech({Duration timeout = const Duration(seconds: 30)}) async {
+    if (!_isInitialized) await initialize();
+    if (_isListening) return null;
+    
+    final completer = Completer<String?>();
+    
+    try {
+      _isListening = true;
+      await _speech.listen(
+        onResult: (result) {
+          if (result.finalResult && !completer.isCompleted) {
+            completer.complete(result.recognizedWords);
+            _isListening = false;
+          }
+        },
+        listenFor: timeout,
+        pauseFor: const Duration(seconds: 3),
+        partialResults: false,
+        cancelOnError: true,
+      );
+      
+      // Timeout fallback
+      Future.delayed(timeout, () {
+        if (!completer.isCompleted) {
+          completer.complete(null);
+          stopListening();
+        }
+      });
+      
+      return await completer.future;
+    } catch (e) {
+      debugPrint('Speech listen error: $e');
+      _isListening = false;
+      return null;
     }
   }
   

@@ -2971,8 +2971,8 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
         lineTouchData: LineTouchData(
           enabled: true,
           touchTooltipData: LineTouchTooltipData(
-            tooltipBgColor: const Color(0xFF1A2A35),
-            tooltipRoundedRadius: 8,
+            getTooltipColor: (touchedSpot) => const Color(0xFF1A2A35),
+            tooltipBorderRadius: BorderRadius.circular(8),
             tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {

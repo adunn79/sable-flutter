@@ -509,14 +509,18 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   }
 
   Widget _buildChoiceScreen() {
+    final hasPrebuiltImage = widget.archetype != 'Custom';
+    final imagePath = 'assets/images/archetypes/${widget.archetype.toLowerCase()}.png';
+    
     return Scaffold(
       backgroundColor: AelianaColors.obsidian,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const SizedBox(height: 20),
+              
               Text(
                 widget.archetype.toUpperCase(),
                 style: GoogleFonts.spaceGrotesk(
@@ -529,20 +533,49 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
               
               const SizedBox(height: 16),
               
+              // Show the pre-built avatar image
+              if (hasPrebuiltImage)
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AelianaColors.plasmaCyan.withOpacity(0.5),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AelianaColors.plasmaCyan.withOpacity(0.3),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.asset(
+                      imagePath,
+                      height: 220,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ).animate(delay: 200.ms).fadeIn(duration: 600.ms).scale(begin: const Offset(0.95, 0.95)),
+              
+              const SizedBox(height: 24),
+              
               Text(
-                'How would you like to proceed?',
+                'Quick Setup',
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   color: AelianaColors.ghost,
                 ),
                 textAlign: TextAlign.center,
-              ).animate(delay: 200.ms).fadeIn(duration: 600.ms),
+              ).animate(delay: 300.ms).fadeIn(duration: 600.ms),
               
-              const SizedBox(height: 48),
+              const SizedBox(height: 24),
               
-              // Basic Customization: Race Selection
+              // Age Slider
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AelianaColors.carbon,
                   borderRadius: BorderRadius.circular(12),
@@ -552,7 +585,47 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'RACE / ETHNICITY (BASIC INCLUDED)',
+                      'APPARENT AGE: $_apparentAge',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AelianaColors.ghost,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Slider(
+                      value: _apparentAge.toDouble(),
+                      min: 18,
+                      max: 65,
+                      divisions: 47,
+                      activeColor: AelianaColors.plasmaCyan,
+                      inactiveColor: AelianaColors.ghost.withOpacity(0.3),
+                      onChanged: (value) {
+                        setState(() {
+                          _apparentAge = value.toInt();
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ).animate(delay: 350.ms).fadeIn(duration: 600.ms),
+              
+              const SizedBox(height: 16),
+              
+              // Origin (Accent) Dropdown
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AelianaColors.carbon,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AelianaColors.ghost.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ORIGIN (ACCENT/VOICE)',
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -563,22 +636,27 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                     const SizedBox(height: 8),
                     DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                        value: _race,
+                        value: _origin,
                         isExpanded: true,
                         dropdownColor: AelianaColors.carbon,
                         style: GoogleFonts.inter(color: AelianaColors.stardust, fontSize: 16),
                         icon: const Icon(Icons.keyboard_arrow_down, color: AelianaColors.plasmaCyan),
                         items: [
-                          'Synthetic Human',
-                          'Caucasian / White',
-                          'Black / African American',
-                          'Asian',
-                          'Latino / Hispanic',
-                          'Native American / Indigenous',
-                          'Middle Eastern',
-                          'South Asian (Indian)',
-                          'Pacific Islander',
-                          'Mixed Heritage',
+                          'United States, California',
+                          'United States, New York',
+                          'United States, Texas',
+                          'United Kingdom, London',
+                          'Australia, Sydney',
+                          'France, Paris',
+                          'Germany, Berlin',
+                          'Japan, Tokyo',
+                          'South Korea, Seoul',
+                          'Brazil, São Paulo',
+                          'India, Mumbai',
+                          'Spain, Madrid',
+                          'Italy, Rome',
+                          'Mexico, Mexico City',
+                          'Canada, Toronto',
                         ].map((String value) {
                           return DropdownMenuItem<String>(
                             value: value,
@@ -588,7 +666,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                         onChanged: (String? newValue) {
                           if (newValue != null) {
                             setState(() {
-                              _race = newValue;
+                              _origin = newValue;
                             });
                           }
                         },
@@ -596,24 +674,24 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                     ),
                   ],
                 ),
-              ).animate(delay: 300.ms).fadeIn(duration: 600.ms),
+              ).animate(delay: 400.ms).fadeIn(duration: 600.ms),
 
-              const SizedBox(height: 12),
-
-              // Note about race selection
+              const SizedBox(height: 8),
+              
+              // Accent note
               Text(
-                'ℹ️ "Synthetic Human" uses Aeliana\'s original look. Selecting any other race will generate an AI variation that stays as close to the original character as possible.',
+                'This determines voice accent and personality nuances',
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   color: AelianaColors.ghost,
                   fontStyle: FontStyle.italic,
                 ),
                 textAlign: TextAlign.center,
-              ).animate(delay: 350.ms).fadeIn(duration: 400.ms),
+              ).animate(delay: 450.ms).fadeIn(duration: 400.ms),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               
-              // Use / Generate Button
+              // Continue Button - Use pre-built avatar
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -626,7 +704,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                   child: Column(
                     children: [
                       Text(
-                        'CONTINUE WITH SELECTED RACE',
+                        'CONTINUE WITH ${widget.archetype.toUpperCase()}',
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -635,7 +713,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Updates appearance while keeping the vibe',
+                        'Use this look and start connecting',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: Colors.black87,
@@ -644,7 +722,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                     ],
                   ),
                 ),
-              ).animate(delay: 400.ms).fadeIn(duration: 600.ms).slideY(begin: 0.1, end: 0),
+              ).animate(delay: 500.ms).fadeIn(duration: 600.ms).slideY(begin: 0.1, end: 0),
               
               const SizedBox(height: 24),
 

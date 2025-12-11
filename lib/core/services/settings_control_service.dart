@@ -175,6 +175,64 @@ class SettingsControlService {
       type: SettingType.toggle,
       keywords: ['speak', 'read', 'tts', 'text to speech'],
     ),
+
+    // CLOCK MODE - Best-in-class clock/screensaver features
+    const SettingDefinition(
+      key: 'clock_auto_idle_enabled',
+      title: 'Auto Clock Mode',
+      subtitle: 'Show clock when device is idle',
+      section: 'CLOCK MODE',
+      type: SettingType.toggle,
+      keywords: ['standby', 'idle', 'screensaver', 'sleep', 'nightstand'],
+    ),
+    const SettingDefinition(
+      key: 'clock_idle_timeout_minutes',
+      title: 'Idle Timeout',
+      subtitle: 'Minutes before clock mode starts',
+      section: 'CLOCK MODE',
+      type: SettingType.selection,
+      keywords: ['timeout', 'delay', 'wait', 'minutes'],
+    ),
+    const SettingDefinition(
+      key: 'clock_style',
+      title: 'Clock Style',
+      subtitle: 'Digital, Analog, Float, Minimal, Flip',
+      section: 'CLOCK MODE',
+      type: SettingType.selection,
+      keywords: ['style', 'design', 'look', 'face', 'flip'],
+    ),
+    const SettingDefinition(
+      key: 'clock_color_theme',
+      title: 'Clock Color',
+      subtitle: 'White, Cyan, Gold, or Red',
+      section: 'CLOCK MODE',
+      type: SettingType.selection,
+      keywords: ['color', 'theme', 'accent'],
+    ),
+    const SettingDefinition(
+      key: 'clock_night_mode_enabled',
+      title: 'Night Mode',
+      subtitle: 'Auto red tint in dark rooms',
+      section: 'CLOCK MODE',
+      type: SettingType.toggle,
+      keywords: ['night', 'dark', 'red', 'dim', 'bedroom'],
+    ),
+    const SettingDefinition(
+      key: 'clock_show_weather',
+      title: 'Show Weather',
+      subtitle: 'Display weather on clock screen',
+      section: 'CLOCK MODE',
+      type: SettingType.toggle,
+      keywords: ['weather', 'temperature', 'forecast'],
+    ),
+    const SettingDefinition(
+      key: 'clock_show_next_alarm',
+      title: 'Show Next Alarm',
+      subtitle: 'Display upcoming alarm time',
+      section: 'CLOCK MODE',
+      type: SettingType.toggle,
+      keywords: ['alarm', 'next', 'upcoming'],
+    ),
   ];
 
   /// Get all setting definitions for search

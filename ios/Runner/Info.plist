@@ -58,13 +58,13 @@
 		<key>NSCalendarsFullAccessUsageDescription</key>
 		<string>Aeliana needs full calendar access to create, edit, and manage events on your behalf.</string>
 		<key>NSContactsUsageDescription</key>
-		<string>Sable helps manage your contacts and suggests people to reach out to.</string>
+		<string>Aeliana helps manage your contacts and suggests people to reach out to.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Sable can help you find and organize photos.</string>
+		<string>Aeliana can help you find and organize photos.</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
-		<string>Sable can save photos and images for you.</string>
+		<string>Aeliana can save photos and images for you.</string>
 		<key>NSRemindersUsageDescription</key>
-		<string>Sable creates and manages reminders based on your conversations.</string>
+		<string>Aeliana creates and manages reminders based on your conversations.</string>
 		<key>NSMotionUsageDescription</key>
 		<string>Vital Balance uses motion data to track your daily steps automatically.</string>
 	</dict>

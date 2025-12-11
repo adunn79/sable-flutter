@@ -20,6 +20,7 @@ class Screen1Calibration extends StatefulWidget {
 class _Screen1CalibrationState extends State<Screen1Calibration> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _nameFocusNode = FocusNode();
   DateTime? _selectedDate;
   String? _genderIdentity;
 
@@ -28,6 +29,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
   @override
   void dispose() {
     _nameController.dispose();
+    _nameFocusNode.dispose();
     super.dispose();
   }
 
@@ -199,10 +201,21 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
 
                 TextFormField(
                   controller: _nameController,
+                  focusNode: _nameFocusNode,
+                  autofocus: true,
+                  keyboardType: TextInputType.name,
+                  textInputAction: TextInputAction.next,
+                  enableInteractiveSelection: true,
                   style: GoogleFonts.inter(color: AelianaColors.stardust),
                   decoration: const InputDecoration(
                     hintText: 'Enter your name',
                   ),
+                  onTap: () {
+                    // Explicitly request focus for iOS 26 keyboard
+                    if (!_nameFocusNode.hasFocus) {
+                      _nameFocusNode.requestFocus();
+                    }
+                  },
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Name is required';

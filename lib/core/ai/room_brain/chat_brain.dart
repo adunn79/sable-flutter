@@ -1037,73 +1037,55 @@ Write the description directly, no quotes or labels:''';
   // ========== INTENT DETECTION ==========
 
   bool _isCalendarCreateIntent(String query) {
-    final createKeywords = [
-      'add',
-      'create',
-      'schedule',
-      'book',
-      'make a',
-      'set up',
-      'plan',
+    // STRICT calendar creation phrases - must be explicit
+    final explicitCalendarPhrases = [
+      'schedule a',
+      'schedule an',
+      'schedule my',
+      'add to calendar',
+      'add to my calendar',
       'put on my calendar',
-      'remind me',
-      'try',       // Added
-      'lets',      // Added
-      'let\'s',    // Added
-      'can you',   // Added
-      'please',    // Added
-      'want to',   // Added
-      'need to',   // Added
-      'put',       // Added
-      'have',      // Added
-      'need',      // Added
-    ];
-
-    final eventIndicators = [
-      'dinner',
-      'lunch',
-      'meeting',
-      'appointment',
-      'appt',      // Added
-      'event',
-      'calendar',
-      'tomorrow',
-      'tonight',
-      'at',
-      'pm',
-      'am',
-      'reminder',
-      'call',
-      'visit',
+      'put on calendar',
+      'create an event',
+      'create event',
+      'create a meeting',
+      'book a',
+      'book an',
+      'set up a meeting',
+      'remind me to',
+      'set a reminder',
     ];
     
-    // Check if query has BOTH a creation verb AND an event indicator
-    final hasCreateWord = createKeywords.any((kw) => query.contains(kw));
-    final hasEventWord = eventIndicators.any((kw) => query.contains(kw));
+    // Check for explicit phrases first (high confidence)
+    final hasExplicitPhrase = explicitCalendarPhrases.any((phrase) => query.contains(phrase));
+    if (hasExplicitPhrase) {
+      debugPrint('🔍 Calendar intent: explicit phrase match');
+      return true;
+    }
     
-    debugPrint('🔍 hasCreateWord: $hasCreateWord, hasEventWord: $hasEventWord');
+    // Meal/event words that strongly indicate calendar intent when paired with time
+    final mealEventWords = ['dinner', 'lunch', 'breakfast', 'brunch', 'meeting', 'appointment'];
+    final hasMealEvent = mealEventWords.any((kw) => query.contains(kw));
     
-    // OR if it mentions time/date (strong signal)
-    final hasTimeReference = query.contains('tomorrow') ||
-                            query.contains('today') ||
-                            query.contains('pm') ||
-                            query.contains('am') ||
-                            query.contains('at ') ||
-                            query.contains('on monday') ||
-                            query.contains('on tuesday') ||
-                            query.contains('next week');
+    // Strong time indicators (not just "at" which is too common)
+    final hasStrongTimeRef = query.contains(' tomorrow') ||
+                             query.contains(' tonight') ||
+                             query.contains(' on monday') ||
+                             query.contains(' on tuesday') ||
+                             query.contains(' on wednesday') ||
+                             query.contains(' on thursday') ||
+                             query.contains(' on friday') ||
+                             query.contains(' on saturday') ||
+                             query.contains(' on sunday') ||
+                             query.contains(' next week') ||
+                             query.contains(' this weekend') ||
+                             RegExp(r'\b\d{1,2}:\d{2}\b').hasMatch(query) ||  // Time like 7:30
+                             RegExp(r'\bat \d{1,2}(?::\d{2})?\s*(pm|am)?\b').hasMatch(query);  // "at 7pm"
     
-    debugPrint('🔍 hasTimeReference: $hasTimeReference');
+    // Only trigger if meal/event + strong time reference
+    final result = hasMealEvent && hasStrongTimeRef;
     
-    // Allow if:
-    // 1. Explicit create word + event indicator (e.g. "schedule meeting")
-    // 2. Explicit create word + time reference (e.g. "schedule tomorrow")
-    // 3. Event indicator + time reference (e.g. "dinner tomorrow") <-- IMPLICIT INTENT
-    final result = (hasCreateWord && hasEventWord) || 
-                   (hasCreateWord && hasTimeReference) ||
-                   (hasEventWord && hasTimeReference);
-                   
-    debugPrint('🔍 Final intent result: $result');
+    debugPrint('🔍 Calendar intent: hasMealEvent=$hasMealEvent, hasStrongTimeRef=$hasStrongTimeRef, result=$result');
     
     return result;
   }

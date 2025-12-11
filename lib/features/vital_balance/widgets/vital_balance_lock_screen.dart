@@ -94,10 +94,8 @@ class _VitalBalanceLockScreenState extends State<VitalBalanceLockScreen> {
     try {
       final authenticated = await _localAuth.authenticate(
         localizedReason: 'Unlock your Vital Balance',
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          stickyAuth: true,
-        ),
+        biometricOnly: true,
+        persistAcrossBackgrounding: true,
       );
       if (!_disposed && authenticated && mounted) {
         setState(() => _isUnlocked = true);

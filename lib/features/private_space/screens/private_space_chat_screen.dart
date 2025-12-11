@@ -977,9 +977,9 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
 
   Widget _buildBondIndicator() {
     final bondState = ref.watch(bondEngineProvider);
-    Color color;
-    String label;
-    IconData icon;
+    Color color = AelianaColors.ghost;
+    String label = 'Connected';
+    IconData icon = LucideIcons.minus;
 
     switch (bondState) {
       case BondState.cooled:

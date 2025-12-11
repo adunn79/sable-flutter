@@ -9,16 +9,15 @@ import 'package:sable/core/emotion/weather_service.dart';
 
 /// A full-screen clock mode with avatar and clock display
 /// Supports both portrait and landscape orientations
+/// Best-in-class features: multiple styles, color themes, night mode
 class ClockModeScreen extends StatefulWidget {
   final String archetypeId;
-  final bool isAnalog;
   final String? nextAlarmTime;
   final VoidCallback? onExit;
 
   const ClockModeScreen({
     super.key,
     required this.archetypeId,
-    this.isAnalog = false,
     this.nextAlarmTime,
     this.onExit,
   });
@@ -29,17 +28,36 @@ class ClockModeScreen extends StatefulWidget {
 
 class _ClockModeScreenState extends State<ClockModeScreen> {
   bool _showControls = true;
-  bool _isAnalog = false;
+  ClockStyle _clockStyle = ClockStyle.digital;
+  ClockColorTheme _colorTheme = ClockColorTheme.white;
   bool _use24Hour = false;
+  bool _nightMode = false;
   TimeOfDay? _alarmTime;
   bool _alarmActive = false;
   String? _weatherTemp;
   String? _weatherCondition;
 
+  // Style names for display
+  static const _styleNames = {
+    ClockStyle.digital: 'Digital',
+    ClockStyle.analog: 'Analog',
+    ClockStyle.float: 'Float',
+    ClockStyle.minimal: 'Minimal',
+    ClockStyle.flip: 'Flip',
+  };
+  
+  // Color theme names for display
+  static const _colorNames = {
+    ClockColorTheme.white: 'White',
+    ClockColorTheme.cyan: 'Cyan',
+    ClockColorTheme.gold: 'Gold',
+    ClockColorTheme.red: 'Red',
+    ClockColorTheme.purple: 'Purple',
+  };
+
   @override
   void initState() {
     super.initState();
-    _isAnalog = widget.isAnalog;
     _loadPreferences();
     _fetchWeather();
     
@@ -56,8 +74,6 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
 
   Future<void> _fetchWeather() async {
     try {
-      // WeatherService.getWeather already handles geocoding internally
-      // Just pass a city name like "San Francisco" 
       final weather = await WeatherService.getWeather('San Francisco');
       if (weather != null && mounted) {
         setState(() {
@@ -74,14 +90,34 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _use24Hour = prefs.getBool('clock_use_24hour') ?? false;
-      _isAnalog = prefs.getBool('clock_is_analog') ?? false;
+      _clockStyle = ClockStyle.values[prefs.getInt('clock_style_index') ?? 0];
+      _colorTheme = ClockColorTheme.values[prefs.getInt('clock_color_index') ?? 0];
+      _nightMode = prefs.getBool('clock_night_mode_enabled') ?? false;
     });
   }
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('clock_use_24hour', _use24Hour);
-    await prefs.setBool('clock_is_analog', _isAnalog);
+    await prefs.setInt('clock_style_index', _clockStyle.index);
+    await prefs.setInt('clock_color_index', _colorTheme.index);
+    await prefs.setBool('clock_night_mode_enabled', _nightMode);
+  }
+  
+  void _cycleStyle() {
+    setState(() {
+      final nextIndex = (_clockStyle.index + 1) % ClockStyle.values.length;
+      _clockStyle = ClockStyle.values[nextIndex];
+    });
+    _savePreferences();
+  }
+  
+  void _cycleColor() {
+    setState(() {
+      final nextIndex = (_colorTheme.index + 1) % ClockColorTheme.values.length;
+      _colorTheme = ClockColorTheme.values[nextIndex];
+    });
+    _savePreferences();
   }
 
   @override
@@ -217,11 +253,11 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
               flex: 1,
               child: Center(
                 child: ClockFaceWidget(
-                  isAnalog: _isAnalog,
+                  style: _clockStyle,
+                  colorTheme: _colorTheme,
+                  nightMode: _nightMode,
                   use24Hour: _use24Hour,
                   size: 337,
-                  primaryColor: Colors.white,
-                  secondaryColor: Colors.white70,
                   nextAlarmTime: _alarmActive && _alarmTime != null 
                       ? _formatAlarmTime(_alarmTime!)
                       : null,
@@ -277,11 +313,11 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
               flex: 1,
               child: Center(
                 child: ClockFaceWidget(
-                  isAnalog: _isAnalog,
+                  style: _clockStyle,
+                  colorTheme: _colorTheme,
+                  nightMode: _nightMode,
                   use24Hour: _use24Hour,
                   size: 412,
-                  primaryColor: Colors.white,
-                  secondaryColor: Colors.white70,
                   nextAlarmTime: _alarmActive && _alarmTime != null 
                       ? _formatAlarmTime(_alarmTime!)
                       : null,
@@ -363,21 +399,24 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
+                      // Color theme
+                      _buildControlButton(
+                        icon: Icons.palette,
+                        label: _colorNames[_colorTheme] ?? 'Color',
+                        onTap: _cycleColor,
+                      ),
+                      // Clock style toggle
+                      _buildControlButton(
+                        icon: Icons.watch_later_outlined,
+                        label: _styleNames[_clockStyle] ?? 'Style',
+                        onTap: _cycleStyle,
+                      ),
                       // 24hr toggle
                       _buildControlButton(
                         icon: Icons.schedule,
                         label: _use24Hour ? '12hr' : '24hr',
                         onTap: () {
                           setState(() => _use24Hour = !_use24Hour);
-                          _savePreferences();
-                        },
-                      ),
-                      // Analog/Digital toggle
-                      _buildControlButton(
-                        icon: _isAnalog ? Icons.watch_later_outlined : Icons.access_time,
-                        label: _isAnalog ? 'Digital' : 'Analog',
-                        onTap: () {
-                          setState(() => _isAnalog = !_isAnalog);
                           _savePreferences();
                         },
                       ),

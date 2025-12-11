@@ -470,28 +470,35 @@ class _PhoneInputFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     // Remove all non-digits
-    final digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    var digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
     
     if (digitsOnly.isEmpty) {
       return const TextEditingValue(text: '');
     }
     
+    // Strip leading '1' if user typed country code (we add +1 automatically)
+    if (digitsOnly.startsWith('1') && digitsOnly.length > 10) {
+      digitsOnly = digitsOnly.substring(1);
+    }
+    
+    // Limit to 10 digits (area code + 7 digit number)
+    if (digitsOnly.length > 10) {
+      digitsOnly = digitsOnly.substring(0, 10);
+    }
+    
     final buffer = StringBuffer();
-    int index = 0;
     
     // Format: +1 (XXX) XXX-XXXX
-    if (digitsOnly.length > 0) {
+    if (digitsOnly.isNotEmpty) {
       buffer.write('+1 (');
       final areaCode = digitsOnly.substring(0, digitsOnly.length.clamp(0, 3));
       buffer.write(areaCode);
-      index = areaCode.length;
     }
     
     if (digitsOnly.length > 3) {
       buffer.write(') ');
       final prefix = digitsOnly.substring(3, digitsOnly.length.clamp(3, 6));
       buffer.write(prefix);
-      index = 3 + prefix.length;
     }
     
     if (digitsOnly.length > 6) {

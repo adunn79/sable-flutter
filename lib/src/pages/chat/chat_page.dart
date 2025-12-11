@@ -84,7 +84,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   String _companionName = 'SABLE'; // Default archetype name, loaded from prefs
   String _archetypeId = 'sable'; // Lowercase archetype ID for image path
   bool _clockUse24Hour = false;
-  bool _clockIsAnalog = false;
+  ClockStyle _clockStyle = ClockStyle.digital;
   
   // Clock mode dimming
   bool _clockDimmed = false;
@@ -160,7 +160,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (mounted) {
         setState(() {
           _clockUse24Hour = prefs.getBool('clock_use_24hour') ?? false;
-          _clockIsAnalog = prefs.getBool('clock_is_analog') ?? false;
+          _clockStyle = ClockStyle.values[prefs.getInt('clock_style_index') ?? 0];
         });
       }
     });
@@ -1649,11 +1649,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                       padding: const EdgeInsets.only(left: 16, right: 48),
                                       child: Center(
                                         child: ClockFaceWidget(
-                                          isAnalog: _clockIsAnalog,
+                                          style: _clockStyle,
                                           use24Hour: _clockUse24Hour,
                                           size: 252,
-                                          primaryColor: Colors.white,
-                                          secondaryColor: Colors.white70,
                                           weatherTemp: _weatherTemp,
                                           weatherCondition: _weatherCondition,
                                         ),
@@ -1697,11 +1695,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                                   Expanded(
                                     child: Center(
                                       child: ClockFaceWidget(
-                                        isAnalog: _clockIsAnalog,
+                                        style: _clockStyle,
                                         use24Hour: _clockUse24Hour,
                                         size: 288,
-                                        primaryColor: Colors.white,
-                                        secondaryColor: Colors.white70,
                                         weatherTemp: _weatherTemp,
                                         weatherCondition: _weatherCondition,
                                       ),
@@ -3141,8 +3137,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                             _backgroundColor == AvatarDisplaySettings.colorWhite;
   final isDark = !isLightBackground;
   
+  // Add extra bottom padding to account for navigation bar (60px)
+  // This ensures the input doesn't get hidden when keyboard pushes up
+  const navBarHeight = 60.0;
+  
   return Padding(
-    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16 + navBarHeight),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(

@@ -90,10 +90,8 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
     try {
       final authenticated = await _localAuth.authenticate(
         localizedReason: 'Unlock Private Space',
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          stickyAuth: true,
-        ),
+        biometricOnly: true,
+        persistAcrossBackgrounding: true,
       );
       if (authenticated) {
         setState(() => _isUnlocked = true);
@@ -518,10 +516,8 @@ class _PrivateSpaceLockScreenState extends State<PrivateSpaceLockScreen> {
       try {
         final authenticated = await _localAuth.authenticate(
           localizedReason: 'Verify your identity to reset PIN',
-          options: const AuthenticationOptions(
-            biometricOnly: true,
-            stickyAuth: true,
-          ),
+          biometricOnly: true,
+          persistAcrossBackgrounding: true,
         );
         
         if (authenticated) {

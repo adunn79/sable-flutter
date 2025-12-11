@@ -14,6 +14,7 @@ import 'features/journal/services/journal_storage_service.dart';
 import 'features/journal/screens/journal_timeline_screen.dart';
 import 'core/memory/unified_memory_service.dart';
 import 'core/ai/room_brain_initializer.dart';
+import 'core/ai/model_registry_service.dart';
 
 void main() async {
   String initialRoute = '/chat'; // Define outside try block for scope visibility
@@ -42,6 +43,10 @@ void main() async {
     // Initialize Room Brain System (Memory Spine + Tools)
     await RoomBrainInitializer.initialize();
     debugPrint('✅ Room Brain System initialized');
+    
+    // Initialize Model Registry for dynamic model resolution
+    await ModelRegistryService.instance.initialize();
+    debugPrint('✅ Model Registry initialized');
     
     // Check for startup route
     final prefs = await SharedPreferences.getInstance();

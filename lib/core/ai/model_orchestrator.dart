@@ -9,7 +9,8 @@ import 'providers/deepseek_provider.dart';
 import 'package:sable/core/services/settings_control_service.dart';
 import 'package:sable/core/personality/age_adaptive_service.dart';
 import 'package:sable/core/context/context_engine.dart';
-import 'package:sable/core/ai/fact_check_service.dart'; // IMPORTED
+import 'package:sable/core/ai/fact_check_service.dart';
+import 'package:sable/core/ai/model_registry_service.dart';
 import 'aeliana_brand_context.dart';
 
 part 'model_orchestrator.g.dart';
@@ -37,25 +38,39 @@ enum AiTaskType {
   coding,
 }
 
-/// Configuration for model IDs.
+/// Configuration for model IDs with dynamic resolution support.
 class ModelConfig {
   final String personalityModelId;
   final String agenticModelId;
   final String heavyLiftingModelId;
   final String realistModelId;
   final String codingModelId;
-  final String fastRoutingModelId; // For orchestrator routing decisions
-  final String fastHarmonizerModelId; // For personality harmonization
+  final String fastRoutingModelId;
+  final String fastHarmonizerModelId;
 
   const ModelConfig({
     this.personalityModelId = 'claude-3-haiku-20240307',
-    this.agenticModelId = 'o1', // Controller (GPT-5.1)
-    this.heavyLiftingModelId = 'gpt-4o-mini', // Heavy lifting only
-    this.realistModelId = 'grok-3', // Updated: grok-beta deprecated, use grok-3
+    this.agenticModelId = 'o1',
+    this.heavyLiftingModelId = 'gpt-4o-mini',
+    this.realistModelId = 'grok-3',
     this.codingModelId = 'deepseek-chat',
-    this.fastRoutingModelId = 'gemini-2.0-flash', // SPEED: Fast routing
-    this.fastHarmonizerModelId = 'gemini-2.0-flash', // SPEED: Fast harmonizer
+    this.fastRoutingModelId = 'gemini-2.0-flash',
+    this.fastHarmonizerModelId = 'gemini-2.0-flash',
   });
+  
+  /// Create config with dynamically resolved models from registry
+  factory ModelConfig.fromRegistry() {
+    final registry = ModelRegistryService.instance;
+    return ModelConfig(
+      personalityModelId: registry.getModelForRole(ModelRole.creative),
+      agenticModelId: registry.getModelForRole(ModelRole.smart),
+      heavyLiftingModelId: registry.getModelForRole(ModelRole.smart),
+      realistModelId: registry.getModelForRole(ModelRole.realist),
+      codingModelId: registry.getModelForRole(ModelRole.coding),
+      fastRoutingModelId: registry.getModelForRole(ModelRole.fast),
+      fastHarmonizerModelId: registry.getModelForRole(ModelRole.fast),
+    );
+  }
 }
 
 @Riverpod(keepAlive: true)

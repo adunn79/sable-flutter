@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sable/src/shared/weather_widget.dart';
 import 'package:sable/core/services/idle_detection_service.dart';
+import 'package:sable/core/media/unified_music_service.dart';
+import 'package:sable/core/widgets/mini_player_widget.dart';
 
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget {
   final Widget child;
 
   const AppShell({super.key, required this.child});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> {
   IdleDetectionService? _idleService;
   
   @override
@@ -111,48 +114,58 @@ class _AppShellState extends State<AppShell> {
           ],
         ),
       ),
-      bottomNavigationBar: showNavBar ? Theme(
-        data: Theme.of(context).copyWith(
-          navigationBarTheme: NavigationBarThemeData(
-            height: 60, // Increased for better spacing
-            labelTextStyle: WidgetStateProperty.all(
-              const TextStyle(fontSize: 10),
+      bottomNavigationBar: showNavBar ? Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Floating mini-player - shows when music is playing
+          if (!isClockMode && !isOnboarding)
+            const MiniPlayerWidget(),
+          
+          // Navigation Bar
+          Theme(
+            data: Theme.of(context).copyWith(
+              navigationBarTheme: NavigationBarThemeData(
+                height: 60, // Increased for better spacing
+                labelTextStyle: WidgetStateProperty.all(
+                  const TextStyle(fontSize: 10),
+                ),
+                iconTheme: WidgetStateProperty.all(
+                  const IconThemeData(size: 18),
+                ),
+                indicatorShape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
-            iconTheme: WidgetStateProperty.all(
-              const IconThemeData(size: 18),
-            ),
-            indicatorShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+            child: NavigationBar(
+              selectedIndex: _calculateSelectedIndex(context),
+              onDestinationSelected: (index) => _onItemTapped(index, context),
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(LucideIcons.messageSquare),
+                  label: 'Chat',
+                ),
+                NavigationDestination(
+                  icon: Icon(LucideIcons.calendar),
+                  label: 'Calendar',
+                ),
+                NavigationDestination(
+                  icon: Icon(LucideIcons.book),
+                  label: 'Journal',
+                ),
+                NavigationDestination(
+                  icon: Icon(LucideIcons.heartPulse),
+                  label: 'Vital Balance',
+                ),
+                NavigationDestination(
+                  icon: Icon(LucideIcons.menu),
+                  label: 'More',
+                ),
+              ],
             ),
           ),
-        ),
-        child: NavigationBar(
-          selectedIndex: _calculateSelectedIndex(context),
-          onDestinationSelected: (index) => _onItemTapped(index, context),
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(LucideIcons.messageSquare),
-              label: 'Chat',
-            ),
-            NavigationDestination(
-              icon: Icon(LucideIcons.calendar),
-              label: 'Calendar',
-            ),
-            NavigationDestination(
-              icon: Icon(LucideIcons.book),
-              label: 'Journal',
-            ),
-            NavigationDestination(
-              icon: Icon(LucideIcons.heartPulse),
-              label: 'Vital Balance',
-            ),
-            NavigationDestination(
-              icon: Icon(LucideIcons.menu),
-              label: 'More',
-            ),
-          ],
-        ),
+        ],
       ) : null,
     );
   }

@@ -223,6 +223,28 @@ class VoiceService {
     _isSpeaking = false;
   }
   
+  /// Play audio from a URL (for voice previews)
+  Future<void> playFromUrl(String url) async {
+    if (!_isInitialized) await initialize();
+    if (_isSpeaking) await stop();
+    
+    _isSpeaking = true;
+    
+    try {
+      // Use ElevenLabs provider which has audio player capability
+      await _elevenLabs.playFromUrl(url);
+    } catch (e) {
+      debugPrint('Error playing from URL: $e');
+      _isSpeaking = false;
+      rethrow;
+    }
+    
+    // Reset speaking flag after estimated duration
+    Future.delayed(const Duration(seconds: 5), () {
+      _isSpeaking = false;
+    });
+  }
+  
   /// Get curated list of high-quality voices (2M, 2F, 2N)
   /// ONLY returns ElevenLabs voices - no system voice fallback
   Future<List<Map<String, String>>> getCuratedVoices() async {
@@ -329,6 +351,47 @@ class VoiceService {
       case 'neutral':
       default:
         return neutralId;
+    }
+  }
+
+  /// Get best voice ID for a specific archetype
+  /// Returns culturally appropriate voices for Imani and Priya
+  String getBestVoiceForArchetype(String archetypeId) {
+    switch (archetypeId.toLowerCase()) {
+      // IMANI - African American female voice
+      // DrRenetta Weaver - African-American professional female
+      case 'imani':
+        return 'OYKPYtxX4mV3MAOiYkYc';
+      
+      // PRIYA - Indian female voice  
+      // Anika - Hindi/Indian female voice
+      case 'priya':
+        return 'RABOvaPec1ymXz02oDQi';
+      
+      // AELIANA - Default flagship female (Rachel)
+      case 'aeliana':
+        return '21m00Tcm4TlvDq8ikWAM';
+      
+      // SABLE - Female (Bella - warm female)
+      case 'sable':
+        return 'EXAVITQu4vr4xnSDxMaL';
+      
+      // MARCO - Hispanic/Latino male with Mexican accent
+      // Latino Gentleman - Spanish/Mexican accent narrator
+      case 'marco':
+        return 'UOsudtiwQVrIvIRyyCHn';
+      
+      // KAI - African American male
+      // Hakeem - African American male narrator
+      case 'kai':
+        return 'nJvj5shg2xu1GKGxqfkE';
+      
+      // ECHO - Neutral (Adam)
+      case 'echo':
+        return 'pNInz6obpgDQGcFmaJgB';
+      
+      default:
+        return '21m00Tcm4TlvDq8ikWAM'; // Default to Rachel
     }
   }
   

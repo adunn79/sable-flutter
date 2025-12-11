@@ -119,10 +119,32 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
 
                     const SizedBox(height: 16),
 
+                    // IMANI - African American female archetype
+                    _buildArchetypeCard(
+                      'Imani',
+                      'The Ancestress • She/Her',
+                      'ee-MAH-nee. "Faith." Grounded in ancestral wisdom, radiating divine Black girl magic.',
+                      'assets/images/archetypes/imani.png',
+                      delay: 375,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // PRIYA - Indian female archetype
+                    _buildArchetypeCard(
+                      'Priya',
+                      'The Guru • She/Her',
+                      'PREE-yah. "Beloved." Serene wisdom rooted in ancient Sanskrit traditions.',
+                      'assets/images/archetypes/priya.png',
+                      delay: 385,
+                    ),
+
+                    const SizedBox(height: 16),
+
                     _buildArchetypeCard(
                       'Sable',
                       'The Empath • She/Her',
-                      'The original. Sharp, witty, and deeply empathetic. A charismatic and bold personality.',
+                      'SAY-bull. The original. Sharp, witty, and deeply empathetic. A charismatic personality.',
                       'assets/images/archetypes/sable.png',
                       delay: 400,
                     ),
@@ -132,7 +154,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                     _buildArchetypeCard(
                       'Echo',
                       'The Philosopher • They/Them',
-                      'Balanced and adaptive. A clean slate that mirrors your energy.',
+                      'EH-koh. Balanced and adaptive. A clean slate that mirrors your energy.',
                       'assets/images/archetypes/echo.png',
                       delay: 450,
                     ),
@@ -142,7 +164,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                     _buildArchetypeCard(
                       'Kai',
                       'The Strategist • He/Him',
-                      'Grounded, calm, and protective. A steady presence with a dry sense of humor.',
+                      'KY. Grounded, calm, and protective. A steady presence with a dry sense of humor.',
                       'assets/images/archetypes/kai.png',
                       delay: 500,
                     ),
@@ -152,7 +174,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                     _buildArchetypeCard(
                       'Marco',
                       'The Guardian • He/Him',
-                      'Warm, passionate, and fiercely loyal. Treats you like familia from day one.',
+                      'MAR-koh. Warm, passionate, and fiercely loyal. Treats you like familia from day one.',
                       'assets/images/archetypes/marco.png',
                       delay: 550,
                     ),

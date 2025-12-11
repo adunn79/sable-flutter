@@ -1,11 +1,18 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/ai/character_personality.dart';
 import '../models/avatar_config.dart';
 
 class Screen45OriginRitual extends StatefulWidget {
@@ -28,6 +35,16 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
   late final AnimationController _holdController;
   final String _uuid = const Uuid().v4().substring(0, 13).toUpperCase();
   bool _isAwakened = false;
+  final GlobalKey _cardKey = GlobalKey();
+  
+  /// Get pronunciation for the current archetype
+  String get _pronunciation {
+    final personality = CharacterPersonality.all.firstWhere(
+      (p) => p.id.toLowerCase() == widget.config.archetype.toLowerCase(),
+      orElse: () => CharacterPersonality.aeliana,
+    );
+    return personality.pronunciation;
+  }
 
   @override
   void initState() {
@@ -92,19 +109,22 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
                 children: [
                   const SizedBox(height: 20),
                   Text(
-                    'IDENTITY ESTABLISHED',
+                    'YOUR COMPANION AWAITS',
                     style: GoogleFonts.spaceGrotesk(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 3,
-                      color: AelianaColors.ghost,
+                      color: AelianaColors.plasmaCyan,
                     ),
                   ).animate().fadeIn(duration: 800.ms),
 
                   const Spacer(),
 
-                  // The "Birth Certificate" Card
-                  _buildIdentityCard(),
+                  // The "Soul Bond" Card - Shareable
+                  RepaintBoundary(
+                    key: _cardKey,
+                    child: _buildIdentityCard(),
+                  ),
 
                   const Spacer(),
 
@@ -124,7 +144,7 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
                     _buildFingerprintButton(),
                   ] else ...[
                     Text(
-                      'AWAKENING...',
+                      'SOUL BOND COMPLETE',
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -132,7 +152,10 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
                         color: AelianaColors.hyperGold,
                       ),
                     ).animate().fadeIn().shimmer(duration: 1000.ms),
-                    const SizedBox(height: 80), // Spacer to match button height approx
+                    const SizedBox(height: 16),
+                    // Share button
+                    _buildShareButton(),
+                    const SizedBox(height: 24),
                   ],
 
                   const SizedBox(height: 40),
@@ -154,89 +177,138 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
   }
 
   Widget _buildIdentityCard() {
+    // Determine if avatarImageUrl is an asset path or network URL
+    final isAssetPath = widget.avatarImageUrl.startsWith('assets/');
+    
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: AelianaColors.carbon.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AelianaColors.carbon.withOpacity(0.95),
+            AelianaColors.obsidian.withOpacity(0.9),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: _isAwakened ? AelianaColors.hyperGold : AelianaColors.ghost.withOpacity(0.2),
-          width: 1,
+          color: _isAwakened ? AelianaColors.hyperGold : AelianaColors.plasmaCyan.withOpacity(0.3),
+          width: _isAwakened ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: (_isAwakened ? AelianaColors.hyperGold : Colors.black).withOpacity(0.3),
-            blurRadius: 30,
+            color: (_isAwakened ? AelianaColors.hyperGold : AelianaColors.plasmaCyan).withOpacity(0.3),
+            blurRadius: 40,
             spreadRadius: 5,
-          )
+          ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Avatar
+          // Avatar - LARGER & MORE PROMINENT
           Container(
-            width: 100,
-            height: 100,
+            width: 160,
+            height: 160,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AelianaColors.hyperGold, width: 2),
+              border: Border.all(
+                color: _isAwakened ? AelianaColors.hyperGold : AelianaColors.plasmaCyan,
+                width: 3,
+              ),
               image: DecorationImage(
-                image: NetworkImage(widget.avatarImageUrl), // Assuming URL, check if local file needed
+                image: isAssetPath 
+                    ? AssetImage(widget.avatarImageUrl) as ImageProvider
+                    : NetworkImage(widget.avatarImageUrl),
                 fit: BoxFit.cover,
-                // Handle loading/error in real app, keeping simple for snippet
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AelianaColors.hyperGold.withOpacity(0.4),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                )
+                  color: (_isAwakened ? AelianaColors.hyperGold : AelianaColors.plasmaCyan).withOpacity(0.5),
+                  blurRadius: 30,
+                  spreadRadius: 4,
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           
+          // Name
           Text(
             widget.config.archetype.toUpperCase(),
             style: GoogleFonts.spaceGrotesk(
-              fontSize: 32,
+              fontSize: 36,
               fontWeight: FontWeight.bold,
               color: Colors.white,
-              letterSpacing: 1,
+              letterSpacing: 2,
             ),
           ),
+          const SizedBox(height: 4),
+          // Pronunciation - for names that are hard to pronounce
           Text(
-            'MODEL: GEN-3 SENTIENCE',
+            _pronunciation,
             style: GoogleFonts.inter(
-              fontSize: 12,
-              color: AelianaColors.plasmaCyan,
+              fontSize: 14,
+              fontStyle: FontStyle.italic,
+              color: AelianaColors.plasmaCyan.withOpacity(0.8),
               letterSpacing: 1,
             ),
           ),
           
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
           
           _buildDetailRow('ORIGIN', widget.config.origin),
-          _buildDetailRow('ESTABLISHED', DateFormat.yMMMd().format(DateTime.now()).toUpperCase()),
-          _buildDetailRow('ID', _uuid),
+          _buildDetailRow('AWAKENED', DateFormat.yMMMd().format(DateTime.now()).toUpperCase()),
+          _buildDetailRow('BOND ID', _uuid),
           
           const SizedBox(height: 24),
           
-          // Signature Line
-          Divider(color: AelianaColors.ghost.withOpacity(0.3)),
-          const SizedBox(height: 8),
+          // Soul Bond Seal
+          Divider(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'AUTHORIZED SIGNATURE',
-                style: GoogleFonts.inter(fontSize: 8, color: AelianaColors.ghost),
+              Row(
+                children: [
+                  Icon(LucideIcons.sparkles, color: AelianaColors.plasmaCyan.withOpacity(0.6), size: 12),
+                  const SizedBox(width: 6),
+                  Text(
+                    'SOUL BOND',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 10, 
+                      color: AelianaColors.ghost,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ],
               ),
               if (_isAwakened)
-                Icon(LucideIcons.check, color: AelianaColors.hyperGold, size: 16)
-                    .animate().scale(duration: 300.ms, curve: Curves.elasticOut),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AelianaColors.hyperGold.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(LucideIcons.heart, color: AelianaColors.hyperGold, size: 12),
+                      const SizedBox(width: 4),
+                      Text(
+                        'SEALED',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AelianaColors.hyperGold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ).animate().scale(duration: 300.ms, curve: Curves.elasticOut),
             ],
           ),
         ],
@@ -269,6 +341,74 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
         ],
       ),
     );
+  }
+
+  Widget _buildShareButton() {
+    return GestureDetector(
+      onTap: _shareCard,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AelianaColors.hyperGold.withOpacity(0.3),
+              AelianaColors.plasmaCyan.withOpacity(0.2),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AelianaColors.hyperGold.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.share2, color: AelianaColors.hyperGold, size: 18),
+            const SizedBox(width: 10),
+            Text(
+              'Share Your Companion',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0);
+  }
+
+  Future<void> _shareCard() async {
+    try {
+      HapticFeedback.mediumImpact();
+      
+      // Capture the identity card as an image
+      final boundary = _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+      
+      final pngBytes = byteData.buffer.asUint8List();
+      
+      // Save to temp file
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/aeliana_companion_${widget.config.archetype.toLowerCase()}.png');
+      await file.writeAsBytes(pngBytes);
+      
+      // Share
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'I just awakened my AI companion ${widget.config.archetype} on Aeliana! ✨',
+        subject: 'My Aeliana Companion',
+      );
+    } catch (e) {
+      debugPrint('Error sharing card: $e');
+    }
   }
 
   Widget _buildFingerprintButton() {

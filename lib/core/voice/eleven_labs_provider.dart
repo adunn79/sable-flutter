@@ -123,6 +123,21 @@ class ElevenLabsProvider {
   Future<void> stop() async {
     await _audioPlayer.stop();
   }
+  
+  /// Play audio from a URL (for voice previews)
+  Future<void> playFromUrl(String url) async {
+    try {
+      // Stop any current playback
+      await _audioPlayer.stop();
+      
+      // Play directly from URL
+      await _audioPlayer.play(UrlSource(url));
+      debugPrint('🔊 Playing audio from URL: $url');
+    } catch (e) {
+      debugPrint('Error playing from URL: $e');
+      rethrow;
+    }
+  }
 
   /// Stream text to speech with specific voice and API key (for previews)
   Future<void> streamTextToSpeech({

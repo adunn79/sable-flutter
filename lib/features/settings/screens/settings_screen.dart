@@ -561,9 +561,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     debugPrint('🔊 Playing voice sample for: $voiceId');
     
     try {
-      // Use VoiceService to play sample
-      await _voiceService.speakWithVoice(sampleText, voiceId: voiceId);
-      debugPrint('✅ Voice sample playback started');
+      // First check if this voice has a previewUrl in our voice list
+      final voice = _availableVoices.firstWhere(
+        (v) => v.voiceId == voiceId, 
+        orElse: () => VoiceWithMetadata(
+          voiceId: voiceId, 
+          name: '', 
+          accents: [], 
+          labels: {},
+        ),
+      );
+      
+      if (voice.previewUrl != null && voice.previewUrl!.isNotEmpty) {
+        // Play from preview URL (works for all voices, even those not in user's account)
+        debugPrint('🔊 Playing from preview URL: ${voice.previewUrl}');
+        await _voiceService.playFromUrl(voice.previewUrl!);
+        debugPrint('✅ Voice sample playback started from URL');
+      } else {
+        // Fallback to TTS API (only works for voices in user's account)
+        debugPrint('🔊 No preview URL, attempting TTS API for: $voiceId');
+        await _voiceService.speakWithVoice(sampleText, voiceId: voiceId);
+        debugPrint('✅ Voice sample playback started via TTS');
+      }
     } catch (e) {
       debugPrint('Error playing voice sample: $e');
       if (mounted) {
@@ -805,7 +824,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            // Top row: 3 avatars
+                            // Row 1: Aeliana, Imani, Priya (3)
                             Row(
                               children: [
                                 Expanded(
@@ -819,6 +838,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: _buildAvatarOption(
+                                    'imani',
+                                    'Imani',
+                                    'assets/images/archetypes/imani.png',
+                                    isFemale: true,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildAvatarOption(
+                                    'priya',
+                                    'Priya',
+                                    'assets/images/archetypes/priya.png',
+                                    isFemale: true,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            // Row 2: Sable, Echo (2)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: MediaQuery.of(context).size.width * 0.25,
+                                  child: _buildAvatarOption(
                                     'sable',
                                     'Sable',
                                     'assets/images/archetypes/sable.png',
@@ -826,7 +870,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                Expanded(
+                                SizedBox(
+                                  width: MediaQuery.of(context).size.width * 0.25,
                                   child: _buildAvatarOption(
                                     'echo',
                                     'Echo',
@@ -837,7 +882,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            // Bottom row: 2 avatars centered
+                            // Row 3: Kai, Marco (2)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -1093,65 +1138,139 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                      
                      // APPLE INTELLIGENCE (Siri Shortcuts)
                      const AppleIntelligenceSettingsWidget(),
-                     
-                     // CLOCK MODE (separate section)
-                     Container(
-                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                       padding: const EdgeInsets.all(16),
-                       decoration: BoxDecoration(
-                         color: AelianaColors.obsidian,
-                         borderRadius: BorderRadius.circular(12),
-                       ),
-                       child: Column(
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: [
-                           Text(
-                             'CLOCK MODE',
-                             style: GoogleFonts.spaceGrotesk(
-                               color: Colors.white,
-                               fontSize: 14,
-                               fontWeight: FontWeight.w600,
-                             ),
-                           ),
-                           const SizedBox(height: 12),
-                           GestureDetector(
-                             onTap: () async {
-                               ref.read(buttonSoundServiceProvider).playMediumTap();
-                               final avatarSettings = AvatarDisplaySettings();
-                               await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeClock);
-                               setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeClock);
-                             },
-                             child: Container(
-                               padding: const EdgeInsets.symmetric(vertical: 12),
-                               decoration: BoxDecoration(
-                                 color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
-                                     ? AelianaColors.hyperGold.withOpacity(0.2)
-                                     : Colors.transparent,
-                                 border: Border.all(
-                                   color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
-                                       ? AelianaColors.hyperGold
-                                       : Colors.white24,
-                                   width: 2,
-                                 ),
-                                 borderRadius: BorderRadius.circular(8),
-                               ),
-                               child: Center(
-                                 child: Text(
-                                   'Clock',
-                                   style: GoogleFonts.inter(
-                                     color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
-                                         ? AelianaColors.hyperGold
-                                         : Colors.white70,
-                                     fontWeight: FontWeight.w600,
-                                     fontSize: 13,
-                                   ),
-                                 ),
-                               ),
-                             ),
-                           ),
-                         ],
-                       ),
-                     ),
+                                          // CLOCK MODE (separate section with detailed instructions)
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AelianaColors.obsidian,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'CLOCK MODE',
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (_avatarDisplayMode == AvatarDisplaySettings.modeClock)
+                                  TextButton.icon(
+                                    onPressed: () async {
+                                      ref.read(buttonSoundServiceProvider).playMediumTap();
+                                      final avatarSettings = AvatarDisplaySettings();
+                                      await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeFullscreen);
+                                      setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeFullscreen);
+                                    },
+                                    icon: const Icon(Icons.exit_to_app, size: 16, color: AelianaColors.plasmaCyan),
+                                    label: Text('Exit Clock', style: GoogleFonts.inter(color: AelianaColors.plasmaCyan, fontSize: 12)),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            // Instruction text
+                            Text(
+                              'Transform your device into a beautiful bedside clock with your AI companion.',
+                              style: GoogleFonts.inter(
+                                color: Colors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            GestureDetector(
+                              onTap: () async {
+                                ref.read(buttonSoundServiceProvider).playMediumTap();
+                                final avatarSettings = AvatarDisplaySettings();
+                                await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeClock);
+                                setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeClock);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
+                                      ? AelianaColors.hyperGold.withOpacity(0.2)
+                                      : Colors.transparent,
+                                  border: Border.all(
+                                    color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
+                                        ? AelianaColors.hyperGold
+                                        : Colors.white24,
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _avatarDisplayMode == AvatarDisplaySettings.modeClock 
+                                            ? Icons.access_time_filled 
+                                            : Icons.access_time,
+                                        color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
+                                            ? AelianaColors.hyperGold
+                                            : Colors.white70,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _avatarDisplayMode == AvatarDisplaySettings.modeClock 
+                                            ? 'Clock Mode Active' 
+                                            : 'Enable Clock Mode',
+                                        style: GoogleFonts.inter(
+                                          color: _avatarDisplayMode == AvatarDisplaySettings.modeClock
+                                              ? AelianaColors.hyperGold
+                                              : Colors.white70,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // How to use instructions
+                            if (_avatarDisplayMode == AvatarDisplaySettings.modeClock) ...[
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: AelianaColors.carbon,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'HOW TO USE',
+                                      style: GoogleFonts.spaceGrotesk(
+                                        color: AelianaColors.plasmaCyan,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    _buildInstructionRow(Icons.touch_app, 'Tap clock to show/hide controls'),
+                                    _buildInstructionRow(Icons.palette, 'Tap "Color" to cycle through themes'),
+                                    _buildInstructionRow(Icons.watch, 'Tap "Style" to switch clock designs'),
+                                    _buildInstructionRow(Icons.auto_awesome, 'Tap "Auto" to enable color cycling'),
+                                    _buildInstructionRow(Icons.alarm, 'Tap "Alarms" to manage alarms'),
+                                    _buildInstructionRow(Icons.close, 'Tap X or exit hint to leave clock mode'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                      
                      // Background Color Selector (shown in Icon, Orb, and Portrait modes)
                      if (_avatarDisplayMode == AvatarDisplaySettings.modeIcon ||
@@ -2111,6 +2230,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
+  
+  /// Helper for clock instruction rows
+  Widget _buildInstructionRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: Colors.white54),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              color: Colors.white70,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildBondSliderRow() {
     String bondLabel = _userBond < 0.33 ? 'Cooled' : (_userBond > 0.66 ? 'Warm' : 'Neutral');

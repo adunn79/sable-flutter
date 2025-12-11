@@ -19,6 +19,7 @@ import 'package:sable/core/emotion/location_service.dart';
 import 'package:sable/src/config/app_config.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:sable/features/journal/widgets/avatar_journal_overlay.dart';
+import 'package:sable/core/widgets/unified_avatar_widget.dart';
 import 'package:sable/src/shared/weather_widget.dart';
 import 'package:sable/core/travel/travel_service.dart';
 import 'package:sable/core/news/headline_service.dart';
@@ -397,22 +398,13 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
               ],
             ),
           ),
-          // Right side: Avatar + Weather
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // AI Companion Avatar (tappable for schedule help)
-              GestureDetector(
-                onTap: _showAiScheduleHelp,
-                child: AvatarJournalOverlay(
-                  isPrivate: false,
-                  archetype: _archetypeId,
-                  isActive: _isAiThinking,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const WeatherWidget(),
-            ],
+          // Right side: Avatar (56px unified widget)
+          UnifiedAvatarWidget(
+            size: 56,
+            showStatus: true,
+            statusText: 'Observing',
+            onTap: _showAiScheduleHelp,
+            margin: const EdgeInsets.only(top: 0, right: 0),
           ),
         ],
       ),

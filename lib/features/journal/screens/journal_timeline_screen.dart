@@ -8,6 +8,7 @@ import '../services/journal_export_service.dart';
 import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
 import '../widgets/avatar_journal_overlay.dart';
+import 'package:sable/core/widgets/unified_avatar_widget.dart';
 import 'journal_editor_screen.dart';
 import 'insights_dashboard_screen.dart';
 import 'gratitude_mode_screen.dart';
@@ -620,26 +621,22 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
             ],
           ),
           
-          // Avatar overlay - positioned bottom-right to not cover text
+          // Avatar overlay - positioned top-right for consistency across tabs
           Positioned(
-            bottom: 80, // Lower position to avoid overlapping empty state text
+            top: 12,
             right: 16,
-            child: SizedBox(
-              width: 100,
-              height: 100,
-              child: AvatarJournalOverlay(
-                isPrivate: false,
-                archetype: _archetype,
-                onSparkTap: null, // No spark on timeline
-                onAvatarTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Hi! Tap + to start journaling. I can help with prompts! 💜'),
-                      backgroundColor: _accentLavender.withOpacity(0.9),
-                    ),
-                  );
-                },
-              ),
+            child: UnifiedAvatarWidget(
+              size: 56,
+              showStatus: true,
+              statusText: 'Observing',
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Hi! Tap + to start journaling. I can help with prompts! 💜'),
+                    backgroundColor: _accentLavender.withOpacity(0.9),
+                  ),
+                );
+              },
             ),
           ),
             ],

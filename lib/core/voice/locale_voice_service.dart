@@ -110,8 +110,25 @@ class LocaleVoiceService {
     }
     
     // India
-    if (originLower.contains('india') || originLower.contains('mumbai')) {
+    if (originLower.contains('india') || originLower.contains('mumbai') ||
+        originLower.contains('delhi') || originLower.contains('bangalore') ||
+        originLower.contains('chennai') || originLower.contains('kolkata') ||
+        originLower.contains('hindu') || originLower.contains('hindi')) {
       return 'Indian';
+    }
+    
+    // African American
+    if (originLower.contains('african american') || 
+        originLower.contains('african-american') ||
+        originLower.contains('black american')) {
+      return 'African American';
+    }
+    
+    // African
+    if (originLower.contains('nigeria') || originLower.contains('ghana') ||
+        originLower.contains('kenya') || originLower.contains('lagos') ||
+        originLower.contains('africa')) {
+      return 'African';
     }
     
     // South Africa

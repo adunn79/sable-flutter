@@ -230,6 +230,94 @@ class ElevenLabsApiService {
         previewUrl: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/ErXwobaYiN019PkySvjV/38d64495-241f-4129-ad9a-313143399e53.mp3',
       ),
       
+      // === AFRICAN AMERICAN VOICES (for IMANI persona) ===
+      VoiceWithMetadata(
+        voiceId: 'OYKPYtxX4mV3MAOiYkYc',
+        name: 'DrRenetta Weaver',
+        gender: 'female',
+        accents: ['African American', 'American'],
+        labels: {'accent': 'african-american', 'gender': 'female', 'region': 'usa', 'use_case': 'professional'},
+        previewUrl: null,
+      ),
+      VoiceWithMetadata(
+        voiceId: '4ruSPR79OgfZINYizp0U',
+        name: 'Olusola',
+        gender: 'female',
+        accents: ['African', 'African American'],
+        labels: {'accent': 'african', 'gender': 'female', 'region': 'africa'},
+        previewUrl: null,
+      ),
+      VoiceWithMetadata(
+        voiceId: 'JMbCR4ujfEfGaawA1YtC',
+        name: 'Toluwalope',
+        gender: 'female',
+        accents: ['African', 'African American'],
+        labels: {'accent': 'african', 'gender': 'female', 'region': 'africa'},
+        previewUrl: null,
+      ),
+      
+      // === INDIAN VOICES (for PRIYA persona) ===
+      VoiceWithMetadata(
+        voiceId: 'RABOvaPec1ymXz02oDQi',
+        name: 'Anika',
+        gender: 'female',
+        accents: ['Indian', 'Hindi'],
+        labels: {'accent': 'indian', 'gender': 'female', 'region': 'india', 'language': 'hindi'},
+        previewUrl: null,
+      ),
+      VoiceWithMetadata(
+        voiceId: '2F1KINpxsttim2WfMbVs',
+        name: 'DB Hindi Voice',
+        gender: 'female',
+        accents: ['Indian', 'Hindi'],
+        labels: {'accent': 'indian', 'gender': 'female', 'region': 'india', 'language': 'hindi'},
+        previewUrl: null,
+      ),
+      
+      // === HISPANIC / LATINO VOICES (for MARCO persona) ===
+      VoiceWithMetadata(
+        voiceId: 'UOsudtiwQVrIvIRyyCHn',
+        name: 'Latino Gentleman',
+        gender: 'male',
+        accents: ['Hispanic', 'Latino', 'Spanish', 'Mexican'],
+        labels: {'accent': 'hispanic', 'gender': 'male', 'region': 'mexico', 'use_case': 'narrator'},
+        previewUrl: null,
+      ),
+      VoiceWithMetadata(
+        voiceId: 'W6Z2FAa578IKOGSVo2sA',
+        name: 'Eduardo M.',
+        gender: 'male',
+        accents: ['Mexican', 'Spanish', 'Latino'],
+        labels: {'accent': 'mexican', 'gender': 'male', 'region': 'mexico'},
+        previewUrl: null,
+      ),
+      VoiceWithMetadata(
+        voiceId: 'T7QGPtToiqH4S8VlIkMJ',
+        name: 'Eleguar',
+        gender: 'male',
+        accents: ['Latin American', 'Spanish'],
+        labels: {'accent': 'latin-american', 'gender': 'male', 'region': 'latin-america'},
+        previewUrl: null,
+      ),
+      
+      // === AFRICAN AMERICAN MALE VOICES (for KAI persona) ===
+      VoiceWithMetadata(
+        voiceId: 'nJvj5shg2xu1GKGxqfkE',
+        name: 'Hakeem',
+        gender: 'male',
+        accents: ['African American', 'American'],
+        labels: {'accent': 'african-american', 'gender': 'male', 'region': 'usa', 'use_case': 'narrator'},
+        previewUrl: null,
+      ),
+      VoiceWithMetadata(
+        voiceId: 'G2LDKmwqqBo2DD9ucIji',
+        name: 'Ade',
+        gender: 'male',
+        accents: ['African', 'African American'],
+        labels: {'accent': 'african', 'gender': 'male', 'region': 'africa'},
+        previewUrl: null,
+      ),
+      
       // === BRITISH VOICES ===
       VoiceWithMetadata(
         voiceId: 'XB0fDUnXU5powFXDhCwa',

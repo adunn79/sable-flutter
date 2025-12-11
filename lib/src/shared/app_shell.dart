@@ -7,6 +7,7 @@ import 'package:sable/src/shared/weather_widget.dart';
 import 'package:sable/core/services/idle_detection_service.dart';
 import 'package:sable/core/media/unified_music_service.dart';
 import 'package:sable/core/widgets/mini_player_widget.dart';
+import 'package:sable/features/settings/services/avatar_display_settings.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   final Widget child;
@@ -180,7 +181,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     return 0;
   }
 
-  void _onItemTapped(int index, BuildContext context) {
+  void _onItemTapped(int index, BuildContext context) async {
     String route = '/chat';
     switch (index) {
       case 0:
@@ -198,6 +199,16 @@ class _AppShellState extends ConsumerState<AppShell> {
       case 4:
         route = '/more';
         break;
+    }
+    
+    // Reset clock mode when user explicitly navigates via tab bar
+    // This ensures clock mode doesn't persist unintentionally
+    final avatarSettings = AvatarDisplaySettings();
+    final currentMode = await avatarSettings.getAvatarDisplayMode();
+    if (currentMode == AvatarDisplaySettings.modeClock) {
+      // Exit clock mode by switching to fullscreen
+      await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeFullscreen);
+      debugPrint('🕐 Auto-exited clock mode on tab navigation');
     }
     
     // Explicitly save the route we are going to

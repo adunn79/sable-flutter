@@ -36,6 +36,11 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
   bool _alarmActive = false;
   String? _weatherTemp;
   String? _weatherCondition;
+  
+  // Dynamic color cycling
+  bool _dynamicColorsEnabled = false;
+  int _dynamicColorIntervalMinutes = 5;
+  DateTime? _lastColorChange;
 
   // Style names for display
   static const _styleNames = {
@@ -60,6 +65,7 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
     super.initState();
     _loadPreferences();
     _fetchWeather();
+    _startDynamicColorTimer();
     
     // Hide controls after 5 seconds
     Future.delayed(const Duration(seconds: 5), () {
@@ -70,6 +76,22 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
     
     // Keep screen awake and hide system UI
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+  
+  void _startDynamicColorTimer() {
+    // Check every minute if we should change colors
+    Future.delayed(const Duration(minutes: 1), () {
+      if (!mounted) return;
+      
+      if (_dynamicColorsEnabled && _lastColorChange != null) {
+        final elapsed = DateTime.now().difference(_lastColorChange!).inMinutes;
+        if (elapsed >= _dynamicColorIntervalMinutes) {
+          _cycleColor();
+          _lastColorChange = DateTime.now();
+        }
+      }
+      _startDynamicColorTimer(); // Schedule next check
+    });
   }
 
   Future<void> _fetchWeather() async {
@@ -93,6 +115,9 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
       _clockStyle = ClockStyle.values[prefs.getInt('clock_style_index') ?? 0];
       _colorTheme = ClockColorTheme.values[prefs.getInt('clock_color_index') ?? 0];
       _nightMode = prefs.getBool('clock_night_mode_enabled') ?? false;
+      _dynamicColorsEnabled = prefs.getBool('clock_dynamic_colors') ?? false;
+      _dynamicColorIntervalMinutes = prefs.getInt('clock_dynamic_interval') ?? 5;
+      _lastColorChange = DateTime.now();
     });
   }
 
@@ -102,6 +127,8 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
     await prefs.setInt('clock_style_index', _clockStyle.index);
     await prefs.setInt('clock_color_index', _colorTheme.index);
     await prefs.setBool('clock_night_mode_enabled', _nightMode);
+    await prefs.setBool('clock_dynamic_colors', _dynamicColorsEnabled);
+    await prefs.setInt('clock_dynamic_interval', _dynamicColorIntervalMinutes);
   }
   
   void _cycleStyle() {
@@ -271,6 +298,47 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
         
         // Controls overlay
         _buildControlsOverlay(),
+        
+        // Persistent exit hint when controls are hidden
+        if (!_showControls)
+          Positioned(
+            bottom: 20,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () {
+                  if (widget.onExit != null) {
+                    widget.onExit!();
+                  } else {
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.touch_app, color: Colors.white54, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Tap to show controls • Tap here to exit',
+                        style: GoogleFonts.inter(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -419,6 +487,21 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
                           setState(() => _use24Hour = !_use24Hour);
                           _savePreferences();
                         },
+                      ),
+                      // Dynamic colors toggle
+                      _buildControlButton(
+                        icon: Icons.auto_awesome,
+                        label: _dynamicColorsEnabled ? 'Auto On' : 'Auto Off',
+                        onTap: () {
+                          setState(() {
+                            _dynamicColorsEnabled = !_dynamicColorsEnabled;
+                            if (_dynamicColorsEnabled) {
+                              _lastColorChange = DateTime.now();
+                            }
+                          });
+                          _savePreferences();
+                        },
+                        highlight: _dynamicColorsEnabled,
                       ),
                       // Set alarm
                       _buildControlButton(

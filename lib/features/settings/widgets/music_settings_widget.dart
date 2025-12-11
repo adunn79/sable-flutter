@@ -100,6 +100,47 @@ class _MusicSettingsWidgetState extends ConsumerState<MusicSettingsWidget> {
             _buildNowPlayingRow(musicService),
           ],
           
+          // Quick Play Buttons (when Spotify is connected)
+          if (musicService.isSpotifyConnected) ...[
+            const SizedBox(height: 16),
+            const Divider(color: Colors.white12),
+            const SizedBox(height: 12),
+            Text(
+              'QUICK PLAY',
+              style: GoogleFonts.inter(
+                color: Colors.white54,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _buildQuickPlayButton(
+                  icon: LucideIcons.brain,
+                  label: 'Focus',
+                  color: AelianaColors.plasmaCyan,
+                  onTap: () => _playQuickMix(musicService, 'focus'),
+                ),
+                const SizedBox(width: 8),
+                _buildQuickPlayButton(
+                  icon: LucideIcons.sunrise,
+                  label: 'Morning',
+                  color: const Color(0xFFFFB347),
+                  onTap: () => _playQuickMix(musicService, 'morning'),
+                ),
+                const SizedBox(width: 8),
+                _buildQuickPlayButton(
+                  icon: LucideIcons.moon,
+                  label: 'Wind Down',
+                  color: AelianaColors.hyperGold,
+                  onTap: () => _playQuickMix(musicService, 'winddown'),
+                ),
+              ],
+            ),
+          ],
+          
           // Music features info
           const SizedBox(height: 12),
           Text(
@@ -112,6 +153,75 @@ class _MusicSettingsWidgetState extends ConsumerState<MusicSettingsWidget> {
         ],
       ),
     );
+  }
+  
+  Widget _buildQuickPlayButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Future<void> _playQuickMix(UnifiedMusicService musicService, String type) async {
+    // Curated Spotify playlist URIs for different moods
+    // These are popular public playlists
+    String? playlistUri;
+    String playlistName = '';
+    
+    switch (type) {
+      case 'focus':
+        playlistUri = 'spotify:playlist:37i9dQZF1DWZeKCadgRdKQ'; // Deep Focus
+        playlistName = 'Deep Focus';
+        break;
+      case 'morning':
+        playlistUri = 'spotify:playlist:37i9dQZF1DX1g0iEXLFycr'; // Have a Great Day!
+        playlistName = 'Morning Energy';
+        break;
+      case 'winddown':
+        playlistUri = 'spotify:playlist:37i9dQZF1DWZd79rJ6a7lp'; // Wind Down
+        playlistName = 'Wind Down';
+        break;
+    }
+    
+    if (playlistUri != null) {
+      final success = await musicService.play(uri: playlistUri);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '▶️ Playing $playlistName' : '❌ Could not start playlist'),
+            backgroundColor: success ? AelianaColors.plasmaCyan.withValues(alpha: 0.9) : Colors.red,
+          ),
+        );
+      }
+    }
   }
   
   Widget _buildServiceRow({

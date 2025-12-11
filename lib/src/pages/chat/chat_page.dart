@@ -405,18 +405,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
 
       
-      // AUTO-SWITCH VOICE BASED ON GENDER (Fix for Marco sounding like a girl)
+      // AUTO-SWITCH VOICE BASED ON ARCHETYPE (Culturally appropriate voices for Imani, Priya, etc.)
       if (_voiceService != null && _stateService != null) {
-        // Use archetypeId NOT personalityId - Marco is an archetype, not a personality
         final currentArchetypeId = _stateService!.selectedArchetypeId;
-        final archetype = PersonalityService.getById(currentArchetypeId); // This now has .gender
         
-        final bestVoiceId = _voiceService!.getBestVoiceForGender(archetype.gender);
-        // Only switch if we are clearly on the wrong voice type or using a default
-        // For now, let's FORCE it to ensure consistency, unless user manually overrode it recently?
-        // Let's just set it. The user can change it back in settings if they really want.
+        // Use archetype-specific voice selection (includes Imani, Priya with correct accents)
+        final bestVoiceId = _voiceService!.getBestVoiceForArchetype(currentArchetypeId);
         await _voiceService!.setVoice(bestVoiceId);
-        debugPrint('🎙️ Auto-switched voice to $bestVoiceId for gender ${archetype.gender} (archetype: $currentArchetypeId)');
+        debugPrint('🎙️ Auto-switched voice to $bestVoiceId for archetype: $currentArchetypeId');
       }
 
     // Initialize Local Vibe Service

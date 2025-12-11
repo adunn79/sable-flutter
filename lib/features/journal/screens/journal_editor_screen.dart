@@ -10,6 +10,7 @@ import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
 import '../services/music_service.dart';
 import '../widgets/avatar_journal_overlay.dart';
+import 'package:sable/core/widgets/unified_avatar_widget.dart';
 import '../widgets/template_picker_sheet.dart';
 import '../widgets/prompt_picker_sheet.dart';
 import '../models/journal_template.dart';
@@ -1453,17 +1454,16 @@ No hashtags, no explanations, just the tags.''',
         ), // End Column
       ), // End SafeArea
       
-      // Avatar overlay with privacy state
+      // Avatar overlay - positioned top-right for consistency
       Positioned(
-        left: 16,
-        bottom: 16,
-        child: AvatarJournalOverlay(
-          isPrivate: _isPrivate,
-          archetype: _archetype,
-          onSparkTap: null, // Removed - using avatar tap instead
-          onAvatarTap: _isPrivate 
+        top: MediaQuery.of(context).padding.top + 12,
+        right: 16,
+        child: UnifiedAvatarWidget(
+          size: 56,
+          showStatus: true,
+          statusText: _isPrivate ? 'Private' : 'Observing',
+          onTap: _isPrivate 
               ? () {
-                  // When private, just show status
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('${_archetype[0].toUpperCase()}${_archetype.substring(1)} can\'t see this entry (private mode)'),
@@ -1471,7 +1471,7 @@ No hashtags, no explanations, just the tags.''',
                     ),
                   );
                 }
-              : _generateSparkPrompt, // When observing, trigger AI prompt
+              : _generateSparkPrompt,
         ),
       ),
     ],

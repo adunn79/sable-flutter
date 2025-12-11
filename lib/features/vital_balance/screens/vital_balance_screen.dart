@@ -15,6 +15,7 @@ import 'package:sable/features/onboarding/services/onboarding_state_service.dart
 import 'package:sable/features/vital_balance/services/vital_balance_service.dart';
 import 'package:sable/features/vital_balance/services/step_tracking_service.dart';
 import 'package:sable/features/journal/widgets/avatar_journal_overlay.dart';
+import 'package:sable/core/widgets/unified_avatar_widget.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:sable/src/pages/chat/chat_page.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -3368,36 +3369,28 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
           // Header with avatar
           Row(
             children: [
-              SizedBox(
-                width: 140, // Significantly larger avatar
-                height: 140,
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: AvatarJournalOverlay(
-                    isPrivate: _keepConversationsPrivate,
-                    archetype: _archetypeId,
-                    onSparkTap: null,
-                    onAvatarTap: () {
-                      if (_keepConversationsPrivate) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Vital Balance is currently Private.', style: TextStyle(color: Colors.white)),
-                            backgroundColor: Colors.black87,
-                          ),
-                        );
-                      } else {
-                        // Just show a tooltip/snackbar since chat is below
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Your companion is observing your wellness.', style: TextStyle(color: Colors.white)),
-                              backgroundColor: Colors.black87,
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                      }
-                    },
-                  ),
-                ),
+              UnifiedAvatarWidget(
+                size: 56,
+                showStatus: true,
+                statusText: 'Observing',
+                onTap: () {
+                  if (_keepConversationsPrivate) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Vital Balance is currently Private.', style: TextStyle(color: Colors.white)),
+                        backgroundColor: Colors.black87,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Your companion is observing your wellness.', style: TextStyle(color: Colors.white)),
+                        backgroundColor: Colors.black87,
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  }
+                },
               ),
               const SizedBox(width: 12),
               Expanded(

@@ -24,7 +24,19 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
   DateTime? _selectedDate;
   String? _genderIdentity;
 
-
+  @override
+  void initState() {
+    super.initState();
+    // iPad keyboard fix: explicitly request focus after frame render
+    // This is more reliable than autofocus on iOS/iPadOS
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && !_nameFocusNode.hasFocus) {
+          _nameFocusNode.requestFocus();
+        }
+      });
+    });
+  }
 
   @override
   void dispose() {

@@ -22,6 +22,7 @@ import '../models/private_message.dart';
 import '../models/private_user_persona.dart';
 import '../widgets/private_avatar_picker.dart';
 import '../widgets/private_persona_editor.dart';
+import '../widgets/private_faq_sheet.dart';
 import '../../safety/screens/emergency_screen.dart';
 import 'private_settings_screen.dart'; // IMPORTED
 
@@ -767,6 +768,12 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
             ),
             onPressed: _cycleDisplayMode,
             tooltip: 'Change avatar display',
+          ),
+          // FAQ Help button
+          IconButton(
+            icon: Icon(LucideIcons.helpCircle, color: Colors.white70),
+            onPressed: () => PrivateFAQSheet.show(context),
+            tooltip: 'Help & FAQ',
           ),
           IconButton(
             icon: Icon(

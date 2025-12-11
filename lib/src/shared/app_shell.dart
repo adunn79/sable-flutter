@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sable/src/shared/weather_widget.dart';
+import 'package:sable/core/services/idle_detection_service.dart';
 
 class AppShell extends StatefulWidget {
   final Widget child;
@@ -14,6 +15,7 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
+  IdleDetectionService? _idleService;
   
   @override
   void didUpdateWidget(covariant AppShell oldWidget) {
@@ -24,8 +26,30 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
+    _initIdleDetection();
     // Save initial route after first frame to ensure context is valid for GoRouter
     WidgetsBinding.instance.addPostFrameCallback((_) => _saveCurrentRoute());
+  }
+  
+  Future<void> _initIdleDetection() async {
+    _idleService = await IdleDetectionService.getInstance();
+    _idleService?.onIdleTriggered = _onIdleTriggered;
+    _idleService?.resetIdleTimer();
+  }
+  
+  void _onIdleTriggered() {
+    if (!mounted) return;
+    final location = GoRouterState.of(context).uri.toString();
+    // Don't trigger if already in clock mode or during onboarding
+    if (location.startsWith('/clock') || location.startsWith('/onboarding')) return;
+    
+    // Save current route before navigating to clock
+    _idleService?.saveLastRoute(location);
+    context.go('/clock');
+  }
+  
+  void _resetIdleOnInteraction() {
+    _idleService?.resetIdleTimer();
   }
 
   Future<void> _saveCurrentRoute([String? locationArg]) async {
@@ -62,23 +86,32 @@ class _AppShellState extends State<AppShell> {
     final bool isMorePage = location.startsWith('/more');
     final bool isPrivateSpace = location.startsWith('/private-space');
     final bool isOnboarding = location.startsWith('/onboarding');
+    final bool isClockMode = location.startsWith('/clock');
+    
+    // Hide navigation bar in clock mode for immersive experience
+    final bool showNavBar = !isClockMode;
     
     return Scaffold(
-      body: Stack(
-        children: [
-          widget.child,
-          // Weather widget - only show on Today screens (hide everywhere else for cleaner UI)
-          if (!isChatPage && !isSettingsPage && !isJournalPage && !isMorePage && !isPrivateSpace && !isOnboarding && !location.startsWith('/vital-balance') && !location.startsWith('/legal'))
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 8,
-              left: 16,
-              child: const SafeArea(
-                child: WeatherWidget(),
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: _resetIdleOnInteraction,
+        onPanUpdate: (_) => _resetIdleOnInteraction(),
+        child: Stack(
+          children: [
+            widget.child,
+            // Weather widget - only show on Today screens (hide everywhere else for cleaner UI)
+            if (!isChatPage && !isSettingsPage && !isJournalPage && !isMorePage && !isPrivateSpace && !isOnboarding && !isClockMode && !location.startsWith('/vital-balance') && !location.startsWith('/legal'))
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 8,
+                left: 16,
+                child: const SafeArea(
+                  child: WeatherWidget(),
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
-      bottomNavigationBar: Theme(
+      bottomNavigationBar: showNavBar ? Theme(
         data: Theme.of(context).copyWith(
           navigationBarTheme: NavigationBarThemeData(
             height: 60, // Increased for better spacing
@@ -120,7 +153,7 @@ class _AppShellState extends State<AppShell> {
             ),
           ],
         ),
-      ),
+      ) : null,
     );
   }
 

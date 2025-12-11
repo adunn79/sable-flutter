@@ -48,6 +48,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:sable/features/journal/screens/knowledge_center_screen.dart';
 import 'package:sable/features/settings/screens/avatar_gallery_screen.dart';
 import 'package:sable/core/memory/unified_memory_service.dart';
+import 'package:sable/features/clock/widgets/clock_face_widget.dart';
+import 'package:sable/core/services/idle_detection_service.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -67,7 +69,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _avatarDisplayMode = AvatarDisplaySettings.modeFullscreen;
   String _backgroundColor = AvatarDisplaySettings.colorBlack;
   bool _clockUse24Hour = false;
-  bool _clockIsAnalog = false;
+  ClockStyle _clockStyle = ClockStyle.digital;
+  ClockColorTheme _clockColorTheme = ClockColorTheme.white;
+  bool _clockNightMode = false;
+  bool _clockAutoIdle = false;
+  int _clockIdleTimeout = 2;
   
   // Permission Toggles (Default OFF)
   bool _permissionGps = false;
@@ -510,11 +516,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
     
     // Load Clock Settings
-    SharedPreferences.getInstance().then((prefs) {
+    SharedPreferences.getInstance().then((prefs) async {
       if (mounted) {
+        final idleService = await IdleDetectionService.getInstance();
         setState(() {
           _clockUse24Hour = prefs.getBool('clock_use_24hour') ?? false;
-          _clockIsAnalog = prefs.getBool('clock_is_analog') ?? false;
+          _clockStyle = ClockStyle.values[prefs.getInt('clock_style_index') ?? 0];
+          _clockColorTheme = ClockColorTheme.values[prefs.getInt('clock_color_theme_index') ?? 0];
+          _clockNightMode = prefs.getBool('clock_night_mode_enabled') ?? false;
+          _clockAutoIdle = idleService.isEnabled;
+          _clockIdleTimeout = idleService.timeoutMinutes;
         });
       }
     });
@@ -1384,87 +1395,212 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                ],
                              ),
                              const SizedBox(height: 16),
-                             // Digital / Analog toggle
-                             Row(
-                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                               children: [
-                                 Text(
-                                   'Clock Style',
-                                   style: GoogleFonts.inter(
-                                     color: Colors.white70,
-                                     fontSize: 14,
-                                   ),
-                                 ),
-                                 Row(
-                                   children: [
-                                     GestureDetector(
-                                       onTap: () async {
-                                         ref.read(buttonSoundServiceProvider).playMediumTap();
-                                         final prefs = await SharedPreferences.getInstance();
-                                         await prefs.setBool('clock_is_analog', false);
-                                         setState(() => _clockIsAnalog = false);
-                                       },
-                                       child: Container(
-                                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                         decoration: BoxDecoration(
-                                           color: !_clockIsAnalog
-                                               ? AelianaColors.hyperGold.withOpacity(0.2)
-                                               : Colors.transparent,
-                                           border: Border.all(
-                                             color: !_clockIsAnalog
-                                                 ? AelianaColors.hyperGold
-                                                 : Colors.white24,
-                                           ),
-                                           borderRadius: BorderRadius.circular(6),
-                                         ),
-                                         child: Text(
-                                           'Digital',
-                                           style: GoogleFonts.inter(
-                                             color: !_clockIsAnalog ? AelianaColors.hyperGold : Colors.white54,
-                                             fontWeight: FontWeight.w600,
-                                             fontSize: 12,
-                                           ),
-                                         ),
-                                       ),
-                                     ),
-                                     const SizedBox(width: 8),
-                                     GestureDetector(
-                                       onTap: () async {
-                                         ref.read(buttonSoundServiceProvider).playMediumTap();
-                                         final prefs = await SharedPreferences.getInstance();
-                                         await prefs.setBool('clock_is_analog', true);
-                                         setState(() => _clockIsAnalog = true);
-                                       },
-                                       child: Container(
-                                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                         decoration: BoxDecoration(
-                                           color: _clockIsAnalog
-                                               ? AelianaColors.hyperGold.withOpacity(0.2)
-                                               : Colors.transparent,
-                                           border: Border.all(
-                                             color: _clockIsAnalog
-                                                 ? AelianaColors.hyperGold
-                                                 : Colors.white24,
-                                           ),
-                                           borderRadius: BorderRadius.circular(6),
-                                         ),
-                                         child: Text(
-                                           'Analog',
-                                           style: GoogleFonts.inter(
-                                             color: _clockIsAnalog ? AelianaColors.hyperGold : Colors.white54,
-                                             fontWeight: FontWeight.w600,
-                                             fontSize: 12,
-                                           ),
-                                         ),
-                                       ),
-                                     ),
-                                   ],
-                                 ),
-                               ],
-                             ),
-                           ],
-                         ),
-                       ),
+                              // Clock Style Selector (5 styles)
+                              Text(
+                                'Clock Style',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: ClockStyle.values.map((style) {
+                                    final isSelected = _clockStyle == style;
+                                    final styleName = style.name[0].toUpperCase() + style.name.substring(1);
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: GestureDetector(
+                                        onTap: () async {
+                                          ref.read(buttonSoundServiceProvider).playMediumTap();
+                                          final prefs = await SharedPreferences.getInstance();
+                                          await prefs.setInt('clock_style_index', style.index);
+                                          setState(() => _clockStyle = style);
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? AelianaColors.hyperGold.withOpacity(0.2)
+                                                : Colors.transparent,
+                                            border: Border.all(
+                                              color: isSelected ? AelianaColors.hyperGold : Colors.white24,
+                                            ),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            styleName,
+                                            style: GoogleFonts.inter(
+                                              color: isSelected ? AelianaColors.hyperGold : Colors.white54,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              // Color Theme
+                              Text(
+                                'Color Theme',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: ClockColorTheme.values.map((theme) {
+                                  final isSelected = _clockColorTheme == theme;
+                                  final colors = <ClockColorTheme, Color>{
+                                    ClockColorTheme.white: Colors.white,
+                                    ClockColorTheme.cyan: AelianaColors.plasmaCyan,
+                                    ClockColorTheme.gold: AelianaColors.hyperGold,
+                                    ClockColorTheme.red: Colors.redAccent,
+                                    ClockColorTheme.purple: Colors.purpleAccent,
+                                  };
+                                  return Expanded(
+                                    child: GestureDetector(
+                                      onTap: () async {
+                                        ref.read(buttonSoundServiceProvider).playMediumTap();
+                                        final prefs = await SharedPreferences.getInstance();
+                                        await prefs.setInt('clock_color_theme_index', theme.index);
+                                        setState(() => _clockColorTheme = theme);
+                                      },
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? colors[theme]!.withOpacity(0.2)
+                                              : Colors.transparent,
+                                          border: Border.all(
+                                            color: isSelected ? colors[theme]! : Colors.white24,
+                                            width: isSelected ? 2 : 1,
+                                          ),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Center(
+                                          child: Container(
+                                            width: 16,
+                                            height: 16,
+                                            decoration: BoxDecoration(
+                                              color: colors[theme],
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 16),
+                              // Night Mode & Auto-Idle
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Night Mode (Red Tint)',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Switch(
+                                    value: _clockNightMode,
+                                    onChanged: (val) async {
+                                      ref.read(buttonSoundServiceProvider).playMediumTap();
+                                      final prefs = await SharedPreferences.getInstance();
+                                      await prefs.setBool('clock_night_mode_enabled', val);
+                                      setState(() => _clockNightMode = val);
+                                    },
+                                    activeColor: Colors.redAccent,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Auto Clock Mode on Idle',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Switch(
+                                    value: _clockAutoIdle,
+                                    onChanged: (val) async {
+                                      ref.read(buttonSoundServiceProvider).playMediumTap();
+                                      final idleService = await IdleDetectionService.getInstance();
+                                      await idleService.setEnabled(val);
+                                      setState(() => _clockAutoIdle = val);
+                                    },
+                                    activeColor: AelianaColors.hyperGold,
+                                  ),
+                                ],
+                              ),
+                              if (_clockAutoIdle) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Idle Timeout',
+                                      style: GoogleFonts.inter(
+                                        color: Colors.white70,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [1, 2, 5, 10].map((mins) {
+                                        final isSelected = _clockIdleTimeout == mins;
+                                        return Padding(
+                                          padding: const EdgeInsets.only(left: 6),
+                                          child: GestureDetector(
+                                            onTap: () async {
+                                              ref.read(buttonSoundServiceProvider).playMediumTap();
+                                              final idleService = await IdleDetectionService.getInstance();
+                                              await idleService.setTimeoutMinutes(mins);
+                                              setState(() => _clockIdleTimeout = mins);
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                              decoration: BoxDecoration(
+                                                color: isSelected
+                                                    ? AelianaColors.hyperGold.withOpacity(0.2)
+                                                    : Colors.transparent,
+                                                border: Border.all(
+                                                  color: isSelected ? AelianaColors.hyperGold : Colors.white24,
+                                                ),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                '${mins}m',
+                                                style: GoogleFonts.inter(
+                                                  color: isSelected ? AelianaColors.hyperGold : Colors.white54,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                    ],
                  ),
                ),

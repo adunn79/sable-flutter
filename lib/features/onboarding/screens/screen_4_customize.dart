@@ -194,36 +194,9 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   }
 
   void _handleUseAsIs() {
-    // Check if the user selected a race that REQUIRES generation
-    // Sable Default: 'Synthetic Human' or 'Caucasian'
-    // Kai Default: 'Black / African American' (New Default) or 'Caucasian' (Old) - Let's stick to the new identity
-    // Echo Default: Any (Echo is neutral, but let's assume 'Caucasian' or 'Sable' is default asset)
+    // ALWAYS use the pre-baked default asset when "Use this look" is clicked
+    // No image generation - just use the archetype's default picture
     
-    bool isDefaultRace = false;
-    
-    if (widget.archetype == 'Sable') {
-      if (_race == 'Synthetic Human' || _race.contains('Caucasian') || _race.contains('White')) {
-        isDefaultRace = true;
-      }
-    } else if (widget.archetype == 'Kai') {
-      // Since we just updated Kai to be African American, that IS his default now.
-      if (_race.contains('Black') || _race.contains('African')) {
-        isDefaultRace = true;
-      }
-    } else if (widget.archetype == 'Echo') {
-       // Echo is usually depicted as white/synthetic in assets
-       if (_race == 'Synthetic Human' || _race.contains('Caucasian') || _race.contains('White')) {
-         isDefaultRace = true;
-       }
-    }
-
-    // If they changed the race, we MUST generate a new image
-    if (!isDefaultRace) {
-      _handleManifest();
-      return;
-    }
-
-    // Otherwise, use the pre-baked asset
     final config = AvatarConfig(
       archetype: widget.archetype,
       gender: _gender,
@@ -239,7 +212,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
       selectedVoiceId: _selectedVoiceId,
     );
     
-    // Use archetype image as default
+    // Use archetype image as default - NO generation
     final imageUrl = 'assets/images/archetypes/${widget.archetype.toLowerCase()}.png';
     _stateService?.saveAvatarUrl(imageUrl);
     _stateService?.addToAvatarGallery(imageUrl, archetypeId: widget.archetype.toLowerCase());

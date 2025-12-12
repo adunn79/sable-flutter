@@ -52,7 +52,7 @@ class ModelConfig {
     this.personalityModelId = 'claude-3-haiku-20240307',
     this.agenticModelId = 'o1',
     this.heavyLiftingModelId = 'gpt-4o-mini',
-    this.realistModelId = 'grok-3',
+    this.realistModelId = 'grok-2', // grok-2 is faster and more reliable than grok-3
     this.codingModelId = 'deepseek-chat',
     this.fastRoutingModelId = 'gemini-2.0-flash',
     this.fastHarmonizerModelId = 'gemini-2.0-flash',

@@ -1416,14 +1416,18 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
     }
   }
   
-  /// Scroll to show the newest content at top of viewport
+  /// Scroll to show the oldest content at top of viewport
   /// For Local Vibe and Daily Update, we want users to read from the beginning
   void _scrollToTopOfContent() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        // Since ListView is reversed, position 0 shows newest message at bottom of viewport
-        // We use jumpTo(0) to immediately position, then rely on the content being visible
-        _scrollController.jumpTo(0);
+        // Since ListView is reversed, position 0 shows newest at bottom
+        // maxScrollExtent shows the oldest content (beginning) at top
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     });
   }

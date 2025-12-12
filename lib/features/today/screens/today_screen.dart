@@ -304,7 +304,7 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -343,7 +343,7 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
                 ),
                 // Location badge
                 if (_currentLocation != null) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
@@ -372,7 +372,7 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
                 ],
                 // Moon phase badge (if no location)
                 if (_currentLocation == null) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
@@ -455,8 +455,8 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
     final dates = List.generate(7, (i) => today.add(Duration(days: i)));
     
     return Container(
-      height: 90,
-      margin: const EdgeInsets.symmetric(vertical: 16),
+      height: 68,
+      margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),

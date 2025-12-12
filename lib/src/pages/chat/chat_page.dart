@@ -2081,7 +2081,6 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                         ),
                       ),
                     ),
-                  _buildQuickToolbar(),
                   _buildFloatingChips(),
                   const SizedBox(height: 8),
                   _buildInputArea(),
@@ -3565,7 +3564,7 @@ return Padding(
                     size: 22,
                   ),
                 ),
-                  const SizedBox(width: 24),
+                  const SizedBox(width: 20),
                   // Microphone button
                   GestureDetector(
                     onTap: _handleVoiceInput,
@@ -3577,7 +3576,7 @@ return Padding(
                       size: 22,
                     ),
                   ),
-                  const SizedBox(width: 24),
+                  const SizedBox(width: 20),
                   // Mute button
                   GestureDetector(
                     onTap: () {
@@ -3591,7 +3590,40 @@ return Padding(
                       size: 22,
                     ),
                   ),
-                  const SizedBox(width: 32), // Extra space before info
+                  const SizedBox(width: 16),
+                  // Divider
+                  Container(width: 1, height: 18, color: Colors.white12),
+                  const SizedBox(width: 16),
+                  // Display Mode
+                  GestureDetector(
+                    onTap: _showAvatarDisplayModeSheet,
+                    child: Icon(
+                      LucideIcons.image,
+                      color: AelianaColors.plasmaCyan.withOpacity(0.6),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  // Clock Mode
+                  GestureDetector(
+                    onTap: _activateClockMode,
+                    child: Icon(
+                      LucideIcons.clock,
+                      color: AelianaColors.plasmaCyan.withOpacity(0.6),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  // Music
+                  GestureDetector(
+                    onTap: _openMusicApp,
+                    child: Icon(
+                      LucideIcons.music,
+                      color: AelianaColors.plasmaCyan.withOpacity(0.6),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
                   // Info button - explains icons
                   GestureDetector(
                     onTap: () => _showInputIconsHelp(isDark),

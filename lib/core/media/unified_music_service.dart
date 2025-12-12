@@ -204,6 +204,17 @@ class UnifiedMusicService extends ChangeNotifier {
     return false;
   }
   
+  /// Disconnect from Apple Music (placeholder - requires MusicKit)
+  Future<void> disconnectAppleMusic() async {
+    _isAppleMusicConnected = false;
+    if (_activeSource == MusicSource.appleMusic) {
+      _activeSource = MusicSource.none;
+      _currentTrack = null;
+      _isPlaying = false;
+    }
+    notifyListeners();
+  }
+  
   // ==================== PLAYBACK CONTROLS ====================
   
   /// Play or resume

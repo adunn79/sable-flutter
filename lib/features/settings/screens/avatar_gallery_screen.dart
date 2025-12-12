@@ -110,86 +110,92 @@ class _AvatarGalleryScreenState extends State<AvatarGalleryScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: AelianaColors.carbon,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            
-            // Preview image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: SizedBox(
-                height: 150,
-                child: avatar.url.startsWith('assets/')
-                    ? Image.asset(avatar.url, fit: BoxFit.cover)
-                    : Image.network(avatar.url, fit: BoxFit.cover),
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Archetype badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AelianaColors.obsidian,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'Made for ${_capitalizeFirst(avatar.archetypeId)}',
-                style: GoogleFonts.inter(
-                  color: AelianaColors.plasmaCyan,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+      builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.5,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            
-            // Action buttons
-            _buildActionTile(
-              icon: LucideIcons.check,
-              label: 'Set as Active',
-              color: AelianaColors.plasmaCyan,
-              onTap: () {
-                Navigator.pop(context);
-                _setAsActive(avatar);
-              },
-            ),
-            _buildActionTile(
-              icon: avatar.isLocked ? LucideIcons.unlock : LucideIcons.lock,
-              label: avatar.isLocked ? 'Unlock Avatar' : 'Lock Avatar',
-              color: avatar.isLocked ? Colors.orange : AelianaColors.hyperGold,
-              onTap: () {
-                Navigator.pop(context);
-                _toggleLock(avatar);
-              },
-            ),
-            if (!avatar.isLocked)
+              const SizedBox(height: 20),
+              
+              // Preview image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  height: 130,
+                  child: avatar.url.startsWith('assets/')
+                      ? Image.asset(avatar.url, fit: BoxFit.cover)
+                      : Image.network(avatar.url, fit: BoxFit.cover),
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Archetype badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AelianaColors.obsidian,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Made for ${_capitalizeFirst(avatar.archetypeId)}',
+                  style: GoogleFonts.inter(
+                    color: AelianaColors.plasmaCyan,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Action buttons
               _buildActionTile(
-                icon: LucideIcons.trash2,
-                label: 'Delete',
-                color: Colors.red,
+                icon: LucideIcons.check,
+                label: 'Set as Active',
+                color: AelianaColors.plasmaCyan,
                 onTap: () {
                   Navigator.pop(context);
-                  _deleteAvatar(avatar);
+                  _setAsActive(avatar);
                 },
               ),
-            const SizedBox(height: 10),
-          ],
+              _buildActionTile(
+                icon: avatar.isLocked ? LucideIcons.unlock : LucideIcons.lock,
+                label: avatar.isLocked ? 'Unlock Avatar' : 'Lock Avatar',
+                color: avatar.isLocked ? Colors.orange : AelianaColors.hyperGold,
+                onTap: () {
+                  Navigator.pop(context);
+                  _toggleLock(avatar);
+                },
+              ),
+              if (!avatar.isLocked)
+                _buildActionTile(
+                  icon: LucideIcons.trash2,
+                  label: 'Delete',
+                  color: Colors.red,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _deleteAvatar(avatar);
+                  },
+                ),
+              const SizedBox(height: 10),
+            ],
+          ),
         ),
       ),
     );

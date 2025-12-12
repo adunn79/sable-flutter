@@ -121,6 +121,15 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
             const SizedBox(height: 4),
             Text(
+              '(Ay-lee-AH-na)',
+              style: GoogleFonts.inter(
+                color: Colors.white38,
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
               'Your Companion for the Digital Age',
               style: GoogleFonts.inter(
                 color: Colors.white60,

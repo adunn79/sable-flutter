@@ -84,11 +84,11 @@ class _MusicSettingsWidgetState extends ConsumerState<MusicSettingsWidget> {
             title: 'Apple Music',
             subtitle: musicService.isAppleMusicConnected 
                 ? 'Connected' 
-                : 'Coming soon',
+                : 'Tap to connect',
             isConnected: musicService.isAppleMusicConnected,
             isLoading: _isConnectingAppleMusic,
-            onTap: () => _showAppleMusicInfo(),
-            enabled: false, // Apple Music coming soon
+            onTap: () => _toggleAppleMusic(musicService),
+            enabled: true, // Apple Music now enabled
           ),
           
           const SizedBox(height: 16),
@@ -381,5 +381,31 @@ class _MusicSettingsWidgetState extends ConsumerState<MusicSettingsWidget> {
         backgroundColor: AelianaColors.obsidian,
       ),
     );
+  }
+  
+  Future<void> _toggleAppleMusic(UnifiedMusicService musicService) async {
+    if (musicService.isAppleMusicConnected) {
+      await musicService.disconnectAppleMusic();
+    } else {
+      setState(() => _isConnectingAppleMusic = true);
+      try {
+        final connected = await musicService.connectAppleMusic();
+        if (!connected && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Apple Music requires MusicKit - coming in next update!',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: AelianaColors.obsidian,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isConnectingAppleMusic = false);
+        }
+      }
+    }
   }
 }

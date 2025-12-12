@@ -69,20 +69,35 @@
 		<string>Vital Balance uses motion data to track your daily steps automatically.</string>
 		<key>NSAppleMusicUsageDescription</key>
 		<string>Aeliana can show what you're listening to and integrate with your music library.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Aeliana needs camera access to scan medical documents and prescriptions.</string>
+		<key>NSHealthShareUsageDescription</key>
+		<string>Aeliana reads your health data to display vitals and track wellness goals.</string>
+		<key>NSHealthUpdateUsageDescription</key>
+		<string>Aeliana writes health data when you log vitals manually.</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>
 				<key>CFBundleURLName</key>
-				<string>Spotify Callback</string>
+				<string>Aeliana Callback</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
-					<string>sable</string>
+					<string>aeliana</string>
 				</array>
 			</dict>
 		</array>
 		<key>LSApplicationQueriesSchemes</key>
 		<array>
 			<string>spotify</string>
+			<string>twitter</string>
+			<string>instagram</string>
+			<string>instagram-stories</string>
+			<string>fb</string>
+			<string>fb-messenger</string>
+			<string>whatsapp</string>
+			<string>tg</string>
+			<string>linkedin</string>
+			<string>snapchat</string>
 		</array>
 	</dict>
 </plist>

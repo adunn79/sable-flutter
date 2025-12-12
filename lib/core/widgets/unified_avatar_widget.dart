@@ -41,12 +41,11 @@ class _UnifiedAvatarWidgetState extends ConsumerState<UnifiedAvatarWidget> {
   
   Future<void> _loadAvatarSettings() async {
     try {
-      final stateService = OnboardingStateService();
-      await stateService.init();
+      final stateService = await OnboardingStateService.create();
       
       if (mounted) {
         setState(() {
-          _customAvatarUrl = stateService.userAvatarUrl;
+          _customAvatarUrl = stateService.avatarUrl;
           _archetypeId = stateService.selectedArchetypeId?.toLowerCase() ?? 'sable';
           _isLoading = false;
         });
@@ -81,7 +80,6 @@ class _UnifiedAvatarWidgetState extends ConsumerState<UnifiedAvatarWidget> {
             // Avatar with active ring
             ActiveAvatarRing(
               size: widget.size,
-              borderWidth: 3,
               child: ClipOval(
                 child: avatarImage,
               ),

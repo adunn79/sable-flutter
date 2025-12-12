@@ -25,6 +25,7 @@ import 'package:sable/core/ai/providers/openai_provider.dart';
 import 'package:sable/features/journal/services/journal_storage_service.dart';
 import 'package:sable/features/vital_balance/services/goals_service.dart';
 import 'package:sable/features/vital_balance/models/goal_model.dart';
+import 'package:sable/features/inspiration/widgets/shareable_quote_card.dart';
 
 /// Vital Balance Screen - Health & Wellness Tracking
 /// Uses the "Vitality Strategist" personality for AI interactions
@@ -1368,6 +1369,9 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
                       _buildWellnessCard(),
                       
                       const SizedBox(height: 16),
+                      
+                      // 2.5. Shareable Daily Quote Card
+                      const ShareableQuoteCard(showSableObservation: false),
                       
                       // 3. Privacy Settings (moved up)
                       _buildPrivacySettings(),

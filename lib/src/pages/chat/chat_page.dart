@@ -50,6 +50,8 @@ import 'package:sable/core/ai/room_brain_initializer.dart';
 import 'package:sable/core/ai/room_brain/chat_brain.dart';
 import 'package:sable/core/ai/agent_context.dart';
 import 'package:sable/core/ai/character_personality.dart';
+// Soul Engine
+import 'package:sable/core/soul/soul_engine.dart';
 
 
 class ChatPage extends ConsumerStatefulWidget {
@@ -103,6 +105,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   // Room Brain System
   ChatBrain? _chatBrain;
   CharacterPersonality? _currentPersonality;
+  
+  // Soul Engine for emotional intelligence
+  SoulEngine? _soulEngine;
   
   final List<Map<String, dynamic>> _messages = [];
 
@@ -364,6 +369,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     _unifiedMemoryService = UnifiedMemoryService();
     await _unifiedMemoryService?.initialize();
     debugPrint('🧠 Unified Memory Service initialized');
+    
+    // Initialize Soul Engine for emotional intelligence
+    if (_emotionalService != null && _unifiedMemoryService != null) {
+      _soulEngine = SoulEngine(
+        emotionalService: _emotionalService!,
+        memoryService: _unifiedMemoryService!,
+        archetypeId: _stateService!.selectedArchetypeId,
+      );
+      _soulEngine?.prefetchContext();
+      debugPrint('🧠 Soul Engine initialized');
+    }
     
     // Initialize memory extraction (AI learns about user from conversation)
     final orchestrator = ref.read(modelOrchestratorProvider.notifier);
@@ -2541,7 +2557,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     try {
       // Build a formatted conversation text
       final buffer = StringBuffer();
-      buffer.writeln('🤖 Conversation with Sable\n');
+      buffer.writeln('✨ Conversation with Aeliana\n');
       buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
       
       for (final msg in _messages) {
@@ -2551,19 +2567,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         if (isUser) {
           buffer.writeln('👤 You:');
         } else {
-          buffer.writeln('🤖 Sable:');
+          buffer.writeln('✨ Aeliana:');
         }
         buffer.writeln(message);
         buffer.writeln();
       }
       
       buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      buffer.writeln('Shared from Sable - Your Ultra-Human AI Assistant');
+      buffer.writeln('Shared from Aeliana AI - aeliana.ai');
 
       // Share the text
       await Share.share(
         buffer.toString(),
-        subject: 'My conversation with Sable',
+        subject: 'My conversation with Aeliana',
         sharePositionOrigin: Rect.fromLTWH(0, 0, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height / 2),
       );
       
@@ -2889,7 +2905,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
-  Widget _buildMessageBubble(String message, bool isUser) {
+  Widget _buildMessageBubble(String message, bool isUser, {String? messageId}) {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Row(
@@ -2917,41 +2933,146 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 ),
               ),
             ),
-          // Message bubble
+          // Message bubble with feedback buttons
           Flexible(
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              constraints: const BoxConstraints(maxWidth: 380),
-              padding: const EdgeInsets.all(12),
-              decoration: isUser 
-                  ? BoxDecoration(
-                      color: Colors.white.withOpacity(0.15), // Light semi-transparent
-                      borderRadius: BorderRadius.circular(16).copyWith(bottomRight: Radius.zero),
-                      border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
-                    )
-                  : BoxDecoration(
-                      color: Colors.white.withOpacity(0.1), // Very light semi-transparent for AI
-                      borderRadius: BorderRadius.circular(16).copyWith(bottomLeft: Radius.zero),
-                    ),
-              child: isUser 
-                  ? Text(
-                      message,
-                      style: GoogleFonts.inter(
-                        color: Theme.of(context).brightness == Brightness.dark 
-                            ? Colors.white 
-                            : Colors.black,
-                        fontSize: 16,
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.left,
-                    )
-                  : _buildInteractiveMessage(message),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(bottom: 4),
+                  constraints: const BoxConstraints(maxWidth: 380),
+                  padding: const EdgeInsets.all(12),
+                  decoration: isUser 
+                      ? BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(16).copyWith(bottomRight: Radius.zero),
+                          border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
+                        )
+                      : BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16).copyWith(bottomLeft: Radius.zero),
+                        ),
+                  child: isUser 
+                      ? Text(
+                          message,
+                          style: GoogleFonts.inter(
+                            color: Theme.of(context).brightness == Brightness.dark 
+                                ? Colors.white 
+                                : Colors.black,
+                            fontSize: 16,
+                            height: 1.4,
+                          ),
+                          textAlign: TextAlign.left,
+                        )
+                      : _buildInteractiveMessage(message),
+                ),
+                // Feedback buttons for AI messages only
+                if (!isUser)
+                  _buildFeedbackButtons(messageId ?? message.hashCode.toString(), message),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+
+  /// Build feedback buttons (👍/👎) for AI responses
+  Widget _buildFeedbackButtons(String messageId, String message) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Thumbs up
+          GestureDetector(
+            onTap: () => _handleFeedback(messageId, true),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(LucideIcons.thumbsUp, size: 14, color: Colors.white54),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Thumbs down
+          GestureDetector(
+            onTap: () => _handleFeedback(messageId, false),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(LucideIcons.thumbsDown, size: 14, color: Colors.white54),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Share button
+          GestureDetector(
+            onTap: () => _shareMessage(message),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(LucideIcons.share2, size: 14, color: Colors.white54),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Handle feedback on an AI message
+  void _handleFeedback(String messageId, bool positive) {
+    ref.read(feedbackServiceProvider).light();
+    
+    // Record in Soul Engine
+    _soulEngine?.recordFeedback(messageId, positive);
+    
+    // Show confirmation
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(positive 
+            ? 'Thanks! I\'ll remember what works ✨' 
+            : 'Got it! I\'ll try a different approach next time'),
+        backgroundColor: positive ? AelianaColors.plasmaCyan : Colors.orange,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Share a single AI message
+  void _shareMessage(String message) {
+    ref.read(feedbackServiceProvider).medium();
+    
+    final shareText = '''$message
+
+— Shared from Aeliana AI ✨
+aeliana.ai''';
+    
+    Share.share(shareText, subject: 'A thought from Aeliana');
+  }
+
 
   Widget _buildInteractiveMessage(String message) {
     // FIX: Calculate isDark based on actual background settings

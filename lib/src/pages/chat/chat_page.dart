@@ -2034,7 +2034,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                         top: _avatarDisplayMode == AvatarDisplaySettings.modeOrb
                             ? MediaQuery.of(context).size.height * 0.22 // Just below orb with small gap
                             : _avatarDisplayMode == AvatarDisplaySettings.modePortrait
-                                ? MediaQuery.of(context).size.height * 0.28 // Below portrait (32% - some overlap)
+                                ? MediaQuery.of(context).size.height * 0.22 // Below portrait - reduced for more text space
                                 : 10, // Default small gap for other modes
                       ),
                       child: ListView.builder(

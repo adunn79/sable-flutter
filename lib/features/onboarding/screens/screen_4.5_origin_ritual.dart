@@ -120,7 +120,7 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
           ),
 
           SafeArea(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -136,7 +136,7 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
                     ),
                   ).animate().fadeIn(duration: 800.ms),
 
-                  const Spacer(),
+                  const SizedBox(height: 20),
 
                   // The "Soul Bond" Card - Shareable
                   RepaintBoundary(
@@ -144,7 +144,7 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
                     child: _buildIdentityCard(),
                   ),
 
-                  const Spacer(),
+                  const SizedBox(height: 30),
 
                   // Interaction Prompt
                   if (!_isAwakened) ...[
@@ -226,10 +226,10 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Avatar - LARGER & MORE PROMINENT
+          // Avatar
           Container(
-            width: 160,
-            height: 160,
+            width: 120,
+            height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
@@ -251,13 +251,13 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
               ],
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
           
           // Name
           Text(
             widget.config.archetype.toUpperCase(),
             style: GoogleFonts.spaceGrotesk(
-              fontSize: 36,
+              fontSize: 32,
               fontWeight: FontWeight.bold,
               color: Colors.white,
               letterSpacing: 2,

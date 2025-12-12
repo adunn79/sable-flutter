@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sable/src/config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Model roles for semantic mapping (what we need, not specific model names)
@@ -312,17 +312,27 @@ class ModelRegistryService {
   }
   
   String? _getApiKey(AIProvider provider) {
-    switch (provider) {
-      case AIProvider.openai:
-        return dotenv.env['OPENAI_API_KEY'];
-      case AIProvider.anthropic:
-        return dotenv.env['ANTHROPIC_API_KEY'];
-      case AIProvider.xai:
-        return dotenv.env['GROK_API_KEY'];
-      case AIProvider.deepseek:
-        return dotenv.env['DEEPSEEK_API_KEY'];
-      default:
-        return null;
+    // Use AppConfig which safely handles uninitialized dotenv
+    try {
+      switch (provider) {
+        case AIProvider.openai:
+          final key = AppConfig.openAiKey;
+          return key.isNotEmpty ? key : null;
+        case AIProvider.anthropic:
+          final key = AppConfig.anthropicKey;
+          return key.isNotEmpty ? key : null;
+        case AIProvider.xai:
+          final key = AppConfig.grokKey;
+          return key.isNotEmpty ? key : null;
+        case AIProvider.deepseek:
+          final key = AppConfig.deepseekKey;
+          return key.isNotEmpty ? key : null;
+        default:
+          return null;
+      }
+    } catch (e) {
+      debugPrint('⚠️ ModelRegistry: Error getting API key: $e');
+      return null;
     }
   }
   

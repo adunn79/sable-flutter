@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sable/src/config/app_config.dart';
 import 'package:flutter/foundation.dart';
 import '../ai_provider_interface.dart';
 
@@ -18,11 +18,11 @@ class GrokProvider implements AiProviderInterface {
     String? systemPrompt,
     required String modelId,
   }) async {
-    final apiKey = dotenv.env['GROK_API_KEY'];
-    debugPrint('🤖 Grok: API Key present: ${apiKey != null && apiKey.isNotEmpty}');
+    final apiKey = AppConfig.grokKey;
+    debugPrint('🤖 Grok: API Key present: ${apiKey.isNotEmpty}');
     
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('GROK_API_KEY not found in environment variables');
+    if (apiKey.isEmpty) {
+      throw Exception('GROK_API_KEY not configured');
     }
 
     try {

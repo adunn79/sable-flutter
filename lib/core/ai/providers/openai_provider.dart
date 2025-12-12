@@ -1,5 +1,5 @@
 import 'package:dart_openai/dart_openai.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sable/src/config/app_config.dart';
 import '../ai_provider_interface.dart';
 
 /// OpenAI GPT provider using dart_openai package.
@@ -9,9 +9,10 @@ class OpenAiProvider implements AiProviderInterface {
   }
 
   void _initializeOpenAI() {
-    final apiKey = dotenv.env['OPENAI_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('OPENAI_API_KEY not found in environment variables');
+    final apiKey = AppConfig.openAiKey;
+    if (apiKey.isEmpty) {
+      // Don't throw - just skip initialization if no key
+      return;
     }
     OpenAI.apiKey = apiKey;
   }

@@ -22,17 +22,17 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 void main() async {
   String initialRoute = '/chat'; // Define outside try block for scope visibility
   
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Global error handling
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('🔴 Flutter Error: ${details.exception}');
+    debugPrint('Stack trace: ${details.stack}');
+  };
+  
+  // 1. FIREBASE (Optional - simulator may not have Firebase configured)
   try {
-    WidgetsFlutterBinding.ensureInitialized();
-    
-    // Global error handling
-    FlutterError.onError = (FlutterErrorDetails details) {
-      FlutterError.presentError(details);
-      debugPrint('🔴 Flutter Error: ${details.exception}');
-      debugPrint('Stack trace: ${details.stack}');
-    };
-    
-    // Initialize Firebase for Push Notifications
     await Firebase.initializeApp();
     debugPrint('✅ Firebase initialized');
     
@@ -48,8 +48,15 @@ void main() async {
       sound: true,
     );
     debugPrint('🔔 Notification permission: ${settings.authorizationStatus}');
-    
+  } catch (e) {
+    debugPrint('⚠️ Firebase initialization skipped (simulator?): $e');
+  }
+  
+  // 2. CORE SERVICES (Required - must run even if Firebase fails)
+  try {
+    // Load environment variables FIRST
     await AppConfig.initialize();
+    debugPrint('✅ AppConfig initialized');
     
     // Initialize Hive for journal storage
     await JournalStorageService.initialize();
@@ -91,7 +98,7 @@ void main() async {
       debugPrint('⏭️ Not resuming: shouldResume=$shouldResume, lastRoute=$lastRoute');
     }
   } catch (e, stackTrace) {
-    debugPrint('Initialization Error: $e\n$stackTrace');
+    debugPrint('❌ Core Initialization Error: $e\n$stackTrace');
   }
   
   runApp(

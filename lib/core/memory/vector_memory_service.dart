@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sable/src/config/app_config.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
@@ -22,23 +22,27 @@ class VectorMemoryService {
     if (_isInitialized) return;
 
     try {
-      final geminiKey = dotenv.env['GEMINI_API_KEY'];
-      if (geminiKey != null) {
-        _embeddingModel = GenerativeModel(
-          model: 'text-embedding-004', // Latest stable embedding model
-          apiKey: geminiKey,
-        );
+      // Use AppConfig which safely handles uninitialized dotenv
+      final geminiKey = AppConfig.googleKey;
+      if (geminiKey.isEmpty) {
+        debugPrint('⚠️ VectorMemoryService: No Gemini API key, skipping');
+        return;
+      }
+      
+      _embeddingModel = GenerativeModel(
+        model: 'text-embedding-004', // Latest stable embedding model
+        apiKey: geminiKey,
+      );
+
+      final pineconeKey = AppConfig.pineconeKey;
+      _pineconeApiKey = pineconeKey.isNotEmpty ? pineconeKey : null;
+      // Note: Pinecone index host should be in AppConfig too, but for now keep empty check
+      if (pineconeKey.isEmpty) {
+        debugPrint('⚠️ VectorMemoryService: No Pinecone key, local mode only');
       }
 
-      _pineconeApiKey = dotenv.env['PINECONE_API_KEY'];
-      _pineconeIndexHost = dotenv.env['PINECONE_INDEX_HOST']; // Full URL: https://index-name.svc.environment.pinecone.io
-
-      if (_embeddingModel != null && _pineconeApiKey != null && _pineconeIndexHost != null) {
-        _isInitialized = true;
-        debugPrint('✅ VectorMemoryService initialized (Pinecone + Gemini)');
-      } else {
-        debugPrint('⚠️ VectorMemoryService skipped: Missing keys (Gemini: ${_embeddingModel != null}, Pinecone: ${_pineconeApiKey != null})');
-      }
+      _isInitialized = true;
+      debugPrint('✅ VectorMemoryService initialized (Gemini: true, Pinecone: ${pineconeKey.isNotEmpty})');
     } catch (e) {
       debugPrint('❌ VectorMemoryService init error: $e');
     }

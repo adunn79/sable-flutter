@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sable/src/config/app_config.dart';
 import '../ai_provider_interface.dart';
 
 /// Anthropic Claude provider using HTTP API.
@@ -17,9 +17,9 @@ class AnthropicProvider implements AiProviderInterface {
     String? systemPrompt,
     required String modelId,
   }) async {
-    final apiKey = dotenv.env['ANTHROPIC_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('ANTHROPIC_API_KEY not found in environment variables');
+    final apiKey = AppConfig.anthropicKey;
+    if (apiKey.isEmpty) {
+      throw Exception('ANTHROPIC_API_KEY not configured');
     }
 
     final headers = {

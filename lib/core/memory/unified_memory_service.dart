@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,10 +31,25 @@ class UnifiedMemoryService {
   final VectorMemoryService _vectorService = VectorMemoryService();
   
   bool _initialized = false;
+  static bool _hiveInitialized = false;
   
   /// Initialize all memory boxes
   Future<void> initialize() async {
     if (_initialized) return;
+    
+    // Ensure Hive is initialized with path
+    // Use a static flag since Hive.isAdapterRegistered doesn't tell us if Hive is init'd
+    if (!_hiveInitialized) {
+      try {
+        await Hive.initFlutter();
+        _hiveInitialized = true;
+        debugPrint('🗄️ Hive initialized by UnifiedMemoryService');
+      } catch (e) {
+        // Already initialized by JournalStorageService, that's fine
+        _hiveInitialized = true;
+        debugPrint('🗄️ Hive already initialized (expected)');
+      }
+    }
     
     // Register adapters if not already registered
     if (!Hive.isAdapterRegistered(10)) {

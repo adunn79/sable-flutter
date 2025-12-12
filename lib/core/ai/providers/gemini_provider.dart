@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sable/src/config/app_config.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../ai_provider_interface.dart';
 
@@ -16,9 +16,9 @@ class GeminiProvider implements AiProviderInterface {
     required String modelId,
     List<Tool>? tools,
   }) async {
-    final apiKey = dotenv.env['GOOGLE_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('GOOGLE_API_KEY not found in environment variables');
+    final apiKey = AppConfig.googleKey;
+    if (apiKey.isEmpty) {
+      throw Exception('GOOGLE_API_KEY not configured');
     }
 
     try {
@@ -51,9 +51,9 @@ class GeminiProvider implements AiProviderInterface {
     String? systemPrompt,
     required String modelId,
   }) async {
-    final apiKey = dotenv.env['GOOGLE_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('GOOGLE_API_KEY not found in environment variables');
+    final apiKey = AppConfig.googleKey;
+    if (apiKey.isEmpty) {
+      throw Exception('GOOGLE_API_KEY not configured');
     }
 
     final url = Uri.parse(

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sable/src/config/app_config.dart';
 import '../ai_provider_interface.dart';
 
 /// DeepSeek AI provider using OpenAI-compatible API.
@@ -17,9 +17,9 @@ class DeepSeekProvider implements AiProviderInterface {
     String? systemPrompt,
     required String modelId,
   }) async {
-    final apiKey = dotenv.env['DEEPSEEK_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('DEEPSEEK_API_KEY not found in environment variables');
+    final apiKey = AppConfig.deepseekKey;
+    if (apiKey.isEmpty) {
+      throw Exception('DEEPSEEK_API_KEY not configured');
     }
 
     try {

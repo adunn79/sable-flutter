@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 /// Service for getting user's current location via GPS
 class LocationService {
@@ -15,16 +14,12 @@ class LocationService {
         return null;
       }
 
-      // Check permission status
+      // Check permission status - DO NOT re-request if denied
       LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          return null;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied || 
+          permission == LocationPermission.deniedForever) {
+        // Permission not granted - return null without prompting
+        // User must grant permission in onboarding or settings
         return null;
       }
 

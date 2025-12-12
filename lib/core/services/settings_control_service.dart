@@ -283,7 +283,7 @@ class SettingsControlService {
       case 'clock_is_analog':
         return prefs.getBool('clock_is_analog') ?? false;
       case 'auto_speak':
-        return prefs.getBool('auto_speak') ?? true;
+        return prefs.getBool('auto_speak') ?? false;
       case 'daily_briefing_trigger':
         return prefs.getString('daily_briefing_trigger') ?? 'time';
       case 'use_photorealistic_avatars':

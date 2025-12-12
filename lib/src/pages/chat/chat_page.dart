@@ -3487,7 +3487,7 @@ aeliana.ai''';
             Icon(LucideIcons.info, color: AelianaColors.plasmaCyan, size: 20),
             const SizedBox(width: 12),
             Text(
-              'INPUT CONTROLS',
+              'CHAT CONTROLS',
               style: GoogleFonts.spaceGrotesk(
                 color: isDark ? Colors.white : Colors.black,
                 fontWeight: FontWeight.bold,
@@ -3497,18 +3497,111 @@ aeliana.ai''';
             ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildIconHelpRow(LucideIcons.wand2, AelianaColors.hyperGold, 'Rewrite', 
-              'Use Apple Intelligence to improve your text', isDark),
-            const SizedBox(height: 12),
-            _buildIconHelpRow(LucideIcons.mic, isDark ? Colors.white70 : Colors.grey[700]!, 'Voice Input', 
-              'Speak your message instead of typing', isDark),
-            const SizedBox(height: 12),
-            _buildIconHelpRow(LucideIcons.volume2, isDark ? Colors.white70 : Colors.grey[700]!, 'Mute/Unmute', 
-              'Toggle voice responses on or off', isDark),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Input Section
+              Text(
+                'INPUT',
+                style: GoogleFonts.spaceGrotesk(
+                  color: AelianaColors.plasmaCyan,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildIconHelpRow(LucideIcons.wand2, AelianaColors.hyperGold, 'Rewrite', 
+                'Use Apple Intelligence to improve your text', isDark),
+              const SizedBox(height: 10),
+              _buildIconHelpRow(LucideIcons.mic, isDark ? Colors.white70 : Colors.grey[700]!, 'Voice Input', 
+                'Speak your message instead of typing', isDark),
+              const SizedBox(height: 10),
+              _buildIconHelpRow(LucideIcons.volume2, isDark ? Colors.white70 : Colors.grey[700]!, 'Voice Output', 
+                'Toggle Sable speaking responses aloud (Silver+ feature)', isDark),
+              
+              const SizedBox(height: 16),
+              Divider(color: isDark ? Colors.white24 : Colors.grey[300]),
+              const SizedBox(height: 12),
+              
+              // Display & Mode Section
+              Text(
+                'DISPLAY & MODE',
+                style: GoogleFonts.spaceGrotesk(
+                  color: AelianaColors.plasmaCyan,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildIconHelpRow(LucideIcons.image, isDark ? Colors.white70 : Colors.grey[700]!, 'Display Mode', 
+                'Change avatar display: Full Screen, Icon, Orb, Portrait, Chat', isDark),
+              const SizedBox(height: 10),
+              _buildIconHelpRow(LucideIcons.clock, isDark ? Colors.white70 : Colors.grey[700]!, 'Clock Mode', 
+                'Turn your device into a beautiful nightstand clock', isDark),
+              const SizedBox(height: 10),
+              _buildIconHelpRow(LucideIcons.music, isDark ? Colors.white70 : Colors.grey[700]!, 'Music', 
+                'Open Spotify or Apple Music to play your music', isDark),
+              
+              const SizedBox(height: 16),
+              Divider(color: isDark ? Colors.white24 : Colors.grey[300]),
+              const SizedBox(height: 12),
+              
+              // Quick Actions Section
+              Text(
+                'QUICK ACTIONS (Chips)',
+                style: GoogleFonts.spaceGrotesk(
+                  color: AelianaColors.plasmaCyan,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildIconHelpRow(LucideIcons.newspaper, AelianaColors.hyperGold, 'Daily Update', 
+                'Get personalized news briefing based on your interests', isDark),
+              const SizedBox(height: 10),
+              _buildIconHelpRow(LucideIcons.mapPin, AelianaColors.hyperGold, 'Local Vibe', 
+                'Discover what\'s happening in your area', isDark),
+              const SizedBox(height: 10),
+              _buildIconHelpRow(LucideIcons.arrowDown, isDark ? Colors.white70 : Colors.grey[700]!, 'Scroll', 
+                'Jump to the most recent message', isDark),
+              const SizedBox(height: 10),
+              _buildIconHelpRow(LucideIcons.trash2, isDark ? Colors.white70 : Colors.grey[700]!, 'Clear Screen', 
+                'Clear visible messages (history preserved)', isDark),
+              const SizedBox(height: 10),
+              _buildIconHelpRow(LucideIcons.share2, isDark ? Colors.white70 : Colors.grey[700]!, 'Share', 
+                'Share your conversation with others', isDark),
+              
+              const SizedBox(height: 16),
+              // Footer note
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AelianaColors.plasmaCyan.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.sparkles, color: AelianaColors.plasmaCyan, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Tap any chip to get info, long-press to use',
+                        style: GoogleFonts.inter(
+                          color: isDark ? Colors.white70 : Colors.grey[700],
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(

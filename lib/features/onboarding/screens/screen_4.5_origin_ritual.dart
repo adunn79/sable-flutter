@@ -11,6 +11,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:uuid/uuid.dart';
 import '../../../core/ai/character_personality.dart';
 import '../models/avatar_config.dart';
@@ -171,8 +174,15 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
                       ),
                     ).animate().fadeIn().shimmer(duration: 1000.ms),
                     const SizedBox(height: 16),
-                    // Share button
-                    _buildShareButton(),
+                    // Share and Print buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildShareButton(),
+                        const SizedBox(width: 12),
+                        _buildPrintButton(),
+                      ],
+                    ),
                     const SizedBox(height: 24),
                   ],
 
@@ -453,6 +463,81 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
       );
     } catch (e) {
       debugPrint('Error sharing card: $e');
+    }
+  }
+
+  Widget _buildPrintButton() {
+    return GestureDetector(
+      onTap: _printCard,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AelianaColors.plasmaCyan.withOpacity(0.3),
+              AelianaColors.plasmaCyan.withOpacity(0.2),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AelianaColors.plasmaCyan.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.printer, color: AelianaColors.plasmaCyan, size: 18),
+            const SizedBox(width: 10),
+            Text(
+              'Print',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0);
+  }
+
+  Future<void> _printCard() async {
+    try {
+      HapticFeedback.mediumImpact();
+      
+      // Capture the identity card as an image
+      final boundary = _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+      
+      final pngBytes = byteData.buffer.asUint8List();
+      
+      // Create PDF with the image
+      final pdf = pw.Document();
+      final pdfImage = pw.MemoryImage(pngBytes);
+      
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          build: (context) => pw.Center(
+            child: pw.Image(pdfImage, fit: pw.BoxFit.contain),
+          ),
+        ),
+      );
+      
+      // Print
+      await Printing.layoutPdf(
+        onLayout: (format) async => pdf.save(),
+        name: 'Aeliana Companion - ${widget.config.archetype}',
+      );
+    } catch (e) {
+      debugPrint('Error printing card: $e');
     }
   }
 

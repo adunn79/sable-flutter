@@ -8,6 +8,7 @@ import 'dart:convert';
 import '../../../core/theme/aeliana_theme.dart';
 import '../../../features/settings/widgets/settings_tile.dart';
 import '../../../features/settings/widgets/settings_section.dart';
+import '../../../features/settings/widgets/promo_code_dialog.dart';
 import '../models/private_user_persona.dart';
 import '../widgets/private_avatar_picker.dart';
 
@@ -386,6 +387,52 @@ class _PrivateSettingsScreenState extends ConsumerState<PrivateSettingsScreen> {
             _buildSliderRow('Creativity', _creativity, (v) => setState(() => _creativity = v)),
             _buildSliderRow('Empathy', _empathy, (v) => setState(() => _empathy = v)),
             _buildSliderRow('Humor', _humor, (v) => setState(() => _humor = v)),
+            
+            const SizedBox(height: 40),
+            
+            // Promo Code Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text('REWARDS', style: GoogleFonts.inter(color: AelianaColors.hyperGold, fontSize: 13, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GestureDetector(
+                onTap: () async {
+                  final result = await PromoCodeDialog.show(context, isPrivateSpace: true);
+                  if (result != null && result.success && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('🎉 ${result.rewardGranted?.displayName ?? "Reward"} applied!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AelianaColors.hyperGold.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(LucideIcons.gift, color: AelianaColors.hyperGold, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Redeem Private Code',
+                          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                      Icon(LucideIcons.chevronRight, color: Colors.white38, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+            ),
             
             const SizedBox(height: 40),
             Center(

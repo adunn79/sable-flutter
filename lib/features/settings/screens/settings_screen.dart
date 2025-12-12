@@ -824,7 +824,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            // Row 1: Aeliana, Imani, Priya (3)
+                            // Row 1: Aeliana, Imani, Priya (3 females)
                             Row(
                               children: [
                                 Expanded(
@@ -856,12 +856,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            // Row 2: Sable, Echo (2)
+                            // Row 2: Arjun, Ravi, James (3 new males)
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                SizedBox(
-                                  width: MediaQuery.of(context).size.width * 0.25,
+                                Expanded(
+                                  child: _buildAvatarOption(
+                                    'arjun',
+                                    'Arjun',
+                                    'assets/images/archetypes/arjun.png',
+                                    isFemale: false,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildAvatarOption(
+                                    'ravi',
+                                    'Ravi',
+                                    'assets/images/archetypes/ravi.png',
+                                    isFemale: false,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildAvatarOption(
+                                    'james',
+                                    'James',
+                                    'assets/images/archetypes/james.png',
+                                    isFemale: false,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            // Row 3: Sable, Echo, Kai (2 females + 1 male)
+                            Row(
+                              children: [
+                                Expanded(
                                   child: _buildAvatarOption(
                                     'sable',
                                     'Sable',
@@ -870,8 +900,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                SizedBox(
-                                  width: MediaQuery.of(context).size.width * 0.25,
+                                Expanded(
                                   child: _buildAvatarOption(
                                     'echo',
                                     'Echo',
@@ -879,15 +908,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     isFemale: true,
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // Row 3: Kai, Marco (2)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: MediaQuery.of(context).size.width * 0.25,
+                                const SizedBox(width: 12),
+                                Expanded(
                                   child: _buildAvatarOption(
                                     'kai',
                                     'Kai',
@@ -895,9 +917,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     isFemale: false,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            // Row 4: Marco (centered)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
                                 SizedBox(
-                                  width: MediaQuery.of(context).size.width * 0.25,
+                                  width: MediaQuery.of(context).size.width * 0.28,
                                   child: _buildAvatarOption(
                                     'marco',
                                     'Marco',

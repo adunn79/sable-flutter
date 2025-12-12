@@ -50,6 +50,49 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
     }
   }
 
+  /// Show dialog guiding user to Settings when permission is permanently denied
+  Future<void> _showSettingsDialog(String permissionName) async {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AelianaColors.carbon,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          '$permissionName Permission Required',
+          style: GoogleFonts.spaceGrotesk(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'This permission was previously denied. Please enable it in your device Settings to use this feature.',
+          style: GoogleFonts.inter(color: AelianaColors.ghost),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'LATER',
+              style: GoogleFonts.spaceGrotesk(color: AelianaColors.ghost),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            child: Text(
+              'OPEN SETTINGS',
+              style: GoogleFonts.spaceGrotesk(color: AelianaColors.plasmaCyan),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleCalendarToggle(bool value) async {
     if (value) {
       final granted = await CalendarService.requestPermission();
@@ -66,6 +109,10 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
   Future<void> _handleMicToggle(bool value) async {
     if (value) {
       final status = await Permission.microphone.request();
+      debugPrint('🎤 Microphone permission status: $status');
+      if (status.isPermanentlyDenied) {
+        _showSettingsDialog('Microphone');
+      }
       setState(() {
         _micEnabled = status.isGranted;
       });
@@ -79,6 +126,10 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
   Future<void> _handleCameraToggle(bool value) async {
     if (value) {
       final status = await Permission.camera.request();
+      debugPrint('📷 Camera permission status: $status');
+      if (status.isPermanentlyDenied) {
+        _showSettingsDialog('Camera');
+      }
       setState(() {
         _cameraEnabled = status.isGranted;
       });
@@ -92,6 +143,10 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
   Future<void> _handleContactsToggle(bool value) async {
     if (value) {
       final status = await Permission.contacts.request();
+      debugPrint('👥 Contacts permission status: $status');
+      if (status.isPermanentlyDenied) {
+        _showSettingsDialog('Contacts');
+      }
       setState(() {
         _contactsEnabled = status.isGranted;
       });
@@ -105,6 +160,10 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
   Future<void> _handlePhotosToggle(bool value) async {
     if (value) {
       final result = await PhotoManager.requestPermissionExtend();
+      debugPrint('📸 Photos permission status: $result');
+      if (result == PermissionState.denied) {
+        _showSettingsDialog('Photos');
+      }
       setState(() {
         _photosEnabled = result.isAuth;
       });
@@ -120,6 +179,7 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
       // HealthKit requires special handling - request through permission_handler
       // Note: Actual HealthKit authorization is done through health package when accessing data
       final status = await Permission.sensors.request();
+      debugPrint('❤️ Health/Sensors permission status: $status');
       setState(() {
         _healthEnabled = status.isGranted || value; // Keep enabled as HealthKit auth happens at data access
       });
@@ -133,6 +193,10 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
   Future<void> _handleRemindersToggle(bool value) async {
     if (value) {
       final status = await Permission.reminders.request();
+      debugPrint('✅ Reminders permission status: $status');
+      if (status.isPermanentlyDenied) {
+        _showSettingsDialog('Reminders');
+      }
       setState(() {
         _remindersEnabled = status.isGranted;
       });
@@ -146,6 +210,10 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
   Future<void> _handleSpeechToggle(bool value) async {
     if (value) {
       final status = await Permission.speech.request();
+      debugPrint('🗣️ Speech recognition permission status: $status');
+      if (status.isPermanentlyDenied) {
+        _showSettingsDialog('Speech Recognition');
+      }
       setState(() {
         _speechEnabled = status.isGranted;
       });

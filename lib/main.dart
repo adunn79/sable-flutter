@@ -15,6 +15,9 @@ import 'features/journal/screens/journal_timeline_screen.dart';
 import 'core/memory/unified_memory_service.dart';
 import 'core/ai/room_brain_initializer.dart';
 import 'core/ai/model_registry_service.dart';
+// Firebase
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() async {
   String initialRoute = '/chat'; // Define outside try block for scope visibility
@@ -28,6 +31,23 @@ void main() async {
       debugPrint('🔴 Flutter Error: ${details.exception}');
       debugPrint('Stack trace: ${details.stack}');
     };
+    
+    // Initialize Firebase for Push Notifications
+    await Firebase.initializeApp();
+    debugPrint('✅ Firebase initialized');
+    
+    // Request notification permission (iOS)
+    final messaging = FirebaseMessaging.instance;
+    final settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+    debugPrint('🔔 Notification permission: ${settings.authorizationStatus}');
     
     await AppConfig.initialize();
     

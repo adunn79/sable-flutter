@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/services/user_data_service.dart';
 import 'package:sable/core/widgets/restart_widget.dart';
+import 'package:sable/core/ui/safe_snackbar.dart';
 
 class PrivacyManagementDialog extends StatefulWidget {
   const PrivacyManagementDialog({super.key});
@@ -49,7 +50,8 @@ class _PrivacyManagementDialogState extends State<PrivacyManagementDialog> {
     
     if (mounted) {
       setState(() => _isExporting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
+      SafeSnackBar.show(
+        context,
         const SnackBar(
           content: Text('📦 Data export ready for sharing'),
           backgroundColor: Colors.green,
@@ -130,7 +132,8 @@ class _PrivacyManagementDialogState extends State<PrivacyManagementDialog> {
     
     if (mounted) {
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        SafeSnackBar.show(
+          context,
           const SnackBar(
             content: Text('Account deleted. Goodbye! 👋'),
             backgroundColor: Colors.green,
@@ -144,7 +147,8 @@ class _PrivacyManagementDialogState extends State<PrivacyManagementDialog> {
         }
       } else {
         setState(() => _isDeleting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
+        SafeSnackBar.show(
+          context,
           const SnackBar(
             content: Text('Deletion failed. Please try again.'),
             backgroundColor: Colors.red,

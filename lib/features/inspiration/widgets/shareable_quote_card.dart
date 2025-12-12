@@ -26,6 +26,7 @@ class ShareableQuoteCard extends StatefulWidget {
 class _ShareableQuoteCardState extends State<ShareableQuoteCard> {
   late Quote _currentQuote;
   bool _isSharing = false;
+  final GlobalKey _shareButtonKey = GlobalKey();
   
   @override
   void initState() {
@@ -58,9 +59,18 @@ aeliana.ai'''
 Shared from Aeliana AI
 aeliana.ai''';
     
+    // Get share button position for iPad popover
+    Rect? shareRect;
+    final renderBox = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final position = renderBox.localToGlobal(Offset.zero);
+      shareRect = position & renderBox.size;
+    }
+    
     await Share.share(
       shareText,
       subject: 'A thought from Aeliana',
+      sharePositionOrigin: shareRect ?? const Rect.fromLTWH(100, 100, 100, 100),
     );
     
     setState(() => _isSharing = false);
@@ -165,6 +175,7 @@ aeliana.ai''';
             children: [
               // Share button
               GestureDetector(
+                key: _shareButtonKey,
                 onTap: _isSharing ? null : _shareQuote,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

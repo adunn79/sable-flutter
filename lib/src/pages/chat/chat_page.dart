@@ -40,6 +40,7 @@ import 'package:sable/core/emotion/weather_service.dart';
 import 'package:sable/features/clock/widgets/clock_face_widget.dart';
 import 'package:sable/features/clock/screens/clock_mode_screen.dart';
 import 'package:sable/core/ui/feedback_service.dart'; // Added implementation
+import 'package:sable/core/ui/safe_snackbar.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:sable/core/audio/button_sound_service.dart';
 import 'package:sable/core/widgets/interactive_button.dart';
@@ -3363,8 +3364,9 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
     // Record in Soul Engine
     _soulEngine?.recordFeedback(messageId, positive);
     
-    // Show confirmation
-    ScaffoldMessenger.of(context).showSnackBar(
+    // Show confirmation (safe - won't crash if Scaffold is missing)
+    SafeSnackBar.show(
+      context,
       SnackBar(
         content: Text(positive 
             ? 'Thanks! I\'ll remember what works ✨' 

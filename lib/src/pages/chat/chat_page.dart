@@ -3044,7 +3044,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   /// Handle feedback on an AI message
   void _handleFeedback(String messageId, bool positive) {
-    ref.read(feedbackServiceProvider).light();
+    ref.read(feedbackServiceProvider).tap();
     
     // Record in Soul Engine
     _soulEngine?.recordFeedback(messageId, positive);

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/features/subscription/services/subscription_service.dart';
+import 'package:sable/features/settings/widgets/promo_code_dialog.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -87,6 +88,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             _buildSectionHeader('SMART FEATURES'),
             const SizedBox(height: 16),
             _buildSmartAdjustments(),
+            const SizedBox(height: 32),
+            _buildSectionHeader('PROMO CODE'),
+            const SizedBox(height: 16),
+            _buildPromoCodeSection(),
             const SizedBox(height: 40),
           ],
         ),
@@ -407,6 +412,68 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPromoCodeSection() {
+    return GestureDetector(
+      onTap: () async {
+        final result = await PromoCodeDialog.show(context);
+        if (result != null && result.success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('🎉 ${result.rewardGranted?.displayName ?? "Reward"} applied!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          setState(() {}); // Refresh to show new credits/tier
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AelianaColors.carbon,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AelianaColors.plasmaCyan.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(LucideIcons.gift, color: AelianaColors.plasmaCyan, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Have a promo code?',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Tap to redeem credits, trials, and more',
+                    style: GoogleFonts.inter(
+                      color: Colors.white54,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(LucideIcons.chevronRight, color: Colors.white38, size: 20),
+          ],
+        ),
       ),
     );
   }

@@ -57,6 +57,9 @@ import 'package:sable/core/onboarding/proactive_onboarding_service.dart';
 // Music Player
 import 'package:sable/core/widgets/mini_player_widget.dart';
 import 'package:sable/core/media/unified_music_service.dart';
+// Help & State Persistence
+import 'package:sable/core/widgets/floating_help_button.dart';
+import 'package:sable/core/services/app_state_persistence.dart';
 
 
 class ChatPage extends ConsumerStatefulWidget {
@@ -129,6 +132,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     _loadStateService();
     // _controller = TextEditingController(); // This line is commented out because _controller is a final field and initialized at declaration. Re-initializing it here would cause an error.
     _localVibeService = null;
+    
+    // Initialize app state persistence for background/foreground handling
+    AppStatePersistence.instance.initialize(
+      onBackground: _saveStateOnBackground,
+      onForeground: _restoreStateOnForeground,
+    );
 
     // Fast-load avatar settings to prevent flash of wrong image
     SharedPreferences.getInstance().then((prefs) {
@@ -353,6 +362,35 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     } catch (e) {
       debugPrint('⚠️ Local Vibe pre-fetch failed: $e');
     }
+  }
+
+  /// Save chat state when app goes to background
+  void _saveStateOnBackground() {
+    if (_messages.isEmpty) return;
+    
+    AppStatePersistence.instance.saveChatState(
+      currentRoute: '/chat',
+      recentMessages: _messages,
+      inputText: _controller.text,
+      additionalState: {
+        'avatar_mode': _avatarDisplayMode,
+        'archetype_id': _archetypeId,
+      },
+    );
+  }
+  
+  /// Restore chat state when app returns to foreground
+  void _restoreStateOnForeground() async {
+    final state = await AppStatePersistence.instance.restoreChatState();
+    if (state == null || !mounted) return;
+    
+    // Restore input text if any
+    final inputText = state['input_text'] as String?;
+    if (inputText != null && inputText.isNotEmpty && _controller.text.isEmpty) {
+      _controller.text = inputText;
+    }
+    
+    debugPrint('📱 Chat state restored from background');
   }
 
   Future<void> _loadStateService() async {
@@ -2091,6 +2129,9 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                 ],
               ),
             ),
+            
+            // Floating Help Button - always accessible
+            const FloatingHelpButton(),
           ],
         ),
       ),

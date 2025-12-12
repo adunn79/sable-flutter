@@ -54,6 +54,9 @@ import 'package:sable/core/ai/character_personality.dart';
 import 'package:sable/core/soul/soul_engine.dart';
 // Proactive Onboarding
 import 'package:sable/core/onboarding/proactive_onboarding_service.dart';
+// Music Player
+import 'package:sable/core/widgets/mini_player_widget.dart';
+import 'package:sable/core/media/unified_music_service.dart';
 
 
 class ChatPage extends ConsumerStatefulWidget {
@@ -2078,6 +2081,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                         ),
                       ),
                     ),
+                  _buildQuickToolbar(),
                   _buildFloatingChips(),
                   const SizedBox(height: 8),
                   _buildInputArea(),
@@ -2923,6 +2927,198 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
         ),
       ),
     );
+  }
+
+  /// Quick access toolbar with music player, avatar mode, and clock mode
+  Widget _buildQuickToolbar() {
+    final musicService = ref.watch(unifiedMusicServiceProvider);
+    final hasMusic = musicService.currentTrack != null;
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Mini player (only shows when music is playing)
+        if (hasMusic)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: const MiniPlayerWidget(),
+          ),
+        
+        // Quick access icons row
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Avatar Display Mode
+              _buildQuickAccessIcon(
+                icon: LucideIcons.image,
+                label: 'Display',
+                onTap: _showAvatarDisplayModeSheet,
+              ),
+              const SizedBox(width: 16),
+              // Clock Mode
+              _buildQuickAccessIcon(
+                icon: LucideIcons.clock,
+                label: 'Clock',
+                onTap: _activateClockMode,
+              ),
+              if (!hasMusic) ...[
+                const SizedBox(width: 16),
+                // Music (open Spotify/Apple Music when not playing)
+                _buildQuickAccessIcon(
+                  icon: LucideIcons.music,
+                  label: 'Music',
+                  onTap: _openMusicApp,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildQuickAccessIcon({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        FeedbackService.tap();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AelianaColors.carbon.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AelianaColors.plasmaCyan.withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: AelianaColors.plasmaCyan, size: 14),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                color: AelianaColors.plasmaCyan,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  void _showAvatarDisplayModeSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AelianaColors.carbon,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Avatar Display Mode',
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _buildModeOption('Full Screen', AvatarDisplaySettings.modeFullscreen, LucideIcons.maximize),
+                _buildModeOption('Icon', AvatarDisplaySettings.modeIcon, LucideIcons.user),
+                _buildModeOption('Orb', AvatarDisplaySettings.modeOrb, LucideIcons.circle),
+                _buildModeOption('Portrait', AvatarDisplaySettings.modePortrait, LucideIcons.image),
+                _buildModeOption('Chat', AvatarDisplaySettings.modeConversation, LucideIcons.messageCircle),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildModeOption(String label, String mode, IconData icon) {
+    final isSelected = _avatarDisplayMode == mode;
+    return GestureDetector(
+      onTap: () async {
+        FeedbackService.tap();
+        final avatarSettings = AvatarDisplaySettings();
+        await avatarSettings.setAvatarDisplayMode(mode);
+        setState(() => _avatarDisplayMode = mode);
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AelianaColors.hyperGold.withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AelianaColors.hyperGold : Colors.white24,
+            width: 2,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: isSelected ? AelianaColors.hyperGold : Colors.white70, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                color: isSelected ? AelianaColors.hyperGold : Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  void _activateClockMode() async {
+    FeedbackService.tap();
+    final avatarSettings = AvatarDisplaySettings();
+    await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeClock);
+    setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeClock);
+  }
+  
+  void _openMusicApp() async {
+    // Try to open Spotify first, then Apple Music
+    final spotifyUri = Uri.parse('spotify://');
+    final appleMusicUri = Uri.parse('music://');
+    
+    if (await canLaunchUrl(spotifyUri)) {
+      await launchUrl(spotifyUri);
+    } else if (await canLaunchUrl(appleMusicUri)) {
+      await launchUrl(appleMusicUri);
+    } else {
+      // Show message if no music app is available
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Open Spotify or Apple Music to play music')),
+        );
+      }
+    }
   }
 
   void _openLocalVibeSettings() {

@@ -4,6 +4,16 @@
 	<dict>
 		<key>aps-environment</key>
 		<string>development</string>
+		<key>com.apple.developer.associated-domains</key>
+		<array>
+			<string>applinks:aeliana.ai</string>
+			<string>applinks:www.aeliana.ai</string>
+			<string>applinks:aeliana.app</string>
+		</array>
+		<key>com.apple.developer.healthkit</key>
+		<true/>
+		<key>com.apple.developer.healthkit.access</key>
+		<array/>
 		<key>com.apple.developer.icloud-container-identifiers</key>
 		<array>
 			<string>iCloud.com.aureal.sable</string>
@@ -11,12 +21,6 @@
 		<key>com.apple.developer.icloud-services</key>
 		<array>
 			<string>CloudKit</string>
-		</array>
-		<key>com.apple.developer.associated-domains</key>
-		<array>
-			<string>applinks:aeliana.ai</string>
-			<string>applinks:www.aeliana.ai</string>
-			<string>applinks:aeliana.app</string>
 		</array>
 	</dict>
 </plist>

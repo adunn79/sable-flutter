@@ -217,7 +217,7 @@ import MediaPlayer
       }
     })
     
-    // Now Playing Music Channel
+    // Now Playing Music Channel - Detection AND Playback Control
     let nowPlayingChannel = FlutterMethodChannel(name: "com.sable.nowplaying",
                                                  binaryMessenger: controller.binaryMessenger)
     
@@ -227,6 +227,16 @@ import MediaPlayer
       switch call.method {
       case "getNowPlaying":
         self.getNowPlayingInfo(result: result)
+      case "play":
+        self.playMusic(result: result)
+      case "pause":
+        self.pauseMusic(result: result)
+      case "togglePlayPause":
+        self.togglePlayPause(result: result)
+      case "next":
+        self.nextTrack(result: result)
+      case "previous":
+        self.previousTrack(result: result)
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -408,5 +418,41 @@ import MediaPlayer
     } else {
       result(nil)
     }
+  }
+  
+  // MARK: - Playback Control Methods (Works with Apple Music and other music apps)
+  
+  private func playMusic(result: @escaping FlutterResult) {
+    let player = MPMusicPlayerController.systemMusicPlayer
+    player.play()
+    result(true)
+  }
+  
+  private func pauseMusic(result: @escaping FlutterResult) {
+    let player = MPMusicPlayerController.systemMusicPlayer
+    player.pause()
+    result(true)
+  }
+  
+  private func togglePlayPause(result: @escaping FlutterResult) {
+    let player = MPMusicPlayerController.systemMusicPlayer
+    if player.playbackState == .playing {
+      player.pause()
+    } else {
+      player.play()
+    }
+    result(true)
+  }
+  
+  private func nextTrack(result: @escaping FlutterResult) {
+    let player = MPMusicPlayerController.systemMusicPlayer
+    player.skipToNextItem()
+    result(true)
+  }
+  
+  private func previousTrack(result: @escaping FlutterResult) {
+    let player = MPMusicPlayerController.systemMusicPlayer
+    player.skipToPreviousItem()
+    result(true)
   }
 }

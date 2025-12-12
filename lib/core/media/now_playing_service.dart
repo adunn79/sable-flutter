@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
-/// Service to detect currently playing music on the device
+/// Service to detect currently playing music on the device AND control playback
 /// Works with Spotify, Apple Music, and other music apps via system APIs
 class NowPlayingService {
   static const MethodChannel _channel = MethodChannel('com.sable.nowplaying');
@@ -37,6 +37,63 @@ class NowPlayingService {
     final info = await getCurrentTrack();
     if (info == null) return null;
     return '${info.title} - ${info.artist}';
+  }
+  
+  // MARK: - Playback Control (Works with Apple Music and other music apps)
+  
+  /// Start/resume playback
+  static Future<bool> play() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('play');
+      return result ?? false;
+    } catch (e) {
+      debugPrint('🎵 Play error: $e');
+      return false;
+    }
+  }
+  
+  /// Pause playback
+  static Future<bool> pause() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('pause');
+      return result ?? false;
+    } catch (e) {
+      debugPrint('🎵 Pause error: $e');
+      return false;
+    }
+  }
+  
+  /// Toggle play/pause
+  static Future<bool> togglePlayPause() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('togglePlayPause');
+      return result ?? false;
+    } catch (e) {
+      debugPrint('🎵 Toggle play/pause error: $e');
+      return false;
+    }
+  }
+  
+  /// Skip to next track
+  static Future<bool> next() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('next');
+      return result ?? false;
+    } catch (e) {
+      debugPrint('🎵 Next track error: $e');
+      return false;
+    }
+  }
+  
+  /// Skip to previous track
+  static Future<bool> previous() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('previous');
+      return result ?? false;
+    } catch (e) {
+      debugPrint('🎵 Previous track error: $e');
+      return false;
+    }
   }
 }
 

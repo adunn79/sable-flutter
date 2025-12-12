@@ -394,7 +394,7 @@ class _MusicSettingsWidgetState extends ConsumerState<MusicSettingsWidget> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Apple Music requires MusicKit - coming in next update!',
+                'Apple Music playback control enabled via iOS native APIs!',
                 style: GoogleFonts.inter(),
               ),
               backgroundColor: AelianaColors.obsidian,

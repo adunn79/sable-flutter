@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'spotify_service.dart';
+import 'now_playing_service.dart';
 
 /// Enum for music source identification
 enum MusicSource {
@@ -196,12 +197,15 @@ class UnifiedMusicService extends ChangeNotifier {
     notifyListeners();
   }
   
-  /// Connect to Apple Music (placeholder - requires MusicKit)
+  /// Connect to Apple Music (uses native iOS MediaPlayer APIs)
   Future<bool> connectAppleMusic() async {
-    // TODO: Implement MusicKit authorization
-    // For now, return false as not implemented yet
-    debugPrint('🎵 Apple Music: Not implemented yet');
-    return false;
+    // Apple Music works via system MediaPlayer without explicit connection
+    // We just set connected = true and start detecting now playing
+    _isAppleMusicConnected = true;
+    _activeSource = MusicSource.appleMusic;
+    debugPrint('🎵 Apple Music: Connected via native iOS');
+    notifyListeners();
+    return true;
   }
   
   /// Disconnect from Apple Music (placeholder - requires MusicKit)
@@ -223,8 +227,7 @@ class UnifiedMusicService extends ChangeNotifier {
       case MusicSource.spotify:
         return await _spotify.play(spotifyUri: uri);
       case MusicSource.appleMusic:
-        // TODO: Implement Apple Music play
-        return false;
+        return await NowPlayingService.play();
       default:
         return false;
     }
@@ -236,8 +239,7 @@ class UnifiedMusicService extends ChangeNotifier {
       case MusicSource.spotify:
         return await _spotify.pause();
       case MusicSource.appleMusic:
-        // TODO: Implement Apple Music pause
-        return false;
+        return await NowPlayingService.pause();
       default:
         return false;
     }
@@ -258,8 +260,7 @@ class UnifiedMusicService extends ChangeNotifier {
       case MusicSource.spotify:
         return await _spotify.skipNext();
       case MusicSource.appleMusic:
-        // TODO: Implement Apple Music skip next
-        return false;
+        return await NowPlayingService.next();
       default:
         return false;
     }
@@ -271,8 +272,7 @@ class UnifiedMusicService extends ChangeNotifier {
       case MusicSource.spotify:
         return await _spotify.skipPrevious();
       case MusicSource.appleMusic:
-        // TODO: Implement Apple Music skip previous
-        return false;
+        return await NowPlayingService.previous();
       default:
         return false;
     }

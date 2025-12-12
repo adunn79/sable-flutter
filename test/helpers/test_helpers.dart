@@ -20,15 +20,19 @@ Widget buildTestableScreen(Widget screen, {List<Override>? overrides}) {
 
 /// Pumps a screen with mock network images support
 /// Essential for screens that display network images
+/// Uses pump() instead of pumpAndSettle() to avoid animation timeouts
 Future<void> pumpScreenWithMockImages(
   WidgetTester tester,
   Widget screen, {
   List<Override>? overrides,
-  Duration? settleTimeout,
+  int pumpCount = 5,
 }) async {
   await mockNetworkImagesFor(() async {
     await tester.pumpWidget(buildTestableScreen(screen, overrides: overrides));
-    await tester.pumpAndSettle(settleTimeout ?? const Duration(seconds: 2));
+    // Use multiple pumps instead of pumpAndSettle to avoid timeout from endless animations
+    for (int i = 0; i < pumpCount; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
   });
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:network_image_mock/network_image_mock.dart';
@@ -12,6 +13,10 @@ import '../helpers/test_helpers.dart';
 /// Comprehensive Onboarding Screen Tests
 /// Covers all onboarding flow screens for complete user journey
 void main() {
+  setUpAll(() {
+    GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
   group('Onboarding Screen 1 - Calibration', () {
     testWidgets('Calibration screen renders without crash', (tester) async {
       await pumpScreenWithMockImages(tester, const CalibrationScreen());
@@ -25,25 +30,25 @@ void main() {
 
     testWidgets('Name input field exists', (tester) async {
       await pumpScreenWithMockImages(tester, const CalibrationScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       expect(find.byType(TextField), findsWidgets, reason: 'Name input missing');
     });
 
     testWidgets('Can enter name in field', (tester) async {
       await pumpScreenWithMockImages(tester, const CalibrationScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       final textField = find.byType(TextField).first;
       await tester.enterText(textField, 'Test User');
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       expect(find.text('Test User'), findsOneWidget);
     });
 
     testWidgets('Continue button exists', (tester) async {
       await pumpScreenWithMockImages(tester, const CalibrationScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       final continueText = find.text('Continue');
       final nextIcon = find.byIcon(LucideIcons.arrowRight);
@@ -57,14 +62,14 @@ void main() {
 
     testWidgets('Date picker interaction works', (tester) async {
       await pumpScreenWithMockImages(tester, const CalibrationScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Date picker may exist for birthday
       final datePicker = find.byType(CupertinoDatePicker);
       if (datePicker.evaluate().isNotEmpty) {
         // Scroll date picker
         await tester.drag(datePicker.first, const Offset(0, -50));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 300));
       }
       
       expect(tester.takeException(), isNull);
@@ -84,7 +89,7 @@ void main() {
 
     testWidgets('Protocol text is displayed', (tester) async {
       await pumpScreenWithMockImages(tester, const ProtocolScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Should have some protocol/terms content
       expect(tester.takeException(), isNull);
@@ -92,7 +97,7 @@ void main() {
 
     testWidgets('Accept button exists', (tester) async {
       await pumpScreenWithMockImages(tester, const ProtocolScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       final acceptText = find.text('Accept');
       final agreeText = find.text('I Agree');
@@ -109,7 +114,7 @@ void main() {
 
     testWidgets('Can scroll protocol content', (tester) async {
       await pumpScreenWithMockImages(tester, const ProtocolScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       await verifyScrollable(tester, scrollableType: SingleChildScrollView);
       expect(tester.takeException(), isNull);
@@ -129,7 +134,7 @@ void main() {
 
     testWidgets('Multiple archetype options exist', (tester) async {
       await pumpScreenWithMockImages(tester, const ArchetypeScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Should find archetype names
       final aeliana = find.text('Aeliana');
@@ -147,20 +152,20 @@ void main() {
 
     testWidgets('Archetype cards are tappable', (tester) async {
       await pumpScreenWithMockImages(tester, const ArchetypeScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Try tapping an archetype
       final aeliana = find.text('Aeliana');
       if (aeliana.evaluate().isNotEmpty) {
         await tester.tap(aeliana.first);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull, reason: 'Archetype tap crashed');
       }
     });
 
     testWidgets('Can scroll through archetypes', (tester) async {
       await pumpScreenWithMockImages(tester, const ArchetypeScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Try horizontal or vertical scroll
       final pageView = find.byType(PageView);
@@ -168,10 +173,10 @@ void main() {
       
       if (pageView.evaluate().isNotEmpty) {
         await tester.drag(pageView.first, const Offset(-200, 0));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 300));
       } else if (listView.evaluate().isNotEmpty) {
         await tester.drag(listView.first, const Offset(0, -200));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 300));
       }
       
       expect(tester.takeException(), isNull);
@@ -191,7 +196,7 @@ void main() {
 
     testWidgets('Avatar preview exists', (tester) async {
       await pumpScreenWithMockImages(tester, const CustomizeScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Should have image preview
       final imageWidget = find.byType(Image);
@@ -206,7 +211,7 @@ void main() {
 
     testWidgets('Finish/Complete button exists', (tester) async {
       await pumpScreenWithMockImages(tester, const CustomizeScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       final finish = find.text('Finish');
       final complete = find.text('Complete');

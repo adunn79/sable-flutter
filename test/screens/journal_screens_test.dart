@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:network_image_mock/network_image_mock.dart';
@@ -10,6 +11,10 @@ import '../helpers/test_helpers.dart';
 /// Comprehensive Journal Screen Tests
 /// Covers Journal Timeline, Editor, and all journal functionality
 void main() {
+  setUpAll(() {
+    GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
   group('Journal Timeline - Core Rendering', () {
     testWidgets('Journal timeline renders without crash', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalTimelineScreen());
@@ -25,14 +30,14 @@ void main() {
   group('Journal Timeline - Header', () {
     testWidgets('Journal title exists', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalTimelineScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       expect(find.text('JOURNAL'), findsWidgets, reason: 'Journal title missing');
     });
 
     testWidgets('New entry button exists', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalTimelineScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Look for add/plus icon or FAB
       final addButton = find.byIcon(LucideIcons.plus);
@@ -49,7 +54,7 @@ void main() {
   group('Journal Timeline - Entry List', () {
     testWidgets('ListView or scroll view exists', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalTimelineScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Should have a scrollable list
       final listView = find.byType(ListView);
@@ -64,17 +69,17 @@ void main() {
 
     testWidgets('Scrolling works without crash', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalTimelineScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Try scrolling
       try {
         await tester.drag(find.byType(ListView).first, const Offset(0, -200));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 300));
       } catch (_) {
         // ListView might not exist if empty, try CustomScrollView
         try {
           await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -200));
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 300));
         } catch (_) {
           // Acceptable if no scrollable content
         }
@@ -87,7 +92,7 @@ void main() {
   group('Journal Timeline - Navigation', () {
     testWidgets('Calendar icon or view exists', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalTimelineScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       final calendarIcon = find.byIcon(LucideIcons.calendar);
       // May exist in header
@@ -96,7 +101,7 @@ void main() {
 
     testWidgets('Insights navigation exists', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalTimelineScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Look for insights or stats icon
       final insights = find.byIcon(LucideIcons.barChart2);
@@ -109,7 +114,7 @@ void main() {
   group('Journal Timeline - Empty State', () {
     testWidgets('Shows appropriate content when empty', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalTimelineScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Should show either entries OR empty state message
       expect(tester.takeException(), isNull);
@@ -132,7 +137,7 @@ void main() {
   group('Journal Editor - UI Elements', () {
     testWidgets('Save button exists', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalEditorScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       final saveIcon = find.byIcon(LucideIcons.check);
       final saveText = find.text('Save');
@@ -146,7 +151,7 @@ void main() {
 
     testWidgets('Back button exists', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalEditorScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       final backIcon = find.byIcon(LucideIcons.arrowLeft);
       final backIcon2 = find.byIcon(Icons.arrow_back);
@@ -162,7 +167,7 @@ void main() {
   group('Journal Editor - Rich Text Editor', () {
     testWidgets('Text editor area exists', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalEditorScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Quill editor or text field should exist
       final textField = find.byType(TextField);
@@ -179,7 +184,7 @@ void main() {
   group('Journal Editor - Context Enrichment', () {
     testWidgets('Location context area exists', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalEditorScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Location or map icon
       final locationIcon = find.byIcon(LucideIcons.mapPin);
@@ -189,7 +194,7 @@ void main() {
 
     testWidgets('Weather context may exist', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalEditorScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Weather elements
       expect(tester.takeException(), isNull);
@@ -199,7 +204,7 @@ void main() {
   group('Journal - Integration Tests', () {
     testWidgets('Timeline to editor navigation doesnt crash', (tester) async {
       await pumpScreenWithMockImages(tester, const JournalTimelineScreen());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       
       // Find and tap new entry button
       final addButton = find.byIcon(LucideIcons.plus);
@@ -207,10 +212,10 @@ void main() {
       
       if (addButton.evaluate().isNotEmpty) {
         await tester.tap(addButton.first);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 300));
       } else if (fabButton.evaluate().isNotEmpty) {
         await tester.tap(fabButton.first);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 300));
       }
       
       expect(tester.takeException(), isNull);

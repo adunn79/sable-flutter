@@ -85,8 +85,9 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
   }
 
   Future<void> _initVoice() async {
-    await _voiceService.initialize();
-    await _loadVoicesForOrigin(); // Load initial voices
+    // DON'T initialize VoiceService here - it triggers speech recognition permission
+    // Defer until user actually tries to play a voice preview
+    await _loadVoicesForOrigin(); // Just load voice list, no speech init
   }
   
 

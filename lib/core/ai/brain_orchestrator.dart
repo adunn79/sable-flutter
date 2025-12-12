@@ -1,12 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:sable/core/ai/room_brain/room_brain_base.dart';
 import 'package:sable/core/ai/room_brain/chat_brain.dart';
 import 'package:sable/core/ai/room_brain/journal_brain.dart';
 import 'package:sable/core/ai/room_brain/vital_balance_brain.dart';
 import 'package:sable/core/ai/room_brain/settings_brain.dart';
 import 'package:sable/core/ai/agent_context.dart';
-import 'package:sable/core/ai/memory_spine.dart';
-import 'package:sable/core/ai/tool_registry.dart';
 import 'package:sable/core/ai/character_personality.dart';
 
 /// Brain Orchestrator - Supervisor pattern for multi-brain collaboration

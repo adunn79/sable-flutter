@@ -3,10 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
 import '../../../core/theme/aeliana_theme.dart';
-import '../../../features/settings/widgets/settings_tile.dart';
 import '../../../features/settings/widgets/settings_section.dart';
 import '../../../features/settings/widgets/promo_code_dialog.dart';
 import '../../../core/promo/promo_models.dart'; // For RewardTypeExtension

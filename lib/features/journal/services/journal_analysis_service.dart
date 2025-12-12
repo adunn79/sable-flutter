@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:sable/features/journal/models/journal_entry.dart';
 import 'package:sable/features/journal/models/journal_insights.dart';
-import 'package:sable/features/journal/services/journal_storage_service.dart';
 import 'package:sable/core/ai/providers/gemini_provider.dart';
 
 /// Service for analyzing journal entries and generating insights

@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
-import 'package:sable/core/constants/legal_constants.dart';
 import 'package:sable/features/more/screens/legal_viewer_screen.dart';
 
 /// About Screen - App info, version, and credits

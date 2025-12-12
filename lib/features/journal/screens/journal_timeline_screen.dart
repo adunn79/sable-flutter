@@ -7,12 +7,9 @@ import '../services/journal_storage_service.dart';
 import '../services/journal_export_service.dart';
 import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
-import '../widgets/avatar_journal_overlay.dart';
 import 'package:sable/core/widgets/unified_avatar_widget.dart';
 import 'journal_editor_screen.dart';
 import 'insights_dashboard_screen.dart';
-import 'gratitude_mode_screen.dart';
-import 'voice_journaling_screen.dart';
 import 'journal_calendar_screen.dart';
 
 // Soothing color palette (matching Vital Balance)

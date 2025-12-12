@@ -1,12 +1,10 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import '../services/prescription_ocr_service.dart';
-import '../services/prescription_service.dart';
 import '../models/prescription.dart';
 import 'prescription_edit_screen.dart';
 

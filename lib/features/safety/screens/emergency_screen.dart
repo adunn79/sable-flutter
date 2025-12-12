@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
-import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sable/core/contacts/contacts_service.dart';
 

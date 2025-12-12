@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:device_calendar/device_calendar.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
@@ -18,9 +17,7 @@ import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/emotion/location_service.dart';
 import 'package:sable/src/config/app_config.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
-import 'package:sable/features/journal/widgets/avatar_journal_overlay.dart';
 import 'package:sable/core/widgets/unified_avatar_widget.dart';
-import 'package:sable/src/shared/weather_widget.dart';
 import 'package:sable/core/travel/travel_service.dart';
 import 'package:sable/core/news/headline_service.dart';
 import 'package:sable/core/contacts/contact_picker_sheet.dart';

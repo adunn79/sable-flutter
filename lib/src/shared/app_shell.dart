@@ -5,7 +5,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sable/src/shared/weather_widget.dart';
 import 'package:sable/core/services/idle_detection_service.dart';
-import 'package:sable/core/media/unified_music_service.dart';
 import 'package:sable/core/widgets/mini_player_widget.dart';
 import 'package:sable/features/settings/services/avatar_display_settings.dart';
 

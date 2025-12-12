@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:sable/core/calendar/calendar_service.dart';
 import '../models/permissions_config.dart';
-import '../services/onboarding_state_service.dart';
 
 class Screen15Permissions extends StatefulWidget {
   final Function(PermissionsConfig) onComplete;

@@ -9,7 +9,6 @@ import '../services/journal_storage_service.dart';
 import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
 import '../services/music_service.dart';
-import '../widgets/avatar_journal_overlay.dart';
 import 'package:sable/core/widgets/unified_avatar_widget.dart';
 import '../widgets/template_picker_sheet.dart';
 import '../widgets/prompt_picker_sheet.dart';

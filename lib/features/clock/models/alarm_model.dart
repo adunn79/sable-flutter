@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 /// Represents a single alarm
 class AlarmModel {

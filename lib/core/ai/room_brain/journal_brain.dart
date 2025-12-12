@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:sable/core/ai/room_brain/room_brain_base.dart';
 import 'package:sable/core/ai/agent_context.dart';
-import 'package:sable/core/ai/memory_spine.dart';
-import 'package:sable/core/ai/tool_registry.dart';
 
 /// Journal Brain - Domain expertise for journaling
 /// Handles: journaling help, mood analysis, prompts, templates, insights

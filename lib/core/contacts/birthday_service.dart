@@ -1,4 +1,3 @@
-import 'package:contacts_service/contacts_service.dart' as contacts_service;
 import 'package:flutter/foundation.dart';
 import 'package:sable/core/contacts/contacts_service.dart' as sable_contacts;
 

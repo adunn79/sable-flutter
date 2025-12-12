@@ -19,27 +19,27 @@ class JournalWeatherCard extends StatelessWidget {
     
     // Temperature-based suggestions
     if (temp >= 80) {
-      if (condition == WeatherType.rain || condition == WeatherType.thunderstorm) {
+      if (condition == WeatherType.rainy || condition == WeatherType.thunderstorm) {
         return "Light clothes + rain jacket";
       }
       return "Light, breathable clothes";
     } else if (temp >= 70) {
-      if (condition == WeatherType.rain || condition == WeatherType.thunderstorm) {
+      if (condition == WeatherType.rainy || condition == WeatherType.thunderstorm) {
         return "T-shirt + light rain jacket";
       }
       return "T-shirt & shorts/jeans";
     } else if (temp >= 60) {
-      if (condition == WeatherType.rain || condition == WeatherType.thunderstorm) {
+      if (condition == WeatherType.rainy || condition == WeatherType.thunderstorm) {
         return "Long sleeves + waterproof jacket";
       }
       return "Long sleeves + light jacket";
     } else if (temp >= 50) {
-      if (condition == WeatherType.rain || condition == WeatherType.thunderstorm) {
+      if (condition == WeatherType.rainy || condition == WeatherType.thunderstorm) {
         return "Sweater + waterproof coat";
       }
       return "Sweater or light jacket";
     } else if (temp >= 40) {
-      if (condition == WeatherType.rain || condition == WeatherType.thunderstorm) {
+      if (condition == WeatherType.rainy || condition == WeatherType.thunderstorm) {
         return "Warm coat + umbrella";
       }
       return "Warm jacket + layers";
@@ -59,7 +59,7 @@ class JournalWeatherCard extends StatelessWidget {
         return "⛅";
       case WeatherType.cloudy:
         return "☁️";
-      case WeatherType.rain:
+      case WeatherType.rainy:
         return "🌧️";
       case WeatherType.thunderstorm:
         return "⛈️";
@@ -80,7 +80,7 @@ class JournalWeatherCard extends StatelessWidget {
         return Colors.amber;
       case WeatherType.cloudy:
         return Colors.grey;
-      case WeatherType.rain:
+      case WeatherType.rainy:
       case WeatherType.thunderstorm:
         return Colors.blue;
       case WeatherType.snow:

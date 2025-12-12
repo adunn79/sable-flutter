@@ -14,7 +14,6 @@ import 'package:sable/features/settings/widgets/settings_tile.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 // iCloud Backup
 import 'package:sable/core/backup/icloud_backup_service.dart';
-import 'package:sable/core/emotion/conversation_memory_service.dart';
 import 'package:sable/core/voice/voice_service.dart';
 
 import 'package:sable/core/voice/elevenlabs_api_service.dart';
@@ -24,18 +23,12 @@ import 'package:sable/core/emotion/emotional_state_service.dart';
 import 'package:sable/core/ui/feedback_service.dart';
 import 'package:sable/core/personality/personality_service.dart'; // Added implementation
 // Native app services
-import 'package:sable/core/calendar/calendar_service.dart';
-import 'package:sable/core/contacts/contacts_service.dart';
-import 'package:sable/core/photos/photos_service.dart';
-import 'package:sable/core/reminders/reminders_service.dart';
 import 'package:sable/core/ai/apple_intelligence_service.dart';
 import 'package:sable/features/subscription/screens/subscription_screen.dart';
 import 'package:sable/features/local_vibe/widgets/local_vibe_settings_screen.dart';
 import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
 import 'package:sable/features/local_vibe/models/local_vibe_settings.dart';
 import 'package:sable/features/web/services/web_search_service.dart';
-import 'package:sable/features/safety/screens/emergency_screen.dart';
-import 'package:sable/features/settings/screens/vault_screen.dart';
 import 'package:sable/core/widgets/restart_widget.dart';
 import 'package:flutter/services.dart'; // For Haptics
 import 'package:sable/core/audio/button_sound_service.dart';

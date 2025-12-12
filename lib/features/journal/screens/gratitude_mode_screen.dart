@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:confetti/confetti.dart';
-import '../models/journal_entry.dart';
 import '../models/journal_bucket.dart';
 import '../services/journal_storage_service.dart';
 

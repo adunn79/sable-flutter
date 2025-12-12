@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:sable/core/ai/room_brain/room_brain_base.dart';
 import 'package:sable/core/ai/agent_context.dart';
-import 'package:sable/core/ai/memory_spine.dart';
-import 'package:sable/core/ai/tool_registry.dart';
 
 /// Settings Brain - Domain expertise for app configuration
 /// Handles: settings changes, privacy controls, feature toggles, data export

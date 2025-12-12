@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:sable/core/ai/room_brain/room_brain_base.dart';
 import 'package:sable/core/ai/agent_context.dart';
-import 'package:sable/core/ai/memory_spine.dart';
-import 'package:sable/core/ai/tool_registry.dart';
 
 /// Vital Balance Brain - Domain expertise for health & wellness
 /// Handles: biometric tracking, goal setting, recovery suggestions, health insights

@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:flutter/material.dart';
 
 /// Daily Quote Service - Inspirational and Dark Humor Quotes
 /// 

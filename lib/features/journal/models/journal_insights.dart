@@ -1,4 +1,3 @@
-import 'package:sable/features/journal/models/journal_entry.dart';
 
 /// Insights generated from journal analysis
 class JournalInsights {

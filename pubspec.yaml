@@ -69,6 +69,10 @@ dependencies:
   firebase_messaging: ^16.0.4
   cloud_firestore: ^6.1.0
   device_info_plus: ^11.2.1
+  health: ^13.1.4
+  timezone: any
+  in_app_purchase_storekit: any
+  markdown: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

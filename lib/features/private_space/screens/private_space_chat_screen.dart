@@ -15,13 +15,12 @@ import '../../../features/settings/widgets/magic_orb_widget.dart';
 import '../../../core/widgets/active_avatar_ring.dart'; // IMPORTED
 // REMOVED UnifiedMemoryService for privacy isolation
 import '../../../core/ai/model_orchestrator.dart'; // IMPORTED
-import '../../../core/context/context_engine.dart'; // IMPORTED
+// IMPORTED
 import '../services/private_storage_service.dart';
 import '../services/private_content_filter.dart';
 import '../models/private_message.dart';
 import '../models/private_user_persona.dart';
 import '../widgets/private_avatar_picker.dart';
-import '../widgets/private_persona_editor.dart';
 import '../widgets/private_faq_sheet.dart';
 import '../../safety/screens/emergency_screen.dart';
 import 'private_settings_screen.dart'; // IMPORTED

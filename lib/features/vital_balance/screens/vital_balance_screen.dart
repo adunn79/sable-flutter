@@ -14,7 +14,6 @@ import 'package:sable/features/safety/screens/emergency_screen.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:sable/features/vital_balance/services/vital_balance_service.dart';
 import 'package:sable/features/vital_balance/services/step_tracking_service.dart';
-import 'package:sable/features/journal/widgets/avatar_journal_overlay.dart';
 import 'package:sable/core/widgets/unified_avatar_widget.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:sable/src/pages/chat/chat_page.dart';

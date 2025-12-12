@@ -6,7 +6,6 @@ import 'boundary_service.dart';
 import 'grounding_service.dart';
 import 'speed_optimizer.dart';
 import '../emotion/emotional_state_service.dart';
-import '../emotion/sentiment_analyzer.dart';
 import '../memory/unified_memory_service.dart';
 import '../personality/personality_service.dart';
 

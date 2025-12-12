@@ -1,9 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:health/health.dart';
-import '../models/lab_result.dart';
 import '../models/vital_reading.dart';
 import 'health_data_service.dart';
 
@@ -18,7 +15,7 @@ class HealthKitService {
   static bool _isAuthorized = false;
   
   /// HealthKit data types for vital signs
-  static const _vitalTypes = [
+  static final _vitalTypes = [
     HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
     HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
     HealthDataType.BLOOD_GLUCOSE,
@@ -26,7 +23,7 @@ class HealthKitService {
     HealthDataType.WEIGHT,
     HealthDataType.HEIGHT,
     HealthDataType.BODY_TEMPERATURE,
-    HealthDataType.OXYGEN_SATURATION,
+    HealthDataType.BLOOD_OXYGEN,
   ];
   
   /// Request HealthKit authorization
@@ -62,7 +59,10 @@ class HealthKitService {
   /// Check if HealthKit is available
   static Future<bool> isAvailable() async {
     try {
-      return await _health.isHealthDataAvailable();
+      // Health package 13.x removed isHealthDataAvailable
+      // Just try to configure - returns false on failure
+      await _health.configure();
+      return true;
     } catch (e) {
       return false;
     }
@@ -152,7 +152,7 @@ class HealthKitService {
           primaryValue = (primaryValue * 9 / 5) + 32;
         }
         break;
-      case HealthDataType.OXYGEN_SATURATION:
+      case HealthDataType.BLOOD_OXYGEN:
         vitalType = VitalTypes.oxygenSaturation;
         primaryValue = (point.value as NumericHealthValue).numericValue.toDouble();
         break;

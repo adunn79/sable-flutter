@@ -2,8 +2,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:sable/core/ai/room_brain/room_brain_base.dart';
 import 'package:sable/core/ai/agent_context.dart';
-import 'package:sable/core/ai/memory_spine.dart';
-import 'package:sable/core/ai/tool_registry.dart';
 import 'package:sable/core/ai/providers/gemini_provider.dart';
 import 'package:sable/core/calendar/calendar_service.dart';
 import 'package:intl/intl.dart';

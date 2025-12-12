@@ -8,9 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/aeliana_theme.dart';
 import '../../../core/services/recovery_service.dart';
 import '../../../features/subscription/services/subscription_service.dart';
-import '../widgets/private_avatar_picker.dart';
 import 'private_space_age_gate.dart';
-import 'private_avatar_customize_screen.dart';
 import 'private_space_onboarding_screen.dart';
 
 /// PIN/Biometric lock screen for Private Space

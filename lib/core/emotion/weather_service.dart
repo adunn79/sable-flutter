@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:sable/src/config/app_config.dart';
 
 /// Weather service using OpenWeatherMap API with Google location
 class WeatherService {

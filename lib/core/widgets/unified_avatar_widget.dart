@@ -157,21 +157,22 @@ class _UnifiedAvatarWidgetState extends ConsumerState<UnifiedAvatarWidget> {
   }
   
   String _getAvatarAssetPath(String archetypeId) {
+    // All avatars are in assets/images/archetypes/ with lowercase names
     switch (archetypeId.toLowerCase()) {
       case 'sable':
-        return 'assets/avatars/sable_main.png';
+        return 'assets/images/archetypes/sable.png';
       case 'kai':
-        return 'assets/avatars/kai_main.png';
+        return 'assets/images/archetypes/kai.png';
       case 'echo':
-        return 'assets/avatars/echo_main.png';
+        return 'assets/images/archetypes/echo.png';
       case 'marco':
-        return 'assets/avatars/marco_main.png';
+        return 'assets/images/archetypes/marco.png';
       case 'aeliana':
-        return 'assets/avatars/aeliana_main.png';
+        return 'assets/images/archetypes/aeliana.png';
       case 'imani':
-        return 'assets/avatars/imani_main.png';
+        return 'assets/images/archetypes/imani.png';
       case 'priya':
-        return 'assets/avatars/priya_main.png';
+        return 'assets/images/archetypes/priya.png';
       case 'arjun':
         return 'assets/images/archetypes/arjun.png';
       case 'ravi':
@@ -179,7 +180,7 @@ class _UnifiedAvatarWidgetState extends ConsumerState<UnifiedAvatarWidget> {
       case 'james':
         return 'assets/images/archetypes/james.png';
       default:
-        return 'assets/avatars/sable_main.png';
+        return 'assets/images/archetypes/aeliana.png';
     }
   }
 }

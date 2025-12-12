@@ -473,7 +473,7 @@ class VoiceService {
   /// Get auto-speak preference
   Future<bool> getAutoSpeakEnabled() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyAutoSpeak) ?? true;
+    return prefs.getBool(_keyAutoSpeak) ?? false; // Default to OFF
   }
   
   /// Set auto-speak preference

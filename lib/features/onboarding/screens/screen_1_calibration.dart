@@ -49,7 +49,8 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
 
   void _selectDate() {
     // Show Cupertino date picker in a bottom sheet
-    final initialDate = _selectedDate ?? DateTime.now().subtract(const Duration(days: 365 * 25));
+    // Default to ~30 years ago for better UX
+    final initialDate = _selectedDate ?? DateTime(1990, 6, 15);
     DateTime tempDate = initialDate;
     
     showCupertinoModalPopup(
@@ -98,7 +99,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                 ],
               ),
             ),
-            // Date picker
+            // Date picker with reduced scroll sensitivity
             Expanded(
               child: CupertinoTheme(
                 data: CupertinoThemeData(
@@ -111,13 +112,20 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                     ),
                   ),
                 ),
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.date,
-                  initialDateTime: initialDate,
-                  minimumDate: DateTime(1900),
-                  maximumDate: DateTime.now(),
-                  backgroundColor: AelianaColors.carbon,
-                  onDateTimeChanged: (date) => tempDate = date,
+                child: ScrollConfiguration(
+                  behavior: const ScrollBehavior().copyWith(
+                    physics: const BouncingScrollPhysics(
+                      decelerationRate: ScrollDecelerationRate.fast,
+                    ),
+                  ),
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.date,
+                    initialDateTime: initialDate,
+                    minimumYear: 1920,
+                    maximumYear: DateTime.now().year,
+                    backgroundColor: AelianaColors.carbon,
+                    onDateTimeChanged: (date) => tempDate = date,
+                  ),
                 ),
               ),
             ),

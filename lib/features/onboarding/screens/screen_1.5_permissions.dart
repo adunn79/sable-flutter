@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:sable/core/calendar/calendar_service.dart';
 import '../models/permissions_config.dart';
 import '../services/onboarding_state_service.dart';
@@ -23,6 +25,13 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
   bool _gpsEnabled = false;
   bool _webAccessEnabled = false;
   bool _calendarEnabled = false;
+  bool _micEnabled = false;
+  bool _cameraEnabled = false;
+  bool _contactsEnabled = false;
+  bool _photosEnabled = false;
+  bool _healthEnabled = false;
+  bool _remindersEnabled = false;
+  bool _speechEnabled = false;
   bool _isLoading = true;
 
   @override
@@ -32,15 +41,10 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
   }
 
   Future<void> _loadCurrentPermissions() async {
-    // Both permissions default to false - user must explicitly opt in
+    // All permissions default to false - user must explicitly opt in
     // Even if OS permissions are already granted, we want user to consciously enable
-    final hasGps = false;
-    final hasWeb = false;
-
     if (mounted) {
       setState(() {
-        _gpsEnabled = hasGps;
-        _webAccessEnabled = hasWeb;
         _isLoading = false;
       });
     }
@@ -48,7 +52,6 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
 
   Future<void> _handleCalendarToggle(bool value) async {
     if (value) {
-      // Request actual OS permission when enabling
       final granted = await CalendarService.requestPermission();
       setState(() {
         _calendarEnabled = granted;
@@ -60,11 +63,111 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
     }
   }
 
+  Future<void> _handleMicToggle(bool value) async {
+    if (value) {
+      final status = await Permission.microphone.request();
+      setState(() {
+        _micEnabled = status.isGranted;
+      });
+    } else {
+      setState(() {
+        _micEnabled = false;
+      });
+    }
+  }
+
+  Future<void> _handleCameraToggle(bool value) async {
+    if (value) {
+      final status = await Permission.camera.request();
+      setState(() {
+        _cameraEnabled = status.isGranted;
+      });
+    } else {
+      setState(() {
+        _cameraEnabled = false;
+      });
+    }
+  }
+
+  Future<void> _handleContactsToggle(bool value) async {
+    if (value) {
+      final status = await Permission.contacts.request();
+      setState(() {
+        _contactsEnabled = status.isGranted;
+      });
+    } else {
+      setState(() {
+        _contactsEnabled = false;
+      });
+    }
+  }
+
+  Future<void> _handlePhotosToggle(bool value) async {
+    if (value) {
+      final result = await PhotoManager.requestPermissionExtend();
+      setState(() {
+        _photosEnabled = result.isAuth;
+      });
+    } else {
+      setState(() {
+        _photosEnabled = false;
+      });
+    }
+  }
+
+  Future<void> _handleHealthToggle(bool value) async {
+    if (value) {
+      // HealthKit requires special handling - request through permission_handler
+      // Note: Actual HealthKit authorization is done through health package when accessing data
+      final status = await Permission.sensors.request();
+      setState(() {
+        _healthEnabled = status.isGranted || value; // Keep enabled as HealthKit auth happens at data access
+      });
+    } else {
+      setState(() {
+        _healthEnabled = false;
+      });
+    }
+  }
+
+  Future<void> _handleRemindersToggle(bool value) async {
+    if (value) {
+      final status = await Permission.reminders.request();
+      setState(() {
+        _remindersEnabled = status.isGranted;
+      });
+    } else {
+      setState(() {
+        _remindersEnabled = false;
+      });
+    }
+  }
+
+  Future<void> _handleSpeechToggle(bool value) async {
+    if (value) {
+      final status = await Permission.speech.request();
+      setState(() {
+        _speechEnabled = status.isGranted;
+      });
+    } else {
+      setState(() {
+        _speechEnabled = false;
+      });
+    }
+  }
+
   void _handleContinue() {
     final config = PermissionsConfig(
       gpsEnabled: _gpsEnabled,
       webAccessEnabled: _webAccessEnabled,
       calendarEnabled: _calendarEnabled,
+      micEnabled: _micEnabled,
+      cameraEnabled: _cameraEnabled,
+      contactsEnabled: _contactsEnabled,
+      photosEnabled: _photosEnabled,
+      healthEnabled: _healthEnabled,
+      remindersEnabled: _remindersEnabled,
+      speechEnabled: _speechEnabled,
     );
     widget.onComplete(config);
   }
@@ -82,14 +185,14 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 24),
 
                     // Title
                     Center(
                       child: Text(
                         'ENHANCE THE CONNECTION',
                         style: GoogleFonts.spaceGrotesk(
-                          fontSize: 28,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: AelianaColors.plasmaCyan,
                           letterSpacing: 2,
@@ -98,95 +201,177 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                       ),
                     ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
 
                     Text(
                       'Grant me context about your world. These permissions are optional, but recommended for a richer experience.',
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: AelianaColors.ghost,
-                        height: 1.5,
+                        height: 1.4,
                       ),
+                      textAlign: TextAlign.center,
                     ).animate(delay: 200.ms).fadeIn(duration: 600.ms),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 24),
+
+                    // Core Permissions Section
+                    _buildSectionHeader('Core Integrations', 300),
 
                     // GPS Access Card
                     _buildPermissionCard(
                       icon: Icons.location_on_outlined,
                       title: 'Location Awareness',
-                      description: 'Allow GPS access for locational context, nearby recommendations, and personalized suggestions.',
+                      description: 'GPS access for locational context and nearby recommendations.',
                       value: _gpsEnabled,
                       onChanged: (value) {
                         setState(() {
                           _gpsEnabled = value;
                         });
                       },
-                      delay: 400,
+                      delay: 350,
                     ),
 
-                    const SizedBox(height: 16),
+                    // Calendar Access Card
+                    _buildPermissionCard(
+                      icon: Icons.calendar_month_outlined,
+                      title: 'Calendar Access',
+                      description: 'Create events, check availability, and scheduling assistance.',
+                      value: _calendarEnabled,
+                      onChanged: _handleCalendarToggle,
+                      delay: 400,
+                    ),
 
                     // Web Access Card
                     _buildPermissionCard(
                       icon: Icons.public_outlined,
                       title: 'World Event Awareness',
-                      description: 'Allow web access once daily to stay informed about global events and news.',
+                      description: 'Web access to stay informed about global events.',
                       value: _webAccessEnabled,
                       onChanged: (value) {
                         setState(() {
                           _webAccessEnabled = value;
                         });
                       },
-                      delay: 600,
+                      delay: 450,
                     ),
 
                     const SizedBox(height: 16),
+                    _buildSectionHeader('Media & Communication', 500),
 
-                    // Calendar Access Card
+                    // Microphone Card
                     _buildPermissionCard(
-                      icon: Icons.calendar_month_outlined,
-                      title: 'Calendar Access',
-                      description: 'Allow calendar access to create events, check availability, and provide scheduling assistance.',
-                      value: _calendarEnabled,
-                      onChanged: _handleCalendarToggle,
+                      icon: Icons.mic_outlined,
+                      title: 'Voice Input',
+                      description: 'Talk to Aeliana using voice commands.',
+                      value: _micEnabled,
+                      onChanged: _handleMicToggle,
+                      delay: 550,
+                    ),
+
+                    // Camera Card
+                    _buildPermissionCard(
+                      icon: Icons.camera_alt_outlined,
+                      title: 'Camera Access',
+                      description: 'Capture moments and scan documents.',
+                      value: _cameraEnabled,
+                      onChanged: _handleCameraToggle,
+                      delay: 600,
+                    ),
+
+                    // Speech Recognition Card
+                    _buildPermissionCard(
+                      icon: Icons.record_voice_over_outlined,
+                      title: 'Speech Recognition',
+                      description: 'Enhanced voice-to-text for dictation.',
+                      value: _speechEnabled,
+                      onChanged: _handleSpeechToggle,
+                      delay: 650,
+                    ),
+
+                    const SizedBox(height: 16),
+                    _buildSectionHeader('Personal Data', 700),
+
+                    // Contacts Card
+                    _buildPermissionCard(
+                      icon: Icons.contacts_outlined,
+                      title: 'People Search',
+                      description: 'Find contact info and enhance conversations.',
+                      value: _contactsEnabled,
+                      onChanged: _handleContactsToggle,
+                      delay: 750,
+                    ),
+
+                    // Photos Card
+                    _buildPermissionCard(
+                      icon: Icons.photo_library_outlined,
+                      title: 'Photo Library',
+                      description: 'Access photos for memories and journals.',
+                      value: _photosEnabled,
+                      onChanged: _handlePhotosToggle,
                       delay: 800,
                     ),
 
-                    const SizedBox(height: 32),
+                    // Reminders Card
+                    _buildPermissionCard(
+                      icon: Icons.task_alt_outlined,
+                      title: 'Reminders Sync',
+                      description: 'Sync with iOS Reminders app.',
+                      value: _remindersEnabled,
+                      onChanged: _handleRemindersToggle,
+                      delay: 850,
+                    ),
 
-                    // Information Note
+                    const SizedBox(height: 16),
+                    _buildSectionHeader('Wellness', 900),
+
+                    // Health Card
+                    _buildPermissionCard(
+                      icon: Icons.favorite_outline,
+                      title: 'Vital Balance',
+                      description: 'Connect with Apple Health for wellness tracking.',
+                      value: _healthEnabled,
+                      onChanged: _handleHealthToggle,
+                      delay: 950,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Information Note - Made prominent
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AelianaColors.carbon.withOpacity(0.3),
+                        color: AelianaColors.plasmaCyan.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AelianaColors.ghost.withOpacity(0.2),
+                          color: AelianaColors.plasmaCyan.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
                       child: Row(
                         children: [
                           const Icon(
-                            Icons.info_outline,
+                            Icons.settings_outlined,
                             color: AelianaColors.plasmaCyan,
-                            size: 20,
+                            size: 24,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'You can change these permissions anytime in Settings. Your privacy is always protected.',
                               style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: AelianaColors.ghost,
+                                fontSize: 13,
+                                color: AelianaColors.stardust,
                                 height: 1.4,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
                         ],
                       ),
                     ).animate(delay: 1000.ms).fadeIn(duration: 600.ms),
+
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -202,11 +387,26 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                   child: const Text('CONTINUE'),
                 ),
               ),
-            ).animate(delay: 1200.ms).fadeIn(duration: 600.ms),
+            ).animate(delay: 1100.ms).fadeIn(duration: 600.ms),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildSectionHeader(String title, int delay) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, top: 8),
+      child: Text(
+        title.toUpperCase(),
+        style: GoogleFonts.spaceGrotesk(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: AelianaColors.ghost.withOpacity(0.7),
+          letterSpacing: 2,
+        ),
+      ),
+    ).animate(delay: delay.ms).fadeIn(duration: 400.ms);
   }
 
   Widget _buildPermissionCard({
@@ -218,17 +418,18 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
     required int delay,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: value
             ? AelianaColors.plasmaCyan.withOpacity(0.05)
             : AelianaColors.carbon.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: value
               ? AelianaColors.plasmaCyan.withOpacity(0.3)
-              : AelianaColors.ghost.withOpacity(0.2),
-          width: 1.5,
+              : AelianaColors.ghost.withOpacity(0.15),
+          width: 1,
         ),
       ),
       child: Row(
@@ -236,9 +437,9 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
           Icon(
             icon,
             color: value ? AelianaColors.plasmaCyan : AelianaColors.ghost,
-            size: 32,
+            size: 26,
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,35 +447,25 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
                 Text(
                   title,
                   style: GoogleFonts.spaceGrotesk(
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: value ? AelianaColors.plasmaCyan : AelianaColors.stardust,
-                    letterSpacing: 1,
+                    letterSpacing: 0.5,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 2),
                 Text(
                   description,
                   style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: AelianaColors.ghost,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  value ? 'ENABLED' : 'DISABLED',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: value ? AelianaColors.plasmaCyan : AelianaColors.ghost.withOpacity(0.5),
-                    letterSpacing: 1.2,
+                    fontSize: 12,
+                    color: AelianaColors.ghost.withOpacity(0.8),
+                    height: 1.3,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Switch(
             value: value,
             onChanged: onChanged,
@@ -285,6 +476,6 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
           ),
         ],
       ),
-    ).animate(delay: delay.ms).fadeIn(duration: 600.ms).slideY(begin: 0.1, end: 0);
+    ).animate(delay: delay.ms).fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0);
   }
 }

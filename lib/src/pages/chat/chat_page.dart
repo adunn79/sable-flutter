@@ -1414,6 +1414,18 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
       );
     }
   }
+  
+  /// Scroll to show the newest content at top of viewport
+  /// For Local Vibe and Daily Update, we want users to read from the beginning
+  void _scrollToTopOfContent() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        // Since ListView is reversed, position 0 shows newest message at bottom of viewport
+        // We use jumpTo(0) to immediately position, then rely on the content being visible
+        _scrollController.jumpTo(0);
+      }
+    });
+  }
 
   /// Handle voice input
   Future<void> _handleRewrite() async {
@@ -1542,7 +1554,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
         _isTyping = false;
       });
       
-      _scrollToBottom();
+      _scrollToTopOfContent();
       
       // Auto-speak if enabled and has voice credits
       final autoSpeak = await _voiceService?.getAutoSpeakEnabled() ?? true;
@@ -2746,7 +2758,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
           _messages.add({'message': content, 'isUser': false});
           _isTyping = false;
         });
-        _scrollToBottom();
+        _scrollToTopOfContent();
         
         // Auto-speak if enabled and has voice credits
         final autoSpeak = await _voiceService?.getAutoSpeakEnabled() ?? true;

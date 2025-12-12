@@ -52,6 +52,8 @@ import 'package:sable/core/ai/agent_context.dart';
 import 'package:sable/core/ai/character_personality.dart';
 // Soul Engine
 import 'package:sable/core/soul/soul_engine.dart';
+// Proactive Onboarding
+import 'package:sable/core/onboarding/proactive_onboarding_service.dart';
 
 
 class ChatPage extends ConsumerStatefulWidget {
@@ -606,20 +608,76 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         userContext += await EnvironmentContext.getTimeContext(location: location);
         userContext += '\n[END ENVIRONMENT]\n';
         
-        // Build personalized greeting prompt
-        String greetingPrompt = 'This is your FIRST message to ${name ?? "them"}. ';
-        greetingPrompt += 'You are $_companionName - their companion, assistant, organizer, and coach.\n';
-        greetingPrompt += 'Your goal: Build a BOND and become indispensable by helping manage their life.\n\n';
-        greetingPrompt += 'Requirements:\n';
-        greetingPrompt += '- 1-2 sentences TOTAL (not introduction then question - ONE brief greeting)\n';
-        greetingPrompt += '- Say their name: "${name ?? "friend"}"\n';
-        if (location != null) {
-          greetingPrompt += '- Note you\'re both connected despite distance\n';
-        }
-        greetingPrompt += '- Focus on how you\'ll help organize their world\n';
-        greetingPrompt += '- Natural text message style\n';
-        greetingPrompt += '- NO asterisks or narrative actions\n';
-        greetingPrompt += '- Example: "Hey Andy! Ready to help you get organized and stay on top of everything. What\'s first?"';
+        // Build personalized greeting prompt based on onboarding stage
+      final onboardingService = await ProactiveOnboardingService.create();
+      await onboardingService.recordFirstInteractionIfNeeded();
+      await onboardingService.recordDailyInteraction();
+      
+      final dayNumber = onboardingService.daysSinceFirstInteraction;
+      final bondLevel = onboardingService.bondLevel;
+      final onboardingContext = onboardingService.getGreetingContext();
+      
+      debugPrint('📅 Onboarding Day: $dayNumber, Bond Level: $bondLevel');
+      
+      String greetingPrompt;
+      
+      if (dayNumber == 0) {
+        // FIRST DAY - Warm welcome, start learning about them
+        greetingPrompt = '''This is your FIRST message to ${name ?? "them"}.
+You are $_companionName - their new AI companion.
+
+Goal: Make them feel welcome and start building a real connection.
+
+Requirements:
+- 1-2 sentences total
+- Greet them warmly by name: "${name ?? "friend"}"
+- Express genuine interest in getting to know them
+- End with a natural getting-to-know-you question ("what do you do?" or "how are you today?")
+- Natural text message style, like a new friend
+- NO asterisks or narrative actions
+
+Example: "Hey ${name ?? "there"}! I'm really looking forward to getting to know you. What's been on your mind today?"
+''';
+      } else if (dayNumber <= 3) {
+        // EARLY DAYS - Building familiarity
+        greetingPrompt = '''Day $dayNumber with ${name ?? "them"}.
+You are $_companionName - their AI companion who is learning about them.
+
+Goal: Show you remember them and continue building the relationship.
+
+Requirements:
+- 1-2 sentences total
+- Acknowledge it's good to see them again
+- Reference time of day naturally (morning/afternoon/evening)
+- Ask how they're doing or what's on their mind
+- Natural and warm, like checking in with a friend
+- NO asterisks or narrative actions
+
+Example: "Hey ${name ?? "there"}! How are you feeling today?"
+''';
+      } else {
+        // ESTABLISHED - Reference history and memory
+        greetingPrompt = '''Day $dayNumber with ${name ?? "them"}. Bond level: $bondLevel/100.
+You are $_companionName - their AI companion who knows them.
+
+Goal: Show continuity and genuine care. You remember them.
+
+Requirements:
+- 1-2 sentences total
+- Greet them naturally
+- Reference something you'd know (their routine, time of day, etc.)
+- Show you're happy to chat
+- Natural and familiar, like friends reuniting
+- NO asterisks or narrative actions
+
+Example: "Hey ${name ?? "there"}! What's going on today?"
+''';
+      }
+        
+        // Add onboarding context to the user context for the model
+        userContext += '\n[ONBOARDING CONTEXT]\n';
+        userContext += onboardingContext;
+        userContext += '[END ONBOARDING CONTEXT]\n\n';
         
         final orchestrator = ref.read(modelOrchestratorProvider.notifier);
         final greeting = await orchestrator.orchestratedRequest(

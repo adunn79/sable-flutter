@@ -53,12 +53,17 @@ class NeuralLinkService {
       }
     }
 
-    // SPEED: Use fastest models for ping (not production models)
+    // SPEED: Use fastest/smallest models for ping diagnostics
+    // - Claude: haiku (fastest)
+    // - Gemini: 2.0-flash (already fast)
+    // - GPT: 4o-mini (fastest)
+    // - Grok: grok-2-mini (smallest/fastest)
+    // - DeepSeek: deepseek-chat
     final results = await Future.wait([
       _pingProvider('Claude (Personality)', _anthropic, 'claude-3-haiku-20240307'),
       _pingProvider('Gemini (Agentic)', _gemini, 'gemini-2.0-flash'),
       _pingProvider('GPT-4o (Logic)', _openai, 'gpt-4o-mini'),
-      _pingProvider('Grok (Realist)', _grok, 'grok-3'), // Updated: grok-beta deprecated, use grok-3
+      _pingProvider('Grok (Realist)', _grok, 'grok-2-mini'),
       _pingProvider('DeepSeek (Coding)', _deepseek, 'deepseek-chat'),
     ]);
 
@@ -72,12 +77,12 @@ class NeuralLinkService {
   Future<NeuralNodeReport> _pingProvider(String name, dynamic provider, String modelId) async {
     final stopwatch = Stopwatch()..start();
     try {
-      // SPEED: Add 5-second timeout to fail fast
+      // SPEED: 8-second timeout - allows cold starts but still fails reasonably fast
       await provider.generateResponse(
         prompt: "ping",
         systemPrompt: "Reply with 'pong' only.",
         modelId: modelId,
-      ).timeout(const Duration(seconds: 5), onTimeout: () {
+      ).timeout(const Duration(seconds: 8), onTimeout: () {
         throw Exception('Timeout');
       });
       
@@ -86,7 +91,7 @@ class NeuralLinkService {
       
       return NeuralNodeReport(
         providerId: name,
-        status: ms > 2000 ? NeuralStatus.highLatency : NeuralStatus.online,
+        status: ms > 3000 ? NeuralStatus.highLatency : NeuralStatus.online,
         latencyMs: ms,
       );
     } catch (e) {

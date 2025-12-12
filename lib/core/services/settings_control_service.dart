@@ -80,7 +80,7 @@ class SettingsControlService {
       subtitle: 'Include zodiac sign in AI context',
       section: 'INTELLIGENCE',
       type: SettingType.toggle,
-      keywords: ['horoscope', 'astrology', 'sign', 'star'],
+      keywords: ['horoscope', 'astrology', 'zodiac references'],
     ),
 
     // NEWS
@@ -375,7 +375,8 @@ class SettingsControlService {
     final lowerMessage = message.toLowerCase();
 
     // Check for enable/disable patterns
-    final enablePatterns = ['turn on', 'enable', 'activate', 'switch on', 'start'];
+    // Note: 'start' removed - too generic, matches onboarding text like 'start connecting'
+    final enablePatterns = ['turn on', 'enable', 'activate', 'switch on'];
     final disablePatterns = ['turn off', 'disable', 'deactivate', 'switch off', 'stop'];
 
     bool? desiredValue;

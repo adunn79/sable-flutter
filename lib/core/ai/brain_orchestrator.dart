@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:sable/core/ai/room_brain/room_brain_base.dart';
+import 'package:sable/core/ai/room_brain/chat_brain.dart';
 import 'package:sable/core/ai/room_brain/journal_brain.dart';
 import 'package:sable/core/ai/room_brain/vital_balance_brain.dart';
 import 'package:sable/core/ai/room_brain/settings_brain.dart';
@@ -39,12 +40,9 @@ class BrainOrchestrator {
       debugPrint('📝 Delegating to Journal Brain for expertise');
       final journalResponse = await journalBrain!.processQuery(query, context);
       
-      if (journalResponse.directResponse != null) {
+      if (journalResponse.content.isNotEmpty) {
         // Journal brain has a direct answer - use it with personality overlay
-        return await personality.applyTone(
-          response: journalResponse.directResponse!,
-          context: 'journaling and reflection',
-        );
+        return personality.applyTone(journalResponse.content);
       }
     }
     
@@ -53,12 +51,9 @@ class BrainOrchestrator {
       debugPrint('💓 Delegating to Vital Balance Brain for expertise');
       final healthResponse = await vitalBalanceBrain!.processQuery(query, context);
       
-      if (healthResponse.directResponse != null) {
+      if (healthResponse.content.isNotEmpty) {
         // Health brain has a direct answer - use it with personality overlay
-        return await personality.applyTone(
-          response: healthResponse.directResponse!,
-          context: 'health and wellness coaching',
-        );
+        return personality.applyTone(healthResponse.content);
       }
     }
     
@@ -67,12 +62,9 @@ class BrainOrchestrator {
       debugPrint('⚙️ Delegating to Settings Brain for expertise');
       final settingsResponse = await settingsBrain!.processQuery(query, context);
       
-      if (settingsResponse.directResponse != null) {
+      if (settingsResponse.content.isNotEmpty) {
         // Settings brain has a direct answer - use it with personality overlay
-        return await personality.applyTone(
-          response: settingsResponse.directResponse!,
-          context: 'app configuration',
-        );
+        return personality.applyTone(settingsResponse.content);
       }
     }
     

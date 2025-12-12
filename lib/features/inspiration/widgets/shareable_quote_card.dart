@@ -82,7 +82,7 @@ aeliana.ai''';
                 ]
               : [
                   AelianaColors.plasmaCyan.withOpacity(0.1),
-                  AelianaColors.royalPurple.withOpacity(0.2),
+                  Colors.purple.withOpacity(0.2),
                 ],
         ),
         borderRadius: BorderRadius.circular(16),

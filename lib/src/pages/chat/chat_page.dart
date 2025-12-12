@@ -2986,7 +2986,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
   }) {
     return GestureDetector(
       onTap: () {
-        FeedbackService.tap();
+        HapticFeedback.lightImpact();
         onTap();
       },
       child: Container(
@@ -3061,7 +3061,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
     final isSelected = _avatarDisplayMode == mode;
     return GestureDetector(
       onTap: () async {
-        FeedbackService.tap();
+        HapticFeedback.lightImpact();
         final avatarSettings = AvatarDisplaySettings();
         await avatarSettings.setAvatarDisplayMode(mode);
         setState(() => _avatarDisplayMode = mode);
@@ -3096,7 +3096,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
   }
   
   void _activateClockMode() async {
-    FeedbackService.tap();
+    HapticFeedback.lightImpact();
     final avatarSettings = AvatarDisplaySettings();
     await avatarSettings.setAvatarDisplayMode(AvatarDisplaySettings.modeClock);
     setState(() => _avatarDisplayMode = AvatarDisplaySettings.modeClock);

@@ -11,7 +11,7 @@ void main() {
     
     // Save test user data
     await service.saveUserProfile(
-      name: 'Andrew',
+      name: 'TestUser',
       dob: DateTime(1990, 1, 1), // Change to your actual birth date
       location: 'San Francisco, CA', // Change to your actual location
       gender: 'Male', // Change to your actual gender
@@ -24,6 +24,6 @@ void main() {
     print('Location: ${service.userLocation}');
     print('Gender: ${service.userGender}');
     
-    expect(service.userName, 'Andrew');
+    expect(service.userName, 'TestUser');
   });
 }

@@ -135,7 +135,7 @@ void _mockPlatformChannels() {
   });
   
   // Apple Intelligence channel
-  const intelligenceChannel = MethodChannel('com.aureal.sable/apple_intelligence');
+  const intelligenceChannel = MethodChannel('com.aeliana.app/apple_intelligence');
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(intelligenceChannel, (call) async {
     switch (call.method) {

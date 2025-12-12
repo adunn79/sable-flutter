@@ -1245,7 +1245,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
             userContext += '- "Crazy thing happened in [location/topic] last night"\n';
             userContext += '- "[Hook about relevant news topic they care about]"\n\n';
             userContext += 'Sable vibe: casual, direct, slightly edgy. NOT formal or robotic.\n';
-            userContext += 'Example: "Morning, ${name ?? "Andy"}. Did you see what went down overnight?"\n';
+            userContext += 'Example: "Morning, ${name ?? "there"}. Did you see what went down overnight?"\n';
             userContext += '[END DAILY GREETING MODE]\n';
             
             // Mark interaction as done

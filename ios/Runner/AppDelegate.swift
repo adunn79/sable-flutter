@@ -47,7 +47,7 @@ import MediaPlayer
     })
     
     // Apple Intelligence Channel
-    let intelligenceChannel = FlutterMethodChannel(name: "com.aureal.sable/apple_intelligence",
+    let intelligenceChannel = FlutterMethodChannel(name: "com.aeliana.app/apple_intelligence",
                                                  binaryMessenger: controller.binaryMessenger)
     
     intelligenceChannel.setMethodCallHandler({

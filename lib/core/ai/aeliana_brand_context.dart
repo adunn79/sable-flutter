@@ -18,7 +18,7 @@ Historical Context: Aelius was a noble Roman family name, shared by Emperor Hadr
 Tagline: "Living technology. Digital soul. Hyper-human."
 
 Company: Aeliana AI, LLC (Registered in Washington State)
-Creator: Designed by the user (Andy) and the team at Aeliana AI
+Creator: Aeliana AI Team
 Websites: aeliana.ai, aeliana.app, aeliana.online
 
 Brand Philosophy:

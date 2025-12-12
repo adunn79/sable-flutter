@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
 class AppleIntelligenceService {
-  static const MethodChannel _channel = MethodChannel('com.aureal.sable/apple_intelligence');
+  static const MethodChannel _channel = MethodChannel('com.aeliana.app/apple_intelligence');
 
   /// Check if Apple Intelligence is available on this device
   /// Requires iOS 18+ / macOS 15+ and compatible hardware

@@ -6,7 +6,7 @@ import Foundation
 class CloudKitManager {
     static let shared = CloudKitManager()
     
-    private let containerIdentifier = "iCloud.com.aureal.sable"
+    private let containerIdentifier = "iCloud.com.aeliana.app"
     private lazy var container = CKContainer(identifier: containerIdentifier)
     private var privateDatabase: CKDatabase { container.privateCloudDatabase }
     

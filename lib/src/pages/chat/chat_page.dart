@@ -2028,8 +2028,8 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
               top: false, // Disable top SafeArea to handle it manually with padding
               child: Column(
                 children: [
-                  // Dynamic spacing for Status Bar + Header gap
-                  SizedBox(height: MediaQuery.of(context).padding.top + 20), 
+                  // Dynamic spacing for Status Bar + Header gap (reduced from +20 to +8)
+                  SizedBox(height: MediaQuery.of(context).padding.top + 8), 
                   _buildHeader(),
                   Expanded(
                     child: Padding(

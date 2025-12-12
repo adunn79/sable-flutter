@@ -26,6 +26,10 @@ enum ClockColorTheme {
 
 /// A clock face widget that can display multiple clock styles
 /// Supports Digital, Analog, Float, Minimal, and Flip styles
+/// 
+/// When [ambientColorCycle] is true, the clock color will slowly cycle
+/// through all available themes at random intervals without brightening
+/// the screen - perfect for nightstand mode.
 class ClockFaceWidget extends StatefulWidget {
   final ClockStyle style;
   final bool use24Hour;
@@ -37,6 +41,7 @@ class ClockFaceWidget extends StatefulWidget {
   final String? weatherCondition;
   final bool showDate;
   final bool showSeconds;
+  final bool ambientColorCycle;  // NEW: Cycle colors at random intervals
 
   const ClockFaceWidget({
     super.key,
@@ -50,6 +55,7 @@ class ClockFaceWidget extends StatefulWidget {
     this.weatherCondition,
     this.showDate = true,
     this.showSeconds = false,
+    this.ambientColorCycle = false,  // NEW: Default off
   });
 
   @override
@@ -68,6 +74,19 @@ class _ClockFaceWidgetState extends State<ClockFaceWidget> with TickerProviderSt
   // For flip animation
   late AnimationController _flipController;
   int _lastMinute = -1;
+  
+  // Ambient color cycling
+  Timer? _colorCycleTimer;
+  ClockColorTheme _currentColorTheme = ClockColorTheme.white;
+  int _colorIndex = 0;
+  
+  // All available themes for cycling (excluding red which is night-mode only)
+  static const _ambientColors = [
+    ClockColorTheme.white,
+    ClockColorTheme.cyan,
+    ClockColorTheme.gold,
+    ClockColorTheme.purple,
+  ];
 
   @override
   void initState() {
@@ -105,6 +124,28 @@ class _ClockFaceWidgetState extends State<ClockFaceWidget> with TickerProviderSt
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
+    
+    // Ambient color cycling - random intervals between 30-90 seconds
+    if (widget.ambientColorCycle) {
+      _currentColorTheme = widget.colorTheme;
+      _scheduleNextColorChange();
+    }
+  }
+  
+  /// Schedule the next color change at a random interval
+  void _scheduleNextColorChange() {
+    // Random interval between 30-90 seconds
+    final randomSeconds = 30 + math.Random().nextInt(61);
+    _colorCycleTimer?.cancel();
+    _colorCycleTimer = Timer(Duration(seconds: randomSeconds), () {
+      if (mounted && widget.ambientColorCycle) {
+        setState(() {
+          _colorIndex = (_colorIndex + 1) % _ambientColors.length;
+          _currentColorTheme = _ambientColors[_colorIndex];
+        });
+        _scheduleNextColorChange();  // Schedule next change
+      }
+    });
   }
   
   void _triggerFlipAnimation() {
@@ -116,14 +157,19 @@ class _ClockFaceWidgetState extends State<ClockFaceWidget> with TickerProviderSt
     _timer.cancel();
     _floatController.dispose();
     _flipController.dispose();
+    _colorCycleTimer?.cancel();
     super.dispose();
   }
   
   /// Get colors based on theme and night mode
+  /// When ambientColorCycle is enabled, uses the cycling theme instead
   Color get primaryColor {
     if (widget.nightMode) return const Color(0xFFFF3B30); // Apple red
     
-    switch (widget.colorTheme) {
+    // Use cycling color when ambient mode is on
+    final theme = widget.ambientColorCycle ? _currentColorTheme : widget.colorTheme;
+    
+    switch (theme) {
       case ClockColorTheme.white:
         return Colors.white;
       case ClockColorTheme.cyan:

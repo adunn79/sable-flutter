@@ -285,6 +285,7 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
                   nightMode: _nightMode,
                   use24Hour: _use24Hour,
                   size: 337,
+                  ambientColorCycle: _dynamicColorsEnabled,  // Use widget's random cycling
                   nextAlarmTime: _alarmActive && _alarmTime != null 
                       ? _formatAlarmTime(_alarmTime!)
                       : null,
@@ -386,6 +387,7 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
                   nightMode: _nightMode,
                   use24Hour: _use24Hour,
                   size: 412,
+                  ambientColorCycle: _dynamicColorsEnabled,  // Use widget's random cycling
                   nextAlarmTime: _alarmActive && _alarmTime != null 
                       ? _formatAlarmTime(_alarmTime!)
                       : null,

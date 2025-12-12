@@ -175,7 +175,7 @@ class PrescriptionService {
             'Refills remaining: ${prescription.refillsRemaining}',
         start: reminderDate,
         end: reminderDate.add(const Duration(hours: 1)),
-        isAllDay: false,
+        allDay: false,
       );
       debugPrint('📅 Scheduled refill reminder for ${prescription.displayName}');
       return true;

@@ -48,7 +48,7 @@ class _PrescriptionListScreenState extends State<PrescriptionListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AelianaColors.deepSpace,
+      backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

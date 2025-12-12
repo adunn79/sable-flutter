@@ -61,11 +61,10 @@ dependencies:
   # Music Integration
   spotify_sdk: ^3.0.0
   audio_session: ^0.1.18
-
-
-
-
-
+  # Camera & OCR for health document scanning
+  camera: ^0.11.1
+  google_mlkit_text_recognition: ^0.14.0
+  image: ^4.5.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

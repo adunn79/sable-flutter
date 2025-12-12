@@ -181,12 +181,45 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
 
                     const SizedBox(height: 16),
 
+                    // ARJUN - Indian male strategist
+                    _buildArchetypeCard(
+                      'Arjun',
+                      'The Strategist • He/Him',
+                      'ar-JOON. Sharp, analytical, and driven. A brilliant tech founder who sees three moves ahead.',
+                      'assets/images/archetypes/arjun.png',
+                      delay: 575,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // RAVI - Indian male spiritual guide
+                    _buildArchetypeCard(
+                      'Ravi',
+                      'The Guide • He/Him',
+                      'RAH-vee. Warm, nurturing wisdom. Draws from Vedantic philosophy and ancient stories.',
+                      'assets/images/archetypes/ravi.png',
+                      delay: 590,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // JAMES - British gentleman
+                    _buildArchetypeCard(
+                      'James',
+                      'The Gentleman • He/Him',
+                      'JAYMS. Refined British charm, dry wit, quietly romantic. Think Oxford don meets 007.',
+                      'assets/images/archetypes/james.png',
+                      delay: 605,
+                    ),
+
+                    const SizedBox(height: 16),
+
                     _buildArchetypeCard(
                       'Custom',
                       'Your Vision • Your Choice',
                       'Start from scratch and build your ideal companion from the ground up.',
                       null, // No image for custom
-                      delay: 600,
+                      delay: 650,
                     ),
 
 

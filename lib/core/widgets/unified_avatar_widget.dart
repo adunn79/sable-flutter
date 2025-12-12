@@ -172,6 +172,12 @@ class _UnifiedAvatarWidgetState extends ConsumerState<UnifiedAvatarWidget> {
         return 'assets/avatars/imani_main.png';
       case 'priya':
         return 'assets/avatars/priya_main.png';
+      case 'arjun':
+        return 'assets/images/archetypes/arjun.png';
+      case 'ravi':
+        return 'assets/images/archetypes/ravi.png';
+      case 'james':
+        return 'assets/images/archetypes/james.png';
       default:
         return 'assets/avatars/sable_main.png';
     }

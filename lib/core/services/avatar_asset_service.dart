@@ -15,9 +15,11 @@ class AvatarAssetService {
     'aeliana',
     'echo',
     'kai',
-    'empathetic_confidant',
-    'strategic_mentor',
-    'playful_spark',
+    'imani',
+    'priya',
+    'arjun',
+    'ravi',
+    'james',
   ];
   
   /// Get the appropriate avatar path based on context.
@@ -57,9 +59,8 @@ class AvatarAssetService {
       return _professionalAssetCache[normalizedId]!;
     }
     
-    // For now, assume professional variants exist for main archetypes
-    // This can be updated to actually check asset existence
-    final mainArchetypes = ['sable', 'marco', 'aeliana', 'echo', 'kai'];
+    // All main archetypes have professional variants
+    final mainArchetypes = ['sable', 'marco', 'aeliana', 'echo', 'kai', 'imani', 'priya', 'arjun', 'ravi', 'james'];
     final exists = mainArchetypes.contains(normalizedId);
     
     _professionalAssetCache[normalizedId] = exists;
@@ -94,6 +95,16 @@ class AvatarAssetService {
         return 'Echo';
       case 'kai':
         return 'Kai';
+      case 'imani':
+        return 'Imani';
+      case 'priya':
+        return 'Priya';
+      case 'arjun':
+        return 'Arjun';
+      case 'ravi':
+        return 'Ravi';
+      case 'james':
+        return 'James';
       default:
         return archetypeId;
     }

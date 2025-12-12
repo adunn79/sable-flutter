@@ -46,6 +46,24 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
     return personality.pronunciation;
   }
 
+  /// Get personality style for the current archetype
+  String get _personalityStyle {
+    final personality = CharacterPersonality.all.firstWhere(
+      (p) => p.id.toLowerCase() == widget.config.archetype.toLowerCase(),
+      orElse: () => CharacterPersonality.aeliana,
+    );
+    return personality.style;
+  }
+
+  /// Get personality tone for the current archetype
+  String get _personalityTone {
+    final personality = CharacterPersonality.all.firstWhere(
+      (p) => p.id.toLowerCase() == widget.config.archetype.toLowerCase(),
+      orElse: () => CharacterPersonality.aeliana,
+    );
+    return personality.tone;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -257,7 +275,34 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
             ),
           ),
           
-          const SizedBox(height: 28),
+          const SizedBox(height: 12),
+          
+          // Personality Style
+          Text(
+            _personalityStyle,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AelianaColors.hyperGold,
+              letterSpacing: 0.5,
+            ),
+          ),
+          
+          const SizedBox(height: 6),
+          
+          // Personality Tone
+          Text(
+            _personalityTone,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: AelianaColors.ghost.withOpacity(0.9),
+              height: 1.4,
+            ),
+          ),
+          
+          const SizedBox(height: 24),
           
           _buildDetailRow('ORIGIN', widget.config.origin),
           _buildDetailRow('AWAKENED', DateFormat.yMMMd().format(DateTime.now()).toUpperCase()),

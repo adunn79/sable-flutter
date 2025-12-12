@@ -52,6 +52,7 @@ import 'package:sable/features/clock/widgets/clock_face_widget.dart';
 import 'package:sable/core/services/idle_detection_service.dart';
 import 'package:sable/features/settings/widgets/music_settings_widget.dart';
 import 'package:sable/features/settings/widgets/apple_intelligence_settings_widget.dart';
+import 'package:sable/features/settings/widgets/privacy_management_dialog.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -2172,6 +2173,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               SettingsSection(
                 title: 'Legal & Support',
                 children: [
+                   SettingsTile(
+                     icon: LucideIcons.database, 
+                     title: 'Manage My Data',
+                     trailing: Container(
+                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                       decoration: BoxDecoration(
+                         color: AelianaColors.plasmaCyan.withOpacity(0.2),
+                         borderRadius: BorderRadius.circular(4),
+                       ),
+                       child: Text('GDPR', style: GoogleFonts.inter(color: AelianaColors.plasmaCyan, fontSize: 10, fontWeight: FontWeight.bold)),
+                     ),
+                     onTap: () => PrivacyManagementDialog.show(context),
+                   ),
                    SettingsTile(
                      icon: LucideIcons.shieldCheck, 
                      title: 'Privacy Policy',

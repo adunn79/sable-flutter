@@ -1458,6 +1458,10 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
   Future<void> _handleDailyUpdate() async {
     ref.read(feedbackServiceProvider).medium();
     
+    // Clear any pending calendar flow to prevent hijacking this action
+    final memorySpine = RoomBrainInitializer.getMemorySpine();
+    await memorySpine.write('PENDING_CALENDAR_EVENT', {});
+    
     try {
       // 1. Fetch News
       final webService = ref.read(webSearchServiceProvider);
@@ -2680,6 +2684,10 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
   Future<void> _handleLocalVibe() async {
     ref.read(feedbackServiceProvider).medium();
     if (_localVibeService == null) return;
+
+    // Clear any pending calendar flow to prevent hijacking this action
+    final memorySpine = RoomBrainInitializer.getMemorySpine();
+    await memorySpine.write('PENDING_CALENDAR_EVENT', {});
 
     setState(() => _isTyping = true);
     

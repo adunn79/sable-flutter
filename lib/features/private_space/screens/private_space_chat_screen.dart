@@ -1043,8 +1043,8 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Center(
           child: Container(
-            width: 72,
-            height: 72,
+            width: 56,  // Consistent with UnifiedAvatarWidget
+            height: 56,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: avatar!.accentColor, width: 3),

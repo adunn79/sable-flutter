@@ -366,24 +366,24 @@ class OnboardingStateService {
   static const String _keyBrainEmpathy = 'brain_empathy';
   static const String _keyBrainHumor = 'brain_humor';
 
-  /// Get brain creativity level (Default: 0.5)
-  double get brainCreativity => _prefs.getDouble(_keyBrainCreativity) ?? 0.5;
+  /// Get brain creativity level (Default: 0.4)
+  double get brainCreativity => _prefs.getDouble(_keyBrainCreativity) ?? 0.4;
 
   /// Set brain creativity level
   Future<void> setBrainCreativity(double value) async {
     await _prefs.setDouble(_keyBrainCreativity, value);
   }
 
-  /// Get brain empathy level (Default: 0.7)
-  double get brainEmpathy => _prefs.getDouble(_keyBrainEmpathy) ?? 0.7;
+  /// Get brain empathy level (Default: 0.4)
+  double get brainEmpathy => _prefs.getDouble(_keyBrainEmpathy) ?? 0.4;
 
   /// Set brain empathy level
   Future<void> setBrainEmpathy(double value) async {
     await _prefs.setDouble(_keyBrainEmpathy, value);
   }
 
-  /// Get brain humor level (Default: 0.3)
-  double get brainHumor => _prefs.getDouble(_keyBrainHumor) ?? 0.3;
+  /// Get brain humor level (Default: 0.4)
+  double get brainHumor => _prefs.getDouble(_keyBrainHumor) ?? 0.4;
 
   /// Set brain humor level
   Future<void> setBrainHumor(double value) async {

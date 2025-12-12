@@ -462,55 +462,82 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
   }
 }
 
-/// Formats phone numbers as +1 (XXX) XXX-XXXX
+/// Formats phone numbers as (XXX) XXX-XXXX for US numbers
+/// Properly tracks cursor position to avoid input issues
 class _PhoneInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    // Remove all non-digits
-    var digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    // Get only digits from the new value
+    final newDigits = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    final oldDigits = oldValue.text.replaceAll(RegExp(r'[^\d]'), '');
     
-    if (digitsOnly.isEmpty) {
+    // If empty, return empty
+    if (newDigits.isEmpty) {
       return const TextEditingValue(text: '');
     }
     
-    // Strip leading '1' if user typed country code (we add +1 automatically)
-    if (digitsOnly.startsWith('1') && digitsOnly.length > 10) {
-      digitsOnly = digitsOnly.substring(1);
-    }
+    // Limit to 10 digits max (US phone number)
+    final digits = newDigits.length > 10 ? newDigits.substring(0, 10) : newDigits;
     
-    // Limit to 10 digits (area code + 7 digit number)
-    if (digitsOnly.length > 10) {
-      digitsOnly = digitsOnly.substring(0, 10);
-    }
-    
+    // Build formatted string
     final buffer = StringBuffer();
     
-    // Format: +1 (XXX) XXX-XXXX
-    if (digitsOnly.isNotEmpty) {
-      buffer.write('+1 (');
-      final areaCode = digitsOnly.substring(0, digitsOnly.length.clamp(0, 3));
-      buffer.write(areaCode);
+    // Format: (XXX) XXX-XXXX
+    if (digits.isNotEmpty) {
+      buffer.write('(');
+      buffer.write(digits.substring(0, digits.length.clamp(0, 3)));
     }
     
-    if (digitsOnly.length > 3) {
+    if (digits.length > 3) {
       buffer.write(') ');
-      final prefix = digitsOnly.substring(3, digitsOnly.length.clamp(3, 6));
-      buffer.write(prefix);
+      buffer.write(digits.substring(3, digits.length.clamp(3, 6)));
     }
     
-    if (digitsOnly.length > 6) {
+    if (digits.length > 6) {
       buffer.write('-');
-      final suffix = digitsOnly.substring(6, digitsOnly.length.clamp(6, 10));
-      buffer.write(suffix);
+      buffer.write(digits.substring(6, digits.length.clamp(6, 10)));
     }
     
     final formatted = buffer.toString();
+    
+    // Calculate new cursor position based on digit count
+    // Count how many digits are before the old cursor position
+    int digitsBeforeCursor = 0;
+    final oldCursor = oldValue.selection.baseOffset;
+    for (int i = 0; i < oldCursor && i < oldValue.text.length; i++) {
+      if (RegExp(r'\d').hasMatch(oldValue.text[i])) {
+        digitsBeforeCursor++;
+      }
+    }
+    
+    // Adjust for added/removed digits
+    if (newDigits.length > oldDigits.length) {
+      // User added a digit
+      digitsBeforeCursor++;
+    } else if (newDigits.length < oldDigits.length) {
+      // User deleted a digit
+      digitsBeforeCursor = digitsBeforeCursor.clamp(0, newDigits.length);
+    }
+    
+    // Find new cursor position in formatted string
+    int newCursorPos = 0;
+    int digitCount = 0;
+    for (int i = 0; i < formatted.length && digitCount < digitsBeforeCursor; i++) {
+      newCursorPos = i + 1;
+      if (RegExp(r'\d').hasMatch(formatted[i])) {
+        digitCount++;
+      }
+    }
+    
+    // Clamp cursor position to valid range
+    newCursorPos = newCursorPos.clamp(0, formatted.length);
+    
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
+      selection: TextSelection.collapsed(offset: newCursorPos),
     );
   }
 }

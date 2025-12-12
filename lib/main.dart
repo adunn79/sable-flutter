@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/aeliana_theme.dart';
@@ -20,94 +21,130 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() async {
-  String initialRoute = '/chat'; // Define outside try block for scope visibility
-  
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Global error handling
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    debugPrint('🔴 Flutter Error: ${details.exception}');
-    debugPrint('Stack trace: ${details.stack}');
-  };
-  
-  // 1. FIREBASE (Optional - simulator may not have Firebase configured)
-  try {
-    await Firebase.initializeApp();
-    debugPrint('✅ Firebase initialized');
+  // Wrap entire app in error zone to catch all crashes
+  runZonedGuarded(() async {
+    String initialRoute = '/chat'; // Define outside try block for scope visibility
     
-    // Request notification permission (iOS)
-    final messaging = FirebaseMessaging.instance;
-    final settings = await messaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
-    debugPrint('🔔 Notification permission: ${settings.authorizationStatus}');
-  } catch (e) {
-    debugPrint('⚠️ Firebase initialization skipped (simulator?): $e');
-  }
-  
-  // 2. CORE SERVICES (Required - must run even if Firebase fails)
-  try {
-    // Load environment variables FIRST
-    await AppConfig.initialize();
-    debugPrint('✅ AppConfig initialized');
+    WidgetsFlutterBinding.ensureInitialized();
     
-    // Initialize Hive for journal storage
-    await JournalStorageService.initialize();
-    await JournalStorageService.createDefaultBuckets();
-    debugPrint('✅ Journal storage initialized');
+    // Global error handling
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      debugPrint('🔴 Flutter Error: ${details.exception}');
+      debugPrint('Stack trace: ${details.stack}');
+    };
     
-    // Initialize unified memory service (chat, memories, health)
-    await UnifiedMemoryService().initialize();
-    debugPrint('✅ Unified memory service initialized');
-    
-    // Initialize Room Brain System (Memory Spine + Tools)
-    await RoomBrainInitializer.initialize();
-    debugPrint('✅ Room Brain System initialized');
-    
-    // Initialize Model Registry for dynamic model resolution
-    await ModelRegistryService.instance.initialize();
-    debugPrint('✅ Model Registry initialized');
-    
-    // Check for startup route
-    final prefs = await SharedPreferences.getInstance();
-    
-    // Keep existing ElevenLabs logic
-    if (AppConfig.elevenLabsKey.isNotEmpty) {
-      await prefs.setString('eleven_labs_api_key', AppConfig.elevenLabsKey);
-      await prefs.setString('voice_engine_type', 'eleven_labs');
-      debugPrint('✅ ElevenLabs API key loaded from .env and saved to preferences');
+    // 1. FIREBASE (Optional - simulator may not have Firebase configured)
+    try {
+      await Firebase.initializeApp();
+      debugPrint('✅ Firebase initialized');
+      
+      // Request notification permission (iOS)
+      final messaging = FirebaseMessaging.instance;
+      final settings = await messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+      debugPrint('🔔 Notification permission: ${settings.authorizationStatus}');
+    } catch (e) {
+      debugPrint('⚠️ Firebase initialization skipped (simulator?): $e');
     }
     
-    // New: Check for last tab resume
-    final shouldResume = prefs.getBool('start_on_last_tab') ?? false;
-    final lastRoute = prefs.getString('last_visited_route');
-    
-    debugPrint('🔍 Resume Check: start_on_last_tab=$shouldResume, last_visited_route=$lastRoute');
-    
-    if (shouldResume && lastRoute != null && lastRoute.isNotEmpty) {
-      initialRoute = lastRoute;
-      debugPrint('🏁 Resuming session at: $initialRoute');
-    } else {
-      debugPrint('⏭️ Not resuming: shouldResume=$shouldResume, lastRoute=$lastRoute');
+    // 2. CORE SERVICES (Required - must run even if Firebase fails)
+    try {
+      // Load environment variables FIRST
+      await AppConfig.initialize();
+      debugPrint('✅ AppConfig initialized');
+      
+      // Initialize Hive for journal storage
+      await JournalStorageService.initialize();
+      await JournalStorageService.createDefaultBuckets();
+      debugPrint('✅ Journal storage initialized');
+      
+      // Initialize unified memory service (chat, memories, health)
+      await UnifiedMemoryService().initialize();
+      debugPrint('✅ Unified memory service initialized');
+      
+      // Initialize Room Brain System (Memory Spine + Tools)
+      await RoomBrainInitializer.initialize();
+      debugPrint('✅ Room Brain System initialized');
+      
+      // Initialize Model Registry for dynamic model resolution
+      await ModelRegistryService.instance.initialize();
+      debugPrint('✅ Model Registry initialized');
+      
+      // Check for startup route
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Keep existing ElevenLabs logic
+      if (AppConfig.elevenLabsKey.isNotEmpty) {
+        await prefs.setString('eleven_labs_api_key', AppConfig.elevenLabsKey);
+        await prefs.setString('voice_engine_type', 'eleven_labs');
+        debugPrint('✅ ElevenLabs API key loaded from .env and saved to preferences');
+      }
+      
+      // New: Check for last tab resume
+      final shouldResume = prefs.getBool('start_on_last_tab') ?? false;
+      final lastRoute = prefs.getString('last_visited_route');
+      
+      debugPrint('🔍 Resume Check: start_on_last_tab=$shouldResume, last_visited_route=$lastRoute');
+      
+      if (shouldResume && lastRoute != null && lastRoute.isNotEmpty) {
+        initialRoute = lastRoute;
+        debugPrint('🏁 Resuming session at: $initialRoute');
+      } else {
+        debugPrint('⏭️ Not resuming: shouldResume=$shouldResume, lastRoute=$lastRoute');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Core Initialization Error: $e\n$stackTrace');
     }
-  } catch (e, stackTrace) {
-    debugPrint('❌ Core Initialization Error: $e\n$stackTrace');
-  }
-  
-  runApp(
-    ProviderScope(
-      child: RestartWidget(
-        child: _AppLoader(initialRoute: initialRoute), 
+    
+    runApp(
+      ProviderScope(
+        child: RestartWidget(
+          child: _AppLoader(initialRoute: initialRoute), 
+        ),
       ),
-    ),
-  );
+    );
+  }, (error, stackTrace) {
+    debugPrint('🔥 FATAL ERROR: $error');
+    debugPrint('Stack trace: $stackTrace');
+    // Show emergency error UI
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          backgroundColor: Colors.black,
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Aeliana Crashed',
+                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    error.toString(),
+                    style: const TextStyle(color: Colors.red, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  });
 }
 
 class _AppLoader extends StatelessWidget {

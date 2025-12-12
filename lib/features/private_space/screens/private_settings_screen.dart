@@ -9,6 +9,7 @@ import '../../../core/theme/aeliana_theme.dart';
 import '../../../features/settings/widgets/settings_tile.dart';
 import '../../../features/settings/widgets/settings_section.dart';
 import '../../../features/settings/widgets/promo_code_dialog.dart';
+import '../../../core/promo/promo_models.dart'; // For RewardTypeExtension
 import '../models/private_user_persona.dart';
 import '../widgets/private_avatar_picker.dart';
 

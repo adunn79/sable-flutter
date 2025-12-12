@@ -393,9 +393,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   List<VoiceWithMetadata> _availableVoices = [];
   
   // Brain Sliders
-  double _brainCreativity = 0.7;
-  double _brainEmpathy = 0.8;
-  double _brainHumor = 0.6;
+  double _brainCreativity = 0.4;
+  double _brainEmpathy = 0.4;
+  double _brainHumor = 0.4;
   double _userBond = 0.5; // 0=Cooled, 0.5=Neutral, 1.0=Warm
   double _brainIntelligence = 0.5; // Default baseline, can go up to 1.0 for genius level
   

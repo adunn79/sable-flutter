@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/features/subscription/services/subscription_service.dart';
 import 'package:sable/features/settings/widgets/promo_code_dialog.dart';
+import 'package:sable/core/promo/promo_models.dart'; // For RewardTypeExtension
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});

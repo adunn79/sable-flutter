@@ -3312,12 +3312,9 @@ aeliana.ai''';
                             _backgroundColor == AvatarDisplaySettings.colorWhite;
   final isDark = !isLightBackground;
   
-  // Add extra bottom padding to account for navigation bar (60px)
-  // This ensures the input doesn't get hidden when keyboard pushes up
-  const navBarHeight = 60.0;
-  
-  return Padding(
-    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16 + navBarHeight),
+// Minimal bottom padding since nav bar handles its own space
+return Padding(
+  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(

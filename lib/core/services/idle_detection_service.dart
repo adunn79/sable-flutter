@@ -60,8 +60,8 @@ class IdleDetectionService {
   
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    _isEnabled = prefs.getBool('clock_auto_idle_enabled') ?? false; // Disabled by default
-    _timeoutMinutes = prefs.getInt('clock_idle_timeout_minutes') ?? 2;
+    _isEnabled = prefs.getBool('clock_auto_idle_enabled') ?? true; // Default ON at startup
+    _timeoutMinutes = prefs.getInt('clock_idle_timeout_minutes') ?? 10; // Default 10 minutes
     debugPrint('⏰ IdleDetection: Loaded - enabled=$_isEnabled, timeout=$_timeoutMinutes min');
   }
   

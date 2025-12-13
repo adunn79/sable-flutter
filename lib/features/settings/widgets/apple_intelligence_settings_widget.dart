@@ -229,22 +229,16 @@ class AppleIntelligenceSettingsWidget extends StatelessWidget {
   }
   
   Future<void> _openSiriSettings() async {
-    // Deep link to iOS Settings > Siri & Search
-    const url = 'App-Prefs:SIRI';
+    // On iOS 15+, we can only open the app's own settings page
+    // User must navigate to Siri & Search from there
+    const appSettingsUrl = 'app-settings:';
     try {
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url));
-      } else {
-        // Fallback to general settings
-        await launchUrl(Uri.parse('App-Prefs:'));
+      final uri = Uri.parse(appSettingsUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
       }
     } catch (e) {
-      // iOS settings deep link might be blocked, try alternative
-      try {
-        await launchUrl(Uri.parse('app-settings:'));
-      } catch (_) {
-        // Silent fail - user can manually open settings
-      }
+      debugPrint('⚠️ Could not open settings: $e');
     }
   }
 }

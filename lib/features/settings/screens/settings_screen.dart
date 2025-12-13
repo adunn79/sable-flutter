@@ -394,12 +394,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String? _selectedVoiceName;
   List<VoiceWithMetadata> _availableVoices = [];
   
-  // Brain Sliders
-  double _brainCreativity = 0.4;
-  double _brainEmpathy = 0.4;
-  double _brainHumor = 0.4;
+  // Brain Sliders - Default to 45% for all (never zero)
+  double _brainCreativity = 0.45;
+  double _brainEmpathy = 0.45;
+  double _brainHumor = 0.45;
   double _userBond = 0.5; // 0=Cooled, 0.5=Neutral, 1.0=Warm
-  double _brainIntelligence = 0.5; // Default baseline, can go up to 1.0 for genius level
+  double _brainIntelligence = 0.45; // Default 45%, can go up to 1.0 for genius level
   
   // Local Vibe Service handle
   LocalVibeService? _localVibeService;

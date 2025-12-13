@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/widgets/restart_widget.dart';
 import 'package:sable/core/widgets/active_avatar_ring.dart';
+import 'package:sable/core/backup/icloud_backup_service.dart';
 import 'package:sable/features/private_space/services/private_storage_service.dart';
 import 'package:sable/features/onboarding/services/onboarding_state_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -124,6 +125,17 @@ class _MoreScreenState extends State<MoreScreen> {
             title: 'Emergency',
             subtitle: 'Crisis resources and contacts',
             onTap: () => context.go('/emergency'),
+          ),
+          const SizedBox(height: 12),
+          
+          // iCloud Recovery - Prominent for returning users
+          _buildMenuItem(
+            context,
+            icon: LucideIcons.cloudDownload,
+            title: 'Restore from iCloud',
+            subtitle: 'Recover your data from backup',
+            onTap: () => _showRestoreDialog(context),
+            highlight: true,
           ),
           const SizedBox(height: 12),
           _buildMenuItem(
@@ -527,6 +539,132 @@ User: $_userName
     return params.entries
         .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
         .join('&');
+  }
+
+  /// Show iCloud restore dialog
+  Future<void> _showRestoreDialog(BuildContext context) async {
+    // Check if iCloud is available
+    final isAvailable = await iCloudBackupService.isAvailable();
+    final statusMessage = await iCloudBackupService.getAccountStatusMessage();
+    final lastBackup = await iCloudBackupService.getLastBackupTime();
+    
+    if (!context.mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AelianaColors.carbon,
+        title: Text(
+          'Restore from iCloud',
+          style: GoogleFonts.spaceGrotesk(
+            color: AelianaColors.hyperGold,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isAvailable ? LucideIcons.checkCircle : LucideIcons.alertCircle,
+                  color: isAvailable ? Colors.green : Colors.orange,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    statusMessage,
+                    style: GoogleFonts.inter(color: Colors.white70),
+                  ),
+                ),
+              ],
+            ),
+            if (lastBackup != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Last backup: ${_formatDate(lastBackup)}',
+                style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Text(
+              'This will restore your journals, memories, and settings from your iCloud backup. Current data will be replaced.',
+              style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54)),
+          ),
+          if (isAvailable)
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                await _performRestore(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AelianaColors.hyperGold,
+                foregroundColor: Colors.black,
+              ),
+              child: Text('Restore', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            ),
+        ],
+      ),
+    );
+  }
+  
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inDays == 0) return 'Today';
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 7) return '${diff.inDays} days ago';
+    return '${date.month}/${date.day}/${date.year}';
+  }
+  
+  Future<void> _performRestore(BuildContext context) async {
+    // Show progress dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AelianaColors.carbon,
+        content: Row(
+          children: [
+            const CircularProgressIndicator(color: AelianaColors.plasmaCyan),
+            const SizedBox(width: 16),
+            Text('Restoring...', style: GoogleFonts.inter(color: Colors.white)),
+          ],
+        ),
+      ),
+    );
+    
+    try {
+      final result = await iCloudBackupService.performFullRestore();
+      if (context.mounted) Navigator.pop(context); // Close progress
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.success 
+              ? '✅ Restore complete! Restart app to see changes.'
+              : '❌ Restore failed: ${result.message}'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) Navigator.pop(context); // Close progress
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Error: $e')),
+        );
+      }
+    }
   }
 
 

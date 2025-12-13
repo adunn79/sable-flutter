@@ -49,28 +49,13 @@ class ContextEngine {
     // Check Privacy Setting
     final prefs = await SharedPreferences.getInstance();
 
-    // Check if user explicitly set the preference
-    final hasExplicitSetting = prefs.containsKey('context_aware_enabled');
-    
-    if (hasExplicitSetting) {
-      // Use explicit setting
-      final isEnabled = prefs.getBool('context_aware_enabled') ?? false;
-      if (!isEnabled) {
-        return ExecutionContext(
-          timeDescription: timeDesc,
-          timestamp: now,
-        );
-      }
-    } else {
-      // Default: ON if location permission granted, OFF otherwise (respects onboarding choice)
-      // This auto-enables after user grants location permission
-      final hasLocationPermission = await _checkLocationPermission();
-      if (!hasLocationPermission) {
-        return ExecutionContext(
-          timeDescription: timeDesc,
-          timestamp: now,
-        );
-      }
+    // Default to ON unless user explicitly disabled it
+    final isEnabled = prefs.getBool('context_aware_enabled') ?? true;
+    if (!isEnabled) {
+      return ExecutionContext(
+        timeDescription: timeDesc,
+        timestamp: now,
+      );
     }
     
     String? locationDesc;

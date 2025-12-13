@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sable/core/emotion/location_service.dart';
 import 'package:sable/core/emotion/weather_service.dart';
 import 'package:sable/src/config/app_config.dart';
@@ -47,13 +48,29 @@ class ContextEngine {
     
     // Check Privacy Setting
     final prefs = await SharedPreferences.getInstance();
-    final isEnabled = prefs.getBool('context_aware_enabled') ?? false; // Default OFF for privacy
 
-    if (!isEnabled) {
-      return ExecutionContext(
-        timeDescription: timeDesc,
-        timestamp: now,
-      );
+    // Check if user explicitly set the preference
+    final hasExplicitSetting = prefs.containsKey('context_aware_enabled');
+    
+    if (hasExplicitSetting) {
+      // Use explicit setting
+      final isEnabled = prefs.getBool('context_aware_enabled') ?? false;
+      if (!isEnabled) {
+        return ExecutionContext(
+          timeDescription: timeDesc,
+          timestamp: now,
+        );
+      }
+    } else {
+      // Default: ON if location permission granted, OFF otherwise (respects onboarding choice)
+      // This auto-enables after user grants location permission
+      final hasLocationPermission = await _checkLocationPermission();
+      if (!hasLocationPermission) {
+        return ExecutionContext(
+          timeDescription: timeDesc,
+          timestamp: now,
+        );
+      }
     }
     
     String? locationDesc;
@@ -113,5 +130,16 @@ class ContextEngine {
     
     final formatted = DateFormat('h:mm a').format(time);
     return '$period ($formatted)';
+  }
+  
+  /// Check if location permission is granted
+  static Future<bool> _checkLocationPermission() async {
+    try {
+      final status = await Permission.location.status;
+      return status.isGranted || status.isLimited;
+    } catch (e) {
+      debugPrint('ContextEngine: Permission check failed: $e');
+      return false;
+    }
   }
 }

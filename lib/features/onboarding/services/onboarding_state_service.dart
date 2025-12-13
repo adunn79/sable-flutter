@@ -23,9 +23,24 @@ class OnboardingStateService {
     return _prefs.getBool(_keyOnboardingComplete) ?? false;
   }
 
-  /// Mark onboarding as complete
+  /// Mark onboarding as complete and initialize default settings
   Future<void> completeOnboarding() async {
     await _prefs.setBool(_keyOnboardingComplete, true);
+    
+    // Initialize brain slider defaults if not already set
+    // These must be saved on first run to avoid loading as 0.0
+    if (!_prefs.containsKey(_keyBrainCreativity)) {
+      await _prefs.setDouble(_keyBrainCreativity, 0.45); // 45% - Main app default
+    }
+    if (!_prefs.containsKey(_keyBrainEmpathy)) {
+      await _prefs.setDouble(_keyBrainEmpathy, 0.45); // 45%
+    }
+    if (!_prefs.containsKey(_keyBrainHumor)) {
+      await _prefs.setDouble(_keyBrainHumor, 0.40); // 40%
+    }
+    if (!_prefs.containsKey('brain_intelligence')) {
+      await _prefs.setDouble('brain_intelligence', 0.45); // 45% - Main app default
+    }
   }
 
   /// Get remaining avatar generations

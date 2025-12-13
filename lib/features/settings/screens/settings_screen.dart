@@ -492,8 +492,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       // Load Bond value
       _userBond = prefs.getDouble('user_bond') ?? 0.5;
       
-      // Load Intelligence value
-      _brainIntelligence = prefs.getDouble('brain_intelligence') ?? 0.5;
+      // Load Intelligence value - migrate existing users with zero/missing values
+      var intelligence = prefs.getDouble('brain_intelligence');
+      if (intelligence == null || intelligence < 0.1) {
+        // Migrate: set default to 45% for existing users with zero values
+        intelligence = 0.45;
+        prefs.setDouble('brain_intelligence', intelligence);
+        debugPrint('🧠 Migrated brain_intelligence to default: $intelligence');
+      }
+      _brainIntelligence = intelligence;
     });
 
     // Load Local Vibe Settings
@@ -2500,9 +2507,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Navigator.pop(context);
                 // Small delay to ensure modal is fully dismissed
                 await Future.delayed(const Duration(milliseconds: 300));
+                
+                // Check camera permission first
+                final cameraStatus = await Permission.camera.request();
+                if (!cameraStatus.isGranted) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Camera permission required')),
+                    );
+                  }
+                  return;
+                }
+                
                 try {
                   final picker = ImagePicker();
-                  final XFile? image = await picker.pickImage(source: ImageSource.camera);
+                  final XFile? image = await picker.pickImage(
+                    source: ImageSource.camera,
+                    maxWidth: 1024,  // Limit size to prevent memory issues
+                    maxHeight: 1024,
+                  ).timeout(
+                    const Duration(seconds: 60),
+                    onTimeout: () => null,
+                  );
                   if (image != null && mounted) {
                     setState(() => _userPhotoUrl = image.path);
                     // Save to preferences
@@ -2518,7 +2544,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   debugPrint('📷 Camera error: $e');
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Unable to open camera: $e')),
+                      SnackBar(content: Text('Unable to open camera: ${e.toString().split('\n').first}')),
                     );
                   }
                 }

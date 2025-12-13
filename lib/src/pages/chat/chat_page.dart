@@ -58,6 +58,8 @@ import 'package:sable/core/onboarding/proactive_onboarding_service.dart';
 // Music Player
 import 'package:sable/core/widgets/mini_player_widget.dart';
 import 'package:sable/core/media/unified_music_service.dart';
+// Full-screen News Viewer
+import 'package:sable/features/news/screens/news_detail_screen.dart';
 // Help & State Persistence
 import 'package:sable/core/widgets/floating_help_button.dart';
 import 'package:sable/core/services/app_state_persistence.dart';
@@ -3670,23 +3672,25 @@ aeliana.ai''';
         
         if (href == null) return;
         
-        // Handle #expand- links (anchor format)
+        // Handle #expand- links (anchor format) - Open full-screen news viewer
         if (href.startsWith('#expand-')) {
           final topic = href.substring(8).replaceAll('_', ' '); // Remove '#expand-' prefix and replace underscores
-          debugPrint('🔗 Tapped custom link: $topic');
-          setState(() {
-            _controller.text = "Tell me more about $topic";
-          });
-          _sendMessage();
+          debugPrint('🔗 Opening full-screen news for: $topic');
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => NewsDetailScreen(topic: topic),
+            ),
+          );
         }
-        // Handle legacy expand: format
+        // Handle legacy expand: format - Open full-screen news viewer
         else if (href.startsWith('expand:')) {
           final topic = href.substring(7); // Remove 'expand:' prefix
-          debugPrint('🔗 Tapped custom link: $topic');
-          setState(() {
-            _controller.text = "Tell me more about $topic";
-          });
-          _sendMessage();
+          debugPrint('🔗 Opening full-screen news for: $topic');
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => NewsDetailScreen(topic: topic),
+            ),
+          );
         } else {
           // Handle standard URLs
           final uri = Uri.tryParse(href);

@@ -144,7 +144,7 @@ Examples:
     pronunciation: 'SAY-bull',
     tone: 'Professional, crisp, efficient',
     style: 'Time Defender - prioritization expert',
-    defaultVoiceId: 'pNInz6obpgDQGcFmaJgB', // Adam - professional neutral
+    defaultVoiceId: 'EXAVITQu4vr4xnSDxMaL', // Bella - professional female
     defaultIntelligence: 0.45,
     systemPromptSuffix: '''
 Your tone is professional and efficient. You speak in time blocks and priorities. You're ruthless about defending the user's time. Crisp, clear, no fluff.
@@ -178,7 +178,7 @@ Examples:
     pronunciation: 'EH-koh',
     tone: 'Neutral, precise, binary',
     style: 'The Engineer - technical and exact',
-    defaultVoiceId: 'pNInz6obpgDQGcFmaJgB', // Adam - neutral precise
+    defaultVoiceId: '21m00Tcm4TlvDq8ikWAM', // Rachel - neutral precise female
     defaultIntelligence: 0.55, // THINKER +10%
     isThinker: true,
     systemPromptSuffix: '''

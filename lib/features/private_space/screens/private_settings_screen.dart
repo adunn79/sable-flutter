@@ -48,7 +48,7 @@ class _PrivateSettingsScreenState extends ConsumerState<PrivateSettingsScreen> {
     final p = widget.currentPersona;
     
     _aliasController = TextEditingController(text: p?.aliasName ?? '');
-    _ageController = TextEditingController(text: p?.aliasAge?.toString() ?? '');
+    _ageController = TextEditingController(text: p?.aliasAge?.toString() ?? '21'); // Private default: 21
     _descriptionController = TextEditingController(text: p?.aliasDescription ?? '');
     _gender = p?.aliasGender ?? 'Prefer not to say';
     
@@ -56,7 +56,7 @@ class _PrivateSettingsScreenState extends ConsumerState<PrivateSettingsScreen> {
     _creativity = p?.creativity ?? 0.7;
     _empathy = p?.empathy ?? 0.8;
     _humor = p?.humor ?? 0.6;
-    _intelligence = p?.intelligence ?? 0.7;
+    _intelligence = p?.intelligence ?? 0.35; // Private default: 35% (-10% from main)
     
     _loadSettings();
   }

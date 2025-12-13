@@ -51,7 +51,7 @@ class PrivateUserPersona extends HiveObject {
   PrivateUserPersona({
     required this.id,
     required this.aliasName,
-    this.aliasAge,
+    this.aliasAge = 21, // Private default: 21
     this.aliasGender,
     this.aliasDescription,
     this.aliasBackground,
@@ -61,7 +61,7 @@ class PrivateUserPersona extends HiveObject {
     this.empathy = 0.8,
     this.humor = 0.6,
     this.avatarId,
-    this.intelligence = 0.7,
+    this.intelligence = 0.35, // Private default: 35% (-10% from main 45%)
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 

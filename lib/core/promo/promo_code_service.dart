@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'promo_models.dart';
+import 'promo_code_generator.dart';
 
 class PromoCodeService {
   static PromoCodeService? _instance;
@@ -97,6 +98,16 @@ class PromoCodeService {
       }
       
       _recordAttempt(deviceId);
+      
+      // Verify code signature (if it's a signed code format)
+      // Signed codes have format: XXXX-XXXX-XXXX (12 chars with dashes)
+      final cleanCode = code.replaceAll('-', '');
+      if (cleanCode.length == 12) {
+        if (!PromoCodeGenerator.verifyCodeSignature(code)) {
+          debugPrint('🎟️ Promo: Invalid signature for code: $code');
+          return RedemptionResult.error('Invalid promo code');
+        }
+      }
       
       // Find the code in Firestore
       final codeQuery = await _firestore

@@ -618,10 +618,10 @@ class _JournalTimelineScreenState extends State<JournalTimelineScreen> {
             ],
           ),
           
-          // Avatar overlay - positioned top-right for consistency across tabs
+          // Avatar overlay - positioned top-right but with space for help button
           Positioned(
             top: 12,
-            right: 16,
+            right: 56, // Moved left to reveal help button
             child: UnifiedAvatarWidget(
               size: 56,
               showStatus: true,

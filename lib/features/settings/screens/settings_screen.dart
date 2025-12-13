@@ -1986,6 +1986,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                      ),
                    ),
                    SettingsTile(
+                     icon: LucideIcons.sparkle,
+                     title: 'Dark Humor Quotes',
+                     subtitle: 'Sardonic observations in Chat/Journal (NEVER in Wellness)',
+                     trailing: Switch(
+                       value: _darkHumorEnabled,
+                       onChanged: _toggleDarkHumor,
+                       activeColor: AelianaColors.hyperGold,
+                     ),
+                   ),
+                   SettingsTile(
                      icon: LucideIcons.brain,
                      title: 'Knowledge Center',
                      subtitle: 'View & manage what I remember about you',

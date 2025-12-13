@@ -2187,11 +2187,100 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left side: Name + pronunciation for Aeliana
+          // LEFT: Weather (expanded now with more space)
+          Expanded(
+            flex: 2,
+            child: GestureDetector(
+              onTap: () {
+                ref.read(feedbackServiceProvider).tap();
+                if (_weatherTemp == null) {
+                  _fetchWeather();
+                  SafeSnackBar.show(context, const SnackBar(
+                    content: Text('Updating weather...'),
+                    duration: Duration(seconds: 1),
+                  ));
+                } else {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: AelianaColors.carbon.withOpacity(0.9),
+                      title: Text('Current Conditions', style: GoogleFonts.spaceGrotesk(color: AelianaColors.plasmaCyan)),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('${_weatherTemp ?? ""} ${_weatherCondition ?? ""}', style: GoogleFonts.inter(color: Colors.white, fontSize: 24)),
+                          const SizedBox(height: 8),
+                          Text(_weatherHighLow ?? "", style: GoogleFonts.inter(color: Colors.white70)),
+                          const SizedBox(height: 16),
+                          Text('Location: ${_stateService?.userCurrentLocation ?? _currentGpsLocation ?? "Unknown"}', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () { 
+                            Navigator.pop(ctx);
+                            _fetchWeather();
+                          },
+                          child: const Text('REFRESH'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('CLOSE'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _weatherTemp != null ? LucideIcons.cloudSun : LucideIcons.cloudOff,
+                      color: Colors.white.withOpacity(_weatherTemp != null ? 0.9 : 0.4),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _weatherTemp ?? '--°',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (_weatherCondition != null) ...[
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          _weatherCondition!,
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          const SizedBox(width: 12),
+          
+          // CENTER: Companion name
           Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
@@ -2239,103 +2328,13 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                 ),
             ],
           ),
-          // Right side: Weather + Voice toggle
+          
+          const SizedBox(width: 12),
+          
+          // RIGHT: Voice toggle only
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Weather on right side (show placeholder if no data)
-              GestureDetector(
-                onTap: () {
-                  // Refresh weather on tap or show details
-                  ref.read(feedbackServiceProvider).tap();
-                  if (_weatherTemp == null) {
-                    _fetchWeather();
-                    SafeSnackBar.show(context, const SnackBar(
-                      content: Text('Updating weather...'),
-                      duration: Duration(seconds: 1),
-                    ));
-                  } else {
-                    // Show full details
-                    showDialog(
-                       context: context,
-                       builder: (ctx) => AlertDialog(
-                         backgroundColor: AelianaColors.carbon.withOpacity(0.9),
-                         title: Text('Current Conditions', style: GoogleFonts.spaceGrotesk(color: AelianaColors.plasmaCyan)),
-                         content: Column(
-                           mainAxisSize: MainAxisSize.min,
-                           children: [
-                             Text('${_weatherTemp ?? ""} ${_weatherCondition ?? ""}', style: GoogleFonts.inter(color: Colors.white, fontSize: 24)),
-                             const SizedBox(height: 8),
-                             Text(_weatherHighLow ?? "", style: GoogleFonts.inter(color: Colors.white70)),
-                             const SizedBox(height: 16),
-                             Text('Location: ${_stateService?.userCurrentLocation ?? _currentGpsLocation ?? "Unknown"}', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
-                           ],
-                         ),
-                         actions: [
-                            TextButton(
-                              onPressed: () { 
-                                Navigator.pop(ctx);
-                                _fetchWeather(); // Refresh on close
-                              },
-                              child: const Text('REFRESH'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              child: const Text('CLOSE'),
-                            ),
-                         ],
-                       ),
-                    );
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7), // INCREASED opacity for visibility
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)), // Cyan border for pop
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _weatherTemp != null ? LucideIcons.cloudSun : LucideIcons.cloudOff,
-                        color: Colors.white.withOpacity(_weatherTemp != null ? 0.9 : 0.4),
-                        size: 14,
-                        shadows: const [Shadow(color: Colors.black, blurRadius: 4)],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _weatherTemp ?? '--°',
-                        style: GoogleFonts.inter(
-                          color: Colors.white.withOpacity(_weatherTemp != null ? 1.0 : 0.4),
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          shadows: const [
-                            Shadow(
-                              color: Colors.black,
-                              blurRadius: 4,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (_weatherHighLow != null) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          _weatherHighLow!,
-                          style: GoogleFonts.inter(
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 11,
-                            shadows: const [Shadow(color: Colors.black, blurRadius: 4)],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Voice toggle button
               FutureBuilder<bool>(
                 future: _voiceService?.getAutoSpeakEnabled() ?? Future.value(false),
                 builder: (context, snapshot) {

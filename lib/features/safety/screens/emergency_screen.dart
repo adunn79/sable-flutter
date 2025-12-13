@@ -275,8 +275,8 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                 onPressed: () async {
                   // Use parentMessenger (captured before dialog) for snackbars
                   try {
-                    final hasPermission = await ContactsService.hasPermission();
-                    if (!hasPermission) {
+                    // Check permission first
+                    if (!await ContactsService.hasPermission()) {
                       final granted = await ContactsService.requestPermission();
                       if (!granted) {
                         parentMessenger.showSnackBar(
@@ -286,16 +286,12 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                       }
                     }
                     
-                    final contact = await ContactsService.pickContact();
+                    // Use the contact picker dialog with search
+                    final contact = await ContactsService.showContactPicker(dialogContext);
                     if (contact != null) {
                       nameController.text = contact['name'] ?? '';
                       phoneController.text = contact['phone'] ?? '';
                       emailController.text = contact['email'] ?? '';
-                    } else {
-                      // Show message that contact picker isn't available yet
-                      parentMessenger.showSnackBar(
-                        const SnackBar(content: Text('Contact picker not yet available. Please enter manually.')),
-                      );
                     }
                   } catch (e) {
                     debugPrint('Error picking contact: $e');

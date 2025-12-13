@@ -25,6 +25,7 @@ import 'package:sable/core/media/now_playing_service.dart';
 import 'package:sable/core/news/headline_service.dart';
 import 'package:sable/core/theme/aeliana_theme.dart'; // IMPORTED for AelianaColors
 import 'package:google_fonts/google_fonts.dart'; // IMPORTED for GoogleFonts
+import 'package:share_plus/share_plus.dart'; // IMPORTED for Journal Share
 
 /// Rich text journal editor with privacy toggle, mood, and tags
 class JournalEditorScreen extends StatefulWidget {
@@ -554,6 +555,42 @@ Guidelines:
         archetype: _archetype,
         journalContext: _quillController.document.toPlainText().trim(),
       ),
+    );
+  }
+  
+  /// Share the current journal entry
+  Future<void> _shareEntry() async {
+    final plainText = _quillController.document.toPlainText().trim();
+    if (plainText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Write something first to share!')),
+      );
+      return;
+    }
+    
+    // Build shareable text with optional context
+    final buffer = StringBuffer();
+    buffer.writeln('📓 Journal Entry');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln(plainText);
+    
+    if (_tags.isNotEmpty) {
+      buffer.writeln('');
+      buffer.writeln(_tags.map((t) => '#$t').join(' '));
+    }
+    
+    buffer.writeln('');
+    buffer.writeln('— Written with Aeliana');
+    
+    // Get the render box for positioning the share sheet (required on iPad)
+    final box = context.findRenderObject() as RenderBox?;
+    
+    await Share.share(
+      buffer.toString(),
+      subject: 'My Journal Entry',
+      sharePositionOrigin: box != null 
+          ? box.localToGlobal(Offset.zero) & box.size
+          : const Rect.fromLTWH(0, 0, 100, 100),
     );
   }
   
@@ -1216,6 +1253,12 @@ No hashtags, no explanations, just the tags.''',
               tooltip: _isPrivate ? 'Private (Avatar cannot see)' : 'Visible to Avatar',
               onPressed: () => setState(() => _isPrivate = !_isPrivate),
             ),
+          // Share button
+          IconButton(
+            icon: const Icon(LucideIcons.share2, color: Colors.white70),
+            tooltip: 'Share Entry',
+            onPressed: _shareEntry,
+          ),
           // Save button
           TextButton(
             onPressed: _isSaving ? null : _saveEntry,

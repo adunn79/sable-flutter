@@ -217,8 +217,8 @@ Return ONLY valid JSON in this exact format:
 }
 
 Options:
-- GEMINI: Use for ANY query about current events, news, world happenings, recent events, "what's going on", weather updates, or real-time information. PRIORIT
-Y for these queries.
+- GEMINI: Use for brief current events, news, weather updates. Quick 1-3 sentence answers.
+- DEEP_RESEARCH: Use when user wants MORE information: "dig deeper", "tell me more", "more details", "explain further", "what's the other side", "give me more", "more info", "elaborate", "expand on that", "research this", "international perspective", or any request for comprehensive analysis. Provides thorough, balanced international analysis with multiple viewpoints.
 - CLAUDE: Creative, emotional, complex reasoning, roleplay, personal conversations
 - GPT4O: Fast facts, summaries, lists, simple queries
 - GROK: Unfiltered opinions, "roast me", edgy humor
@@ -226,6 +226,7 @@ Y for these queries.
 - FACT_CHECK: Use when the user explicitly asks "Is it true that...", "Fact check this", or makes a doubtful claim that needs verification.
 
 IMPORTANT: If the user asks about current/recent events or news, ALWAYS choose GEMINI.
+IMPORTANT: If the user wants MORE DETAILS, says "tell me more", "dig deeper", "explain", or asks for research, choose DEEP_RESEARCH.
 IMPORTANT: If the user asks to verify a specific claim, choose FACT_CHECK.
 
 Return ONLY the JSON, nothing else.
@@ -303,11 +304,45 @@ CALENDAR RULES (CRITICAL):
         switch (selectedModel) {
           case 'GEMINI':
           case 'WEB_SEARCH':
-            // Use Gemini with Grounding via REST API workaround
+            // Use Gemini with Grounding via REST API workaround (brief responses)
             response = await _geminiProvider.generateResponseWithGrounding(
               prompt: 'Search the web and answer this query: $prompt',
               systemPrompt: '${enhancedUserContext}You are $archetypeName - a companion in the AELIANA app (Ay-lee-AH-na, meaning Of the Sun from Latin).\n\nRULES:\n1. 1-3 sentences MAX\n2. NO asterisks or I am an AI talk\n3. Use their context (name, location, zodiac)\n4. Provide helpful, current info naturally',
               modelId: 'gemini-2.0-flash', // Use Gemini 2.0 Flash for speed
+            );
+            break;
+
+          case 'DEEP_RESEARCH':
+            // Comprehensive, balanced international news analysis
+            response = await _geminiProvider.generateResponseWithGrounding(
+              prompt: 'Perform comprehensive research and provide thorough analysis: $prompt',
+              systemPrompt: '''${enhancedUserContext}You are $archetypeName - a hyper-intelligent companion providing DEEP RESEARCH analysis.
+
+DEEP RESEARCH MODE - COMPREHENSIVE BALANCED ANALYSIS:
+1. Provide THOROUGH, in-depth analysis (3-5 paragraphs minimum)
+2. Include MULTIPLE PERSPECTIVES - not just US-centric, cover ALL international viewpoints
+3. Present BALANCED reporting - show ALL SIDES of the story including adversarial perspectives
+4. Include NUANCE and context - historical background if relevant
+5. Present FACTS from multiple reliable sources
+6. NO asterisks or AI language
+7. Use their context but focus on delivering comprehensive, well-researched information
+
+CRITICAL - ADVERSARIAL BALANCE FOR GEOPOLITICAL ISSUES:
+- For conflicts (Russia-Ukraine, Israel-Palestine, China-Taiwan, etc.), you MUST include perspectives from BOTH SIDES
+- Do NOT only present US/Western government narratives - include Russian, Chinese, Iranian etc. perspectives where relevant
+- Seek out sources from RT, TASS, Xinhua, Al Jazeera, and other non-Western outlets to balance Western sources
+- Present what EACH SIDE claims and their stated justifications
+- Let the user form their own conclusion based on balanced information
+- Acknowledge where there is propaganda on ALL sides
+
+INTERNATIONAL PERSPECTIVE:
+- Include viewpoints from Europe, Asia, Middle East, Latin America, Africa
+- Avoid US-centric bias - present GLOBAL perspectives including adversarial nations
+- Acknowledge when opinions differ by region and by political alignment
+- Cite international news sources from multiple political leanings
+
+Be the world-class research assistant providing TRULY balanced analysis. This user wants DEPTH, NUANCE, and ALL PERSPECTIVES - not government talking points.''',
+              modelId: 'gemini-2.0-flash', // Use Gemini with grounding for real-time info
             );
             break;
             

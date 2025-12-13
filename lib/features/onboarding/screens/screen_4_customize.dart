@@ -229,6 +229,15 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
     // ALWAYS use the pre-baked default asset when "Use this look" is clicked
     // No image generation - just use the archetype's default picture
     
+    // CRITICAL: Ensure voice is selected and persisted based on origin
+    // If user hasn't explicitly selected a voice, auto-select based on origin
+    if (_selectedVoiceId == null) {
+      _autoSelectVoiceForOrigin(_origin);
+    } else {
+      // Persist the selected voice to VoiceService
+      _voiceService.setVoice(_selectedVoiceId!);
+    }
+    
     final config = AvatarConfig(
       archetype: widget.archetype,
       gender: _gender,

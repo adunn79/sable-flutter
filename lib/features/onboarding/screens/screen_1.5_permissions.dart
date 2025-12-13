@@ -53,16 +53,42 @@ class _Screen15PermissionsState extends State<Screen15Permissions> with WidgetsB
   }
 
   Future<void> _checkAllPermissions() async {
-    // Re-verify all currently enabled permissions
-    if (_calendarEnabled) {
-       final status = await Permission.calendarFullAccess.status;
-       if (!status.isGranted) setState(() => _calendarEnabled = false);
-    }
+    // Re-verify all permissions on app resume
+    // This ensures that if user granted permission in Settings, the toggles update automatically
     
-    // Check others if they were supposed to be enabled, or just check general status
-    // For specific toggles user is interacting with, the toggle handler manages it,
-    // but globally syncing is good practice.
-    // For now, let's focus on the critical ones if they were just changed in settings.
+    // GPS
+    final gpsStatus = await Permission.location.status;
+    if (gpsStatus.isGranted != _gpsEnabled) setState(() => _gpsEnabled = gpsStatus.isGranted);
+
+    // Calendar
+    final calendarStatus = await Permission.calendarFullAccess.status;
+    if (calendarStatus.isGranted != _calendarEnabled) setState(() => _calendarEnabled = calendarStatus.isGranted);
+
+    // Microphone
+    final micStatus = await Permission.microphone.status;
+    if (micStatus.isGranted != _micEnabled) setState(() => _micEnabled = micStatus.isGranted);
+
+    // Camera
+    final cameraStatus = await Permission.camera.status;
+    if (cameraStatus.isGranted != _cameraEnabled) setState(() => _cameraEnabled = cameraStatus.isGranted);
+
+    // Contacts
+    final contactsStatus = await Permission.contacts.status;
+    if (contactsStatus.isGranted != _contactsEnabled) setState(() => _contactsEnabled = contactsStatus.isGranted);
+
+    // Photos
+    final photosStatus = await Permission.photos.status;
+    if (photosStatus.isGranted != _photosEnabled) setState(() => _photosEnabled = photosStatus.isGranted);
+
+    // Reminders
+    final remindersStatus = await Permission.reminders.status;
+    if (remindersStatus.isGranted != _remindersEnabled) setState(() => _remindersEnabled = remindersStatus.isGranted);
+
+    // Speech
+    final speechStatus = await Permission.speech.status;
+    if (speechStatus.isGranted != _speechEnabled) setState(() => _speechEnabled = speechStatus.isGranted);
+    
+    // Health is special, usually requires active request, so we skip auto-check for now or trust current state
   }
 
   Future<void> _loadCurrentPermissions() async {

@@ -25,6 +25,8 @@ import 'package:contacts_service/contacts_service.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sable/features/today/widgets/comprehensive_event_dialog.dart';
+import 'package:sable/core/emotion/weather_service.dart';
+import 'package:sable/features/today/services/daily_briefing_service.dart'; // IMPORTED
 
 class TodayScreen extends StatefulWidget {
   const TodayScreen({super.key});
@@ -63,8 +65,13 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
   String? _headline;
   List<EntertainmentEvent> _todayEntertainment = [];
   List<EntertainmentEvent> _upcomingEntertainment = [];
+
   String _dailyNote = '';
   final TextEditingController _noteController = TextEditingController(); // For daily note editing
+  
+  // Daily Briefing
+  DailyBriefing? _cachedBriefing;
+  bool _isBriefingLoading = false;
 
   @override
   void initState() {
@@ -247,6 +254,42 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
     // Auto-record today's weather
     if (_currentLocation != null) {
       WeatherHistoryService.autoRecordFromCurrent(_currentLocation!);
+    }
+    
+    // --- LOAD LLM BRIEFING ---
+    // Only if on 'Today' to save API calls
+    if (_isSameDay(_selectedDate, DateTime.now())) {
+      _loadDailyBriefing();
+    }
+  }
+  
+  Future<void> _loadDailyBriefing() async {
+    if (_isBriefingLoading) return;
+    setState(() => _isBriefingLoading = true);
+    
+    try {
+      // Gather current state
+      final weather = await WeatherService.getWeather(_currentLocation ?? '');
+      
+      final briefing = await DailyBriefingService().getBriefing(
+        events: _todayEvents,
+        tasks: _reminders,
+        location: _currentLocation,
+        weatherTemp: weather != null ? '${weather.temperature.round()}°' : null,
+        weatherCondition: weather?.description,
+        moonPhase: _moonPhase,
+        birthdays: _todayBirthdays,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _cachedBriefing = briefing;
+          _isBriefingLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Briefing load failed: $e');
+      if (mounted) setState(() => _isBriefingLoading = false);
     }
   }
 
@@ -2082,50 +2125,86 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
   }
 
   Widget _buildAIContextSummary() {
-    //Generate AI-powered vibe summary
-    final eventCount = _todayEvents.length;
-    final birthdayCount = _todayBirthdays.length;
-    final sportsCount = _todaySports.length;
-    final reminderCount = _reminders.where((r) => !r.isCompleted && r.dueDate != null && _isSameDay(r.dueDate!, DateTime.now())).length;
+    // Show static/loading vibe for future dates
+    if (!_isSameDay(_selectedDate, DateTime.now())) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AelianaColors.carbon,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(LucideIcons.calendar, size: 32, color: AelianaColors.ghost),
+            const SizedBox(height: 12),
+            Text(
+              "Check back on the day for a briefing!",
+              style: GoogleFonts.inter(color: AelianaColors.ghost),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_isBriefingLoading) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AelianaColors.carbon,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)),
+        ),
+        child: const Center(
+          child: Column(
+            children: [
+              SizedBox(
+                width: 24, 
+                height: 24, 
+                child: CircularProgressIndicator(strokeWidth: 2, color: AelianaColors.plasmaCyan)
+              ),
+              SizedBox(height: 12),
+              Text("Synthesizing your day...", style: TextStyle(color: Colors.white70)),
+            ],
+          ),
+        ),
+      );
+    }
     
-    String vibe = 'Balanced';
+    // Default fallback if service fails or returns null
+    final text = _cachedBriefing?.text ?? "No briefing available. Add some events to get started!";
+    final vibeLabel = _cachedBriefing?.vibe ?? 'Calm';
+    
     IconData vibeIcon = LucideIcons.sun;
     Color vibeColor = AelianaColors.plasmaCyan;
     
-    if (eventCount > 4 || reminderCount > 5) {
-      vibe = 'Busy';
+    // Map vibe string to icon/color
+    final v = vibeLabel.toLowerCase();
+    if (v.contains('busy') || v.contains('focus')) {
       vibeIcon = LucideIcons.zap;
-      vibeColor = Colors.orange;
-    } else if (eventCount == 0 && reminderCount == 0) {
-      vibe = 'Chill';
-      vibeIcon = LucideIcons.coffee;
       vibeColor = AelianaColors.hyperGold;
-    } else if (birthdayCount > 0 || sportsCount > 0) {
-      vibe = 'Eventful';
-      vibeIcon = LucideIcons.sparkles;
-      vibeColor = AelianaColors.plasmaCyan;
+    } else if (v.contains('chill') || v.contains('calm')) {
+      vibeIcon = LucideIcons.coffee;
+      vibeColor = const Color(0xFF5DD9C1);
+    } else if (v.contains('adventure') || v.contains('fun')) {
+      vibeIcon = LucideIcons.rocket;
+      vibeColor = Colors.purpleAccent;
     }
-    
-    final summaryParts = <String>[];
-    if (eventCount > 0) summaryParts.add('$eventCount event${eventCount > 1 ? 's' : ''}');
-    if (reminderCount > 0) summaryParts.add('$reminderCount task${reminderCount > 1 ? 's' : ''}');
-    if (birthdayCount > 0) summaryParts.add('${birthdayCount == 1 ? '1 birthday' : '$birthdayCount birthdays'}');
-    if (sportsCount > 0) summaryParts.add('${_todaySports.first.team} game');
-    
-    final summaryText = summaryParts.isNotEmpty 
-        ? summaryParts.join(', ') + '. Moon: ${MoonPhaseService.getPhaseName(_moonPhase)}.'
-        : 'Nothing scheduled. Moon: ${MoonPhaseService.getPhaseName(_moonPhase)}.';
-    
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
+        color: AelianaColors.carbon,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: vibeColor.withOpacity(0.3)),
         gradient: LinearGradient(
-          colors: [vibeColor.withOpacity(0.2), vibeColor.withOpacity(0.05)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: [
+            AelianaColors.carbon,
+            vibeColor.withOpacity(0.05),
+          ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: vibeColor.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2135,7 +2214,7 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
               Icon(vibeIcon, color: vibeColor, size: 24),
               const SizedBox(width: 12),
               Text(
-                'Today\'s Vibe: $vibe',
+                'Today\'s Vibe: $vibeLabel',
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
@@ -2144,12 +2223,12 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            summaryText,
+            text,
             style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.white70,
+              fontSize: 15, // Slightly larger for readability
+              color: Colors.white.withOpacity(0.9),
               height: 1.5,
             ),
           ),

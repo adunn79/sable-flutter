@@ -57,7 +57,7 @@ class _FloatingHelpButtonState extends State<FloatingHelpButton>
   Widget build(BuildContext context) {
     return Positioned(
       right: 16,
-      bottom: 100,
+      bottom: 200, // Moved higher to avoid overlapping the chips row
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,

@@ -175,6 +175,7 @@ class SettingsControlService {
       section: 'VOICE',
       type: SettingType.toggle,
       keywords: ['speak', 'read', 'tts', 'text to speech'],
+      aiControllable: false, // Premium feature, user must enable manually
     ),
 
     // CLOCK MODE - Best-in-class clock/screensaver features

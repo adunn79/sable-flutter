@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:sable/core/theme/aeliana_theme.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'router.dart';
 
 void main() {
@@ -28,6 +29,7 @@ class SableApp extends ConsumerWidget {
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
+        FlutterQuillLocalizations.delegate,
       ],
       supportedLocales: const [
         Locale('en', 'US'),

@@ -85,6 +85,7 @@ class VitalBalanceService {
   /// Initial list of popular metrics
   static final List<HealthMetric> _defaultMetrics = [
     HealthMetric(id: 'sleep', name: 'Sleep', unit: 'hrs', iconName: 'moon', isDefault: true),
+    HealthMetric(id: 'sleep_quality', name: 'Sleep Quality', unit: '/10', iconName: 'sparkles', minValue: 0, maxValue: 10, isDefault: true),
     HealthMetric(id: 'energy', name: 'Energy', unit: '/10', iconName: 'zap', minValue: 0, maxValue: 10, isDefault: true),
     HealthMetric(id: 'mood', name: 'Mood', unit: '/10', iconName: 'smile', minValue: 0, maxValue: 10, isDefault: true),
     HealthMetric(id: 'stress', name: 'Stress', unit: '/10', iconName: 'brain', minValue: 0, maxValue: 10, isDefault: true),
@@ -102,6 +103,7 @@ class VitalBalanceService {
   static IconData getIconData(String name) {
     switch (name) {
       case 'moon': return LucideIcons.bedDouble; // Sleep icon - bed for sleep
+      case 'cloud_moon': return LucideIcons.cloudMoon; // Dreams icon
       case 'zap': return LucideIcons.battery; // Energy as battery
       case 'smile': return LucideIcons.smile; // Classic smile for mood
       case 'brain': return LucideIcons.brain; // Simple brain for stress
@@ -114,7 +116,7 @@ class VitalBalanceService {
       case 'heart': return LucideIcons.heartPulse; // Heart rate
       case 'heart_pulse': return LucideIcons.heartPulse;
       case 'flower': return LucideIcons.wind; // Meditation as breath
-      case 'sparkles': return LucideIcons.wind;
+      case 'sparkles': return LucideIcons.sparkles; // Sleep quality / meditation sparkles
       default: return LucideIcons.activity;
     }
   }

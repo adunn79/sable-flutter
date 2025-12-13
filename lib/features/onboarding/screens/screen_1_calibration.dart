@@ -21,9 +21,11 @@ class Screen1Calibration extends StatefulWidget {
 class _Screen1CalibrationState extends State<Screen1Calibration> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _dateController = TextEditingController();
   final _nameFocusNode = FocusNode();
   DateTime? _selectedDate;
   String? _genderIdentity;
+  String? _dateError;
 
   @override
   void initState() {
@@ -42,92 +44,88 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
   @override
   void dispose() {
     _nameController.dispose();
+    _dateController.dispose();
     _nameFocusNode.dispose();
     super.dispose();
   }
 
 
 
-  void _selectDate() {
-    // Show Cupertino date picker in a bottom sheet
-    // Default to ~30 years ago for better UX
-    final initialDate = _selectedDate ?? DateTime(1990, 6, 15);
-    DateTime tempDate = initialDate;
+  /// Parse date from text input (MM/DD/YY or MM/DD/YYYY format)
+  void _parseDate(String text) {
+    setState(() {
+      _dateError = null;
+      _selectedDate = null;
+    });
     
-    showCupertinoModalPopup(
-      context: context,
-      builder: (context) => Container(
-        height: 350,
-        decoration: BoxDecoration(
-          color: AelianaColors.carbon,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            // Header with Done button
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              decoration: BoxDecoration(
-                color: AelianaColors.obsidian,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Row(
-                children: [
-                  CupertinoButton(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('Cancel', style: GoogleFonts.inter(color: AelianaColors.ghost)),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Birthday',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: AelianaColors.plasmaCyan,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
-                  const Spacer(),
-                  CupertinoButton(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('Done', style: GoogleFonts.inter(color: AelianaColors.plasmaCyan, fontWeight: FontWeight.bold)),
-                    onPressed: () {
-                      setState(() => _selectedDate = tempDate);
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            // Date picker with reduced scroll sensitivity
-            Expanded(
-              child: CupertinoTheme(
-                data: CupertinoThemeData(
-                  brightness: Brightness.dark,
-                  primaryColor: AelianaColors.plasmaCyan,
-                  textTheme: CupertinoTextThemeData(
-                    dateTimePickerTextStyle: GoogleFonts.inter(
-                      color: AelianaColors.stardust,
-                      fontSize: 20,
-                    ),
-                  ),
-                ),
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.date,
-                  initialDateTime: initialDate,
-                  minimumYear: 1920,
-                  maximumYear: DateTime.now().year,
-                  maximumDate: DateTime.now(), // Block ALL future dates for birthday
-                  backgroundColor: AelianaColors.carbon,
-                  onDateTimeChanged: (date) => tempDate = date,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    if (text.isEmpty) return;
+    
+    // Remove any non-digit characters and reformat
+    final cleanText = text.replaceAll(RegExp(r'[^0-9]'), '');
+    
+    // Try to parse different formats
+    DateTime? parsed;
+    
+    if (cleanText.length >= 6) {
+      try {
+        final month = int.parse(cleanText.substring(0, 2));
+        final day = int.parse(cleanText.substring(2, 4));
+        int year;
+        
+        if (cleanText.length >= 8) {
+          // Full year: MMDDYYYY
+          year = int.parse(cleanText.substring(4, 8));
+        } else {
+          // Short year: MMDDYY
+          year = int.parse(cleanText.substring(4, 6));
+          // Assume 1900s for years > 30, 2000s for years <= 30
+          year = year > 30 ? 1900 + year : 2000 + year;
+        }
+        
+        // Validate ranges
+        if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1920 && year <= DateTime.now().year) {
+          parsed = DateTime(year, month, day);
+          
+          // Verify it's not in the future
+          if (parsed.isAfter(DateTime.now())) {
+            setState(() => _dateError = 'Date cannot be in the future');
+            return;
+          }
+          
+          setState(() {
+            _selectedDate = parsed;
+            _dateError = null;
+          });
+        } else {
+          setState(() => _dateError = 'Invalid date');
+        }
+      } catch (e) {
+        setState(() => _dateError = 'Invalid date format');
+      }
+    }
+  }
+  
+  /// Format date controller text with slashes as user types
+  void _formatDateInput(String text) {
+    // Remove all non-digits
+    final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+    
+    String formatted = '';
+    for (int i = 0; i < digits.length && i < 8; i++) {
+      if (i == 2 || i == 4) formatted += '/';
+      formatted += digits[i];
+    }
+    
+    // Update controller if different
+    if (formatted != text) {
+      _dateController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+    
+    // Try to parse the date
+    _parseDate(formatted);
   }
 
   void _handleContinue() {
@@ -297,38 +295,76 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
 
                 const SizedBox(height: 8),
 
-                InkWell(
-                  onTap: _selectDate,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: AelianaColors.carbon,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _selectedDate != null
-                            ? AelianaColors.plasmaCyan
-                            : Colors.transparent,
-                        width: 1.5,
+                // Simple date text field (MM/DD/YYYY)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _dateController,
+                      keyboardType: TextInputType.number,
+                      onChanged: _formatDateInput,
+                      style: GoogleFonts.inter(
+                        color: AelianaColors.stardust,
+                        fontSize: 16,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _selectedDate != null
-                              ? '${_selectedDate!.month}/${_selectedDate!.day}/${_selectedDate!.year}'
-                              : 'Select date of birth',
-                          style: GoogleFonts.inter(
+                      decoration: InputDecoration(
+                        hintText: 'MM/DD/YYYY',
+                        hintStyle: GoogleFonts.inter(
+                          color: AelianaColors.ghost.withOpacity(0.5),
+                        ),
+                        filled: true,
+                        fillColor: AelianaColors.carbon,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
                             color: _selectedDate != null
-                                ? AelianaColors.stardust
-                                : AelianaColors.ghost.withOpacity(0.5),
+                                ? AelianaColors.plasmaCyan
+                                : Colors.transparent,
+                            width: 1.5,
                           ),
                         ),
-                        const Icon(Icons.calendar_today,
-                            color: AelianaColors.plasmaCyan, size: 20),
-                      ],
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: AelianaColors.plasmaCyan,
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 1.5,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        suffixIcon: _selectedDate != null
+                            ? const Icon(
+                                Icons.check_circle,
+                                color: AelianaColors.plasmaCyan,
+                                size: 20,
+                              )
+                            : null,
+                      ),
                     ),
-                  ),
+                    if (_dateError != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        _dateError!,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ],
                 ).animate(delay: 900.ms).fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
 
                 const SizedBox(height: 32),

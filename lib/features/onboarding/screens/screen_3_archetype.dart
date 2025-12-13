@@ -38,7 +38,11 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
+              child: ScrollConfiguration(
+                behavior: const ScrollBehavior().copyWith(
+                  physics: const _HighFrictionScrollPhysics(),
+                ),
+                child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,6 +241,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
                   ],
                 ),
               ),
+              ),
             ),
 
             // Continue Button
@@ -369,5 +374,39 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
         ),
       ),
     ).animate(delay: delay.ms).fadeIn(duration: 600.ms).slideY(begin: 0.1, end: 0);
+  }
+}
+
+/// Custom scroll physics with high friction for deliberate, controlled scrolling
+class _HighFrictionScrollPhysics extends ScrollPhysics {
+  const _HighFrictionScrollPhysics({super.parent});
+
+  @override
+  _HighFrictionScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return _HighFrictionScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  /// Much higher friction = slower scroll deceleration
+  @override
+  double get dragStartDistanceMotionThreshold => 18.0; // Default is ~3.5
+
+  /// Reduce velocity significantly on fling
+  @override
+  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
+    // Reduce velocity by 80% for much slower scrolling
+    final reducedVelocity = velocity * 0.2;
+    
+    // Use clamping behavior (no overscroll bounce)
+    if ((velocity > 0.0 && position.pixels >= position.maxScrollExtent) ||
+        (velocity < 0.0 && position.pixels <= position.minScrollExtent)) {
+      return null; // Stop at bounds
+    }
+    
+    // Create friction simulation with very high friction
+    return ClampingScrollSimulation(
+      position: position.pixels,
+      velocity: reducedVelocity,
+      friction: 0.015, // Much lower = more friction (default is ~0.135)
+    );
   }
 }

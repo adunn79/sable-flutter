@@ -441,7 +441,9 @@ User: $_userName
   }
 
   Widget _buildAvatarHeader() {
-    final imagePath = _avatarUrl ?? 'assets/images/archetypes/$_archetypeId.png';
+    final imagePath = (_avatarUrl != null && _avatarUrl!.isNotEmpty) 
+        ? _avatarUrl! 
+        : 'assets/images/archetypes/$_archetypeId.png';
     
     return GestureDetector(
       onTap: () => showSettingsChatSheet(context),

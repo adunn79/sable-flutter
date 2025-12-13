@@ -8,13 +8,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Model roles for semantic mapping (what we need, not specific model names)
 enum ModelRole {
   fast,           // Quick responses, routing decisions
-  smart,          // Complex reasoning, analysis
-  coding,         // Code generation and debugging
+  smart,          // Complex reasoning, analysis (GPT-5.2: linear/convergent)
+  coding,         // Code generation and debugging (GPT-5.2: agentic reliability)
   vision,         // Image understanding
   creative,       // Creative writing, personality
   realist,        // Unfiltered, direct responses
   embedding,      // Text embeddings
   imageGen,       // Image generation
+  longContext,    // 1M+ token tasks (Gemini 3.0: whole-corpus ingestion)
+  multimodal,     // Audio/video/text synthesis (Gemini 3.0: unified conceptual space)
+  exploration,    // Tree-based divergent reasoning (Gemini 3.0 Deep Think)
 }
 
 /// AI Provider enumeration
@@ -112,35 +115,37 @@ class ModelRegistryService {
   DateTime? _lastRefresh;
   
   // Default role mappings with fallbacks (ordered by preference)
+  // NOTE: App auto-selects first available model from each list
+  // GPT-5.2 = best for reasoning/coding, GPT-5.1 = best for conversational warmth
   static const List<RoleMapping> _defaultMappings = [
-    // Fast models for routing/quick tasks
+    // Fast models for routing/quick tasks (GPT-5.1 has better conversational warmth)
     RoleMapping(
       role: ModelRole.fast,
-      preferredModels: ['gemini-2.0-flash', 'gemini-1.5-flash', 'gpt-4o-mini', 'gpt-3.5-turbo'],
-      provider: AIProvider.google,
-    ),
-    // Smart models for complex reasoning
-    RoleMapping(
-      role: ModelRole.smart,
-      preferredModels: ['o1', 'o1-preview', 'gpt-4o', 'gpt-4-turbo'],
+      preferredModels: ['gpt-5.1', 'gpt-5.2', 'gemini-2.0-flash', 'gpt-4o-mini', 'gpt-3.5-turbo'],
       provider: AIProvider.openai,
     ),
-    // Coding models
+    // Smart models for complex reasoning (GPT-5.2 excels here)
+    RoleMapping(
+      role: ModelRole.smart,
+      preferredModels: ['gpt-5.2', 'gpt-5.1', 'o1', 'o1-preview', 'gpt-4o', 'gpt-4-turbo'],
+      provider: AIProvider.openai,
+    ),
+    // Coding models (GPT-5.2 is "Stronger & more thorough")
     RoleMapping(
       role: ModelRole.coding,
-      preferredModels: ['deepseek-chat', 'deepseek-coder', 'gpt-4o'],
-      provider: AIProvider.deepseek,
+      preferredModels: ['gpt-5.2', 'deepseek-chat', 'deepseek-coder', 'gpt-4o'],
+      provider: AIProvider.openai,
     ),
     // Vision models
     RoleMapping(
       role: ModelRole.vision,
-      preferredModels: ['gpt-4o', 'gpt-4-vision-preview', 'gemini-2.0-flash'],
+      preferredModels: ['gpt-5.2', 'gpt-4o', 'gpt-4-vision-preview', 'gemini-2.0-flash'],
       provider: AIProvider.openai,
     ),
-    // Creative/Personality models
+    // Creative/Personality models (Claude still strong here, but add GPT-5.1 for warmth)
     RoleMapping(
       role: ModelRole.creative,
-      preferredModels: ['claude-3-5-sonnet-latest', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
+      preferredModels: ['claude-3-5-sonnet-latest', 'gpt-5.1', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
       provider: AIProvider.anthropic,
     ),
     // Realist models (xAI Grok)
@@ -148,6 +153,24 @@ class ModelRegistryService {
       role: ModelRole.realist,
       preferredModels: ['grok-3', 'grok-4', 'grok-4-fast-reasoning', 'grok-2'],
       provider: AIProvider.xai,
+    ),
+    // Long Context models - Gemini 3.0 has 1M+ tokens (whole-corpus ingestion)
+    RoleMapping(
+      role: ModelRole.longContext,
+      preferredModels: ['gemini-3.0-pro', 'gemini-2.0-pro', 'gemini-1.5-pro', 'gpt-5.2'],
+      provider: AIProvider.google,
+    ),
+    // Multimodal models - Gemini 3.0 excels at audio/video/text synthesis
+    RoleMapping(
+      role: ModelRole.multimodal,
+      preferredModels: ['gemini-3.0-pro', 'gemini-2.0-flash', 'gpt-4o'],
+      provider: AIProvider.google,
+    ),
+    // Exploration/Deep Think - Gemini 3.0's tree-based divergent reasoning
+    RoleMapping(
+      role: ModelRole.exploration,
+      preferredModels: ['gemini-3.0-pro-deep-think', 'gemini-3.0-pro', 'o1', 'gpt-5.2'],
+      provider: AIProvider.google,
     ),
   ];
   
@@ -359,15 +382,19 @@ class ModelRegistryService {
   
   String _getFallbackModel(ModelRole role) {
     // Hardcoded fallbacks if registry not initialized
+    // GPT-5.2 for agentic reliability, Gemini 3.0 for long-context/multimodal
     const fallbacks = {
-      ModelRole.fast: 'gemini-2.0-flash',
-      ModelRole.smart: 'gpt-4o',
-      ModelRole.coding: 'deepseek-chat',
-      ModelRole.vision: 'gpt-4o',
-      ModelRole.creative: 'claude-3-haiku-20240307',
+      ModelRole.fast: 'gpt-5.1',
+      ModelRole.smart: 'gpt-5.2',
+      ModelRole.coding: 'gpt-5.2',
+      ModelRole.vision: 'gpt-5.2',
+      ModelRole.creative: 'claude-3-5-sonnet-latest',
       ModelRole.realist: 'grok-3',
+      ModelRole.longContext: 'gemini-3.0-pro',
+      ModelRole.multimodal: 'gemini-3.0-pro',
+      ModelRole.exploration: 'gemini-3.0-pro-deep-think',
     };
-    return fallbacks[role] ?? 'gpt-4o-mini';
+    return fallbacks[role] ?? 'gpt-5.2';
   }
   
   Future<void> _loadCachedModels() async {

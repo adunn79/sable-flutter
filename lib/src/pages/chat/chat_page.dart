@@ -30,6 +30,7 @@ import 'package:sable/core/memory/structured_memory_service.dart';
 import 'package:sable/core/memory/unified_memory_service.dart';
 import 'package:sable/core/memory/memory_extraction_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sable/core/ai/apple_intelligence_service.dart';
 import 'package:sable/core/personality/personality_service.dart'; // Added implementation
 import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
@@ -1336,7 +1337,12 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
           final hasCredits = await _stateService?.useVoiceCredit() ?? true;
           if (hasCredits) {
             debugPrint('🔊 Attempting to speak response...');
-            await _voiceService!.speak(sanitizedResponse);
+            // Check auto-speak preference
+            final shouldSpeak = await _voiceService!.getAutoSpeakEnabled();
+            debugPrint('🔊 CHECKING Auto-Speak Pref: $shouldSpeak');
+            if (shouldSpeak && !_isMuted) {
+              await _voiceService!.speak(sanitizedResponse);
+            }
             debugPrint('🔊 Speak completed');
           } else {
             debugPrint('🔊 No voice credits remaining');
@@ -1565,7 +1571,11 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
       if (autoSpeak && _voiceService != null) {
         final hasCredits = await _stateService?.useVoiceCredit() ?? true;
         if (hasCredits) {
-          await _voiceService!.speak("Here's your daily update. Check out the latest news.");
+          // Check auto-speak preference
+          final shouldSpeak = await _voiceService!.getAutoSpeakEnabled();
+          if (shouldSpeak && !_isMuted) {
+            await _voiceService!.speak("Here's your daily update. Check out the latest news.");
+          }
         }
       }
       
@@ -2196,7 +2206,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                     '(Ay-lee-AH-na)',
                     style: GoogleFonts.inter(
                       fontSize: 10,
-                      color: AelianaColors.ghost,
+                      color: Colors.white70,
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -2206,46 +2216,44 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
           // Right side: Weather + Voice toggle
           Row(
             children: [
-              // Weather on right side
-              if (_weatherTemp != null) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.cloudSun,
-                        color: Colors.white.withOpacity(0.8),
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _weatherTemp!,
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (_weatherHighLow != null) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          _weatherHighLow!,
-                          style: GoogleFonts.inter(
-                            color: Colors.white.withOpacity(0.6),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+              // Weather on right side (show placeholder if no data)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(width: 8),
-              ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _weatherTemp != null ? LucideIcons.cloudSun : LucideIcons.cloudOff,
+                      color: Colors.white.withOpacity(_weatherTemp != null ? 0.8 : 0.4),
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _weatherTemp ?? '--°',
+                      style: GoogleFonts.inter(
+                        color: Colors.white.withOpacity(_weatherTemp != null ? 1.0 : 0.4),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (_weatherHighLow != null) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        _weatherHighLow!,
+                        style: GoogleFonts.inter(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
               // Voice toggle button
               FutureBuilder<bool>(
                 future: _voiceService?.getAutoSpeakEnabled() ?? Future.value(false),
@@ -2742,6 +2750,110 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
     ref.read(feedbackServiceProvider).medium();
     if (_localVibeService == null) return;
 
+    // Check if user has location enabled - if not, show interactive prompt
+    if (_currentGpsLocation == null || _currentGpsLocation!.isEmpty) {
+      // Try to fetch silently first
+      final status = await Permission.location.status;
+      if (status.isGranted || status.isLimited) {
+        await _fetchCurrentLocation();
+      }
+      
+      // Only show dialog if we STILL don't have location AND permission is not granted
+      // If permission IS granted but location failed (e.g. simulator), don't harass user
+      if ((_currentGpsLocation == null || _currentGpsLocation!.isEmpty) && !status.isGranted && !status.isLimited) {
+        // Check if user dismissed this prompt before
+        final prefs = await SharedPreferences.getInstance();
+        final dontShowLocationPrompt = prefs.getBool('local_vibe_location_dismissed') ?? false;
+        
+        if (!dontShowLocationPrompt && mounted) {
+        // Show interactive location enable dialog
+        final result = await showDialog<String>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AelianaColors.carbon,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Icon(LucideIcons.mapPin, color: AelianaColors.hyperGold, size: 24),
+                const SizedBox(width: 12),
+                Text(
+                  'Location Needed',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'I need your location to find what\'s happening nearby. Would you like to enable location access?',
+              style: GoogleFonts.inter(color: AelianaColors.ghost),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, 'dismiss'),
+                child: Text(
+                  'Don\'t Show Again',
+                  style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, 'settings'),
+                child: Text(
+                  'OPEN SETTINGS',
+                  style: GoogleFonts.spaceGrotesk(color: AelianaColors.plasmaCyan),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, 'enable'),
+                child: Text(
+                  'ENABLE',
+                  style: GoogleFonts.spaceGrotesk(color: AelianaColors.hyperGold, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+        
+        if (result == 'dismiss') {
+          await prefs.setBool('local_vibe_location_dismissed', true);
+          if (mounted) {
+            setState(() {
+              _messages.add({
+                'message': 'No problem! You can enable location in Settings > Privacy > Location whenever you change your mind.',
+                'isUser': false
+              });
+            });
+          }
+          return;
+        } else if (result == 'settings') {
+          openAppSettings();
+          return;
+        } else if (result == 'enable') {
+          // Request location permission
+          final status = await Permission.location.request();
+          if (status.isGranted || status.isLimited) {
+            // Try to get location now
+            await _fetchCurrentLocation();
+          } else {
+            if (mounted) {
+              setState(() {
+                _messages.add({
+                  'message': 'Location access was denied. You can enable it later in Settings.',
+                  'isUser': false
+                });
+              });
+            }
+            return;
+          }
+        } else {
+          return; // Dialog dismissed
+        }
+      }
+    }
+    }
+
     // Clear any pending calendar flow to prevent hijacking this action
     final memorySpine = RoomBrainInitializer.getMemorySpine();
     await memorySpine.write('PENDING_CALENDAR_EVENT', {});
@@ -2769,7 +2881,11 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
         if (autoSpeak && _voiceService != null) {
           final hasCredits = await _stateService?.useVoiceCredit() ?? true;
           if (hasCredits) {
-            await _voiceService!.speak("Here's the local vibe for your area.");
+            // Check auto-speak preference
+            final shouldSpeak = await _voiceService!.getAutoSpeakEnabled();
+            if (shouldSpeak && !_isMuted) {
+              await _voiceService!.speak("Here's the local vibe for your area.");
+            }
           }
         }
       }
@@ -2933,6 +3049,8 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
         alignment: Alignment.center,
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
+          // Add padding for floating help button on the right
+          padding: const EdgeInsets.only(left: 16, right: 100),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -3241,11 +3359,13 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                 child: CircleAvatar(
                   radius: 26,
                   backgroundColor: Colors.white,
-                  backgroundImage: (_stateService?.avatarUrl != null && _stateService!.avatarUrl!.startsWith('http'))
+                  backgroundImage: (_stateService?.avatarUrl != null && _stateService!.avatarUrl!.isNotEmpty && _stateService!.avatarUrl!.startsWith('http'))
                       ? NetworkImage(_stateService!.avatarUrl!) as ImageProvider
-                      : AssetImage(_stateService?.avatarUrl ?? 'assets/images/archetypes/$_archetypeId.png'),
+                      : AssetImage(_stateService?.avatarUrl != null && _stateService!.avatarUrl!.isNotEmpty 
+                          ? _stateService!.avatarUrl! 
+                          : 'assets/images/archetypes/$_archetypeId.png'),
                   onBackgroundImageError: (_, __) {},
-                  child: (_stateService?.avatarUrl != null) 
+                  child: (_stateService?.avatarUrl != null && _stateService!.avatarUrl!.isNotEmpty) 
                       ? null // Don't show icon if we have a custom avatar
                       : const Icon(LucideIcons.sparkles, size: 24, color: Colors.black),
                 ),

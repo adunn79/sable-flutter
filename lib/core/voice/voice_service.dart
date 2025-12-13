@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,7 +20,7 @@ class VoiceService {
   
   // Configuration keys
   static const String _keySelectedVoice = 'selected_voice_id';
-  static const String _keyAutoSpeak = 'auto_speak_enabled';
+  static const String _keyAutoSpeak = 'auto_speak'; // Matches SettingsControlService
   static const String _keyVoiceEngine = 'voice_engine_type'; // 'system' or 'eleven_labs'
   static const String _keyElevenLabsApiKey = 'eleven_labs_api_key';
   
@@ -27,17 +28,32 @@ class VoiceService {
   String _voiceEngine = 'eleven_labs'; // Default to ElevenLabs
   
   /// Initialize the voice service
+  /// Only initializes speech-to-text if microphone permission was already granted
   Future<bool> initialize() async {
     if (_isInitialized) return true;
     
     try {
-      // Initialize speech-to-text
-      final speechAvailable = await _speech.initialize(
-        onError: (error) => debugPrint('Speech error: $error'),
-        onStatus: (status) => debugPrint('Speech status: $status'),
-      );
+      // Check if microphone permission was granted during onboarding
+      // If not granted, skip STT initialization to avoid OS permission dialog
+      final micStatus = await Permission.microphone.status;
+      final speechStatus = await Permission.speech.status;
       
-      // Initialize text-to-speech with enhanced settings
+      bool speechAvailable = false;
+      
+      if (micStatus.isGranted && speechStatus.isGranted) {
+        // Permission already granted - safe to initialize STT
+        speechAvailable = await _speech.initialize(
+          onError: (error) => debugPrint('Speech error: $error'),
+          onStatus: (status) => debugPrint('Speech status: $status'),
+        );
+        debugPrint('✅ Speech-to-text initialized: $speechAvailable');
+      } else {
+        debugPrint('⚠️ Skipping STT init: mic=${micStatus.isGranted}, speech=${speechStatus.isGranted}');
+        // TTS can still work without STT permissions
+        speechAvailable = false;
+      }
+      
+      // Initialize text-to-speech with enhanced settings (always safe)
       await _tts.setLanguage('en-US');
       await _tts.setSpeechRate(0.52); // Slightly faster, more natural
       await _tts.setVolume(1.0);
@@ -60,8 +76,9 @@ class VoiceService {
       // Load preferences
       await _loadPreferences();
       
-      _isInitialized = speechAvailable;
-      return _isInitialized;
+      // TTS is always available, STT depends on permission
+      _isInitialized = true;
+      return speechAvailable;
     } catch (e) {
       debugPrint('Voice service initialization error: $e');
       return false;

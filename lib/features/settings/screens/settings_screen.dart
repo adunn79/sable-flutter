@@ -2478,16 +2478,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               subtitle: Text('Use camera', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
               onTap: () async {
                 Navigator.pop(context);
-                final picker = ImagePicker();
-                final XFile? image = await picker.pickImage(source: ImageSource.camera);
-                if (image != null && mounted) {
-                  setState(() => _userPhotoUrl = image.path);
-                  // Save to preferences
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setString('user_photo_path', image.path);
+                // Small delay to ensure modal is fully dismissed
+                await Future.delayed(const Duration(milliseconds: 300));
+                try {
+                  final picker = ImagePicker();
+                  final XFile? image = await picker.pickImage(source: ImageSource.camera);
+                  if (image != null && mounted) {
+                    setState(() => _userPhotoUrl = image.path);
+                    // Save to preferences
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('user_photo_path', image.path);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('✅ Profile photo updated!')),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  debugPrint('📷 Camera error: $e');
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('✅ Profile photo updated!')),
+                      SnackBar(content: Text('Unable to open camera: $e')),
                     );
                   }
                 }
@@ -2506,16 +2517,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               subtitle: Text('Select existing photo', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
               onTap: () async {
                 Navigator.pop(context);
-                final picker = ImagePicker();
-                final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-                if (image != null && mounted) {
-                  setState(() => _userPhotoUrl = image.path);
-                  // Save to preferences
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setString('user_photo_path', image.path);
+                // Small delay to ensure modal is fully dismissed
+                await Future.delayed(const Duration(milliseconds: 300));
+                try {
+                  final picker = ImagePicker();
+                  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                  if (image != null && mounted) {
+                    setState(() => _userPhotoUrl = image.path);
+                    // Save to preferences
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('user_photo_path', image.path);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('✅ Profile photo updated!')),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  debugPrint('📸 Gallery error: $e');
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('✅ Profile photo updated!')),
+                      SnackBar(content: Text('Unable to open photo library: $e')),
                     );
                   }
                 }

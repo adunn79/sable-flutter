@@ -38,13 +38,38 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
   }
 
   bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+    // Basic format check
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      return false;
+    }
+    
+    // Reject common typos and obviously fake TLDs
+    final lowerEmail = email.toLowerCase();
+    final invalidTlds = [
+      '.con', '.cmo', '.cim', '.coom', '.ocm', '.vom', '.comm',
+      '.neet', '.orgg', '.eduu', '.govv', '.nett', '.infoo',
+      '.xyzz', '.biz1', '.test', '.example', '.invalid', '.localhost',
+    ];
+    for (final invalidTld in invalidTlds) {
+      if (lowerEmail.endsWith(invalidTld)) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   bool _isValidPhone(String phone) {
     // Basic phone validation - at least 10 digits
     final digitsOnly = phone.replaceAll(RegExp(r'[^\d]'), '');
-    return digitsOnly.length >= 10;
+    if (digitsOnly.length < 10) return false;
+    
+    // Reject obviously fake numbers (all same digit, all zeros, sequential)
+    if (RegExp(r'^(\d)\1+$').hasMatch(digitsOnly)) return false; // All same digit (e.g., 0000000000)
+    if (digitsOnly == '1234567890' || digitsOnly == '0123456789') return false; // Sequential
+    if (digitsOnly == '0000000000') return false; // All zeros
+    
+    return true;
   }
 
   Future<void> _verifyEmail() async {
@@ -56,7 +81,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
     }
     
     if (!_isValidEmail(email)) {
-      setState(() => _emailError = 'Please enter a valid email');
+      setState(() => _emailError = '✨ That doesn\'t look like a valid email address. Please double-check and try again.');
       return;
     }
 
@@ -91,7 +116,7 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
     }
     
     if (!_isValidPhone(phone)) {
-      setState(() => _phoneError = 'Please enter a valid phone number');
+      setState(() => _phoneError = '✨ That doesn\'t appear to be a reachable number. Please enter a real phone number for account recovery.');
       return;
     }
 
@@ -254,12 +279,38 @@ class _ScreenRecoverySetupState extends State<ScreenRecoverySetup> {
                 ),
               ),
               
+              const SizedBox(height: 12),
+              
+              // Optional notice
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AelianaColors.plasmaCyan.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.info, color: AelianaColors.plasmaCyan, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Both fields are optional. You can skip this step and add recovery options later in Settings.',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AelianaColors.plasmaCyan,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
               const SizedBox(height: 32),
               
               // Email field
               _buildInputField(
                 controller: _emailController,
-                label: 'Email',
+                label: 'Email (Optional)',
                 hint: 'your@email.com',
                 icon: LucideIcons.mail,
                 keyboardType: TextInputType.emailAddress,

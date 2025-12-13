@@ -232,6 +232,8 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
   String _getFocusTitle(String metricId) {
     switch (metricId) {
       case 'sleep': return 'Rest';
+      case 'sleep_quality': return 'Sleep Quality';
+      case 'dreams': return 'Dreams';
       case 'energy': return 'Energy';
       case 'mood': return 'Reflect';
       case 'stress': return 'Calm';
@@ -251,6 +253,8 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
     if (!hasData) {
       switch (metricId) {
         case 'sleep': return 'Log last night\'s sleep';
+        case 'sleep_quality': return 'Rate how well you slept';
+        case 'dreams': return 'Journal your dreams ✨';
         case 'energy': return 'Rate your energy';
         case 'mood': return 'Log your mood';
         case 'stress': return 'Rate stress level';
@@ -267,6 +271,8 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
     } else {
       switch (metricId) {
         case 'sleep': return 'Review sleep trends';
+        case 'sleep_quality': return 'Update sleep rating';
+        case 'dreams': return 'Add to dream journal';
         case 'energy': return 'Boost your energy';
         case 'mood': return 'Update your mood';
         case 'stress': return 'Try stress relief';
@@ -318,7 +324,9 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
     final focusOptions = [
       {'id': 'steps', 'title': 'Move', 'description': 'Take a 10m walk', 'icon': LucideIcons.footprints},
       {'id': 'mood', 'title': 'Reflect', 'description': 'Log your mood', 'icon': LucideIcons.smile},
-      {'id': 'sleep', 'title': 'Rest', 'description': 'Log your sleep', 'icon': LucideIcons.moon},
+      {'id': 'sleep', 'title': 'Rest', 'description': 'Log your sleep hours', 'icon': LucideIcons.moon},
+      {'id': 'sleep_quality', 'title': 'Sleep Quality', 'description': 'Rate how well you slept', 'icon': LucideIcons.sparkles},
+      {'id': 'dreams', 'title': 'Dreams', 'description': 'Try journaling dreams!', 'icon': LucideIcons.cloudMoon},
       {'id': 'water', 'title': 'Hydrate', 'description': 'Track water intake', 'icon': LucideIcons.glassWater},
       {'id': 'stress', 'title': 'Breathe', 'description': 'Check stress level', 'icon': LucideIcons.brain},
       {'id': 'meditation', 'title': 'Meditate', 'description': 'Log meditation time', 'icon': LucideIcons.wind},
@@ -1372,7 +1380,12 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
                       // 2.5. Shareable Daily Quote Card
                       const ShareableQuoteCard(showSableObservation: false),
                       
-                      // 3. Privacy Settings (moved up)
+                      // 3. Quick Mood Picker (NEW)
+                      _buildQuickMoodPicker(),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // 4. Privacy Settings (moved up)
                       _buildPrivacySettings(),
                       
                       const SizedBox(height: 24),
@@ -3738,6 +3751,30 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
   Widget _buildFocusBullet(String title, String description, IconData icon, String metricId) {
     return GestureDetector(
       onTap: () {
+        // Special handling for Dreams - navigates to journal with Dream Log suggestion
+        if (metricId == 'dreams') {
+          context.go('/journal');
+          // Show helpful message after navigation
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Text('💭', style: TextStyle(fontSize: 20)),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text('Tap + and choose "Dream Log" template to record your dreams!'),
+                    ),
+                  ],
+                ),
+                backgroundColor: const Color(0xFFB8A9D9),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          });
+          return;
+        }
+        
         // Find and open the metric dialog
         final metric = _metrics.firstWhere(
           (m) => m.id == metricId,
@@ -3907,14 +3944,114 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
       ),
     );
   }
-
-  Widget _buildPrivacySettings() {
+  /// Quick mood logging with emoji icons
+  Widget _buildQuickMoodPicker() {
+    final moods = [
+      {'emoji': '😊', 'value': 9, 'label': 'Great'},
+      {'emoji': '🙂', 'value': 7, 'label': 'Good'},
+      {'emoji': '😐', 'value': 5, 'label': 'Okay'},
+      {'emoji': '😔', 'value': 3, 'label': 'Low'},
+      {'emoji': '😰', 'value': 1, 'label': 'Struggling'},
+    ];
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _accentLavender.withOpacity(0.3)),
+        border: Border.all(color: _accentTeal.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(LucideIcons.smile, color: _accentTeal, size: 20),
+              const SizedBox(width: 10),
+              Text('How are you feeling?', 
+                style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: moods.map((mood) => GestureDetector(
+              onTap: () => _logQuickMood(mood['value'] as int, mood['label'] as String),
+              child: Column(
+                children: [
+                  Text(mood['emoji'] as String, style: const TextStyle(fontSize: 32)),
+                  const SizedBox(height: 4),
+                  Text(mood['label'] as String, 
+                    style: GoogleFonts.inter(color: Colors.white54, fontSize: 10)),
+                ],
+              ),
+            )).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// Log quick mood and show confirmation
+  Future<void> _logQuickMood(int value, String label) async {
+    try {
+      // Find the mood metric
+      final moodMetric = _metrics.firstWhere(
+        (m) => m.id == 'mood',
+        orElse: () => HealthMetric(
+          id: 'mood',
+          name: 'Mood',
+          unit: '/10',
+          iconName: 'smile',
+        ),
+      );
+      
+      // Log the value
+      await VitalBalanceService.addEntry(moodMetric.id, value.toDouble());
+      
+      // Update last wellness date
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_wellness_update_date', DateTime.now().toIso8601String());
+      
+      // Refresh metrics display
+      await _refreshMetrics();
+      
+      // Show confirmation
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✨ Logged mood: $label ($value/10)'),
+            backgroundColor: _accentTeal,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error logging quick mood: $e');
+    }
+  }
+
+  Widget _buildPrivacySettings() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            _accentLavender.withOpacity(0.15),
+            _cardColor,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _accentLavender.withOpacity(0.5), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: _accentLavender.withOpacity(0.2),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

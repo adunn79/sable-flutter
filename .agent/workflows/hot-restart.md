@@ -1,90 +1,47 @@
----
-description: How to hot restart the Flutter app in the iOS simulator
----
+# Hot Restart & Build Workflow
 
-# Hot Restart Workflow
+## 🛑 EXPERT WARNING: Xcode 26.2 SDK Issue
 
-When the user asks for a hot restart, follow these steps:
+**Do not attempt to run `flutter run` or `xcodebuild` from the terminal for iOS Simulators on this machine.**
 
-## CRITICAL: You MUST Have a Running Flutter Process
+### Diagnosis
 
-Hot restart ONLY works if `flutter run` is already running in the background. You cannot hot restart a dead/exited process.
+- The installed Xcode SDK is **26.2**.
+- The installed Simulators are **iOS 18.6** (and 26.0/26.1).
+- The **iOS 26.2 Simulator Runtime** is MISSING.
+- `xcodebuild` (CLI) strictly enforces that the SDK version (26.2) must match the Runtime version. It rejects target iOS 18.6 as "Ineligible" or "Unable to find destination".
 
----
+### Solution
 
-## Step 1: Check for Running Flutter Process
-
-First, check if there's an active `flutter run` command by looking at recent command IDs in the conversation. If a previous `flutter run` command exited (status: DONE with exit code), you need to start a fresh one.
-
----
-
-## Step 2A: If Flutter is NOT Running - Start It
-
-// turbo
-
-```bash
-flutter devices
-```
-
-Get the device ID (e.g., `13D17C50-32C8-4301-9A0F-FF0389AD40BD` for iPhone 17 simulator), then:
-
-```bash
-flutter run -d <DEVICE_ID>
-```
-
-Wait for the app to launch and the Flutter run key commands to appear. Save the **Background command ID** - you'll need it.
+- **ALWAYS use the Xcode GUI** to run the app on simulators.
+  - Open `ios/Runner.xcworkspace`.
+  - Select "iPhone 16 Pro" (or desired sim).
+  - Click the **Play** button.
+- Verification via CLI is impossible until the iOS 26.2 Runtime is installed via Xcode > Settings > Components.
 
 ---
 
-## Step 2B: If Flutter IS Running - Send Hot Restart
+## Standard Workflow (If Environment Fixed)
 
-Use the `send_command_input` tool (NOT a shell command!) with:
+1. **Boot Simulator**
 
-- **CommandId**: The background command ID from the original `flutter run`
-- **Input**: `R\n` (capital R followed by newline)
-- **SafeToAutoRun**: true
-- **WaitMs**: 3000
+    ```bash
+    xcrun simctl boot <DEVICE_UUID>
+    ```
 
-Example tool call:
+2. **Run Flutter App**
 
-```
-send_command_input(
-  CommandId: "82298843-c7e2-43cf-99cc-92ea5223acfd",
-  Input: "R\n",
-  SafeToAutoRun: true,
-  WaitMs: 3000
-)
-```
+    ```bash
+    flutter run -d <DEVICE_UUID>
+    ```
 
----
+3. **Hot Restart**
+    - Ensure the app is running in the terminal.
+    - Call the `send_command_input` tool with `R\n` (newline is critical).
+    - **Do NOT** try to type `R` into a shell command. It must be sent to the running process.
 
-## Common Mistakes to AVOID
+## Troubleshooting
 
-1. **DO NOT** try to run `send_command_input` as a shell command - it's a TOOL, not a CLI command
-2. **DO NOT** try to hot restart a process that has exited (status: DONE)
-3. **DO NOT** use SIGUSR2 signals - they don't work for Flutter hot restart
-4. **DO NOT** use lowercase `r` - that's hot reload, not hot restart. Use capital `R`
-
----
-
-## Quick Reference
-
-| Scenario | Action |
-|----------|--------|
-| `flutter run` is running | Use `send_command_input` with `R\n` |
-| `flutter run` exited | Run `flutter run -d <DEVICE_ID>` again |
-| Build errors | Fix errors first, then run `flutter run` |
-| Need device ID | Run `flutter devices` first |
-
----
-
-## Verification
-
-After hot restart, you should see in the output:
-
-```
-Performing hot restart...
-Restarted application in XXXms.
-```
-
-If you see this, the hot restart was successful!
+- **"iOS 26.2 is not installed":** You are missing the runtime component. Install it or use Xcode GUI.
+- **"Device locked":** Simulator needs to be unlocked or is in a bad state. Reboot it.
+- **Crash on Start:** Check `deploy-ipad.md` - known issue with debug builds on iOS 26 devices (use release build for physical devices).

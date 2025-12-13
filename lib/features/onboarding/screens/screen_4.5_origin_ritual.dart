@@ -150,38 +150,81 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
                   // Interaction Prompt
                   if (!_isAwakened) ...[
                     Text(
-                      'HOLD FINGERPRINT TO AWAKEN',
+                      'SEAL YOUR BOND WITH ${widget.config.archetype.toUpperCase()}',
                       style: GoogleFonts.spaceGrotesk(
-                        fontSize: 12,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
-                        color: AelianaColors.ghost.withOpacity(0.7),
+                        color: Colors.white,
                       ),
                     ).animate(delay: 1000.ms).fadeIn(),
                     
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     
-                    _buildFingerprintButton(),
+                    // Fingerprint button with share buttons on either side - WITH LABELS
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Share button with label
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildSmallShareButton(),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Share',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Fingerprint button with label
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildFingerprintButton(),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Awaken',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AelianaColors.hyperGold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Print button with label
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildSmallPrintButton(),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Print',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ] else ...[
+                    // After awakening - just show success, no redundant share buttons
                     Text(
                       'SOUL BOND COMPLETE',
                       style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 2,
                         color: AelianaColors.hyperGold,
                       ),
                     ).animate().fadeIn().shimmer(duration: 1000.ms),
-                    const SizedBox(height: 16),
-                    // Share and Print buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildShareButton(),
-                        const SizedBox(width: 12),
-                        _buildPrintButton(),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
                   ],
 
                   const SizedBox(height: 40),
@@ -198,7 +241,7 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
               IgnorePointer(
                 child: Container(
                   color: Colors.white,
-                ).animate().fadeIn(duration: 100.ms).fadeOut(delay: 200.ms, duration: 2000.ms),
+                ).animate().fadeIn(duration: 100.ms).fadeOut(delay: 500.ms, duration: 2500.ms),
               ),
               
               // Continue Button (appears after flash)
@@ -217,14 +260,14 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
                     shadowColor: AelianaColors.hyperGold.withOpacity(0.5),
                   ),
                   child: Text(
-                    'ENTER AELIANA',
+                    'BEGIN YOUR JOURNEY',
                     style: GoogleFonts.spaceGrotesk(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 2,
                     ),
                   ),
-                ).animate(delay: 1500.ms).fadeIn(duration: 800.ms).slideY(begin: 0.2, end: 0),
+                ).animate(delay: 2500.ms).fadeIn(duration: 800.ms).slideY(begin: 0.2, end: 0),
               ),
             ],
           ),
@@ -451,7 +494,7 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
             Icon(LucideIcons.share2, color: AelianaColors.hyperGold, size: 18),
             const SizedBox(width: 10),
             Text(
-              'Share Your Companion',
+              'Share',
               style: GoogleFonts.spaceGrotesk(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -533,6 +576,68 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
     ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0);
   }
 
+  /// Compact share button for placement beside fingerprint
+  Widget _buildSmallShareButton() {
+    return GestureDetector(
+      onTap: _shareCard,
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AelianaColors.carbon,
+          border: Border.all(
+            color: AelianaColors.hyperGold.withOpacity(0.4),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AelianaColors.hyperGold.withOpacity(0.2),
+              blurRadius: 10,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Icon(
+          LucideIcons.share2,
+          color: AelianaColors.hyperGold,
+          size: 22,
+        ),
+      ),
+    ).animate(delay: 1100.ms).fadeIn().scale(begin: const Offset(0.8, 0.8));
+  }
+
+  /// Compact print button for placement beside fingerprint
+  Widget _buildSmallPrintButton() {
+    return GestureDetector(
+      onTap: _printCard,
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AelianaColors.carbon,
+          border: Border.all(
+            color: AelianaColors.plasmaCyan.withOpacity(0.4),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AelianaColors.plasmaCyan.withOpacity(0.2),
+              blurRadius: 10,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Icon(
+          LucideIcons.printer,
+          color: AelianaColors.plasmaCyan,
+          size: 22,
+        ),
+      ),
+    ).animate(delay: 1100.ms).fadeIn().scale(begin: const Offset(0.8, 0.8));
+  }
+
   Future<void> _printCard() async {
     try {
       HapticFeedback.mediumImpact();
@@ -586,8 +691,8 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
         animation: _holdController,
         builder: (context, child) {
           return Container(
-            width: 80,
-            height: 80,
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AelianaColors.carbon,

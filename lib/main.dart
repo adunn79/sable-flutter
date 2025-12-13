@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'core/theme/aeliana_theme.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/onboarding/onboarding_flow.dart';
@@ -112,6 +114,18 @@ void main() async {
       ),
     );
   }, (error, stackTrace) {
+    // Check if this is a known non-fatal Flutter framework bug
+    final errorString = error.toString();
+    final isHardwareKeyboardBug = errorString.contains('_pressedKeys.containsKey') ||
+        errorString.contains('HardwareKeyboard') ||
+        errorString.contains('KeyUpEvent');
+    
+    if (isHardwareKeyboardBug) {
+      // This is a known Flutter/iOS simulator bug - log but don't crash
+      debugPrint('⚠️ Suppressed HardwareKeyboard bug (simulator): $error');
+      return;
+    }
+    
     debugPrint('🔥 FATAL ERROR: $error');
     debugPrint('Stack trace: $stackTrace');
     // Show emergency error UI
@@ -169,6 +183,16 @@ class AelianaApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AelianaTheme.darkTheme,
       themeMode: ThemeMode.dark,
+      // Localization support for FlutterQuill and other widgets
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        FlutterQuillLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'),
+      ],
       home: const AelianaSplashScreen(),
       routes: {
         '/onboarding': (context) => OnboardingFlow(

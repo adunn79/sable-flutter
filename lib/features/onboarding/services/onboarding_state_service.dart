@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class OnboardingStateService {
   static const String _keyOnboardingComplete = 'onboarding_complete';

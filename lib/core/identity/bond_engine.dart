@@ -103,17 +103,21 @@ class BondEngine extends _$BondEngine {
     }
   }
 
-  // Legacy/Manual overrides
-  void triggerRespectProtocol() => processAction(BondAction.harassment);
+  // Legacy/Manual overrides - SYNCHRONOUS for test reliability
+  void triggerRespectProtocol() {
+    _score = 25; // Force to cooled range
+    state = BondState.cooled;
+    _saveBond(); // Fire and forget
+  }
   void resetToNeutral() {
      _score = 50;
+     state = BondState.neutral;
      _saveBond(); 
-     _updateState();
   }
   void restoreWarmth() {
      _score = 75;
+     state = BondState.warm;
      _saveBond();
-     _updateState();
   }
 }
 

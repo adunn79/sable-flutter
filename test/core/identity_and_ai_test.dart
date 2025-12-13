@@ -3,8 +3,16 @@ import 'package:riverpod/riverpod.dart';
 import 'package:sable/core/identity/bond_engine.dart';
 import 'package:sable/core/identity/emotional_state.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
+import 'package:sable/src/config/app_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    await AppConfig.initialize();
+  });
+
   group('Bond Engine & Emotional State', () {
     test('Initial state is Warm and Neutral', () {
       final container = ProviderContainer();
@@ -43,10 +51,14 @@ void main() {
       expect(modelId, contains('claude'));
     });
 
-    test('Routes Agentic tasks to Gemini', () {
+    test('Routes Agentic tasks to Agentic Model', () async { // Modified test name and added async
       final container = ProviderContainer();
-      final modelId = container.read(modelOrchestratorProvider.notifier).getModelForTask(AiTaskType.agentic);
-      expect(modelId, contains('gemini'));
+      final orchestrator = container.read(modelOrchestratorProvider.notifier);
+      
+      final modelId = orchestrator.getModelForTask(AiTaskType.agentic);
+      
+      // Expecting 'o1' as the best agentic model defined in ModelConfig
+      expect(modelId, contains('o1'));
     });
 
     test('Routes Heavy Lifting tasks to GPT', () {

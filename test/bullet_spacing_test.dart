@@ -36,8 +36,19 @@ void main() {
     for (int i = 0; i < lines.length - 1; i++) {
       final currentLine = lines[i].trim();
       final nextLine = lines[i  + 1].trim();
+      
+      // Detect bullets: standard, formatted links, or markdown style
+      bool isBullet = currentLine.startsWith('*') || 
+                      currentLine.startsWith('•') ||
+                      currentLine.startsWith('[•') ||
+                      currentLine.startsWith('[*');
+      
+      // Exclude markdown headers which start with **
+      if (currentLine.startsWith('**')) {
+        isBullet = false;
+      }
        
-      if (currentLine.startsWith('*') || currentLine.startsWith('•')) {
+      if (isBullet) {
         bulletCount++;
         if (nextLine.isEmpty) {
           blankLineAfterBullet++;

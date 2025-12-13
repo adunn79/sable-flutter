@@ -49,7 +49,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
       
       // Use WebSearchService for balanced news report
       final orchestrator = ModelOrchestrator();
-      final webSearchService = WebSearchService(orchestrator: orchestrator);
+      final webSearchService = WebSearchService(orchestrator);
       
       final report = await webSearchService.getBalancedNewsReport(widget.topic);
       
@@ -83,7 +83,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
-      backgroundColor: isDark ? AelianaColors.deepSpace : Colors.grey[100],
+      backgroundColor: isDark ? AelianaColors.obsidian : Colors.grey[100],
       appBar: AppBar(
         backgroundColor: isDark ? AelianaColors.carbon : Colors.white,
         elevation: 0,

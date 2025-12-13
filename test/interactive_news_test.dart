@@ -34,10 +34,22 @@ void main() {
     
     for (final line in lines) {
       final trimmed = line.trim();
-      if (trimmed.startsWith('*')) {
+      
+      // Check for bullet points (exclude headers which start with **)
+      // Formatted bullets start with [• or [*
+      // Raw bullets start with * or •
+      bool isBullet = false;
+      
+      if (trimmed.startsWith('[•') || trimmed.startsWith('[*')) {
+        isBullet = true;
+      } else if ((trimmed.startsWith('*') || trimmed.startsWith('•')) && !trimmed.startsWith('**')) {
+        isBullet = true;
+      }
+      
+      if (isBullet) {
         bulletCount++;
-        // Check for link format: * [Content](expand:Topic)
-        if (trimmed.contains('[') && trimmed.contains('](expand:')) {
+        // Check for link format: * [Content](expand:Topic) or [• Content](expand:Topic)
+        if (trimmed.contains('](expand:')) {
           interactiveCount++;
           
           // Extract topic

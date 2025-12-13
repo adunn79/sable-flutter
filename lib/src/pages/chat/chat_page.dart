@@ -7,6 +7,7 @@ import 'package:markdown/markdown.dart' as md;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sable/core/ai/model_orchestrator.dart';
 import 'package:sable/core/widgets/cinematic_background.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
@@ -102,6 +103,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   // Clock mode dimming
   bool _clockDimmed = false;
   Timer? _clockDimTimer;
+  Timer? _briefingTimer;
   bool _showChatOverClock = false; // Temporarily show chat even when in clock mode
   
   // Weather display in header
@@ -197,10 +199,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       
       // Start periodic check for Daily Briefing (e.g. for Overnight mode)
       // Check every 10 minutes
-      Timer.periodic(const Duration(minutes: 10), (timer) {
+      _briefingTimer = Timer.periodic(const Duration(minutes: 10), (timer) {
         if (mounted) _prefetchContent();
       });
     });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    _clockDimTimer?.cancel();
+    _briefingTimer?.cancel();
+    super.dispose();
   }
   
   /// Fetch current weather for header display

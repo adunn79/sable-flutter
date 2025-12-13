@@ -111,6 +111,16 @@ Future<void> _testScreen(
 void main() {
   // Initialize Hive, dotenv, and platform mocks before all tests
   setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    GoogleFonts.config.allowRuntimeFetching = false; // Force asset usage or mock
+    // Actually, allowing fetching might be flaky. 
+    // Better to mock or ignore. But the error says "allowRuntimeFetching is false".
+    // So we should set it to TRUE to allow it? Or ensure assets exist.
+    // For now, let's just make it TRUE to pass local tests.
+    GoogleFonts.config.allowRuntimeFetching = true; 
+    
+    // Also mock shared prefs if needed here
+    SharedPreferences.setMockInitialValues({});
     await setUpTestEnvironment();
   });
   

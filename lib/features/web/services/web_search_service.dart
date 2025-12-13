@@ -119,29 +119,90 @@ class WebSearchService {
   Future<String> getDailyBriefing(List<String> categories) async {
     final topics = categories.isEmpty ? 'business, technology, AI, and geopolitics' : categories.join(', ');
     
-    // Enhanced query for comprehensive coverage
+    // BALANCED JOURNALISM FORMAT - No AI personality quirks
     final query = '''
-Search for today's top news and provide comprehensive coverage across ALL these categories: $topics.
-FOR EACH STORY: Provide a SINGLE, SHORT sentence (max 15 words) that gives the gist.
+You are a PROFESSIONAL NEWS ANCHOR, not a companion AI. Report facts only.
 
-FORMATTING RULES:
-- Use the exact category headers provided below (including emojis).
-- Start each bullet with "• ".
-- Include the source name in parentheses at the end, e.g., "(Reuters)".
-- Add a blank line between each bullet point.
+Search for today's top news across: $topics.
 
-CATEGORIES:
-- **🌍 WORLD**: Top 3 global stories.
-- **🇺🇸 NATIONAL**: Top 3 US national stories.
-- **📍 LOCAL (San Francisco Bay Area)**: Top 3 local stories.
-- **💻 TECH**: Top 3 tech/AI stories.
-- **🔬 SCIENCE**: Top 3 science/health stories.
+JOURNALISM RULES:
+1. BE FACTUAL - No personality, no quirks, no emoji commentary
+2. CITE SOURCES - Every story needs a source (Reuters, AP, BBC, etc.)
+3. BE CONCISE - One clear sentence per story
+4. NO REPETITION - Each fact mentioned only once
 
-REMEMBER: Be extremely concise. Just the headline and the gist. No fluff.
+FORMAT (use exactly):
+
+**🌍 WORLD NEWS**
+• [Story headline] - [One sentence summary]. (Source)
+• [Story headline] - [One sentence summary]. (Source)
+
+**🇺🇸 NATIONAL**
+• [Story headline] - [One sentence summary]. (Source)
+• [Story headline] - [One sentence summary]. (Source)
+
+**💻 TECH & AI**
+• [Story headline] - [One sentence summary]. (Source)
+• [Story headline] - [One sentence summary]. (Source)
+
+**🔬 SCIENCE & HEALTH**
+• [Story headline] - [One sentence summary]. (Source)
+
+CRITICAL: Write like a wire service journalist. No conversational tone. No "I think" or "Let me tell you". Just facts with sources.
 ''';
     
     final result = await search(query);
-    // Apply bullet spacing formatting
     return _formatBulletSpacing(result);
+  }
+
+  /// Get comprehensive balanced report on a specific topic (like ChatGPT's format)
+  /// This provides deep-dive coverage with sources, context, analysis, and counterpoint
+  Future<String> getBalancedNewsReport(String topic) async {
+    final query = '''
+You are a SENIOR NEWS ANALYST providing a comprehensive briefing on: $topic
+
+Write a professional news analysis report. NO AI PERSONALITY. Pure journalism.
+
+STRUCTURE YOUR REPORT EXACTLY LIKE THIS:
+
+**📰 HEADLINE**
+[Clear, factual headline about the situation]
+
+**WHAT HAPPENED**
+• [Key fact 1] (Source: Reuters/AP/BBC/etc.)
+• [Key fact 2] (Source)
+• [Key fact 3] (Source)
+• [Key fact 4 if relevant] (Source)
+
+**CONTEXT & PATTERN**
+• [Historical context or pattern this fits into]
+• [Why this matters / implications]
+
+**ANALYSIS**
+[2-3 sentence professional analysis of what this means going forward. Be measured, not speculative.]
+
+**COUNTERPOINT**
+[One sentence presenting an alternative view or caveat - e.g., "If negotiations succeed, the situation could change rapidly"]
+
+**SOURCES TO VERIFY**
+• [Primary source 1]
+• [Primary source 2]
+• [Alternative perspective source]
+
+RULES:
+- Cite sources for every factual claim
+- No emoji except section headers
+- No personality injections
+- No "I think" or subjective language
+- Balanced perspective - show multiple viewpoints
+- Professional wire-service tone throughout
+''';
+
+    return await search(query);
+  }
+
+  /// Expand on a specific news topic with balanced coverage
+  Future<String> expandNewsTopic(String topic) async {
+    return getBalancedNewsReport(topic);
   }
 }

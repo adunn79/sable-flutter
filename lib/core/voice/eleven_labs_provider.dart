@@ -22,21 +22,28 @@ class ElevenLabsProvider {
   String get currentVoiceId => _currentVoiceId;
   
   /// Ensure audio session is configured for iOS/iPad playback
+  /// Uses playAndRecord with defaultToSpeaker for reliable iPad output
   Future<void> _ensureAudioSessionConfigured() async {
     if (_isAudioSessionConfigured) return;
     
     try {
-      // Configure audio context for iOS/iPad to prevent crashes
+      debugPrint('🔊 Configuring audio session for iOS/iPad...');
+      
+      // iPad FIX: Use playAndRecord with defaultToSpeaker for reliable playback
+      // This ensures audio routes through the speaker even without headphones
       await _audioPlayer.setAudioContext(AudioContext(
         iOS: AudioContextIOS(
-          category: AVAudioSessionCategory.playback,
+          // playAndRecord allows both input and output, better for iPad
+          category: AVAudioSessionCategory.playAndRecord,
           options: {
+            AVAudioSessionOptions.defaultToSpeaker, // Forces speaker output on iPad
+            AVAudioSessionOptions.allowBluetooth,
+            AVAudioSessionOptions.allowBluetoothA2DP,
             AVAudioSessionOptions.mixWithOthers,
-            AVAudioSessionOptions.duckOthers,
           },
         ),
         android: AudioContextAndroid(
-          isSpeakerphoneOn: false,
+          isSpeakerphoneOn: true, // Force speaker on Android too
           audioMode: AndroidAudioMode.normal,
           stayAwake: false,
           contentType: AndroidContentType.speech,
@@ -45,10 +52,22 @@ class ElevenLabsProvider {
         ),
       ));
       _isAudioSessionConfigured = true;
-      debugPrint('✅ Audio session configured for voice playback');
+      debugPrint('✅ Audio session configured for voice playback (playAndRecord + defaultToSpeaker)');
     } catch (e) {
       debugPrint('⚠️ Failed to configure audio session: $e');
-      // Continue anyway - may work on some devices
+      // Try fallback configuration for older devices
+      try {
+        await _audioPlayer.setAudioContext(AudioContext(
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.playback,
+            options: {AVAudioSessionOptions.mixWithOthers},
+          ),
+        ));
+        _isAudioSessionConfigured = true;
+        debugPrint('✅ Audio session configured with fallback (playback only)');
+      } catch (e2) {
+        debugPrint('❌ Fallback audio config also failed: $e2');
+      }
     }
   }
 

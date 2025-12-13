@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
+import 'package:sable/core/ui/safe_snackbar.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sable/features/safety/screens/emergency_screen.dart';
@@ -222,9 +223,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
 
   Future<void> _submit() async {
     if (_descriptionController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please describe the issue')),
-      );
+      SafeSnackBar.showText(context, 'Please describe the issue');
       return;
     }
 
@@ -235,12 +234,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
 
     if (mounted) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🎉 Thank you! Check your email for a reward code.'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      SafeSnackBar.showSuccess(context, '🎉 Thank you! Check your email for a reward code.');
     }
   }
 

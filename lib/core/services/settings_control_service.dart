@@ -317,6 +317,11 @@ class SettingsControlService {
       return false;
     }
 
+    if (!setting.aiControllable) {
+      debugPrint('❌ Setting $key is not AI controllable');
+      return false;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final stateService = await OnboardingStateService.create();
 

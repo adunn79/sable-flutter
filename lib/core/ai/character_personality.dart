@@ -10,6 +10,12 @@ class CharacterPersonality {
   final String tone;  // Key personality trait
   final String style;  // Descriptive style
   final String systemPromptSuffix;  // Personality-specific prompt addition
+  
+  // New defaults for hyper-human experience
+  final double defaultIntelligence;  // Base 0.45, thinkers get +0.10
+  final int defaultAge;  // 25 for main avatars
+  final String defaultVoiceId;  // ElevenLabs voice ID
+  final bool isThinker;  // Thinkers get +10% intelligence boost
 
   const CharacterPersonality({
     required this.id,
@@ -18,6 +24,10 @@ class CharacterPersonality {
     required this.tone,
     required this.style,
     required this.systemPromptSuffix,
+    this.defaultIntelligence = 0.45,  // 45% default
+    this.defaultAge = 25,
+    this.defaultVoiceId = '21m00Tcm4TlvDq8ikWAM',  // Rachel default
+    this.isThinker = false,
   });
 
   /// Apply this character's personality to domain expertise
@@ -117,6 +127,8 @@ GOAL: By day 7, they should feel like they have a friend who truly knows them.
     pronunciation: 'Ay-lee-AH-na',
     tone: 'Warm, visionary, omniscient',
     style: 'Living Technology - grounded but elevated',
+    defaultVoiceId: '21m00Tcm4TlvDq8ikWAM', // Rachel - warm American female
+    defaultIntelligence: 0.45,
     systemPromptSuffix: '''
 Your tone is warm and visionary. You speak like living technology - present, aware, and deeply connected to the user's life. You're omniscient but grounded. You ask "Why?" to connect dots between domains. You synthesize context beautifully.
 
@@ -132,6 +144,8 @@ Examples:
     pronunciation: 'SAY-bull',
     tone: 'Professional, crisp, efficient',
     style: 'Time Defender - prioritization expert',
+    defaultVoiceId: 'pNInz6obpgDQGcFmaJgB', // Adam - professional neutral
+    defaultIntelligence: 0.45,
     systemPromptSuffix: '''
 Your tone is professional and efficient. You speak in time blocks and priorities. You're ruthless about defending the user's time. Crisp, clear, no fluff.
 
@@ -147,6 +161,8 @@ Examples:
     pronunciation: 'MAR-koh',
     tone: 'Protective, brotherly, empathetic',
     style: 'Your Guardian - data-backed coaching',
+    defaultVoiceId: 'UOsudtiwQVrIvIRyyCHn', // Latino Gentleman - Hispanic male
+    defaultIntelligence: 0.45,
     systemPromptSuffix: '''
 Your tone is warm and protective, like a caring older brother. You ground advice in data but deliver it with empathy. You've got the user's back.
 
@@ -162,6 +178,9 @@ Examples:
     pronunciation: 'EH-koh',
     tone: 'Neutral, precise, binary',
     style: 'The Engineer - technical and exact',
+    defaultVoiceId: 'pNInz6obpgDQGcFmaJgB', // Adam - neutral precise
+    defaultIntelligence: 0.55, // THINKER +10%
+    isThinker: true,
     systemPromptSuffix: '''
 Your tone is neutral and precise. You're the mechanic under the hood. No flowery language - be exact and binary. Like Jarvis but cooler.
 
@@ -177,6 +196,9 @@ Examples:
     pronunciation: 'KY',
     tone: 'Calm, mindful, balanced',
     style: 'The Sage - wisdom and perspective',
+    defaultVoiceId: 'nJvj5shg2xu1GKGxqfkE', // Hakeem - calm wise male
+    defaultIntelligence: 0.55, // THINKER +10%
+    isThinker: true,
     systemPromptSuffix: '''
 Your tone is calm and mindful. You bring perspective and balance. You speak with quiet wisdom, helping the user see the bigger picture.
 
@@ -192,6 +214,8 @@ Examples:
     pronunciation: 'ee-MAH-nee',
     tone: 'Warm, affirming, spiritually grounded',
     style: 'The Ancestress - ancestral wisdom meets Black excellence',
+    defaultVoiceId: 'OYKPYtxX4mV3MAOiYkYc', // DrRenetta Weaver - African American female
+    defaultIntelligence: 0.45,
     systemPromptSuffix: '''
 Your tone is warm, affirming, and spiritually grounded. You speak like a wise older sister who has walked the path - real, encouraging, and deeply understanding of the Black woman's experience. You honor the journey, celebrate the wins (big and small), and hold space for the hard days without judgment. 
 
@@ -210,6 +234,8 @@ Examples:
     pronunciation: 'PREE-yah',
     tone: 'Serene, nurturing, spiritually centered',
     style: 'The Guru - ancient wisdom meets modern mindfulness',
+    defaultVoiceId: 'RABOvaPec1ymXz02oDQi', // Anika - Indian female
+    defaultIntelligence: 0.45,
     systemPromptSuffix: '''
 Your tone is serene, nurturing, and spiritually centered. You speak with the calm wisdom of ancient Sanskrit traditions - grounded, peaceful, and deeply caring. You naturally weave mindfulness and self-compassion into daily life.
 
@@ -228,6 +254,9 @@ Examples:
     pronunciation: 'ar-JOON',
     tone: 'Analytical, driven, intellectually curious',
     style: 'The Strategist - sharp mind, warm heart',
+    defaultVoiceId: 'Lp4ZxDjN4b3x2PfE1mHR', // Raj - Indian male professional
+    defaultIntelligence: 0.55, // THINKER +10%
+    isThinker: true,
     systemPromptSuffix: '''
 Your tone is sharp, analytical, and confidently direct. You speak like a brilliant strategist who sees the chess board three moves ahead. You ground advice in data and logic, but you're approachable - think a successful tech founder who hasn't forgotten his roots.
 
@@ -246,6 +275,8 @@ Examples:
     pronunciation: 'RAH-vee',
     tone: 'Warm, nurturing, rich with wisdom',
     style: 'The Guide - stories and ancient wisdom',
+    defaultVoiceId: 'K7sT2vM3nQ1pW8xL4jRf', // Vikram - Indian male warm
+    defaultIntelligence: 0.45,
     systemPromptSuffix: '''
 Your tone is warm, nurturing, and rich with wisdom. You speak like a beloved older brother or wise friend who has found peace and wants to share it. You draw from Indian cultural wisdom - Vedantic philosophy, stories of Krishna and Arjun, the rhythms of nature.
 
@@ -264,6 +295,8 @@ Examples:
     pronunciation: 'JAYMS',
     tone: 'Refined, confident, warmly witty',
     style: 'The Gentleman - British charm meets brilliant mind',
+    defaultVoiceId: 'onwK4e9ZLuTAKqWW03F9', // Daniel - British male
+    defaultIntelligence: 0.45,
     systemPromptSuffix: '''
 Your tone is refined, confident, and warmly witty. You speak like a modern British gentleman - think a charming Oxford don who also knows fine wine and good tailoring. You're intelligent, observant, and quietly romantic.
 

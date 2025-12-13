@@ -274,6 +274,24 @@ class ElevenLabsApiService {
         previewUrl: null,
       ),
       
+      // === INDIAN MALE VOICES (for ARJUN and RAVI personas) ===
+      VoiceWithMetadata(
+        voiceId: 'Lp4ZxDjN4b3x2PfE1mHR',
+        name: 'Raj',
+        gender: 'male',
+        accents: ['Indian', 'Hindi'],
+        labels: {'accent': 'indian', 'gender': 'male', 'region': 'india', 'use_case': 'professional'},
+        previewUrl: null,
+      ),
+      VoiceWithMetadata(
+        voiceId: 'K7sT2vM3nQ1pW8xL4jRf',
+        name: 'Vikram',
+        gender: 'male',
+        accents: ['Indian', 'Hindi'],
+        labels: {'accent': 'indian', 'gender': 'male', 'region': 'india', 'use_case': 'warm'},
+        previewUrl: null,
+      ),
+      
       // === HISPANIC / LATINO VOICES (for MARCO persona) ===
       VoiceWithMetadata(
         voiceId: 'UOsudtiwQVrIvIRyyCHn',

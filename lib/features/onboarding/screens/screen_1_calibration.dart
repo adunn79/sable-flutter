@@ -112,20 +112,14 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                     ),
                   ),
                 ),
-                child: ScrollConfiguration(
-                  behavior: const ScrollBehavior().copyWith(
-                    physics: const BouncingScrollPhysics(
-                      decelerationRate: ScrollDecelerationRate.fast,
-                    ),
-                  ),
-                  child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.date,
-                    initialDateTime: initialDate,
-                    minimumYear: 1920,
-                    maximumYear: DateTime.now().year,
-                    backgroundColor: AelianaColors.carbon,
-                    onDateTimeChanged: (date) => tempDate = date,
-                  ),
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: initialDate,
+                  minimumYear: 1920,
+                  maximumYear: DateTime.now().year,
+                  maximumDate: DateTime.now(), // Block ALL future dates for birthday
+                  backgroundColor: AelianaColors.carbon,
+                  onDateTimeChanged: (date) => tempDate = date,
                 ),
               ),
             ),

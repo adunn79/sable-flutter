@@ -23,6 +23,8 @@ import 'package:sable/src/config/app_config.dart';
 import 'package:sable/core/photos/widgets/photo_picker_sheet.dart';
 import 'package:sable/core/media/now_playing_service.dart';
 import 'package:sable/core/news/headline_service.dart';
+import 'package:sable/core/theme/aeliana_theme.dart'; // IMPORTED for AelianaColors
+import 'package:google_fonts/google_fonts.dart'; // IMPORTED for GoogleFonts
 
 /// Rich text journal editor with privacy toggle, mood, and tags
 class JournalEditorScreen extends StatefulWidget {
@@ -150,6 +152,30 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
           _nowPlayingArtist = nowPlaying.artist;
         });
         debugPrint('🎵 Journal: Captured now playing: ${nowPlaying.title} - ${nowPlaying.artist}');
+        
+        // VISIBLE FEEDBACK for user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(LucideIcons.music, color: Colors.white, size: 16),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Listening to: ${nowPlaying.title}', 
+                    maxLines: 1, 
+                    overflow: TextOverflow.ellipsis
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.withOpacity(0.9),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     } catch (e) {
       debugPrint('🎵 Now playing capture failed: $e');
@@ -233,6 +259,171 @@ class _JournalEditorScreenState extends State<JournalEditorScreen> {
     );
   }
   
+  // --- MAGIC WAND FEATURE ---
+  void _showMagicWandMenu() {
+     // Capture text
+    final plainText = _quillController.document.toPlainText().trim();
+    if (plainText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Write something first to use the Magic Wand! ✨')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border(top: BorderSide(color: AelianaColors.hyperGold.withOpacity(0.5))),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(LucideIcons.wand2, color: AelianaColors.hyperGold),
+                const SizedBox(width: 12),
+                Text(
+                  'Magic Wand',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 20, 
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildMagicOption(LucideIcons.sparkles, 'Improve Grammar & Flow', 'Fix errors and smooth out sentences', 'Improve grammar and flow, keep tone natural.'),
+            _buildMagicOption(LucideIcons.feather, 'Make it Poetic', 'Add descriptive flair and emotion', 'Rewrite this to be more poetic, metaphorical, and emotional.'),
+            _buildMagicOption(LucideIcons.list, 'Summarize', 'Create a bulleted summary', 'Create a concise 3-bullet summary of this entry.'),
+            _buildMagicOption(LucideIcons.scaling, 'Expand Thoughts', 'Flesh out brief ideas', 'Expand on these thoughts deeply. Ask rhetorical questions in the text.'),
+            _buildMagicOption(LucideIcons.search, 'Analyze Vibe', 'What does this say about me?', 'Analyze the psychological vibe and underlying emotion of this text. Be an empathetic mirror.'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMagicOption(IconData icon, String title, String subtitle, String systemInstruction) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AelianaColors.hyperGold.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: AelianaColors.hyperGold, size: 20),
+      ),
+      title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      subtitle: Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+      onTap: () {
+        Navigator.pop(context);
+        _executeMagicWand(systemInstruction);
+      },
+      contentPadding: const EdgeInsets.symmetric(vertical: 4),
+    );
+  }
+
+  Future<void> _executeMagicWand(String instruction) async {
+    final currentText = _quillController.document.toPlainText().trim();
+    
+    // Show Loading
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black)),
+            SizedBox(width: 12),
+            Text('✨ Weaving magic...', style: TextStyle(color: Colors.black)),
+          ],
+        ),
+        backgroundColor: AelianaColors.hyperGold,
+        duration: Duration(seconds: 20),
+      ),
+    );
+
+    try {
+      final gemini = GeminiProvider();
+      final response = await gemini.generateResponse(
+        prompt: 'User Text:\n"$currentText"\n\nTask: $instruction\n\nReturn ONLY the result.',
+        systemPrompt: 'You are an expert editor and writing coach. You are enhancing the user\'s journal entry.',
+        modelId: 'gemini-2.0-flash-exp', // Fast high quality
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        
+        // Show result dialog
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: Text('✨ Magic Result', style: TextStyle(color: AelianaColors.hyperGold)),
+            content: SingleChildScrollView(
+              child: Text(response, style: const TextStyle(color: Colors.white)),
+            ),
+            actions: [
+            // Discard button - Red and prominent
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('✕ Discard', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            // Replace text (overwrites current text)
+            OutlinedButton(
+              onPressed: () {
+                // Replace entire document with AI response
+                _quillController.document = Document()..insert(0, response);
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Text replaced with AI improvement'),
+                    backgroundColor: AelianaColors.plasmaCyan,
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AelianaColors.plasmaCyan,
+                side: const BorderSide(color: AelianaColors.plasmaCyan),
+              ),
+              child: const Text('Replace'),
+            ),
+            // Accept button - Gold and prominent
+            ElevatedButton(
+              onPressed: () {
+                // Append AI response to the document
+                final index = _quillController.document.length - 1;
+                _quillController.document.insert(index, '\n\n✨ AI Improvement:\n$response\n'); 
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ AI improvement added'),
+                    backgroundColor: AelianaColors.hyperGold,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AelianaColors.hyperGold, foregroundColor: Colors.black),
+              child: const Text('✓ Accept'),
+            ),
+          ],
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Magic Wand failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Magic faded: $e')));
+      }
+    }
+  }
+
   /// Auto-fetch today's top headline
   Future<void> _fetchHeadline() async {
     try {
@@ -1006,9 +1197,14 @@ No hashtags, no explanations, just the tags.''',
           ),
           // Prompt button
           IconButton(
-            icon: const Icon(LucideIcons.sparkles, color: Color(0xFFB8A9D9)),
-            tooltip: 'Get Writing Prompt',
-            onPressed: _showPromptPicker,
+            icon: Icon(LucideIcons.wand2, color: AelianaColors.hyperGold),
+            onPressed: _showMagicWandMenu,
+            tooltip: 'Magic Wand',
+          ),
+          IconButton(
+            icon: const Icon(LucideIcons.sparkles, color: Colors.blue),
+            onPressed: _generateSparkPrompt,
+            tooltip: 'Get Writing Prompt', // Added tooltip for clarity
           ),
           // Privacy toggle (eye icon)
           if (!isVault) // Hide toggle for vault (always private)

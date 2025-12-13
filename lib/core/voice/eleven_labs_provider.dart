@@ -9,6 +9,7 @@ class ElevenLabsProvider {
   final String _baseUrl = 'https://api.elevenlabs.io/v1';
   final AudioPlayer _audioPlayer = AudioPlayer();
   String? _apiKey;
+  bool _isAudioSessionConfigured = false;
   
   // Default "Sexy/Warm" voices
   // Rachel: 21m00Tcm4TlvDq8ikWAM (American, calm, young)
@@ -19,6 +20,37 @@ class ElevenLabsProvider {
 
   bool get isConfigured => _apiKey != null && _apiKey!.isNotEmpty;
   String get currentVoiceId => _currentVoiceId;
+  
+  /// Ensure audio session is configured for iOS/iPad playback
+  Future<void> _ensureAudioSessionConfigured() async {
+    if (_isAudioSessionConfigured) return;
+    
+    try {
+      // Configure audio context for iOS/iPad to prevent crashes
+      await _audioPlayer.setAudioContext(AudioContext(
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.playback,
+          options: {
+            AVAudioSessionOptions.mixWithOthers,
+            AVAudioSessionOptions.duckOthers,
+          },
+        ),
+        android: AudioContextAndroid(
+          isSpeakerphoneOn: false,
+          audioMode: AndroidAudioMode.normal,
+          stayAwake: false,
+          contentType: AndroidContentType.speech,
+          usageType: AndroidUsageType.media,
+          audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+        ),
+      ));
+      _isAudioSessionConfigured = true;
+      debugPrint('✅ Audio session configured for voice playback');
+    } catch (e) {
+      debugPrint('⚠️ Failed to configure audio session: $e');
+      // Continue anyway - may work on some devices
+    }
+  }
 
   void setApiKey(String key) {
     _apiKey = key;
@@ -28,43 +60,15 @@ class ElevenLabsProvider {
     _currentVoiceId = voiceId;
   }
 
-  /// Get list of available voices
-  Future<List<Map<String, dynamic>>> getVoices() async {
-    if (!isConfigured) throw Exception('ElevenLabs API Key not set');
-
-    try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl/voices'),
-        headers: {
-          'xi-api-key': _apiKey!,
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final voices = List<Map<String, dynamic>>.from(data['voices']);
-        
-        if (voices.isNotEmpty) {
-          debugPrint('🔍 RAW VOICE DATA SAMPLE: ${jsonEncode(voices.first)}');
-        }
-        
-        return voices;
-      } else {
-        throw Exception('Failed to load voices: ${response.body}');
-      }
-    } catch (e) {
-      debugPrint('Error fetching ElevenLabs voices: $e');
-      return [];
-    }
-  }
-
   /// Stream audio from text
   Future<void> speak(String text) async {
     if (!isConfigured) {
       debugPrint('ElevenLabs not configured, skipping.');
       return;
     }
+    
+    // Configure audio session for iOS/iPad BEFORE playing
+    await _ensureAudioSessionConfigured();
 
     try {
       // Stop any current playback

@@ -2521,7 +2521,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 await Future.delayed(const Duration(milliseconds: 300));
                 try {
                   final picker = ImagePicker();
-                  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                  // Add timeout to prevent freeze on iOS simulator (PHPicker issue)
+                  final XFile? image = await picker.pickImage(
+                    source: ImageSource.gallery,
+                    requestFullMetadata: false, // Faster, less metadata
+                  ).timeout(
+                    const Duration(seconds: 60),
+                    onTimeout: () {
+                      debugPrint('📸 Gallery picker timed out');
+                      return null;
+                    },
+                  );
                   if (image != null && mounted) {
                     setState(() => _userPhotoUrl = image.path);
                     // Save to preferences
@@ -2532,6 +2542,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         const SnackBar(content: Text('✅ Profile photo updated!')),
                       );
                     }
+                  } else if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No photo selected or picker timed out')),
+                    );
                   }
                 } catch (e) {
                   debugPrint('📸 Gallery error: $e');

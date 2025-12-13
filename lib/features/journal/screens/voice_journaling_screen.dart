@@ -26,11 +26,29 @@ class _VoiceJournalingScreenState extends State<VoiceJournalingScreen> {
   }
 
   Future<void> _initializeSpeech() async {
-    final available = await _speech.initialize(
-      onStatus: (status) => debugPrint('Speech status: $status'),
-      onError: (error) => debugPrint('Speech error: $error'),
-    );
-    setState(() => _isInitialized = available);
+    try {
+      // NOTE: If microphone permission not granted, initialize() can throw
+      // SpeechToTextNotInitializedException on some iOS versions
+      final available = await _speech.initialize(
+        onStatus: (status) => debugPrint('Speech status: $status'),
+        onError: (error) => debugPrint('Speech error: $error'),
+      );
+      if (mounted) {
+        setState(() => _isInitialized = available);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Speech initialization failed: $e');
+      if (mounted) {
+        setState(() => _isInitialized = false);
+        // Show error to user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Speech not available: ${e.toString().split("'").length > 1 ? e.toString().split("'")[1] : e}'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _startListening() async {

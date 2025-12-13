@@ -5,6 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/aeliana_theme.dart';
 import '../onboarding/services/onboarding_state_service.dart'; 
+import 'package:sable/core/memory/unified_memory_service.dart'; // IMPORTED
+import 'package:sable/core/ai/room_brain_initializer.dart'; // IMPORTED
+import 'package:sable/core/ai/model_registry_service.dart'; // IMPORTED
+import 'package:sable/src/config/app_config.dart'; // IMPORTED
+import 'package:shared_preferences/shared_preferences.dart'; // IMPORTED 
 
 class AelianaSplashScreen extends StatefulWidget {
   const AelianaSplashScreen({super.key});
@@ -17,7 +22,37 @@ class _AelianaSplashScreenState extends State<AelianaSplashScreen> {
   @override
   void initState() {
     super.initState();
+    _initBackgroundServices();
     _checkOnboardingAndNavigate();
+  }
+
+  Future<void> _initBackgroundServices() async {
+    try {
+      debugPrint('🚀 Starting Background Service Initialization...');
+      
+      // Initialize unified memory service (chat, memories, health)
+      await UnifiedMemoryService().initialize();
+      debugPrint('✅ Unified memory service initialized');
+      
+      // Initialize Room Brain System (Memory Spine + Tools)
+      await RoomBrainInitializer.initialize();
+      debugPrint('✅ Room Brain System initialized');
+      
+      // Initialize Model Registry for dynamic model resolution
+      await ModelRegistryService.instance.initialize();
+      debugPrint('✅ Model Registry initialized');
+      
+      // Load ElevenLabs key if present
+      final prefs = await SharedPreferences.getInstance();
+      if (AppConfig.elevenLabsKey.isNotEmpty) {
+        await prefs.setString('eleven_labs_api_key', AppConfig.elevenLabsKey);
+        await prefs.setString('voice_engine_type', 'eleven_labs');
+        debugPrint('✅ ElevenLabs API key loaded');
+      }
+
+    } catch (e) {
+      debugPrint('❌ Background Initialization Error: $e');
+    }
   }
 
   Future<void> _checkOnboardingAndNavigate() async {

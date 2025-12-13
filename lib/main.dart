@@ -68,27 +68,8 @@ void main() async {
       await JournalStorageService.createDefaultBuckets();
       debugPrint('✅ Journal storage initialized');
       
-      // Initialize unified memory service (chat, memories, health)
-      await UnifiedMemoryService().initialize();
-      debugPrint('✅ Unified memory service initialized');
-      
-      // Initialize Room Brain System (Memory Spine + Tools)
-      await RoomBrainInitializer.initialize();
-      debugPrint('✅ Room Brain System initialized');
-      
-      // Initialize Model Registry for dynamic model resolution
-      await ModelRegistryService.instance.initialize();
-      debugPrint('✅ Model Registry initialized');
-      
-      // Check for startup route
+      // Get SharedPreferences for routing and settings
       final prefs = await SharedPreferences.getInstance();
-      
-      // Keep existing ElevenLabs logic
-      if (AppConfig.elevenLabsKey.isNotEmpty) {
-        await prefs.setString('eleven_labs_api_key', AppConfig.elevenLabsKey);
-        await prefs.setString('voice_engine_type', 'eleven_labs');
-        debugPrint('✅ ElevenLabs API key loaded from .env and saved to preferences');
-      }
       
       // New: Check for last tab resume
       final shouldResume = prefs.getBool('start_on_last_tab') ?? false;
@@ -105,6 +86,9 @@ void main() async {
     } catch (e, stackTrace) {
       debugPrint('❌ Core Initialization Error: $e\n$stackTrace');
     }
+    
+    // HEAVY SERVICES are now loaded in the Splash Screen to show UI immediately
+    // See features/splash/splash_screen.dart
     
     runApp(
       ProviderScope(

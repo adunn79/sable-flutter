@@ -142,10 +142,10 @@ class ModelRegistryService {
       preferredModels: ['gpt-5.2', 'gpt-4o', 'gpt-4-vision-preview', 'gemini-2.0-flash'],
       provider: AIProvider.openai,
     ),
-    // Creative/Personality models (Claude still strong here, but add GPT-5.1 for warmth)
+    // Creative/Personality models (Claude 4.5 Sonnet/Opus for highest quality)
     RoleMapping(
       role: ModelRole.creative,
-      preferredModels: ['claude-3-5-sonnet-latest', 'gpt-5.1', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
+      preferredModels: ['claude-sonnet-4-5-20250514', 'claude-opus-4-5-20250514', 'claude-3-5-sonnet-latest', 'gpt-5.1', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
       provider: AIProvider.anthropic,
     ),
     // Realist models (xAI Grok)

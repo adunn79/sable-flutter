@@ -17,6 +17,7 @@ class VoiceService {
   bool _isInitialized = false;
   bool _isListening = false;
   bool _isSpeaking = false;
+  bool _speechAvailable = false; // Track if STT was actually initialized
   
   // Configuration keys
   static const String _keySelectedVoice = 'selected_voice_id';
@@ -46,6 +47,7 @@ class VoiceService {
           onError: (error) => debugPrint('Speech error: $error'),
           onStatus: (status) => debugPrint('Speech status: $status'),
         );
+        _speechAvailable = speechAvailable;
         debugPrint('✅ Speech-to-text initialized: $speechAvailable');
       } else {
         debugPrint('⚠️ Skipping STT init: mic=${micStatus.isGranted}, speech=${speechStatus.isGranted}');
@@ -91,6 +93,10 @@ class VoiceService {
     Function(String)? onPartialResult,
   }) async {
     if (!_isInitialized) await initialize();
+    if (!_speechAvailable) {
+      debugPrint('⚠️ Speech not available - cannot listen');
+      return;
+    }
     if (_isListening) return;
     
     _isListening = true;
@@ -122,6 +128,10 @@ class VoiceService {
   /// Use this for simple one-shot speech recognition
   Future<String?> listenForSpeech({Duration timeout = const Duration(seconds: 30)}) async {
     if (!_isInitialized) await initialize();
+    if (!_speechAvailable) {
+      debugPrint('⚠️ Speech not available - cannot listen');
+      return null;
+    }
     if (_isListening) return null;
     
     final completer = Completer<String?>();

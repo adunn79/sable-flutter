@@ -167,6 +167,37 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
     );
   }
 
+  /// Auto-select a voice based on the selected origin country
+  void _autoSelectVoiceForOrigin(String origin) {
+    // Map origins to their corresponding voice regions
+    String? targetVoiceId;
+    
+    if (origin.startsWith('Russia')) {
+      // Russian voices: Nadia or Viktoriia
+      targetVoiceId = '8M81RK3MD7u4DOJpu2G5'; // Viktoriia - Russian female
+    } else if (origin.startsWith('United Kingdom') || origin.startsWith('Ireland')) {
+      targetVoiceId = 'XB0fDUnXU5powFXDhCwa'; // Charlotte - British female
+    } else if (origin.startsWith('Australia')) {
+      targetVoiceId = '319bKIhetA5g6tmywrwj'; // Gemma - Australian female
+    } else if (origin.startsWith('France')) {
+      targetVoiceId = 'T558JOxAYVRUXPcjLmWL'; // Serena - French female
+    } else if (origin.startsWith('India')) {
+      targetVoiceId = 'RABOvaPec1ymXz02oDQi'; // Anika - Indian female
+    } else if (origin.startsWith('Mexico') || origin.startsWith('Spain')) {
+      targetVoiceId = 'GBv7mTt0atIp3Br8iCZE'; // Thomas - Spanish male
+    } else if (origin.startsWith('Sweden')) {
+      targetVoiceId = 'XrExE9yKIg1WjnnlVkGX'; // Matilda - Swedish female
+    } else {
+      // Default to American (Rachel)
+      targetVoiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel - American female
+    }
+    
+    _selectedVoiceId = targetVoiceId;
+    
+    // Also save the voice to VoiceService
+    _voiceService.setVoice(targetVoiceId);
+  }
+
   Future<void> _initServices() async {
     _stateService = await OnboardingStateService.create();
     
@@ -621,6 +652,7 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                           'United States, Texas',
                           'United Kingdom, London',
                           'Australia, Sydney',
+                          'Russia, Moscow',
                           'France, Paris',
                           'Germany, Berlin',
                           'Japan, Tokyo',
@@ -631,6 +663,8 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                           'Italy, Rome',
                           'Mexico, Mexico City',
                           'Canada, Toronto',
+                          'Ireland, Dublin',
+                          'Sweden, Stockholm',
                         ].map((String value) {
                           return DropdownMenuItem<String>(
                             value: value,
@@ -641,6 +675,8 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
                           if (newValue != null) {
                             setState(() {
                               _origin = newValue;
+                              // Auto-select voice based on origin
+                              _autoSelectVoiceForOrigin(newValue);
                             });
                           }
                         },

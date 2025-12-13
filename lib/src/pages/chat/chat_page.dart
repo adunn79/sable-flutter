@@ -2194,6 +2194,13 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 2,
+                      shadows: [
+                        const Shadow(
+                          color: Colors.black,
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -2208,6 +2215,13 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                       fontSize: 10,
                       color: Colors.white70,
                       fontStyle: FontStyle.italic,
+                      shadows: [
+                        const Shadow(
+                          color: Colors.black,
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -2217,40 +2231,95 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
           Row(
             children: [
               // Weather on right side (show placeholder if no data)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _weatherTemp != null ? LucideIcons.cloudSun : LucideIcons.cloudOff,
-                      color: Colors.white.withOpacity(_weatherTemp != null ? 0.8 : 0.4),
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _weatherTemp ?? '--°',
-                      style: GoogleFonts.inter(
-                        color: Colors.white.withOpacity(_weatherTemp != null ? 1.0 : 0.4),
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+              GestureDetector(
+                onTap: () {
+                  // Refresh weather on tap or show details
+                  ref.read(feedbackServiceProvider).tap();
+                  if (_weatherTemp == null) {
+                    _fetchWeather();
+                    SafeSnackBar.show(context, const SnackBar(
+                      content: Text('Updating weather...'),
+                      duration: Duration(seconds: 1),
+                    ));
+                  } else {
+                    // Show full details
+                    showDialog(
+                       context: context,
+                       builder: (ctx) => AlertDialog(
+                         backgroundColor: AelianaColors.carbon.withOpacity(0.9),
+                         title: Text('Current Conditions', style: GoogleFonts.spaceGrotesk(color: AelianaColors.plasmaCyan)),
+                         content: Column(
+                           mainAxisSize: MainAxisSize.min,
+                           children: [
+                             Text('${_weatherTemp ?? ""} ${_weatherCondition ?? ""}', style: GoogleFonts.inter(color: Colors.white, fontSize: 24)),
+                             const SizedBox(height: 8),
+                             Text(_weatherHighLow ?? "", style: GoogleFonts.inter(color: Colors.white70)),
+                             const SizedBox(height: 16),
+                             Text('Location: ${_stateService?.userCurrentLocation ?? _currentGpsLocation ?? "Unknown"}', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+                           ],
+                         ),
+                         actions: [
+                            TextButton(
+                              onPressed: () { 
+                                Navigator.pop(ctx);
+                                _fetchWeather(); // Refresh on close
+                              },
+                              child: const Text('REFRESH'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('CLOSE'),
+                            ),
+                         ],
+                       ),
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7), // INCREASED opacity for visibility
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.3)), // Cyan border for pop
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _weatherTemp != null ? LucideIcons.cloudSun : LucideIcons.cloudOff,
+                        color: Colors.white.withOpacity(_weatherTemp != null ? 0.9 : 0.4),
+                        size: 14,
+                        shadows: const [Shadow(color: Colors.black, blurRadius: 4)],
                       ),
-                    ),
-                    if (_weatherHighLow != null) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       Text(
-                        _weatherHighLow!,
+                        _weatherTemp ?? '--°',
                         style: GoogleFonts.inter(
-                          color: Colors.white.withOpacity(0.6),
-                          fontSize: 11,
+                          color: Colors.white.withOpacity(_weatherTemp != null ? 1.0 : 0.4),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          shadows: const [
+                            Shadow(
+                              color: Colors.black,
+                              blurRadius: 4,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
                         ),
                       ),
+                      if (_weatherHighLow != null) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          _weatherHighLow!,
+                          style: GoogleFonts.inter(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 11,
+                            shadows: const [Shadow(color: Colors.black, blurRadius: 4)],
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -3045,16 +3114,13 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
   Widget _buildFloatingChips() {
     return SizedBox(
       height: 60, // Fixed height for chips
-      child: Align(
-        alignment: Alignment.center,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          // Add padding for floating help button on the right
-          padding: const EdgeInsets.only(left: 16, right: 100),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        // Minimal padding to maximize space for chips
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             // Daily Update
             InteractiveButton(
               label: 'Daily\nUpdate',
@@ -3064,7 +3130,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
               infoDetails: '• Curated news from your selected categories\n• Summarized for quick reading\n• Interactive links to learn more',
               actionLabel: 'GET UPDATE',
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             // Local Vibe
             InteractiveButton(
               label: 'Local\nVibe',
@@ -3074,7 +3140,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
               infoDetails: '• Location-based insights\n• Local events and news\n• Tap to explore your area',
               actionLabel: 'GET LOCAL VIBE',
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             // Scroll to Bottom
             InteractiveButton(
               label: 'Scroll\n↓',
@@ -3084,7 +3150,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
               infoDetails: '• Instantly scroll to the latest message\n• Useful for long conversations\n• One-tap navigation',
               actionLabel: 'SCROLL NOW',
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             // Clear Screen
             InteractiveButton(
               label: 'Clear\nScreen',
@@ -3094,7 +3160,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
               infoDetails: '• Cleans up your view\n• History is preserved\n• Messages reload on app restart',
               actionLabel: 'CLEAR NOW',
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             // Share
             InteractiveButton(
               label: 'Share',
@@ -3105,7 +3171,6 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
               actionLabel: 'SHARE NOW',
             ),
           ],
-        ),
         ),
       ),
     );
@@ -3404,9 +3469,8 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                         )
                       : _buildInteractiveMessage(message),
                 ),
-                // Feedback buttons for AI messages only
-                if (!isUser)
-                  _buildFeedbackButtons(messageId ?? message.hashCode.toString(), message),
+                if (!isUser) // Pass the full message map to access/update feedback state
+                  _buildFeedbackButtons(messageId ?? message.hashCode.toString(), message, messageIndex: _messages.indexOf(_messages.firstWhere((m) => m['message'] == message))),
               ],
             ),
           ),
@@ -3416,7 +3480,13 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
   }
 
   /// Build feedback buttons (👍/👎) for AI responses
-  Widget _buildFeedbackButtons(String messageId, String message) {
+  Widget _buildFeedbackButtons(String messageId, String message, {int? messageIndex}) {
+    // Get current feedback state from message if available
+    bool? currentFeedback;
+    if (messageIndex != null && messageIndex >= 0 && messageIndex < _messages.length) {
+      currentFeedback = _messages[messageIndex]['feedback'] as bool?;
+    }
+
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Row(
@@ -3424,17 +3494,28 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
         children: [
           // Thumbs up
           GestureDetector(
-            onTap: () => _handleFeedback(messageId, true),
+            onTap: () => _handleFeedback(messageId, true, messageIndex: messageIndex),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: currentFeedback == true
+                    ? AelianaColors.plasmaCyan.withOpacity(0.2)
+                    : Colors.white.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
+                border: currentFeedback == true
+                    ? Border.all(color: AelianaColors.plasmaCyan.withOpacity(0.5))
+                    : null,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(LucideIcons.thumbsUp, size: 14, color: Colors.white54),
+                children: [
+                  Icon(
+                    LucideIcons.thumbsUp,
+                    size: 14,
+                    color: currentFeedback == true
+                        ? AelianaColors.plasmaCyan
+                        : Colors.white54,
+                  ),
                 ],
               ),
             ),
@@ -3442,17 +3523,26 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
           const SizedBox(width: 8),
           // Thumbs down
           GestureDetector(
-            onTap: () => _handleFeedback(messageId, false),
+            onTap: () => _handleFeedback(messageId, false, messageIndex: messageIndex),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: currentFeedback == false
+                    ? Colors.red.withOpacity(0.2)
+                    : Colors.white.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
+                border: currentFeedback == false
+                    ? Border.all(color: Colors.red.withOpacity(0.5))
+                    : null,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(LucideIcons.thumbsDown, size: 14, color: Colors.white54),
+                children: [
+                   Icon(
+                    LucideIcons.thumbsDown, 
+                    size: 14, 
+                    color: currentFeedback == false ? Colors.red : Colors.white54
+                  ),
                 ],
               ),
             ),
@@ -3481,9 +3571,16 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
   }
 
   /// Handle feedback on an AI message
-  void _handleFeedback(String messageId, bool positive) {
+  void _handleFeedback(String messageId, bool positive, {int? messageIndex}) {
     ref.read(feedbackServiceProvider).tap();
     
+    // Update local state to show highlight
+    if (messageIndex != null && messageIndex >= 0 && messageIndex < _messages.length && mounted) {
+      setState(() {
+        _messages[messageIndex]['feedback'] = positive;
+      });
+    }
+
     // Record in Soul Engine
     _soulEngine?.recordFeedback(messageId, positive);
     

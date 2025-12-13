@@ -221,7 +221,7 @@ class _MoreScreenState extends State<MoreScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
+        initialChildSize: 0.85,
         maxChildSize: 0.95,
         minChildSize: 0.5,
         expand: false,
@@ -241,57 +241,208 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
             ),
             Text(
-              'Frequently Asked Questions',
+              'Help & FAQ',
               style: GoogleFonts.spaceGrotesk(
                 color: AelianaColors.hyperGold,
-                fontSize: 22,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 4),
+            Text(
+              'Everything you need to know about Aeliana',
+              style: GoogleFonts.inter(
+                color: Colors.white54,
+                fontSize: 14,
+              ),
+            ),
             const SizedBox(height: 24),
+            
+            // GETTING STARTED
+            _buildFAQCategory('Getting Started'),
             _buildFAQItem(
               'What is Aeliana?',
-              'Aeliana is your intelligent AI companion designed to help you navigate daily life, track wellness, manage your calendar, and provide personalized support. She learns and adapts to your preferences over time.',
+              'Aeliana is your intelligent AI companion designed to help you navigate daily life, track wellness, manage your calendar, and provide personalized support. She learns and adapts to your preferences over time, becoming more helpful the more you interact.',
+            ),
+            _buildFAQItem(
+              'How do I get started?',
+              'Simply complete the onboarding flow: tell Aeliana your name, select your avatar, and grant permissions for features you want (calendar, contacts, etc.). You can always change settings later from the More menu.',
+            ),
+            _buildFAQItem(
+              'Can I change my avatar later?',
+              'Yes! Go to Settings > Avatar to select a new pre-made character or generate a custom AI avatar. Your conversation history and memories are preserved when you switch.',
+            ),
+            _buildFAQItem(
+              'What can I ask Aeliana?',
+              'Anything! Ask about weather, news, calendar events, set reminders, get wellness tips, journal your thoughts, or just chat. Aeliana can also search the web, control music, and integrate with your native apps.',
+            ),
+            
+            // CORE FEATURES
+            _buildFAQCategory('Core Features'),
+            _buildFAQItem(
+              'How does the Chat work?',
+              'Chat is your main interaction with Aeliana. Type or use voice input to communicate. Aeliana remembers your conversations, learns your preferences, and provides personalized responses based on context.',
+            ),
+            _buildFAQItem(
+              'What is the Calendar integration?',
+              'Aeliana can read your device calendars, help create events, detect conflicts, and remind you of upcoming appointments. Say "Create an event" or "What\'s on my calendar today?" to get started.',
+            ),
+            _buildFAQItem(
+              'How does the Journal work?',
+              'Journal is your private diary with AI assistance. It supports mood tracking, automatic context capture (weather, location, music), and memory extraction. Your journal entries help Aeliana understand you better.',
+            ),
+            _buildFAQItem(
+              'What is Vital Balance?',
+              'Vital Balance is your wellness dashboard. Track mood, energy, sleep, and health metrics. Your Wellness Coach provides personalized tips and insights based on your patterns.',
             ),
             _buildFAQItem(
               'How does Clock Mode work?',
-              'Clock Mode transforms your device into a beautiful bedside clock. It can auto-activate when your device is idle, and supports multiple styles including Digital, Analog, Flip, and Minimal views.',
+              'Clock Mode transforms your device into a beautiful bedside clock. It supports Digital, Analog, Flip, and Minimal styles. Set it on your nightstand for a sleek always-on display.',
             ),
             _buildFAQItem(
               'What is Private Space?',
-              'Private Space is a premium sanctuary for intimate conversations. It features enhanced privacy, Luna (your private companion), and secure encrypted storage. Requires Silver tier or above.',
+              'Private Space is a premium encrypted sanctuary for intimate conversations with Luna, your private companion. It has enhanced privacy, separate data storage, and requires PIN/biometric access.',
             ),
-            _buildFAQItem(
-              'How do subscriptions work?',
-              'We offer Free, Silver, Gold, and Platinum tiers. Higher tiers unlock more voice credits, video features, Private Space access, and premium AI capabilities.',
-            ),
-            _buildFAQItem(
-              'Is my data secure?',
-              'Yes! All sensitive data is encrypted using Apple-approved encryption. Your conversations and personal information never leave your device unless you explicitly enable cloud backup.',
-            ),
-            _buildFAQItem(
-              'How do I customize my avatar?',
-              'During onboarding, choose from pre-built characters or create a custom AI-generated avatar. You can change your avatar anytime from Settings > Avatar.',
-            ),
-            _buildFAQItem(
-              'What is the Journal feature?',
-              'Journal is your private diary with AI assistance. It supports rich text, mood tracking, automatic context capture (weather, location, music), and memory extraction for personalized AI responses.',
-            ),
+            
+            // VOICE FEATURES
+            _buildFAQCategory('Voice Features'),
             _buildFAQItem(
               'How do voice features work?',
-              'Voice features use premium text-to-speech for natural responses. Enable voice in chat settings. Premium tiers include monthly voice credits.',
+              'Enable voice from the chat header (speaker icon). Aeliana uses premium text-to-speech with cultural-appropriate voices for each personality. Voice credits are included based on your subscription tier.',
             ),
+            _buildFAQItem(
+              'Can I talk to Aeliana (speech-to-text)?',
+              'Yes! Tap the microphone icon in chat to speak your message. This requires microphone permission, which you can grant from Settings > Privacy.',
+            ),
+            _buildFAQItem(
+              'How do I change Aeliana\'s voice?',
+              'Each avatar has a culturally-appropriate default voice. Custom voice selection is available in Settings > Voice for premium subscribers.',
+            ),
+            
+            // PRIVACY & SECURITY
+            _buildFAQCategory('Privacy & Security'),
+            _buildFAQItem(
+              'Is my data secure?',
+              'Yes! All sensitive data is encrypted using Apple-approved encryption. Your conversations and personal information are stored locally on your device. Private Space uses additional encryption.',
+            ),
+            _buildFAQItem(
+              'Does Aeliana store my conversations in the cloud?',
+              'By default, no. All data stays on your device. If you enable iCloud Backup, encrypted backups are stored securely in your iCloud account - only you can access them.',
+            ),
+            _buildFAQItem(
+              'What permissions does Aeliana need?',
+              'Optional: Calendar (for events), Contacts (for people context), Location (for weather/local info), Microphone (for voice input), Photos (for journal). All are optional - the app works without them.',
+            ),
+            _buildFAQItem(
+              'How do I delete my data?',
+              'Go to Settings > Privacy > Delete All Data to permanently erase all app data. For Private Space, use More > Reset Private Space. This cannot be undone.',
+            ),
+            
+            // SUBSCRIPTION
+            _buildFAQCategory('Subscription & Billing'),
+            _buildFAQItem(
+              'What subscription tiers are available?',
+              'Free: Basic features, limited voice. Silver: Unlimited chat, 50 voice credits/mo, Private Space access. Gold: 150 voice/mo, video responses. Platinum: Unlimited everything, priority support.',
+            ),
+            _buildFAQItem(
+              'How do I upgrade my subscription?',
+              'Go to Settings > Subscription to view plans and upgrade. Subscriptions are managed through Apple\'s App Store and renew automatically unless cancelled.',
+            ),
+            _buildFAQItem(
+              'How do I cancel my subscription?',
+              'Open Settings app > Your Name > Subscriptions > Aeliana > Cancel. You\'ll retain access until the end of your billing period.',
+            ),
+            _buildFAQItem(
+              'What are voice credits?',
+              'Voice credits let Aeliana speak responses aloud. Each spoken response uses 1 credit. Free users get 5/day, paid tiers get 50-unlimited/month.',
+            ),
+            
+            // TROUBLESHOOTING
+            _buildFAQCategory('Troubleshooting'),
+            _buildFAQItem(
+              'Aeliana isn\'t responding - what do I do?',
+              'Check your internet connection first. Try restarting the app from More > Restart App. If issues persist, contact support@aeliana.ai.',
+            ),
+            _buildFAQItem(
+              'Voice isn\'t playing on my iPad',
+              'Ensure volume is up and not in silent mode. Try tapping the speaker icon in chat to toggle voice on/off. Check that voice is enabled in Settings.',
+            ),
+            _buildFAQItem(
+              'Calendar events aren\'t showing',
+              'Make sure Calendar permission is granted in Settings > Privacy. Pull down to refresh in the Calendar tab. Try restarting the app.',
+            ),
+            _buildFAQItem(
+              'How do I report a bug?',
+              'Email bugs@aeliana.ai with a description of the issue, your device model, and iOS version. Screenshots help! We respond within 24 hours.',
+            ),
+            
             const SizedBox(height: 24),
+            
+            // Support links
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _requestFeature(context);
+                    },
+                    icon: const Icon(LucideIcons.lightbulb, size: 18),
+                    label: const Text('Request Feature'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AelianaColors.hyperGold,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final uri = Uri.parse('mailto:support@aeliana.ai');
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri);
+                      }
+                    },
+                    icon: const Icon(LucideIcons.mail, size: 18),
+                    label: const Text('Email Support'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AelianaColors.plasmaCyan,
+                      side: BorderSide(color: AelianaColors.plasmaCyan),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
             Center(
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'Close',
-                  style: GoogleFonts.inter(color: AelianaColors.plasmaCyan),
+                  style: GoogleFonts.inter(color: Colors.white54),
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildFAQCategory(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: Text(
+        title.toUpperCase(),
+        style: GoogleFonts.spaceGrotesk(
+          color: AelianaColors.plasmaCyan,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.5,
         ),
       ),
     );

@@ -81,6 +81,7 @@ class SettingsControlService {
       section: 'INTELLIGENCE',
       type: SettingType.toggle,
       keywords: ['horoscope', 'astrology', 'zodiac references'],
+      aiControllable: false, // Prevent false triggers from context text
     ),
 
     // NEWS

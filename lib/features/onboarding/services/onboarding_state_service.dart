@@ -669,7 +669,7 @@ class OnboardingStateService {
           Uri.splitQueryString(map).map((k, v) => MapEntry(k, v)),
         );
         archetypeMap = decoded.map((k, v) => MapEntry(k, v.toString()));
-      } catch (_) {}
+      } catch (e) { debugPrint('⚠️ Archetype map parse error: $e'); }
     }
     
     archetypeMap[archetypeId] = url;
@@ -743,7 +743,7 @@ class OnboardingStateService {
         final dismissedDate = DateTime.parse(dismissedAt);
         final daysSinceDismissed = DateTime.now().difference(dismissedDate).inDays;
         if (daysSinceDismissed < 30) return false;
-      } catch (_) {}
+      } catch (e) { debugPrint('⚠️ Avatar regen date parse error: $e'); }
     }
     
     return true;

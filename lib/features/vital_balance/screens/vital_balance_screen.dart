@@ -130,7 +130,7 @@ class _VitalBalanceScreenState extends State<VitalBalanceScreen> {
       try {
         final lastDate = DateTime.parse(lastWellnessUpdate);
         daysSince = DateTime.now().difference(lastDate).inDays;
-      } catch (_) {}
+      } catch (e) { debugPrint('⚠️ Wellness date parse error: $e'); }
     } else {
       daysSince = 999; // Never updated
     }
@@ -4602,7 +4602,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
           _dob = parsed;
           _dobController.text = '${parsed.month.toString().padLeft(2, '0')}/${parsed.day.toString().padLeft(2, '0')}/${parsed.year}';
         });
-      } catch (_) {}
+      } catch (e) { debugPrint('\u26a0\ufe0f DOB parse from onboarding error: $e'); }
     }
   }
   

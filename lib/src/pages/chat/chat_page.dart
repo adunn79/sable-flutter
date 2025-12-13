@@ -1122,7 +1122,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                 try {
                   final lastDate = DateTime.parse(lastWellnessUpdate);
                   daysSinceUpdate = now.difference(lastDate).inDays;
-                } catch (_) {}
+                } catch (e) { debugPrint('⚠️ Chat parse error: $e'); }
               }
               
               userContext += '\n[WELLNESS AWARENESS]\n';

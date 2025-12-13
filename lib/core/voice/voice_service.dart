@@ -168,7 +168,8 @@ class VoiceService {
   }
   
   /// Speak text using selected engine
-  Future<void> speak(String text) async {
+  /// [onComplete] is called when speech finishes (for continuous conversation)
+  Future<void> speak(String text, {VoidCallback? onComplete}) async {
     if (!_isInitialized) await initialize();
     if (_isSpeaking) await stop();
     
@@ -187,18 +188,26 @@ class VoiceService {
     } catch (e) {
       debugPrint('Error speaking: $e');
       _isSpeaking = false;
+      onComplete?.call();
+      return;
     }
     
-    // Note: _isSpeaking logic for ElevenLabs is approximate as it's fire-and-forget currently
-    // Ideally we'd listen to audio player completion events
+    // Handle completion callback for both engines
     if (_voiceEngine == 'system') {
       _tts.setCompletionHandler(() {
         _isSpeaking = false;
+        debugPrint('🎤 System TTS finished - triggering onComplete');
+        onComplete?.call();
       });
     } else {
-      // Simple timeout fallback for now
-      Future.delayed(Duration(seconds: (text.length / 10).ceil()), () {
+      // ElevenLabs: Estimate duration based on text length (~150 words/min = 2.5 words/sec)
+      // Average word is ~5 chars, so ~12.5 chars/sec
+      final estimatedDuration = Duration(milliseconds: (text.length * 80).clamp(1000, 60000));
+      debugPrint('🗣️ ElevenLabs estimated speech duration: ${estimatedDuration.inSeconds}s');
+      Future.delayed(estimatedDuration, () {
         _isSpeaking = false;
+        debugPrint('🎤 ElevenLabs finished (estimated) - triggering onComplete');
+        onComplete?.call();
       });
     }
   }

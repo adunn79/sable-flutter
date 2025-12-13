@@ -111,6 +111,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   bool _isMuted = false;
   bool _isAvatarSettingsLoaded = false;
   
+  // Continuous conversation mode - auto-listen after AI speaks
+  bool _continuousConversation = false;
+  
   // Room Brain System
   ChatBrain? _chatBrain;
   CharacterPersonality? _currentPersonality;
@@ -1341,7 +1344,14 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
             final shouldSpeak = await _voiceService!.getAutoSpeakEnabled();
             debugPrint('🔊 CHECKING Auto-Speak Pref: $shouldSpeak');
             if (shouldSpeak && !_isMuted) {
-              await _voiceService!.speak(sanitizedResponse);
+              // Speak with onComplete callback for continuous conversation
+              await _voiceService!.speak(sanitizedResponse, onComplete: () {
+                // Auto-start listening after AI finishes speaking (continuous conversation)
+                if (_continuousConversation && mounted && !_isListening) {
+                  debugPrint('🎤 Continuous conversation: Auto-starting listening...');
+                  _handleVoiceInput();
+                }
+              });
             }
             debugPrint('🔊 Speak completed');
           } else {
@@ -3933,14 +3943,30 @@ return Padding(
                   ),
                 ),
                   const SizedBox(width: 20),
-                  // Microphone button
+                  // Microphone button (tap to talk, long-press for continuous mode)
                   GestureDetector(
                     onTap: _handleVoiceInput,
+                    onLongPress: () {
+                      setState(() => _continuousConversation = !_continuousConversation);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(_continuousConversation 
+                              ? '🎤 Continuous conversation ON - I\'ll keep listening' 
+                              : '🎤 Continuous conversation OFF'),
+                          backgroundColor: _continuousConversation 
+                              ? Colors.green
+                              : AelianaColors.ghost,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
                     child: Icon(
                       _isListening ? LucideIcons.micOff : LucideIcons.mic,
-                      color: _isListening 
-                          ? AelianaColors.plasmaCyan 
-                          : AelianaColors.plasmaCyan.withOpacity(0.6),
+                      color: _continuousConversation
+                          ? Colors.green  // Green when continuous mode active
+                          : (_isListening 
+                              ? AelianaColors.plasmaCyan 
+                              : AelianaColors.plasmaCyan.withOpacity(0.6)),
                       size: 22,
                     ),
                   ),

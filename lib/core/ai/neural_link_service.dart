@@ -63,7 +63,7 @@ class NeuralLinkService {
       _pingProvider('Claude (Personality)', _anthropic, 'claude-3-haiku-20240307'),
       _pingProvider('Gemini (Agentic)', _gemini, 'gemini-2.0-flash'),
       _pingProvider('GPT-5.2 (Logic)', _openai, 'gpt-5.2'),
-      _pingProvider('Grok (Realist)', _grok, 'grok-2'),
+      _pingProvider('Grok (Realist)', _grok, 'grok-beta'),
       _pingProvider('DeepSeek (Coding)', _deepseek, 'deepseek-chat'),
     ]);
 

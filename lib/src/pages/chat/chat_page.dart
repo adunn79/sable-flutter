@@ -1414,8 +1414,8 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
         // Since ListView is reversed, min extent is actually the bottom
         _scrollController.animateTo(
           _scrollController.position.minScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
         );
       }
     });

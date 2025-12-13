@@ -7,16 +7,70 @@ import 'package:permission_handler/permission_handler.dart';
 /// Service for handling device contacts integration
 /// Provides permission management, contact search, and AI context formatting
 class ContactsService {
-  /// Request contacts permission from the user
+  /// Request contacts permission with smart handling
+  /// Returns status, but UI should handle the 'false' case by checking permanentlyDenied
   static Future<bool> requestPermission() async {
     try {
       final status = await Permission.contacts.request();
-      debugPrint('👥 Contacts permission granted: ${status.isGranted}');
+      debugPrint('👥 Contacts permission status: $status');
+      
+      if (status.isPermanentlyDenied) {
+        debugPrint('👥 Contacts permission permanently denied - user must enable in settings');
+        // We can't automatically open settings here without user intent, 
+        // but high-level calls should handle this.
+        return false;
+      }
+      
       return status.isGranted;
     } catch (e) {
       debugPrint('❌ Contacts permission request failed: $e');
       return false;
     }
+  }
+
+  /// Ensure permission is granted, prompting user to open settings if needed
+  static Future<bool> ensurePermission(BuildContext context) async {
+    if (await hasPermission()) return true;
+
+    final status = await Permission.contacts.request();
+    
+    if (status.isGranted) return true;
+    
+    if (status.isPermanentlyDenied) {
+      if (context.mounted) {
+        await _showSettingsDialog(context);
+      }
+      return false;
+    }
+    
+    return false;
+  }
+
+  static Future<void> _showSettingsDialog(BuildContext context) async {
+    return showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Permission Required', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Detailed contacts access is required for this feature. Please enable it in Settings.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              openAppSettings();
+            },
+            child: const Text('Open Settings', style: TextStyle(color: Color(0xFF00FFFF))),
+          ),
+        ],
+      ),
+    );
   }
   
   /// Check if contacts permission has been granted
@@ -163,9 +217,8 @@ class ContactsService {
     String? initialQuery,
   }) async {
     try {
-      if (!await hasPermission()) {
-        final granted = await requestPermission();
-        if (!granted) return null;
+      if (!await ensurePermission(context)) {
+        return null;
       }
       
       final contacts = await getAllContacts();

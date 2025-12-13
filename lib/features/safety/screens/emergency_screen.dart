@@ -275,18 +275,8 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                 onPressed: () async {
                   // Use parentMessenger (captured before dialog) for snackbars
                   try {
-                    // Check permission first
-                    if (!await ContactsService.hasPermission()) {
-                      final granted = await ContactsService.requestPermission();
-                      if (!granted) {
-                        parentMessenger.showSnackBar(
-                          const SnackBar(content: Text('Permission denied. Cannot access contacts.')),
-                        );
-                        return;
-                      }
-                    }
-                    
-                    // Use the contact picker dialog with search
+                    // Use the contact picker dialog (handles permissions automatically)
+                    if (!dialogContext.mounted) return;
                     final contact = await ContactsService.showContactPicker(dialogContext);
                     if (contact != null) {
                       nameController.text = contact['name'] ?? '';

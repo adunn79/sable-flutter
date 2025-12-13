@@ -691,7 +691,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(decelerationRate: ScrollDecelerationRate.fast),
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 40),
         child: Column(
           children: [

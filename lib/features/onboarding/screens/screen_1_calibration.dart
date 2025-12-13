@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
+import 'package:sable/core/ui/safe_snackbar.dart';
 import '../models/user_profile.dart';
 
 class Screen1Calibration extends StatefulWidget {
@@ -132,7 +133,8 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
   void _handleContinue() {
     if (_formKey.currentState?.validate() ?? false) {
       if (_selectedDate == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        SafeSnackBar.show(
+          context,
           SnackBar(
             content: Text('Please select your date of birth',
                 style: GoogleFonts.inter()),

@@ -391,43 +391,69 @@ class VoiceService {
   }
 
   /// Get best voice ID for a specific archetype
-  /// Returns culturally appropriate voices for Imani and Priya
+  /// Returns culturally appropriate voices for all avatars
   String getBestVoiceForArchetype(String archetypeId) {
     switch (archetypeId.toLowerCase()) {
+      // === FEMALE VOICES ===
+      
+      // AELIANA - Flagship female (Gemma - Australian)
+      case 'aeliana':
+        return '319bKIhetA5g6tmywrwj';
+      
       // IMANI - African American female voice
-      // DrRenetta Weaver - African-American professional female
       case 'imani':
-        return 'OYKPYtxX4mV3MAOiYkYc';
+        return 'OYKPYtxX4mV3MAOiYkYc'; // DrRenetta Weaver
       
       // PRIYA - Indian female voice  
-      // Anika - Hindi/Indian female voice
       case 'priya':
-        return 'RABOvaPec1ymXz02oDQi';
+        return 'RABOvaPec1ymXz02oDQi'; // Anika
       
-      // AELIANA - Default flagship female (Rachel)
-      case 'aeliana':
-        return '21m00Tcm4TlvDq8ikWAM';
-      
-      // SABLE - Female (Bella - warm female)
+      // SABLE - Female (Bella - warm professional)
       case 'sable':
         return 'EXAVITQu4vr4xnSDxMaL';
       
-      // MARCO - Hispanic/Latino male with Mexican accent
-      // Latino Gentleman - Spanish/Mexican accent narrator
-      case 'marco':
-        return 'UOsudtiwQVrIvIRyyCHn';
-      
-      // KAI - African American male
-      // Hakeem - African American male narrator
-      case 'kai':
-        return 'nJvj5shg2xu1GKGxqfkE';
-      
-      // ECHO - Neutral (Adam)
+      // ECHO - Neutral/Non-binary (Rachel - neutral female)
       case 'echo':
-        return 'pNInz6obpgDQGcFmaJgB';
+        return '21m00Tcm4TlvDq8ikWAM'; // Rachel
+      
+      // LUNA - Private Space female (mysterious)
+      case 'luna':
+        return 'EXAVITQu4vr4xnSDxMaL'; // Bella - soft/intense
+      
+      // === MALE VOICES ===
+      
+      // MARCO - Hispanic/Latino male
+      case 'marco':
+        return 'UOsudtiwQVrIvIRyyCHn'; // Latino Gentleman
+      
+      // KAI - Calm wise male
+      case 'kai':
+        return 'nJvj5shg2xu1GKGxqfkE'; // Hakeem
+      
+      // ARJUN - Indian male professional
+      case 'arjun':
+        return 'Lp4ZxDjN4b3x2PfE1mHR'; // Raj
+      
+      // RAVI - Indian male warm
+      case 'ravi':
+        return 'K7sT2vM3nQ1pW8xL4jRf'; // Vikram
+      
+      // JAMES - British male refined
+      case 'james':
+        return 'onwK4e9ZLuTAKqWW03F9'; // Daniel
+      
+      // DANTE - Private Space male (passionate)
+      case 'dante':
+        return 'UOsudtiwQVrIvIRyyCHn'; // Latino Gentleman - passionate
+      
+      // === NON-BINARY ===
+      
+      // STORM - Non-binary (Rachel - neutral)
+      case 'storm':
+        return '21m00Tcm4TlvDq8ikWAM'; // Rachel - neutral
       
       default:
-        return '21m00Tcm4TlvDq8ikWAM'; // Default to Rachel
+        return '21m00Tcm4TlvDq8ikWAM'; // Default to Rachel (neutral)
     }
   }
   

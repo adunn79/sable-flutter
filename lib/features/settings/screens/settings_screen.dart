@@ -440,7 +440,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _contextAwareEnabled = prefs.getBool('context_aware_enabled') ?? false;
       
       // Load App Experience Settings
-      _startOnLastTab = prefs.getBool('start_on_last_tab') ?? false;
+      _startOnLastTab = prefs.getBool('start_on_last_tab') ?? true; // Default ON - resume last session
       
       // Load News Settings
       _newsEnabled = stateService.newsEnabled;

@@ -86,7 +86,19 @@ class HelpSupportScreen extends StatelessWidget {
             ),
             _buildFaqItem(
               question: 'Is my data backed up?',
-              answer: 'Your preferences and settings are stored securely. Private Space data is encrypted locally on your device for maximum privacy.',
+              answer: 'Your preferences and settings are stored securely. Private Space data is encrypted locally on your device for maximum privacy. iCloud Backup requires a real device with a signed-in Apple ID (not available in Simulator).',
+            ),
+            _buildFaqItem(
+              question: 'Can I use Siri with Aeliana?',
+              answer: 'Yes! Aeliana supports Siri Shortcuts. Say "Hey Siri, chat with Aeliana" to open chat, "Hey Siri, show my journal" to open journal, "Hey Siri, mood check" for Vital Balance, or "Hey Siri, add a memory" for quick journal entry. You can customize these in Settings.',
+            ),
+            _buildFaqItem(
+              question: 'How do I use voice commands?',
+              answer: 'Tap the microphone button in chat to speak. Long-press the microphone to toggle continuous conversation mode where the AI will listen after each response. You can change voice settings in Settings > Voice.',
+            ),
+            _buildFaqItem(
+              question: 'Why is iCloud Backup showing "Not Available"?',
+              answer: 'iCloud Backup requires a real iPhone/iPad with a signed-in Apple ID. It does not work in the iOS Simulator. On a real device, make sure you are signed into iCloud in Settings.',
             ),
             
             const SizedBox(height: 32),

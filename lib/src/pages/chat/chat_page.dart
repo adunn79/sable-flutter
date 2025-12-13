@@ -259,7 +259,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
     
     // Get Trigger Mode
-    final trigger = prefs.getString('daily_briefing_trigger') ?? 'time';
+    final trigger = prefs.getString('daily_briefing_trigger') ?? 'launch'; // Default: load at launch
     debugPrint('🕒 Checking Daily Briefing Trigger: $trigger');
     
     if (trigger == 'launch') {

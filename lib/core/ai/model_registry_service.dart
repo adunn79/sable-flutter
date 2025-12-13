@@ -151,7 +151,7 @@ class ModelRegistryService {
     // Realist models (xAI Grok)
     RoleMapping(
       role: ModelRole.realist,
-      preferredModels: ['grok-3', 'grok-4', 'grok-4-fast-reasoning', 'grok-2'],
+      preferredModels: ['grok-2-1212', 'grok-3', 'grok-4', 'grok-4-fast-reasoning', 'grok-2'],
       provider: AIProvider.xai,
     ),
     // Long Context models - Gemini 3.0 has 1M+ tokens (whole-corpus ingestion)

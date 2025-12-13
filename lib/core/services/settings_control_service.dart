@@ -287,7 +287,7 @@ class SettingsControlService {
       case 'auto_speak':
         return prefs.getBool('auto_speak') ?? false;
       case 'daily_briefing_trigger':
-        return prefs.getString('daily_briefing_trigger') ?? 'time';
+        return prefs.getString('daily_briefing_trigger') ?? 'launch'; // Default: load at launch
       case 'use_photorealistic_avatars':
         return prefs.getBool('use_photorealistic_avatars') ?? true; // Default ON
       case 'start_on_last_tab':

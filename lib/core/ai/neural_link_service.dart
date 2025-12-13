@@ -57,13 +57,13 @@ class NeuralLinkService {
     // - Claude: haiku (fastest)
     // - Gemini: 2.0-flash (already fast)
     // - GPT: 5.2 (latest, better reasoning)
-    // - Grok: grok-2 (reliable)
+    // - Grok: grok-2-1212 (latest stable Dec 2024)
     // - DeepSeek: deepseek-chat
     final results = await Future.wait([
       _pingProvider('Claude (Personality)', _anthropic, 'claude-3-haiku-20240307'),
       _pingProvider('Gemini (Agentic)', _gemini, 'gemini-2.0-flash'),
       _pingProvider('GPT-5.2 (Logic)', _openai, 'gpt-5.2'),
-      _pingProvider('Grok (Realist)', _grok, 'grok-beta'),
+      _pingProvider('Grok (Realist)', _grok, 'grok-2-1212'),
       _pingProvider('DeepSeek (Coding)', _deepseek, 'deepseek-chat'),
     ]);
 

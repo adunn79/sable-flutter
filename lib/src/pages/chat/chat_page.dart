@@ -1498,16 +1498,20 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
     if (_voiceService == null) return;
 
     if (_isListening) {
-      // Stop listening
+      // Stop listening - also disable continuous mode
       await _voiceService!.stopListening();
       setState(() {
         _isListening = false;
+        _continuousConversation = false; // User manually stopped, disable auto-flow
       });
     } else {
-      // Start listening
+      // Start listening - auto-enable continuous conversation mode
       setState(() {
         _isListening = true;
+        _continuousConversation = true; // Enable auto-flow so conversation continues
       });
+      
+      debugPrint('🎤 Voice input started - continuous conversation ENABLED');
 
       await _voiceService!.startListening(
         onResult: (text) {
@@ -2185,9 +2189,57 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Row(
         children: [
+          // BACK/MENU button - allows returning to onboarding/verify
+          PopupMenuButton<String>(
+            icon: Icon(LucideIcons.menu, color: Colors.white70, size: 22),
+            color: AelianaColors.carbon,
+            onSelected: (value) {
+              if (value == 'onboarding') {
+                // Return to onboarding to verify email/phone
+                context.go('/onboarding');
+              } else if (value == 'settings') {
+                context.go('/settings');
+              } else if (value == 'more') {
+                context.go('/more');
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'onboarding',
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.arrowLeft, color: AelianaColors.plasmaCyan, size: 18),
+                    const SizedBox(width: 12),
+                    Text('Back to Setup', style: GoogleFonts.inter(color: Colors.white)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.settings, color: Colors.white70, size: 18),
+                    const SizedBox(width: 12),
+                    Text('Settings', style: GoogleFonts.inter(color: Colors.white)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'more',
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.moreHorizontal, color: Colors.white70, size: 18),
+                    const SizedBox(width: 12),
+                    Text('More Options', style: GoogleFonts.inter(color: Colors.white)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 4),
           // LEFT: Weather (expanded now with more space)
           Expanded(
             flex: 2,

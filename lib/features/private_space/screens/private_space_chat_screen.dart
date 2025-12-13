@@ -699,9 +699,50 @@ Identify specific user preferences, pronouns, boundaries, or desires mentioned.
       backgroundColor: AelianaColors.obsidian,
       appBar: AppBar(
         backgroundColor: AelianaColors.obsidian,
-        leading: IconButton(
-          icon: Icon(LucideIcons.arrowLeft, color: Colors.white),
-          onPressed: () => context.go('/chat'),
+        leading: PopupMenuButton<String>(
+          icon: Icon(LucideIcons.menu, color: Colors.white70, size: 22),
+          color: AelianaColors.carbon,
+          onSelected: (value) {
+            if (value == 'chat') {
+              context.go('/chat');
+            } else if (value == 'onboarding') {
+              context.go('/onboarding');
+            } else if (value == 'more') {
+              context.go('/more');
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'chat',
+              child: Row(
+                children: [
+                  Icon(LucideIcons.arrowLeft, color: AelianaColors.plasmaCyan, size: 18),
+                  const SizedBox(width: 12),
+                  Text('Back to Chat', style: GoogleFonts.inter(color: Colors.white)),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'onboarding',
+              child: Row(
+                children: [
+                  Icon(LucideIcons.rotateCcw, color: Colors.white70, size: 18),
+                  const SizedBox(width: 12),
+                  Text('Back to Setup', style: GoogleFonts.inter(color: Colors.white)),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'more',
+              child: Row(
+                children: [
+                  Icon(LucideIcons.moreHorizontal, color: Colors.white70, size: 18),
+                  const SizedBox(width: 12),
+                  Text('More Options', style: GoogleFonts.inter(color: Colors.white)),
+                ],
+              ),
+            ),
+          ],
         ),
         title: Row(
           children: [

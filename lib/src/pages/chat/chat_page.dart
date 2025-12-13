@@ -2819,24 +2819,54 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
     ref.read(feedbackServiceProvider).medium();
     if (_localVibeService == null) return;
 
-    // Check if user has location enabled - if not, show interactive prompt
-    if (_currentGpsLocation == null || _currentGpsLocation!.isEmpty) {
-      // Try to fetch silently first
-      final status = await Permission.location.status;
-      if (status.isGranted || status.isLimited) {
+    // Step 1: Check current permission status
+    final permissionStatus = await Permission.location.status;
+    debugPrint('📍 Local Vibe: Permission status = $permissionStatus');
+    
+    // Step 2: If permission is granted, just fetch location silently
+    if (permissionStatus.isGranted || permissionStatus.isLimited) {
+      // Permission already granted - just fetch location
+      if (_currentGpsLocation == null || _currentGpsLocation!.isEmpty) {
         await _fetchCurrentLocation();
       }
+      // Continue to fetch Local Vibe content (even if location fetch failed, we'll try with cached location)
+    } else if (permissionStatus.isDenied) {
+      // Permission denied but not permanently - we can request it
+      debugPrint('📍 Local Vibe: Requesting location permission...');
+      final newStatus = await Permission.location.request();
       
-      // Only show dialog if we STILL don't have location AND permission is not granted
-      // If permission IS granted but location failed (e.g. simulator), don't harass user
-      if ((_currentGpsLocation == null || _currentGpsLocation!.isEmpty) && !status.isGranted && !status.isLimited) {
-        // Check if user dismissed this prompt before
-        final prefs = await SharedPreferences.getInstance();
-        final dontShowLocationPrompt = prefs.getBool('local_vibe_location_dismissed') ?? false;
-        
-        if (!dontShowLocationPrompt && mounted) {
-        // Show interactive location enable dialog
-        final result = await showDialog<String>(
+      if (newStatus.isGranted || newStatus.isLimited) {
+        // Permission just granted - fetch location
+        await _fetchCurrentLocation();
+      } else {
+        // Still denied - show friendly message but don't redirect to Settings
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Location access needed for Local Vibe. Tap to enable.'),
+              backgroundColor: AelianaColors.hyperGold,
+              action: SnackBarAction(
+                label: 'ENABLE',
+                textColor: Colors.black,
+                onPressed: () async {
+                  // Try requesting again
+                  final retryStatus = await Permission.location.request();
+                  if (retryStatus.isGranted || retryStatus.isLimited) {
+                    await _fetchCurrentLocation();
+                    _handleLocalVibe(); // Retry
+                  }
+                },
+              ),
+            ),
+          );
+        }
+        return;
+      }
+    } else if (permissionStatus.isPermanentlyDenied) {
+      // Only for permanently denied - user must go to Settings
+      // But give them a friendly message first
+      if (mounted) {
+        final result = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             backgroundColor: AelianaColors.carbon,
@@ -2846,7 +2876,7 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                 Icon(LucideIcons.mapPin, color: AelianaColors.hyperGold, size: 24),
                 const SizedBox(width: 12),
                 Text(
-                  'Location Needed',
+                  'Location Disabled',
                   style: GoogleFonts.spaceGrotesk(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -2856,28 +2886,21 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
               ],
             ),
             content: Text(
-              'I need your location to find what\'s happening nearby. Would you like to enable location access?',
+              'Location access was previously denied. To use Local Vibe, please enable location in your device settings.',
               style: GoogleFonts.inter(color: AelianaColors.ghost),
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx, 'dismiss'),
+                onPressed: () => Navigator.pop(ctx, false),
                 child: Text(
-                  'Don\'t Show Again',
-                  style: GoogleFonts.inter(color: AelianaColors.ghost, fontSize: 12),
+                  'Not Now',
+                  style: GoogleFonts.inter(color: AelianaColors.ghost),
                 ),
               ),
               TextButton(
-                onPressed: () => Navigator.pop(ctx, 'settings'),
+                onPressed: () => Navigator.pop(ctx, true),
                 child: Text(
-                  'OPEN SETTINGS',
-                  style: GoogleFonts.spaceGrotesk(color: AelianaColors.plasmaCyan),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, 'enable'),
-                child: Text(
-                  'ENABLE',
+                  'Open Settings',
                   style: GoogleFonts.spaceGrotesk(color: AelianaColors.hyperGold, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -2885,42 +2908,11 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
           ),
         );
         
-        if (result == 'dismiss') {
-          await prefs.setBool('local_vibe_location_dismissed', true);
-          if (mounted) {
-            setState(() {
-              _messages.add({
-                'message': 'No problem! You can enable location in Settings > Privacy > Location whenever you change your mind.',
-                'isUser': false
-              });
-            });
-          }
-          return;
-        } else if (result == 'settings') {
+        if (result == true) {
           openAppSettings();
-          return;
-        } else if (result == 'enable') {
-          // Request location permission
-          final status = await Permission.location.request();
-          if (status.isGranted || status.isLimited) {
-            // Try to get location now
-            await _fetchCurrentLocation();
-          } else {
-            if (mounted) {
-              setState(() {
-                _messages.add({
-                  'message': 'Location access was denied. You can enable it later in Settings.',
-                  'isUser': false
-                });
-              });
-            }
-            return;
-          }
-        } else {
-          return; // Dialog dismissed
         }
+        return;
       }
-    }
     }
 
     // Clear any pending calendar flow to prevent hijacking this action

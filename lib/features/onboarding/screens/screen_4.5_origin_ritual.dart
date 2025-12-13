@@ -93,10 +93,9 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
       _isAwakened = true;
     });
 
-    // Flash effect and proceed
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      widget.onComplete();
-    });
+    // Flash effect only - DO NOT auto-navigate
+    // Let user enjoy the card/music and share it
+    // Navigation happens via the newly revealed Continue button
   }
 
   @override
@@ -191,13 +190,44 @@ class _Screen45OriginRitualState extends State<Screen45OriginRitual> with Single
             ),
           ),
           
-          // Full screen flash overlay
-          if (_isAwakened)
-            IgnorePointer(
-              child: Container(
-                color: Colors.white,
-              ).animate().fadeIn(duration: 100.ms).fadeOut(delay: 100.ms, duration: 1000.ms),
-            ),
+          // Full screen flash overlay and Continue button
+        if (_isAwakened)
+          Stack(
+            children: [
+              // White flash that fades out
+              IgnorePointer(
+                child: Container(
+                  color: Colors.white,
+                ).animate().fadeIn(duration: 100.ms).fadeOut(delay: 200.ms, duration: 2000.ms),
+              ),
+              
+              // Continue Button (appears after flash)
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: 50,
+                child: ElevatedButton(
+                  onPressed: widget.onComplete,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AelianaColors.hyperGold,
+                    foregroundColor: AelianaColors.obsidian,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    elevation: 10,
+                    shadowColor: AelianaColors.hyperGold.withOpacity(0.5),
+                  ),
+                  child: Text(
+                    'ENTER AELIANA',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ).animate(delay: 1500.ms).fadeIn(duration: 800.ms).slideY(begin: 0.2, end: 0),
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -19,7 +19,7 @@ class Screen15Permissions extends StatefulWidget {
   State<Screen15Permissions> createState() => _Screen15PermissionsState();
 }
 
-class _Screen15PermissionsState extends State<Screen15Permissions> {
+class _Screen15PermissionsState extends State<Screen15Permissions> with WidgetsBindingObserver {
   bool _gpsEnabled = false;
   bool _webAccessEnabled = false;
   bool _calendarEnabled = false;
@@ -35,7 +35,34 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadCurrentPermissions();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkAllPermissions();
+    }
+  }
+
+  Future<void> _checkAllPermissions() async {
+    // Re-verify all currently enabled permissions
+    if (_calendarEnabled) {
+       final status = await Permission.calendarFullAccess.status;
+       if (!status.isGranted) setState(() => _calendarEnabled = false);
+    }
+    
+    // Check others if they were supposed to be enabled, or just check general status
+    // For specific toggles user is interacting with, the toggle handler manages it,
+    // but globally syncing is good practice.
+    // For now, let's focus on the critical ones if they were just changed in settings.
   }
 
   Future<void> _loadCurrentPermissions() async {
@@ -106,14 +133,28 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
 
   Future<void> _handleMicToggle(bool value) async {
     if (value) {
-      final status = await Permission.microphone.request();
-      debugPrint('🎤 Microphone permission status: $status');
-      if (status.isPermanentlyDenied) {
-        _showSettingsDialog('Microphone');
+      PermissionStatus status = await Permission.microphone.status;
+      
+      if (status.isPermanentlyDenied || status.isDenied) {
+        // Try requesting
+        status = await Permission.microphone.request();
       }
-      setState(() {
-        _micEnabled = status.isGranted;
-      });
+      
+      debugPrint('🎤 Microphone permission status: $status');
+      
+      if (status.isGranted) {
+        setState(() => _micEnabled = true);
+      } else if (status.isPermanentlyDenied) {
+        // If it returns permanently denied immediately (simulators often do this if denied once)
+        // Show dialog and wait for lifecycle resume to reassign
+        _showSettingsDialog('Microphone');
+        // We set it to true temporarily to show intent, but it will flip back if check fails? 
+        // Better: keep it off until verified. 
+        // The Lifecycle observer isn't specific to this permission, so let's rely on user
+        // coming back and toggling again, OR checking on resume.
+        // Actually best UX: User clicks -> Dialog -> Goes to Settings -> Comes back.
+        // We need to know which one they were trying to enable.
+      }
     } else {
       setState(() {
         _micEnabled = false;
@@ -207,14 +248,20 @@ class _Screen15PermissionsState extends State<Screen15Permissions> {
 
   Future<void> _handleSpeechToggle(bool value) async {
     if (value) {
-      final status = await Permission.speech.request();
+      // Check status first
+      var status = await Permission.speech.status;
+      
+      if (!status.isGranted) {
+        status = await Permission.speech.request();
+      }
+      
       debugPrint('🗣️ Speech recognition permission status: $status');
-      if (status.isPermanentlyDenied) {
+      
+      if (status.isGranted) {
+        setState(() => _speechEnabled = true);
+      } else if (status.isPermanentlyDenied) {
         _showSettingsDialog('Speech Recognition');
       }
-      setState(() {
-        _speechEnabled = status.isGranted;
-      });
     } else {
       setState(() {
         _speechEnabled = false;

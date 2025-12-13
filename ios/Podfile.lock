@@ -1428,6 +1428,8 @@ PODS:
   - gRPC-Core/Interface (1.69.0)
   - gRPC-Core/Privacy (1.69.0)
   - GTMSessionFetcher/Core (3.5.0)
+  - health (13.1.4):
+    - Flutter
   - image_picker_ios (0.0.1):
     - Flutter
   - in_app_purchase_storekit (0.0.1):
@@ -1518,6 +1520,7 @@ DEPENDENCIES:
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
   - google_mlkit_commons (from `.symlinks/plugins/google_mlkit_commons/ios`)
   - google_mlkit_text_recognition (from `.symlinks/plugins/google_mlkit_text_recognition/ios`)
+  - health (from `.symlinks/plugins/health/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - in_app_purchase_storekit (from `.symlinks/plugins/in_app_purchase_storekit/darwin`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
@@ -1607,6 +1610,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/google_mlkit_commons/ios"
   google_mlkit_text_recognition:
     :path: ".symlinks/plugins/google_mlkit_text_recognition/ios"
+  health:
+    :path: ".symlinks/plugins/health/ios"
   image_picker_ios:
     :path: ".symlinks/plugins/image_picker_ios/ios"
   in_app_purchase_storekit:
@@ -1683,6 +1688,7 @@ SPEC CHECKSUMS:
   "gRPC-C++": cc207623316fb041a7a3e774c252cf68a058b9e8
   gRPC-Core: 860978b7db482de8b4f5e10677216309b5ff6330
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
+  health: 32d2fbc7f26f9a2388d1a514ce168adbfa5bda65
   image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326
   in_app_purchase_storekit: 22cca7d08eebca9babdf4d07d0baccb73325d3c8
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e

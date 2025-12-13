@@ -218,6 +218,7 @@ class _Screen1CalibrationState extends State<Screen1Calibration> {
                   focusNode: _nameFocusNode,
                   autofocus: true,
                   keyboardType: TextInputType.name,
+                  textCapitalization: TextCapitalization.words, // Auto-capitalize names
                   textInputAction: TextInputAction.next,
                   enableInteractiveSelection: true,
                   style: GoogleFonts.inter(color: AelianaColors.stardust),

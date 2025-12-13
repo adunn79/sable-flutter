@@ -235,6 +235,17 @@ class SettingsControlService {
       type: SettingType.toggle,
       keywords: ['alarm', 'next', 'upcoming'],
     ),
+
+    // QUOTES & PERSONALITY
+    const SettingDefinition(
+      key: 'dark_humor_enabled',
+      title: 'Dark Humor Quotes',
+      subtitle: 'Show sardonic observations in Chat/Journal (NEVER in Wellness)',
+      section: 'QUOTES & PERSONALITY',
+      type: SettingType.toggle,
+      keywords: ['demotivator', 'dark', 'sardonic', 'sable', 'humor', 'funny', 'sarcasm'],
+      aiControllable: true,
+    ),
   ];
 
   /// Get all setting definitions for search
@@ -292,6 +303,8 @@ class SettingsControlService {
         return prefs.getBool('use_photorealistic_avatars') ?? true; // Default ON
       case 'start_on_last_tab':
         return prefs.getBool('start_on_last_tab') ?? true;
+      case 'dark_humor_enabled':
+        return prefs.getBool('dark_humor_enabled') ?? false; // Default OFF - never show in Vital Balance
       default:
         return null;
     }
@@ -363,6 +376,9 @@ class SettingsControlService {
           break;
         case 'use_photorealistic_avatars':
           await prefs.setBool('use_photorealistic_avatars', value as bool);
+          break;
+        case 'dark_humor_enabled':
+          await prefs.setBool('dark_humor_enabled', value as bool);
           break;
         default:
           debugPrint('Unhandled setting update: $key');

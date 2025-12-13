@@ -106,7 +106,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             if (!isChatPage && !isSettingsPage && !isJournalPage && !isMorePage && !isPrivateSpace && !isOnboarding && !isClockMode && !location.startsWith('/vital-balance') && !location.startsWith('/legal'))
               Positioned(
                 top: MediaQuery.of(context).padding.top + 8,
-                left: 16,
+                right: 16, // Moved to right side for better display
                 child: const SafeArea(
                   child: WeatherWidget(),
                 ),

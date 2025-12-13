@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sable/core/contacts/contacts_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EmergencyScreen extends ConsumerStatefulWidget {
   const EmergencyScreen({super.key});
@@ -19,6 +20,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
   bool _isSosActive = false;
   bool _shareLocation = false;
   List<Map<String, String>> _emergencyContacts = [];
+  bool _gpsPopupDismissed = false;
 
   final List<Map<String, String>> _resources = [
     {
@@ -82,6 +84,123 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
       'action': 'tel:911'
     }
   ];
+
+  @override  
+  void initState() {
+    super.initState();
+    _loadSettings();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showGpsPopupIfNeeded());
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _shareLocation = prefs.getBool('emergency_share_location') ?? false;
+      _gpsPopupDismissed = prefs.getBool('emergency_gps_popup_dismissed') ?? false;
+    });
+  }
+
+  Future<void> _showGpsPopupIfNeeded() async {
+    if (_gpsPopupDismissed || _shareLocation) return;
+    
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AelianaColors.carbon,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(LucideIcons.mapPin, color: Colors.green[400], size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Enable Location Sharing?',
+                style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'In an emergency, sharing your GPS location with contacts could save your life.',
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 14, height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(LucideIcons.alertTriangle, color: Colors.orange[300], size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'During a crisis, you may not remember to turn this on. Enabling it now ensures your contacts can find you.',
+                      style: GoogleFonts.inter(color: Colors.orange[100], fontSize: 12, height: 1.3),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(LucideIcons.shieldCheck, color: Colors.green[400], size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'This does NOT allow any random tracking or monitoring. Location is only shared when YOU trigger an SOS.',
+                    style: GoogleFonts.inter(color: Colors.white70, fontSize: 11, height: 1.3),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('emergency_gps_popup_dismissed', true);
+              setState(() => _gpsPopupDismissed = true);
+              if (mounted) Navigator.pop(ctx);
+            },
+            child: Text("Don't remind me", style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Maybe later', style: GoogleFonts.inter(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('emergency_share_location', true);
+              await prefs.setBool('emergency_gps_popup_dismissed', true);
+              setState(() {
+                _shareLocation = true;
+                _gpsPopupDismissed = true;
+              });
+              if (mounted) Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Enable Location', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _makeCall(String uriString) async {
     final Uri launchUri = Uri.parse(uriString);
@@ -373,10 +492,74 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _buildSectionHeader('CRISIS RESOURCES'),
-                ..._resources.map((resource) => _buildResourceTile(resource)),
+                // SOS SETTINGS AT TOP (per user request)
+                _buildSectionHeader('SOS SETTINGS'),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AelianaColors.carbon,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _shareLocation ? Colors.green.withOpacity(0.5) : Colors.white12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Share GPS Location', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Include your coordinates when notifying contacts',
+                                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: _shareLocation,
+                            onChanged: (val) async {
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.setBool('emergency_share_location', val);
+                              setState(() => _shareLocation = val);
+                            },
+                            activeColor: Colors.green,
+                            activeTrackColor: Colors.green.withOpacity(0.3),
+                          ),
+                        ],
+                      ),
+                      if (!_shareLocation) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(LucideIcons.alertTriangle, color: Colors.orange[300], size: 14),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'In crisis, you may forget to enable this. Consider turning it on now.',
+                                  style: GoogleFonts.inter(color: Colors.orange[200], fontSize: 11),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 _buildSectionHeader('EMERGENCY CONTACTS'),
                 if (_emergencyContacts.isEmpty)
                   Padding(
@@ -431,17 +614,8 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                 ),
                 
                 const SizedBox(height: 24),
-                _buildSectionHeader('SOS SETTINGS'),
-                SwitchListTile(
-                  value: _shareLocation,
-                  onChanged: (val) => setState(() => _shareLocation = val),
-                  activeColor: Colors.red,
-                  title: Text('Share GPS Location', style: GoogleFonts.inter(color: Colors.white)),
-                  subtitle: Text(
-                    'Include your coordinates when notifying contacts',
-                    style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
-                  ),
-                ),
+                _buildSectionHeader('CRISIS RESOURCES'),
+                ..._resources.map((resource) => _buildResourceTile(resource)),
               ],
             ),
           ),

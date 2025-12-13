@@ -4559,18 +4559,24 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   late TextEditingController _weightController;
   late TextEditingController _heightController;
   late TextEditingController _raceController;
+  late TextEditingController _dobController; // Text-based DOB entry like onboarding
   String? _sex;
   String? _smoking;
   String? _drinking;
+  String? _dobError;
 
   @override
   void initState() {
     super.initState();
-    // Parse existing DOB if available
+    _dobController = TextEditingController();
+    _loadDobFromOnboarding();
+    
+    // Parse existing profile DOB if available
     final dobString = widget.currentProfile['dob'];
     if (dobString != null && dobString.isNotEmpty) {
       try {
         _dob = DateTime.parse(dobString);
+        _dobController.text = '${_dob!.month.toString().padLeft(2, '0')}/${_dob!.day.toString().padLeft(2, '0')}/${_dob!.year}';
       } catch (_) {
         _dob = null;
       }
@@ -4583,11 +4589,94 @@ class _ProfileDialogState extends State<_ProfileDialog> {
     _drinking = widget.currentProfile['drinking'];
   }
   
+  Future<void> _loadDobFromOnboarding() async {
+    // Auto-populate DOB from onboarding if not already set
+    if (_dob != null) return;
+    
+    final prefs = await SharedPreferences.getInstance();
+    final onboardingDob = prefs.getString('user_dob');
+    if (onboardingDob != null && onboardingDob.isNotEmpty && mounted) {
+      try {
+        final parsed = DateTime.parse(onboardingDob);
+        setState(() {
+          _dob = parsed;
+          _dobController.text = '${parsed.month.toString().padLeft(2, '0')}/${parsed.day.toString().padLeft(2, '0')}/${parsed.year}';
+        });
+      } catch (_) {}
+    }
+  }
+  
+  /// Parse date from text input (MM/DD/YY or MM/DD/YYYY format) like onboarding
+  void _parseDate(String text) {
+    setState(() {
+      _dobError = null;
+      _dob = null;
+    });
+    
+    if (text.isEmpty) return;
+    
+    final cleanText = text.replaceAll(RegExp(r'[^0-9]'), '');
+    
+    if (cleanText.length >= 6) {
+      try {
+        final month = int.parse(cleanText.substring(0, 2));
+        final day = int.parse(cleanText.substring(2, 4));
+        int year;
+        
+        if (cleanText.length >= 8) {
+          year = int.parse(cleanText.substring(4, 8));
+        } else {
+          year = int.parse(cleanText.substring(4, 6));
+          year = year > 30 ? 1900 + year : 2000 + year;
+        }
+        
+        if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1920 && year <= DateTime.now().year) {
+          final parsed = DateTime(year, month, day);
+          
+          if (parsed.isAfter(DateTime.now())) {
+            setState(() => _dobError = 'Date cannot be in the future');
+            return;
+          }
+          
+          setState(() {
+            _dob = parsed;
+            _dobError = null;
+          });
+        } else {
+          setState(() => _dobError = 'Invalid date');
+        }
+      } catch (e) {
+        setState(() => _dobError = 'Invalid date format');
+      }
+    }
+  }
+  
+  /// Format date controller text with slashes as user types
+  void _formatDateInput(String text) {
+    final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+    
+    String formatted = '';
+    for (int i = 0; i < digits.length && i < 8; i++) {
+      if (i == 2 || i == 4) formatted += '/';
+      formatted += digits[i];
+    }
+    
+    if (formatted != text) {
+      _dobController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+    
+    _parseDate(formatted);
+  }
+  
   @override
   void dispose() {
     _weightController.dispose();
     _heightController.dispose();
     _raceController.dispose();
+    _dobController.dispose();
     super.dispose();
   }
   
@@ -4654,8 +4743,8 @@ class _ProfileDialogState extends State<_ProfileDialog> {
             ),
             const SizedBox(height: 24),
             
-            // Date of Birth picker
-            _buildDateField('Date of Birth', _dob, age, _selectDob),
+            // Date of Birth - text-based entry like onboarding
+            _buildDobTextField(),
             const SizedBox(height: 16),
             
             _buildDropdown('Sex', ['Female', 'Male', 'Other'], _sex, (v) => setState(() => _sex = v)),
@@ -4697,6 +4786,59 @@ class _ProfileDialogState extends State<_ProfileDialog> {
           ],
         ),
       ),
+    );
+  }
+  
+  /// Build a text-based DOB field like the onboarding screen
+  Widget _buildDobTextField() {
+    final age = _calculateAge();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('Date of Birth', style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+            if (age != null) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF5DD9C1).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text('Age: $age', style: GoogleFonts.inter(color: const Color(0xFF5DD9C1), fontSize: 11, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _dobController,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: Colors.white),
+          onChanged: _formatDateInput,
+          decoration: InputDecoration(
+            hintText: 'MM/DD/YYYY',
+            hintStyle: const TextStyle(color: Colors.white24),
+            filled: true,
+            fillColor: Colors.black26,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            prefixIcon: const Icon(LucideIcons.calendar, color: Color(0xFF5DD9C1), size: 18),
+            errorText: _dobError,
+            errorStyle: const TextStyle(color: Colors.red, fontSize: 11),
+            suffixIcon: _dob != null 
+                ? const Icon(LucideIcons.check, color: Color(0xFF5DD9C1), size: 16)
+                : null,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Auto-populated from your profile if set during onboarding',
+          style: GoogleFonts.inter(color: Colors.white30, fontSize: 10, fontStyle: FontStyle.italic),
+        ),
+      ],
     );
   }
   

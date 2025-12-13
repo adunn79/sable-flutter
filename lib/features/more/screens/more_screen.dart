@@ -131,7 +131,7 @@ class _MoreScreenState extends State<MoreScreen> {
           // iCloud Recovery - Prominent for returning users
           _buildMenuItem(
             context,
-            icon: LucideIcons.cloudDownload,
+            icon: LucideIcons.cloudOff,  // Using cloudOff as backup/restore icon
             title: 'Restore from iCloud',
             subtitle: 'Recover your data from backup',
             onTap: () => _showRestoreDialog(context),
@@ -544,9 +544,9 @@ User: $_userName
   /// Show iCloud restore dialog
   Future<void> _showRestoreDialog(BuildContext context) async {
     // Check if iCloud is available
-    final isAvailable = await iCloudBackupService.isAvailable();
-    final statusMessage = await iCloudBackupService.getAccountStatusMessage();
-    final lastBackup = await iCloudBackupService.getLastBackupTime();
+    final isAvailable = await iCloudBackupService.instance.isAvailable();
+    final statusMessage = await iCloudBackupService.instance.getAccountStatusMessage();
+    final lastBackup = await iCloudBackupService.instance.getLastBackupTime();
     
     if (!context.mounted) return;
     
@@ -644,7 +644,7 @@ User: $_userName
     );
     
     try {
-      final result = await iCloudBackupService.performFullRestore();
+      final result = await iCloudBackupService.instance.performFullRestore();
       if (context.mounted) Navigator.pop(context); // Close progress
       
       if (context.mounted) {
@@ -652,7 +652,7 @@ User: $_userName
           SnackBar(
             content: Text(result.success 
               ? '✅ Restore complete! Restart app to see changes.'
-              : '❌ Restore failed: ${result.message}'),
+              : '❌ Restore failed: ${result.error}'),
             duration: const Duration(seconds: 4),
           ),
         );

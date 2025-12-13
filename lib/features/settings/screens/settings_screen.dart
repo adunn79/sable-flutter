@@ -83,6 +83,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _appleIntelligenceEnabled = false;
   bool _contextAwareEnabled = false; // Default OFF
   bool _zodiacEnabled = false; // Default OFF
+  bool _darkHumorEnabled = false; // Default OFF - sardonic quotes in Chat/Journal only
 
   // Feedback Settings
   bool _hapticsEnabled = true;
@@ -139,6 +140,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await stateService.setZodiacEnabled(value);
     setState(() => _zodiacEnabled = value);
   }
+
+  Future<void> _toggleDarkHumor(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('dark_humor_enabled', value);
+    setState(() => _darkHumorEnabled = value);
+  }
+
   Future<void> _toggleContextAware(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('context_aware_enabled', value);
@@ -471,6 +479,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _selectedArchetypeId = stateService.selectedArchetypeId;
       _companionAge = stateService.companionAge;
       _zodiacEnabled = stateService.zodiacEnabled;
+      _darkHumorEnabled = prefs.getBool('dark_humor_enabled') ?? false; // Default OFF
       
       // Load user photo path
       _userPhotoUrl = prefs.getString('user_photo_path');

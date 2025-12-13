@@ -10,6 +10,7 @@ import 'screens/screen_3_archetype.dart';
 import 'screens/screen_4_customize.dart';
 import 'screens/screen_4.5_origin_ritual.dart';
 import 'screens/screen_recovery_setup.dart';
+import 'package:sable/core/voice/voice_service.dart';
 
 class OnboardingFlow extends StatefulWidget {
   final VoidCallback onComplete;
@@ -75,14 +76,15 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     final stateService = await OnboardingStateService.create();
     
     if (_userProfile != null) {
-      // Auto-select voice based on origin if not already selected
-      String? voiceToSave = _avatarConfig?.selectedVoiceId;
-      if (voiceToSave == null && _avatarConfig?.origin != null) {
-        voiceToSave = OnboardingStateService.getDefaultVoiceForOrigin(
-          _avatarConfig!.origin,
-          _avatarConfig!.gender,
-        );
-      }
+      // Use archetype-specific voice (not origin/location based)
+      final voiceService = VoiceService();
+      await voiceService.initialize();
+      
+      // Get the archetype's proper voice (culturally appropriate)
+      final archetypeId = _selectedArchetype ?? 'aeliana';
+      final voiceToSave = voiceService.getBestVoiceForArchetype(archetypeId);
+      await voiceService.setVoice(voiceToSave);
+      debugPrint('🎙️ Onboarding: Set voice $voiceToSave for archetype $archetypeId');
       
       await stateService.saveUserProfile(
         name: _userProfile!.name,

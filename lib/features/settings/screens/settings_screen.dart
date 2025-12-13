@@ -4117,39 +4117,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         await stateService.setArchetypeId(archetypeId);
         
         // Handle voice switching based on gender change
-        // Male archetypes: Kai, Marco
-        final maleArchetypes = ['kai', 'marco'];
+        // Male archetypes: Kai, Marco, Arjun, Ravi, James, Dante
+        final maleArchetypes = ['kai', 'marco', 'arjun', 'ravi', 'james', 'dante'];
         final wasMale = maleArchetypes.contains(previousArchetype);
         final isMale = maleArchetypes.contains(archetypeId.toLowerCase());
         
-        if (wasMale && !isMale) {
-          // Switching FROM male to female
-          final aiOrigin = stateService.aiOrigin ?? 'United States';
-          final femaleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'female');
-          if (femaleVoice != null) {
-            await _voiceService.setVoice(femaleVoice);
-            setState(() {
-              _selectedArchetypeId = archetypeId;
-              _selectedVoiceId = femaleVoice;
-            });
-            return;
-          }
-        } else if (!wasMale && isMale) {
-          // Switching TO male from female
-          final aiOrigin = stateService.aiOrigin ?? 'United States';
-          final maleVoice = OnboardingStateService.getDefaultVoiceForOrigin(aiOrigin, 'male');
-          if (maleVoice != null) {
-            await _voiceService.setVoice(maleVoice);
-            setState(() {
-              _selectedArchetypeId = archetypeId;
-              _selectedVoiceId = maleVoice;
-            });
-            return;
-          }
-        }
+        // Always use archetype-specific voice (not location-based)
+        final bestVoice = _voiceService.getBestVoiceForArchetype(archetypeId);
+        await _voiceService.setVoice(bestVoice);
+        debugPrint('🎙️ Archetype $archetypeId → Voice $bestVoice');
         
         setState(() {
           _selectedArchetypeId = archetypeId;
+          _selectedVoiceId = bestVoice;
         });
       },
       child: Container(

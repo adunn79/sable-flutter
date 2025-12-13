@@ -19,8 +19,8 @@ Future<void> setUpTestEnvironment() async {
   
   TestWidgetsFlutterBinding.ensureInitialized();
   
-  // Disable Google Fonts network fetching in tests (prevents network errors)
-  GoogleFonts.config.allowRuntimeFetching = false;
+  // Enable Google Fonts network fetching in tests (prevents font not found errors)
+  GoogleFonts.config.allowRuntimeFetching = true;
   
   // Set up path provider mock for Hive
   PathProviderPlatform.instance = FakePathProviderPlatform();

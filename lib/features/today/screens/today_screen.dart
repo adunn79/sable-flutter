@@ -683,54 +683,63 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
         labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12),
         tabs: [
           Tab(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Events'),
-                const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: () => _showInfoDialog(
-                    context, 
-                    'Events', 
-                    'Your daily schedule from your connected calendars. Tap + to add new events.',
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Events'),
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => _showInfoDialog(
+                      context, 
+                      'Events', 
+                      'Your daily schedule from your connected calendars. Tap + to add new events.',
+                    ),
+                    child: Icon(LucideIcons.info, size: 10, color: AelianaColors.ghost),
                   ),
-                  child: Icon(LucideIcons.info, size: 10, color: AelianaColors.ghost),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           Tab(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Tasks'),
-                const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: () => _showInfoDialog(
-                    context, 
-                    'Tasks', 
-                    'Reminders and to-dos from your Reminders app. Keep track of what needs to be done.',
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Tasks'),
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => _showInfoDialog(
+                      context, 
+                      'Tasks', 
+                      'Reminders and to-dos from your Reminders app. Keep track of what needs to be done.',
+                    ),
+                    child: Icon(LucideIcons.info, size: 10, color: AelianaColors.ghost),
                   ),
-                  child: Icon(LucideIcons.info, size: 10, color: AelianaColors.ghost),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           Tab(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Vibe'),
-                const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: () => _showInfoDialog(
-                    context, 
-                    'Vibe Layers', 
-                    'Contextual information to help you tune into the day: Moon phases, weather, holidays, sports, and more.',
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Vibe'),
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => _showInfoDialog(
+                      context, 
+                      'Vibe Layers', 
+                      'Contextual information to help you tune into the day: Moon phases, weather, holidays, sports, and more.',
+                    ),
+                    child: Icon(LucideIcons.info, size: 10, color: AelianaColors.ghost),
                   ),
-                  child: Icon(LucideIcons.info, size: 10, color: AelianaColors.ghost),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -1987,63 +1996,66 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
   }
 
   Widget _buildPermissionRequest() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AelianaColors.hyperGold.withOpacity(0.2),
-                    Colors.transparent,
-                  ],
+    return SingleChildScrollView(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AelianaColors.hyperGold.withOpacity(0.2),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+                child: Icon(
+                  LucideIcons.calendar,
+                  size: 64,
+                  color: AelianaColors.hyperGold,
                 ),
               ),
-              child: Icon(
-                LucideIcons.calendar,
-                size: 64,
-                color: AelianaColors.hyperGold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Calendar Access',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Allow Aeliana to access your calendar to show your schedule and help manage your day.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: AelianaColors.ghost,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: _requestPermission,
-              icon: const Icon(LucideIcons.unlock, size: 18),
-              label: const Text('Grant Access'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AelianaColors.hyperGold,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 24),
+              Text(
+                'Calendar Access',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                'Allow Aeliana to access your calendar to show your schedule and help manage your day.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AelianaColors.ghost,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: _requestPermission,
+                icon: const Icon(LucideIcons.unlock, size: 18),
+                label: const Text('Grant Access'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AelianaColors.hyperGold,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

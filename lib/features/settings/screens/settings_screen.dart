@@ -2113,10 +2113,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 color: available ? Colors.green : Colors.red,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Text(
-                              available ? 'Connected' : 'Not Available',
-                              style: GoogleFonts.inter(color: available ? Colors.green : Colors.red, fontSize: 13),
+                              available ? 'OK' : 'N/A',
+                              style: GoogleFonts.inter(color: available ? Colors.green : Colors.red, fontSize: 12),
                             ),
                           ],
                         );

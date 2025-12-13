@@ -1326,14 +1326,19 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
                       ),
                       const SizedBox(width: 12),
                       // Title
-                      Text('Vital Balance', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                      Expanded(
+                        child: Text('Vital Balance', 
+                          style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       
-                      const Spacer(),
                       const SizedBox(width: 8),
 
                       // Weather Widget (Right Aligned - Persistent)
-                      Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(24),
@@ -1342,20 +1347,29 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(LucideIcons.cloudSun, color: _accentTeal, size: 24),
-                              const SizedBox(width: 8),
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text((_weatherTemp ?? '--').split(' ').first, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                                  if (_weatherHighLow != null && _weatherHighLow!.isNotEmpty)
-                                    Text(_weatherHighLow!, style: GoogleFonts.inter(color: Colors.white70, fontSize: 10)),
-                                ],
+                              const Icon(LucideIcons.cloudSun, color: _accentTeal, size: 20),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text((_weatherTemp ?? '--').split(' ').first, 
+                                      style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (_weatherHighLow != null && _weatherHighLow!.isNotEmpty)
+                                      Text(_weatherHighLow!, 
+                                        style: GoogleFonts.inter(color: Colors.white70, fontSize: 9),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
                         ),
+                      ),
                     ],
                   ),
                 ),
@@ -1425,71 +1439,73 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
       children: [
         // Section Header with Add Button
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildSectionHeader('Your Vitals', LucideIcons.activity),
-            Row(
-              children: [
-                // Edit Focus Button
-                Tooltip(
-                  message: 'Edit which wellness items appear in your daily focus list',
-                  preferBelow: false,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E2D3D),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  textStyle: const TextStyle(color: Colors.white, fontSize: 12),
-                  child: GestureDetector(
-                    onTap: _showEditFocusItemsDialog,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _accentLavender.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: _accentLavender.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(LucideIcons.settings2, color: _accentLavender, size: 16),
-                          const SizedBox(width: 6),
-                          Text('Edit', style: GoogleFonts.inter(color: _accentLavender, fontSize: 14, fontWeight: FontWeight.w600)),
-                        ],
+            Expanded(child: _buildSectionHeader('Your Vitals', LucideIcons.activity)),
+            Flexible(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Edit Focus Button
+                  Tooltip(
+                    message: 'Edit which wellness items appear in your daily focus list',
+                    preferBelow: false,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E2D3D),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    textStyle: const TextStyle(color: Colors.white, fontSize: 12),
+                    child: GestureDetector(
+                      onTap: _showEditFocusItemsDialog,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _accentLavender.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _accentLavender.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.settings2, color: _accentLavender, size: 14),
+                            const SizedBox(width: 4),
+                            Text('Edit', style: GoogleFonts.inter(color: _accentLavender, fontSize: 12, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                // Add Metric Button
-                Tooltip(
-                  message: 'Track a new health metric like blood pressure, glucose, cholesterol, etc.',
-                  preferBelow: false,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E2D3D),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  textStyle: const TextStyle(color: Colors.white, fontSize: 12),
-                  child: GestureDetector(
-                    onTap: _showAddMetricDialog,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _accentTeal.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: _accentTeal.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(LucideIcons.plus, color: _accentTeal, size: 16),
-                          const SizedBox(width: 6),
-                          Text('Add', style: GoogleFonts.inter(color: _accentTeal, fontSize: 14, fontWeight: FontWeight.w600)),
-                        ],
+                  const SizedBox(width: 8),
+                  // Add Metric Button
+                  Tooltip(
+                    message: 'Track a new health metric like blood pressure, glucose, cholesterol, etc.',
+                    preferBelow: false,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E2D3D),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    textStyle: const TextStyle(color: Colors.white, fontSize: 12),
+                    child: GestureDetector(
+                      onTap: _showAddMetricDialog,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _accentTeal.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _accentTeal.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.plus, color: _accentTeal, size: 14),
+                            const SizedBox(width: 4),
+                            Text('Add', style: GoogleFonts.inter(color: _accentTeal, fontSize: 12, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -3968,8 +3984,12 @@ Keep responses to 2-3 sentences unless proposing a goal. Be warm, personal, and 
             children: [
               const Icon(LucideIcons.smile, color: _accentTeal, size: 20),
               const SizedBox(width: 10),
-              Text('How are you feeling?', 
-                style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+              Expanded(
+                child: Text('How are you feeling?', 
+                  style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),

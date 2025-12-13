@@ -105,14 +105,17 @@ class SettingsTile extends StatelessWidget {
               
               // Trailing
               if (trailing != null) 
-                trailing!
+                Flexible(child: trailing!)
               else ...[
                 if (value != null)
-                  Text(
-                    value!,
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      color: AelianaColors.ghost.withOpacity(0.8),
+                  Flexible(
+                    child: Text(
+                      value!,
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        color: AelianaColors.ghost.withOpacity(0.8),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 if (showChevron && onTap != null) ...[

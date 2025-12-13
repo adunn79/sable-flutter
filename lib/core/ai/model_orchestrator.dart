@@ -52,7 +52,7 @@ class ModelConfig {
     this.personalityModelId = 'claude-3-haiku-20240307',
     this.agenticModelId = 'o1',
     this.heavyLiftingModelId = 'gpt-4o-mini',
-    this.realistModelId = 'grok-2-1212', // Latest stable Grok model (Dec 2024)
+    this.realistModelId = 'grok-3', // Updated: grok-2-1212 deprecated Sep 2025
     this.codingModelId = 'deepseek-chat',
     this.fastRoutingModelId = 'gemini-2.0-flash',
     this.fastHarmonizerModelId = 'gemini-2.0-flash',

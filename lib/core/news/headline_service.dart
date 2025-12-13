@@ -105,7 +105,7 @@ Example: "Major earthquake strikes Japan, triggering tsunami warnings"''',
 - Focus on truly significant global events
 - Never make up news
 - Keep headlines short and impactful''',
-        modelId: 'grok-beta',
+        modelId: 'grok-3', // Updated: grok-beta deprecated
       );
       
       // Clean up the response

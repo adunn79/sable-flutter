@@ -14,6 +14,13 @@ enum MusicSource {
   none,
 }
 
+/// Repeat mode for playback
+enum RepeatMode {
+  off,    // No repeat
+  track,  // Repeat current track
+  context // Repeat playlist/album
+}
+
 /// Unified track info model that works with any source
 class TrackInfo {
   final String name;
@@ -106,6 +113,10 @@ class UnifiedMusicService extends ChangeNotifier {
   bool _isAppleMusicConnected = false;
   Uint8List? _currentArtwork;
   
+  // Shuffle & Repeat state
+  bool _shuffleEnabled = false;
+  RepeatMode _repeatMode = RepeatMode.off;
+  
   StreamSubscription? _spotifyStateSubscription;
   Timer? _pollingTimer;
   
@@ -117,6 +128,8 @@ class UnifiedMusicService extends ChangeNotifier {
   bool get isAppleMusicConnected => _isAppleMusicConnected;
   bool get hasMusicPlaying => _currentTrack != null && _isPlaying;
   Uint8List? get currentArtwork => _currentArtwork;
+  bool get shuffleEnabled => _shuffleEnabled;
+  RepeatMode get repeatMode => _repeatMode;
   
   /// Check if any music service is connected
   bool get hasActiveConnection => _isSpotifyConnected || _isAppleMusicConnected;
@@ -322,6 +335,69 @@ class UnifiedMusicService extends ChangeNotifier {
     if (_currentTrack?.durationMs == null) return false;
     final positionMs = (_currentTrack!.durationMs! * percent).toInt();
     return await seekTo(positionMs);
+  }
+  
+  /// Toggle shuffle mode
+  Future<void> toggleShuffle() async {
+    _shuffleEnabled = !_shuffleEnabled;
+    notifyListeners();
+    
+    // Apply to active source
+    switch (_activeSource) {
+      case MusicSource.spotify:
+        try {
+          await _spotify.setShuffle(_shuffleEnabled);
+          debugPrint('🔀 Shuffle ${_shuffleEnabled ? "enabled" : "disabled"}');
+        } catch (e) {
+          debugPrint('⚠️ Shuffle toggle failed: $e');
+        }
+        break;
+      default:
+        // For other sources, we just track the state locally
+        debugPrint('🔀 Shuffle ${_shuffleEnabled ? "enabled" : "disabled"} (local only)');
+    }
+  }
+  
+  /// Cycle through repeat modes: off → track → context → off
+  Future<void> toggleRepeat() async {
+    switch (_repeatMode) {
+      case RepeatMode.off:
+        _repeatMode = RepeatMode.track;
+        break;
+      case RepeatMode.track:
+        _repeatMode = RepeatMode.context;
+        break;
+      case RepeatMode.context:
+        _repeatMode = RepeatMode.off;
+        break;
+    }
+    notifyListeners();
+    
+    // Apply to active source
+    switch (_activeSource) {
+      case MusicSource.spotify:
+        try {
+          String spotifyMode;
+          switch (_repeatMode) {
+            case RepeatMode.off:
+              spotifyMode = 'off';
+              break;
+            case RepeatMode.track:
+              spotifyMode = 'track';
+              break;
+            case RepeatMode.context:
+              spotifyMode = 'context';
+              break;
+          }
+          await _spotify.setRepeat(spotifyMode);
+          debugPrint('🔁 Repeat mode: ${_repeatMode.name}');
+        } catch (e) {
+          debugPrint('⚠️ Repeat toggle failed: $e');
+        }
+        break;
+      default:
+        debugPrint('🔁 Repeat mode: ${_repeatMode.name} (local only)');
+    }
   }
   
   @override

@@ -210,6 +210,42 @@ class SpotifyService {
     }
   }
   
+  /// Set shuffle mode
+  Future<bool> setShuffle(bool enabled) async {
+    try {
+      await SpotifySdk.setShuffle(shuffle: enabled);
+      debugPrint('🔀 Spotify shuffle: $enabled');
+      return true;
+    } catch (e) {
+      debugPrint('🎵 Spotify shuffle error: $e');
+      return false;
+    }
+  }
+  
+  /// Set repeat mode ('off', 'track', 'context')
+  Future<bool> setRepeat(String mode) async {
+    try {
+      // SpotifySdk uses RepeatMode enum internally
+      // Convert our string to the appropriate call
+      switch (mode) {
+        case 'off':
+          await SpotifySdk.setRepeatMode(repeatMode: RepeatMode.off);
+          break;
+        case 'track':
+          await SpotifySdk.setRepeatMode(repeatMode: RepeatMode.track);
+          break;
+        case 'context':
+          await SpotifySdk.setRepeatMode(repeatMode: RepeatMode.context);
+          break;
+      }
+      debugPrint('🔁 Spotify repeat: $mode');
+      return true;
+    } catch (e) {
+      debugPrint('🎵 Spotify repeat error: $e');
+      return false;
+    }
+  }
+  
   /// Get current track info from player state
   SpotifyTrackInfo? get currentTrack {
     final track = _currentState?.track;

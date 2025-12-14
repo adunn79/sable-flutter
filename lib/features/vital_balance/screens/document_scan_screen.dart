@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/vital_reading.dart';
 import '../services/medical_document_service.dart';
 import '../services/health_data_service.dart';
@@ -181,9 +182,7 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
-                          // TODO: Pick from gallery
-                        },
+                        onPressed: _pickFromGallery,
                         icon: const Icon(LucideIcons.image),
                         label: const Text('Gallery'),
                         style: OutlinedButton.styleFrom(
@@ -221,6 +220,37 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
       painter: ScanOverlayPainter(),
       child: Container(),
     );
+  }
+  
+  /// Pick image from gallery and process
+  Future<void> _pickFromGallery() async {
+    if (_isProcessing) return;
+    
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 90,
+      );
+      
+      if (pickedFile == null) return; // User cancelled
+      
+      setState(() => _isProcessing = true);
+      
+      final file = File(pickedFile.path);
+      
+      if (_scanType == 'lab_report') {
+        final result = await MedicalDocumentService.scanLabReport(file);
+        _showLabResults(result);
+      } else {
+        final result = await MedicalDocumentService.scanVitalRecord(file);
+        _showVitalResults(result);
+      }
+    } catch (e) {
+      _showError('Gallery scan failed: $e');
+    } finally {
+      setState(() => _isProcessing = false);
+    }
   }
   
   Future<void> _captureAndProcess() async {

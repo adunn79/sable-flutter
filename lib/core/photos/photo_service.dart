@@ -6,6 +6,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:image/image.dart' as img;
 import 'models/photo_entry.dart';
 
 /// Central photo management service
@@ -104,13 +105,31 @@ class PhotoService {
       // Generate thumbnail
       final thumbnailPath = await _generateThumbnail(path, id);
 
-      // Extract EXIF data (TODO: implement ExifService)
+      // Extract EXIF data
       DateTime? takenAt;
       String? location;
+      String? cameraInfo;
+      
       try {
-        final stat = await file.stat();
-        takenAt = stat.modified;
-      } catch (_) {}
+        final exifData = await _extractExifData(file);
+        takenAt = exifData['dateTime'] as DateTime?;
+        location = exifData['location'] as String?;
+        cameraInfo = exifData['camera'] as String?;
+        
+        // Fallback to file modification time if no EXIF date
+        if (takenAt == null) {
+          final stat = await file.stat();
+          takenAt = stat.modified;
+        }
+        
+        debugPrint('📷 EXIF extracted: date=$takenAt, location=$location, camera=$cameraInfo');
+      } catch (e) {
+        debugPrint('⚠️ EXIF extraction failed: $e');
+        try {
+          final stat = await file.stat();
+          takenAt = stat.modified;
+        } catch (_) {}
+      }
 
       final entry = PhotoEntry(
         id: id,
@@ -262,14 +281,123 @@ class PhotoService {
 
   Future<String?> _generateThumbnail(String sourcePath, String id) async {
     try {
-      // Simple copy for now - can add proper thumbnail generation with image package
       final thumbPath = '$_thumbnailPath/$id.jpg';
-      // TODO: Use image package to generate actual thumbnails
-      return thumbPath;
+      
+      // Read and decode image in isolate for performance
+      final bytes = await File(sourcePath).readAsBytes();
+      final thumbnail = await compute(_generateThumbnailIsolate, {
+        'bytes': bytes,
+        'path': thumbPath,
+      });
+      
+      if (thumbnail != null) {
+        await File(thumbPath).writeAsBytes(thumbnail);
+        debugPrint('📷 Thumbnail generated: $thumbPath');
+        return thumbPath;
+      }
+      
+      return null;
     } catch (e) {
       debugPrint('⚠️ Thumbnail generation failed: $e');
       return null;
     }
+  }
+  
+  /// Generate thumbnail in isolate to avoid blocking UI
+  static Uint8List? _generateThumbnailIsolate(Map<String, dynamic> params) {
+    try {
+      final bytes = params['bytes'] as Uint8List;
+      final image = img.decodeImage(bytes);
+      
+      if (image == null) return null;
+      
+      // Resize to 300px width, maintaining aspect ratio
+      const thumbnailWidth = 300;
+      final thumbnail = img.copyResize(
+        image,
+        width: thumbnailWidth,
+        interpolation: img.Interpolation.linear,
+      );
+      
+      // Encode as JPEG with quality 85
+      return Uint8List.fromList(img.encodeJpg(thumbnail, quality: 85));
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  /// Extract EXIF metadata from photo
+  /// Note: Uses simplified extraction compatible with current image package
+  Future<Map<String, dynamic>> _extractExifData(File file) async {
+    final result = <String, dynamic>{};
+    
+    try {
+      final bytes = await file.readAsBytes();
+      final image = img.decodeImage(bytes);
+      
+      if (image == null) return result;
+      
+      // Try to extract EXIF data if available
+      // Wrap in try/catch since EXIF may not be present
+      try {
+        final exif = image.exif;
+        
+        // Get EXIF IFD data
+        final exifIfd = exif.exifIfd;
+        
+        // DateTimeOriginal is tag 0x9003
+        final dateTimeOriginal = exifIfd[0x9003];
+        if (dateTimeOriginal != null) {
+          try {
+            // EXIF date format: "YYYY:MM:DD HH:MM:SS"
+            final dateStr = dateTimeOriginal.toString();
+            final parts = dateStr.split(' ');
+            if (parts.length >= 2) {
+              final dateParts = parts[0].split(':');
+              final timeParts = parts[1].split(':');
+              if (dateParts.length >= 3 && timeParts.length >= 3) {
+                result['dateTime'] = DateTime(
+                  int.parse(dateParts[0]),
+                  int.parse(dateParts[1]),
+                  int.parse(dateParts[2]),
+                  int.parse(timeParts[0]),
+                  int.parse(timeParts[1]),
+                  int.parse(timeParts[2].split('.')[0]),
+                );
+              }
+            }
+          } catch (_) {}
+        }
+        
+        // Get IFD0 for camera info
+        final ifd0 = exif.imageIfd;
+        
+        // Make is tag 0x010F, Model is tag 0x0110
+        final make = ifd0[0x010F];
+        final model = ifd0[0x0110];
+        if (make != null || model != null) {
+          result['camera'] = '${make ?? ''} ${model ?? ''}'.trim();
+        }
+        
+        // GPS data - simplified approach
+        final gpsIfd = exif.gpsIfd;
+        // GPSLatitudeRef is 0x0001, GPSLatitude is 0x0002
+        // GPSLongitudeRef is 0x0003, GPSLongitude is 0x0004
+        final lat = gpsIfd[0x0002];
+        final lon = gpsIfd[0x0004];
+        
+        if (lat != null && lon != null) {
+          result['location'] = 'GPS data available';
+        }
+      } catch (exifError) {
+        // EXIF data not available or parsing failed - this is expected for some images
+        debugPrint('📷 No EXIF data or parse failed: $exifError');
+      }
+    } catch (e) {
+      debugPrint('⚠️ EXIF extraction error: $e');
+    }
+    
+    return result;
   }
 
   /// Update photo caption

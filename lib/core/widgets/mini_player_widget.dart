@@ -407,11 +407,14 @@ class FullMusicPlayerSheet extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
-                    icon: const Icon(LucideIcons.shuffle, size: 24),
-                    color: Colors.white54,
-                    onPressed: () {
-                      // TODO: Implement shuffle
-                    },
+                    icon: Icon(
+                      LucideIcons.shuffle, 
+                      size: 24,
+                      color: musicService.shuffleEnabled 
+                        ? _getSourceColor(track.source)
+                        : Colors.white54,
+                    ),
+                    onPressed: () => musicService.toggleShuffle(),
                   ),
                   IconButton(
                     icon: const Icon(LucideIcons.skipBack, size: 32),
@@ -442,11 +445,14 @@ class FullMusicPlayerSheet extends ConsumerWidget {
                     onPressed: () => musicService.skipNext(),
                   ),
                   IconButton(
-                    icon: const Icon(LucideIcons.repeat, size: 24),
-                    color: Colors.white54,
-                    onPressed: () {
-                      // TODO: Implement repeat
-                    },
+                    icon: Icon(
+                      _getRepeatIcon(musicService.repeatMode),
+                      size: 24,
+                      color: musicService.repeatMode != RepeatMode.off
+                        ? _getSourceColor(track.source)
+                        : Colors.white54,
+                    ),
+                    onPressed: () => musicService.toggleRepeat(),
                   ),
                 ],
               ),
@@ -548,6 +554,17 @@ class FullMusicPlayerSheet extends ConsumerWidget {
         return 'Playing on Apple Music';
       default:
         return 'Now Playing';
+    }
+  }
+  
+  IconData _getRepeatIcon(RepeatMode mode) {
+    switch (mode) {
+      case RepeatMode.track:
+        return LucideIcons.repeat1; // Single track repeat
+      case RepeatMode.context:
+        return LucideIcons.repeat; // Playlist/album repeat
+      case RepeatMode.off:
+        return LucideIcons.repeat;
     }
   }
 }

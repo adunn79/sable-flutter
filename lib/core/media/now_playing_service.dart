@@ -95,6 +95,19 @@ class NowPlayingService {
       return false;
     }
   }
+  
+  /// Seek to position in current track (in milliseconds)
+  static Future<bool> seekTo(int positionMs) async {
+    try {
+      // Convert milliseconds to seconds for native API
+      final positionSeconds = positionMs / 1000.0;
+      final result = await _channel.invokeMethod<bool>('seekTo', {'position': positionSeconds});
+      return result ?? false;
+    } catch (e) {
+      debugPrint('🎵 Seek error: $e');
+      return false;
+    }
+  }
 }
 
 /// Data class for now playing information

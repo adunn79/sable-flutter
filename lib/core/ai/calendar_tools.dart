@@ -129,7 +129,7 @@ class CalendarTools {
           : DateTime.now().add(const Duration(days: 7));
 
       // Get events
-      final events = await CalendarService.getEvents(start: start, end: end);
+      final events = await CalendarService.getEventsInRange(start, end);
       
       if (events.isEmpty) {
         return ToolResult.success(
@@ -166,10 +166,19 @@ class CalendarTools {
     debugPrint('🗓️ CalendarTools.updateCalendarEvent called with: $params');
     
     final eventId = params['eventId'] as String?;
+    final calendarId = params['calendarId'] as String?;
+    
     if (eventId == null || eventId.isEmpty) {
       return ToolResult.error(
         'Missing event ID',
         userMessage: 'I need to know which event to update.',
+      );
+    }
+    
+    if (calendarId == null || calendarId.isEmpty) {
+      return ToolResult.error(
+        'Missing calendar ID',
+        userMessage: 'I need to know which calendar the event is on.',
       );
     }
 
@@ -192,16 +201,17 @@ class CalendarTools {
       final location = params['location'] as String?;
       final description = params['description'] as String?;
 
-      final success = await CalendarService.updateEvent(
+      final updatedEvent = await CalendarService.updateEvent(
+        calendarId: calendarId,
         eventId: eventId,
-        title: title,
-        start: startTimeStr != null ? DateTime.parse(startTimeStr) : null,
-        end: endTimeStr != null ? DateTime.parse(endTimeStr) : null,
-        location: location,
-        description: description,
+        newTitle: title,
+        newStart: startTimeStr != null ? DateTime.parse(startTimeStr) : null,
+        newEnd: endTimeStr != null ? DateTime.parse(endTimeStr) : null,
+        newLocation: location,
+        newDescription: description,
       );
 
-      if (success) {
+      if (updatedEvent != null) {
         return ToolResult.success(
           {'event_id': eventId, 'updated': true},
           userMessage: '✅ Event updated successfully!',
@@ -225,10 +235,19 @@ class CalendarTools {
     debugPrint('🗓️ CalendarTools.deleteCalendarEvent called with: $params');
     
     final eventId = params['eventId'] as String?;
+    final calendarId = params['calendarId'] as String?;
+    
     if (eventId == null || eventId.isEmpty) {
       return ToolResult.error(
         'Missing event ID',
         userMessage: 'I need to know which event to delete.',
+      );
+    }
+    
+    if (calendarId == null || calendarId.isEmpty) {
+      return ToolResult.error(
+        'Missing calendar ID',
+        userMessage: 'I need to know which calendar the event is on.',
       );
     }
 
@@ -244,7 +263,7 @@ class CalendarTools {
         }
       }
 
-      final success = await CalendarService.deleteEvent(eventId);
+      final success = await CalendarService.deleteEvent(calendarId, eventId);
 
       if (success) {
         return ToolResult.success(
@@ -290,7 +309,7 @@ class CalendarTools {
       }
 
       // Get events in the proposed time range
-      final conflicts = await CalendarService.getEvents(start: start, end: end);
+      final conflicts = await CalendarService.getEventsInRange(start, end);
       
       if (conflicts.isEmpty) {
         return ToolResult.success(

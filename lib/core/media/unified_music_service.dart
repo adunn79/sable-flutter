@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'spotify_service.dart';
 import 'now_playing_service.dart';
@@ -161,15 +162,40 @@ class UnifiedMusicService extends ChangeNotifier {
     });
   }
   
+  static const _nowPlayingChannel = MethodChannel('com.sable.nowplaying');
+  
   void _startSystemMediaPolling() {
     // Poll for system media every 3 seconds if no active connection
     _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
       if (!_isSpotifyConnected && !_isAppleMusicConnected) {
-        // TODO: Use nowplaying package to detect system media
-        // For now, this is a placeholder
+        await _detectSystemMedia();
       }
     });
+  }
+  
+  Future<void> _detectSystemMedia() async {
+    try {
+      final result = await _nowPlayingChannel.invokeMethod<Map>('getNowPlaying');
+      if (result != null && result['title'] != null) {
+        _activeSource = MusicSource.systemMedia;
+        _currentTrack = TrackInfo(
+          name: result['title'] as String? ?? '',
+          artist: result['artist'] as String? ?? 'Unknown Artist',
+          album: result['album'] as String?,
+          source: MusicSource.systemMedia,
+          isPlaying: true, // Assume playing if data is returned
+        );
+        _isPlaying = true;
+        notifyListeners();
+        debugPrint('🎵 Now Playing detected: ${_currentTrack?.name} - ${_currentTrack?.artist}');
+      }
+    } catch (e) {
+      // Silent fail - native channel may not be available in test/web
+      if (e is! MissingPluginException) {
+        debugPrint('⚠️ Now Playing detection failed: $e');
+      }
+    }
   }
   
   // ==================== CONNECTION METHODS ====================
@@ -284,8 +310,8 @@ class UnifiedMusicService extends ChangeNotifier {
       case MusicSource.spotify:
         return await _spotify.seekTo(positionMs);
       case MusicSource.appleMusic:
-        // TODO: Implement Apple Music seek
-        return false;
+      case MusicSource.systemMedia:
+        return await NowPlayingService.seekTo(positionMs);
       default:
         return false;
     }

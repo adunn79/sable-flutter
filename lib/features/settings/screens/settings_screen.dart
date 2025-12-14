@@ -399,7 +399,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   double _brainEmpathy = 0.45;
   double _brainHumor = 0.45;
   double _userBond = 0.5; // 0=Cooled, 0.5=Neutral, 1.0=Warm
-  double _brainIntelligence = 0.45; // Default 45%, can go up to 1.0 for genius level
+  double _brainIntelligence = 0.5; // Default 50% (slider min), can go up to 1.0 for genius level
   
   // Local Vibe Service handle
   LocalVibeService? _localVibeService;
@@ -495,9 +495,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       
       // Load Intelligence value - migrate existing users with zero/missing values
       var intelligence = prefs.getDouble('brain_intelligence');
-      if (intelligence == null || intelligence < 0.1) {
-        // Migrate: set default to 45% for existing users with zero values
-        intelligence = 0.45;
+      if (intelligence == null || intelligence < 0.5) {
+        // Migrate: set default to 50% for existing users with values below slider min
+        intelligence = 0.5;
         prefs.setDouble('brain_intelligence', intelligence);
         debugPrint('🧠 Migrated brain_intelligence to default: $intelligence');
       }

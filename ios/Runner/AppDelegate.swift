@@ -222,7 +222,8 @@ import MediaPlayer
                                                  binaryMessenger: controller.binaryMessenger)
     
     nowPlayingChannel.setMethodCallHandler({
-      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      guard let self = self else { return }
       
       switch call.method {
       case "getNowPlaying":
@@ -237,6 +238,13 @@ import MediaPlayer
         self.nextTrack(result: result)
       case "previous":
         self.previousTrack(result: result)
+      case "seekTo":
+        if let args = call.arguments as? [String: Any],
+           let position = args["position"] as? Double {
+          self.seekToPosition(seconds: position, result: result)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Position required", details: nil))
+        }
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -453,6 +461,12 @@ import MediaPlayer
   private func previousTrack(result: @escaping FlutterResult) {
     let player = MPMusicPlayerController.systemMusicPlayer
     player.skipToPreviousItem()
+    result(true)
+  }
+  
+  private func seekToPosition(seconds: Double, result: @escaping FlutterResult) {
+    let player = MPMusicPlayerController.systemMusicPlayer
+    player.currentPlaybackTime = seconds
     result(true)
   }
 }

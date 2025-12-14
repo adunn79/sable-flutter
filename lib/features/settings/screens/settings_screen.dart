@@ -60,7 +60,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _userName = '';
   // Subscription check
-  bool _isPremium = false; // TODO: Hook up to real subscription state
+  bool _isPremium = false; // Synced from IAPService.getActiveSubscription() in _loadSettings
 
   bool _newsEnabled = true;
   bool _gpsEnabled = false;

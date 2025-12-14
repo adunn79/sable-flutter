@@ -581,7 +581,16 @@ class _HealthDashboardScreenState extends State<HealthDashboardScreen> {
                   style: TextStyle(color: Colors.white54)),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Implement PDF upload
+                // Route to document scanner - PDF parsing would require additional dependencies
+                // For now, guide user to use camera scan which is more reliable for medical docs
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Use "Scan Document" to capture medical records. For best results, take a clear photo of each page.'),
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+                Navigator.push(context, 
+                    MaterialPageRoute(builder: (_) => const DocumentScanScreen()));
               },
             ),
             ListTile(

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/core/voice/voice_service.dart';
+import 'package:sable/features/subscription/screens/subscription_screen.dart';
 import '../models/avatar_config.dart';
 import '../services/avatar_generation_service.dart';
 import '../services/onboarding_state_service.dart';
@@ -502,7 +503,12 @@ class _Screen4CustomizeState extends State<Screen4Customize> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Navigate to purchase flow
+              // Navigate to subscription/purchase screen
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SubscriptionScreen(),
+                ),
+              );
             },
             child: const Text('Buy Spark Pack'),
           ),

@@ -33,6 +33,7 @@ import 'package:sable/core/memory/memory_extraction_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sable/core/ai/apple_intelligence_service.dart';
+import 'package:sable/features/subscription/screens/subscription_screen.dart';
 import 'package:sable/core/personality/personality_service.dart'; // Added implementation
 import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
 import 'package:sable/features/settings/services/avatar_display_settings.dart';
@@ -1376,7 +1377,12 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
                   action: SnackBarAction(
                     label: 'Upgrade',
                     onPressed: () {
-                      // TODO: Navigate to premium upgrade
+                      // Navigate to premium subscription screen
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const SubscriptionScreen(),
+                        ),
+                      );
                     },
                   ),
                   duration: const Duration(seconds: 4),

@@ -73,6 +73,7 @@ dependencies:
   timezone: any
   in_app_purchase_storekit: any
   markdown: any
+  battery_plus: ^7.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

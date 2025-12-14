@@ -200,6 +200,21 @@ class FeedbackLearning {
     _recentFeedback.clear();
     await _saveFeedback();
   }
+  
+  // ============== INSIGHT TRACKING ==============
+  // For proactive awareness feature
+  
+  /// Get the last time we showed a proactive insight
+  DateTime? getLastInsightTime() {
+    final intValue = _prefs?.getInt('last_insight_time');
+    if (intValue == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(intValue);
+  }
+  
+  /// Record that we just showed an insight
+  void recordInsightShown() {
+    _prefs?.setInt('last_insight_time', DateTime.now().millisecondsSinceEpoch);
+  }
 }
 
 /// Single feedback entry

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sable/core/ai/room_brain/room_brain_base.dart';
 import 'package:sable/core/ai/agent_context.dart';
 
@@ -55,11 +56,14 @@ class SettingsBrain extends RoomBrain {
       
       final wantsOn = lowerQuery.contains('on') || lowerQuery.contains('enable');
       
-      // TODO: Actually toggle via settings tool
+      // Actually toggle the setting
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('notifications_enabled', wantsOn);
+      
       return BrainResponse.simple(
         wantsOn 
-          ? "I can help turn on notifications! Head to Settings → Notifications to enable them."
-          : "I can help turn off notifications! Head to Settings → Notifications to disable them.",
+          ? "Done! ✅ I've enabled notifications for you. You'll receive helpful reminders and updates."
+          : "Done! ✅ I've turned off notifications. You won't be disturbed.",
       );
     }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
 import 'package:sable/features/local_vibe/models/local_vibe_settings.dart';
 import 'package:sable/features/local_vibe/services/local_vibe_service.dart';
@@ -119,9 +120,57 @@ class _LocalVibeSettingsScreenState extends State<LocalVibeSettingsScreen> {
           child: _buildSegmentButton(
             'Current Location',
             _settings.useCurrentLocation,
-            () {
-              setState(() => _settings = _settings.copyWith(useCurrentLocation: true));
-              widget.service.updateSettings(_settings);
+            () async {
+              // Actually request location permission
+              final status = await Permission.locationWhenInUse.status;
+              
+              if (status.isGranted) {
+                setState(() => _settings = _settings.copyWith(useCurrentLocation: true));
+                widget.service.updateSettings(_settings);
+              } else if (status.isDenied) {
+                // Request permission
+                final result = await Permission.locationWhenInUse.request();
+                if (result.isGranted) {
+                  setState(() => _settings = _settings.copyWith(useCurrentLocation: true));
+                  widget.service.updateSettings(_settings);
+                } else {
+                  // Show error message
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Location permission required for current location mode',
+                          style: GoogleFonts.inter(color: Colors.white),
+                        ),
+                        backgroundColor: Colors.red.shade700,
+                        action: SnackBarAction(
+                          label: 'Settings',
+                          textColor: Colors.white,
+                          onPressed: () => openAppSettings(),
+                        ),
+                      ),
+                    );
+                  }
+                }
+              } else if (status.isPermanentlyDenied) {
+                // Prompt user to open app settings
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Location permission permanently denied. Please enable in Settings.',
+                        style: GoogleFonts.inter(color: Colors.white),
+                      ),
+                      backgroundColor: Colors.red.shade700,
+                      action: SnackBarAction(
+                        label: 'Open Settings',
+                        textColor: Colors.white,
+                        onPressed: () => openAppSettings(),
+                      ),
+                    ),
+                  );
+                }
+              }
             },
           ),
         ),

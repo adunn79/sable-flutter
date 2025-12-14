@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import 'package:sable/features/clock/widgets/clock_face_widget.dart';
 import 'package:sable/features/clock/screens/alarm_screen.dart';
 import 'package:sable/core/theme/aeliana_theme.dart';
@@ -39,8 +41,15 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
   
   // Dynamic color cycling
   bool _dynamicColorsEnabled = false;
+  bool _randomColorsEnabled = false; // Random colors without wake
   int _dynamicColorIntervalMinutes = 5;
   DateTime? _lastColorChange;
+  
+  // Motion detection
+  StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
+  AccelerometerEvent? _lastAccelReading;
+  bool _motionExitEnabled = true;
+  static const double _motionThreshold = 2.5; // Sensitivity (lower = more sensitive)
 
   // Style names for display
   static const _styleNames = {
@@ -66,6 +75,7 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
     _loadPreferences();
     _fetchWeather();
     _startDynamicColorTimer();
+    _startMotionDetection();
     
     // Hide controls after 5 seconds
     Future.delayed(const Duration(seconds: 5), () {
@@ -76,6 +86,37 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
     
     // Keep screen awake and hide system UI
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+  
+  void _startMotionDetection() {
+    if (!_motionExitEnabled) return;
+    
+    // Listen to accelerometer for device motion
+    _accelerometerSubscription = accelerometerEventStream().listen((event) {
+      if (_lastAccelReading != null) {
+        // Calculate change in acceleration
+        final dx = (event.x - _lastAccelReading!.x).abs();
+        final dy = (event.y - _lastAccelReading!.y).abs();
+        final dz = (event.z - _lastAccelReading!.z).abs();
+        final totalChange = dx + dy + dz;
+        
+        // If motion exceeds threshold, exit clock mode
+        if (totalChange > _motionThreshold) {
+          debugPrint('🔔 Motion detected ($totalChange), exiting clock mode');
+          _exitClockMode();
+        }
+      }
+      _lastAccelReading = event;
+    });
+  }
+  
+  void _exitClockMode() {
+    _accelerometerSubscription?.cancel();
+    if (widget.onExit != null) {
+      widget.onExit!();
+    } else if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
   
   void _startDynamicColorTimer() {
@@ -149,6 +190,8 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
 
   @override
   void dispose() {
+    // Cancel motion detection
+    _accelerometerSubscription?.cancel();
     // Restore system UI
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
@@ -490,20 +533,22 @@ class _ClockModeScreenState extends State<ClockModeScreen> {
                           _savePreferences();
                         },
                       ),
-                      // Dynamic colors toggle
+                      // Random colors toggle (changes color without waking screen)
                       _buildControlButton(
-                        icon: Icons.auto_awesome,
-                        label: _dynamicColorsEnabled ? 'Auto On' : 'Auto Off',
+                        icon: Icons.shuffle,
+                        label: _randomColorsEnabled ? 'Random On' : 'Random',
                         onTap: () {
                           setState(() {
-                            _dynamicColorsEnabled = !_dynamicColorsEnabled;
-                            if (_dynamicColorsEnabled) {
+                            _randomColorsEnabled = !_randomColorsEnabled;
+                            if (_randomColorsEnabled) {
+                              // Start cycling colors randomly
+                              _dynamicColorsEnabled = true;
                               _lastColorChange = DateTime.now();
                             }
                           });
                           _savePreferences();
                         },
-                        highlight: _dynamicColorsEnabled,
+                        highlight: _randomColorsEnabled,
                       ),
                       // Set alarm
                       _buildControlButton(

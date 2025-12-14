@@ -49,14 +49,28 @@ class DeepDiveScreen extends StatefulWidget {
   State<DeepDiveScreen> createState() => _DeepDiveScreenState();
 }
 
-class _DeepDiveScreenState extends State<DeepDiveScreen> {
+class _DeepDiveScreenState extends State<DeepDiveScreen> with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   bool _showBackToTop = false;
+  bool _sourcesExpanded = false;
+  
+  // Thinking timer
+  late DateTime _startTime;
+  int _thinkingSeconds = 0;
+  late AnimationController _thinkingPulse;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _startTime = DateTime.now();
+    _thinkingSeconds = DateTime.now().difference(_startTime).inSeconds.clamp(1, 30);
+    
+    // Pulse animation for thinking indicator
+    _thinkingPulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
   }
 
   void _onScroll() {
@@ -68,6 +82,7 @@ class _DeepDiveScreenState extends State<DeepDiveScreen> {
 
   @override
   void dispose() {
+    _thinkingPulse.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -153,20 +168,37 @@ class _DeepDiveScreenState extends State<DeepDiveScreen> {
   }
 
   Widget _buildThinkingIndicator() {
-    return Row(
-      children: [
-        Icon(LucideIcons.sparkles, size: 14, color: Colors.white38),
-        const SizedBox(width: 6),
-        Text(
-          'Deep Analysis',
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: Colors.white38,
+    return AnimatedBuilder(
+      animation: _thinkingPulse,
+      builder: (context, child) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.03 + _thinkingPulse.value * 0.02),
+            borderRadius: BorderRadius.circular(16),
           ),
-        ),
-        const SizedBox(width: 4),
-        Icon(LucideIcons.chevronRight, size: 12, color: Colors.white24),
-      ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                LucideIcons.sparkles, 
+                size: 14, 
+                color: Color.lerp(Colors.white24, AelianaColors.plasmaCyan, _thinkingPulse.value),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Thought for ${_thinkingSeconds}s',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.white38,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(LucideIcons.chevronRight, size: 12, color: Colors.white24),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -370,49 +402,120 @@ class _DeepDiveScreenState extends State<DeepDiveScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            // Source logos (stacked circles)
-            SizedBox(
-              width: 60,
-              height: 24,
-              child: Stack(
-                children: [
-                  for (var i = 0; i < widget.sources.take(3).length; i++)
-                    Positioned(
-                      left: i * 18.0,
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: _getSourceColor(widget.sources[i].name),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFF0D0D0D), width: 2),
-                        ),
-                        child: Center(
-                          child: Text(
-                            widget.sources[i].name[0],
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
+        GestureDetector(
+          onTap: () => setState(() => _sourcesExpanded = !_sourcesExpanded),
+          child: Row(
+            children: [
+              // Source logos (stacked circles)
+              SizedBox(
+                width: 60,
+                height: 24,
+                child: Stack(
+                  children: [
+                    for (var i = 0; i < widget.sources.take(3).length; i++)
+                      Positioned(
+                        left: i * 18.0,
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: _getSourceColor(widget.sources[i].name),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFF0D0D0D), width: 2),
+                          ),
+                          child: Center(
+                            child: Text(
+                              widget.sources[i].name[0],
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
                       ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Sources',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: Colors.white54,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                _sourcesExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                size: 16,
+                color: Colors.white38,
+              ),
+            ],
+          ),
+        ),
+        // Collapsible source details
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: widget.sources.map((source) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _getSourceColor(source.name).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _getSourceColor(source.name).withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: _getSourceColor(source.name),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          source.name[0],
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
-                ],
-              ),
+                    const SizedBox(width: 8),
+                    Text(
+                      source.name,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    if (source.additionalCount > 0) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        '+${source.additionalCount}',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          color: Colors.white38,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              )).toList(),
             ),
-            const SizedBox(width: 8),
-            Text(
-              'Sources',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: Colors.white54,
-              ),
-            ),
-          ],
+          ),
+          crossFadeState: _sourcesExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 200),
         ),
       ],
     );

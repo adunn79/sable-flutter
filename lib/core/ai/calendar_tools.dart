@@ -100,7 +100,224 @@ class CalendarTools {
       );
     }
   }
+  /// Get calendar events in a date range
+  /// Returns list of events with their details
+  static Future<ToolResult> getCalendarEvents(Map<String, dynamic> params) async {
+    debugPrint('🗓️ CalendarTools.getCalendarEvents called with: $params');
+    
+    try {
+      // Check permissions first
+      if (!await CalendarService.hasPermission()) {
+        final granted = await CalendarService.requestPermission();
+        if (!granted) {
+          return ToolResult.error(
+            'Calendar permission denied',
+            userMessage: 'I need calendar access to see your events.',
+          );
+        }
+      }
 
-  // TODO: Implement update/delete/get calendar events
-  // These require additions to CalendarService first
+      // Parse date range
+      final startStr = params['startDate'] as String?;
+      final endStr = params['endDate'] as String?;
+      
+      final start = startStr != null 
+          ? DateTime.parse(startStr) 
+          : DateTime.now().subtract(const Duration(days: 1));
+      final end = endStr != null 
+          ? DateTime.parse(endStr) 
+          : DateTime.now().add(const Duration(days: 7));
+
+      // Get events
+      final events = await CalendarService.getEvents(start: start, end: end);
+      
+      if (events.isEmpty) {
+        return ToolResult.success(
+          {'events': [], 'count': 0},
+          userMessage: 'No events found in that time range. 📅',
+        );
+      }
+
+      // Format events for response
+      final eventList = events.map((e) => {
+        'id': e.eventId,
+        'title': e.title,
+        'start': e.start?.toIso8601String(),
+        'end': e.end?.toIso8601String(),
+        'location': e.location,
+        'all_day': e.allDay,
+      }).toList();
+
+      final dateFormatter = DateFormat('MMM d');
+      return ToolResult.success(
+        {'events': eventList, 'count': events.length},
+        userMessage: 'Found ${events.length} events from ${dateFormatter.format(start)} to ${dateFormatter.format(end)}.',
+      );
+    } catch (e) {
+      return ToolResult.error(
+        'Error getting calendar events: $e',
+        userMessage: 'I had trouble accessing your calendar.',
+      );
+    }
+  }
+
+  /// Update an existing calendar event
+  static Future<ToolResult> updateCalendarEvent(Map<String, dynamic> params) async {
+    debugPrint('🗓️ CalendarTools.updateCalendarEvent called with: $params');
+    
+    final eventId = params['eventId'] as String?;
+    if (eventId == null || eventId.isEmpty) {
+      return ToolResult.error(
+        'Missing event ID',
+        userMessage: 'I need to know which event to update.',
+      );
+    }
+
+    try {
+      // Check permissions first
+      if (!await CalendarService.hasPermission()) {
+        final granted = await CalendarService.requestPermission();
+        if (!granted) {
+          return ToolResult.error(
+            'Calendar permission denied',
+            userMessage: 'I need calendar access to update events.',
+          );
+        }
+      }
+
+      // Build update parameters
+      final title = params['title'] as String?;
+      final startTimeStr = params['startTime'] as String?;
+      final endTimeStr = params['endTime'] as String?;
+      final location = params['location'] as String?;
+      final description = params['description'] as String?;
+
+      final success = await CalendarService.updateEvent(
+        eventId: eventId,
+        title: title,
+        start: startTimeStr != null ? DateTime.parse(startTimeStr) : null,
+        end: endTimeStr != null ? DateTime.parse(endTimeStr) : null,
+        location: location,
+        description: description,
+      );
+
+      if (success) {
+        return ToolResult.success(
+          {'event_id': eventId, 'updated': true},
+          userMessage: '✅ Event updated successfully!',
+        );
+      } else {
+        return ToolResult.error(
+          'Failed to update event',
+          userMessage: 'I couldn\'t update that event. It may have been deleted.',
+        );
+      }
+    } catch (e) {
+      return ToolResult.error(
+        'Error updating calendar event: $e',
+        userMessage: 'I had trouble updating the event.',
+      );
+    }
+  }
+
+  /// Delete a calendar event
+  static Future<ToolResult> deleteCalendarEvent(Map<String, dynamic> params) async {
+    debugPrint('🗓️ CalendarTools.deleteCalendarEvent called with: $params');
+    
+    final eventId = params['eventId'] as String?;
+    if (eventId == null || eventId.isEmpty) {
+      return ToolResult.error(
+        'Missing event ID',
+        userMessage: 'I need to know which event to delete.',
+      );
+    }
+
+    try {
+      // Check permissions first
+      if (!await CalendarService.hasPermission()) {
+        final granted = await CalendarService.requestPermission();
+        if (!granted) {
+          return ToolResult.error(
+            'Calendar permission denied',
+            userMessage: 'I need calendar access to delete events.',
+          );
+        }
+      }
+
+      final success = await CalendarService.deleteEvent(eventId);
+
+      if (success) {
+        return ToolResult.success(
+          {'event_id': eventId, 'deleted': true},
+          userMessage: '🗑️ Event deleted.',
+        );
+      } else {
+        return ToolResult.error(
+          'Failed to delete event',
+          userMessage: 'I couldn\'t delete that event. It may already be gone.',
+        );
+      }
+    } catch (e) {
+      return ToolResult.error(
+        'Error deleting calendar event: $e',
+        userMessage: 'I had trouble deleting the event.',
+      );
+    }
+  }
+
+  /// Check for calendar conflicts in a time range
+  static Future<ToolResult> getCalendarConflicts(Map<String, dynamic> params) async {
+    debugPrint('🗓️ CalendarTools.getCalendarConflicts called with: $params');
+    
+    final startTimeStr = params['startTime'] as String;
+    final endTimeStr = params['endTime'] as String?;
+    
+    final start = DateTime.parse(startTimeStr);
+    final end = endTimeStr != null 
+        ? DateTime.parse(endTimeStr) 
+        : start.add(const Duration(hours: 1));
+
+    try {
+      // Check permissions first
+      if (!await CalendarService.hasPermission()) {
+        final granted = await CalendarService.requestPermission();
+        if (!granted) {
+          return ToolResult.error(
+            'Calendar permission denied',
+            userMessage: 'I need calendar access to check for conflicts.',
+          );
+        }
+      }
+
+      // Get events in the proposed time range
+      final conflicts = await CalendarService.getEvents(start: start, end: end);
+      
+      if (conflicts.isEmpty) {
+        return ToolResult.success(
+          {'has_conflicts': false, 'conflicts': []},
+          userMessage: 'No conflicts - that time is free! ✅',
+        );
+      }
+
+      // Format conflicts
+      final conflictList = conflicts.map((e) => {
+        'title': e.title,
+        'start': e.start?.toIso8601String(),
+        'end': e.end?.toIso8601String(),
+      }).toList();
+
+      final timeFormatter = DateFormat('h:mm a');
+      final conflictNames = conflicts.map((e) => e.title).join(', ');
+      
+      return ToolResult.success(
+        {'has_conflicts': true, 'conflicts': conflictList, 'count': conflicts.length},
+        userMessage: '⚠️ Conflict detected: $conflictNames at ${timeFormatter.format(start)}',
+      );
+    } catch (e) {
+      return ToolResult.error(
+        'Error checking calendar conflicts: $e',
+        userMessage: 'I had trouble checking for conflicts.',
+      );
+    }
+  }
 }

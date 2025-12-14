@@ -11,6 +11,11 @@ import 'package:sable/core/personality/age_adaptive_service.dart';
 import 'package:sable/core/context/context_engine.dart';
 import 'package:sable/core/ai/fact_check_service.dart';
 import 'package:sable/core/ai/model_registry_service.dart';
+import 'package:sable/core/ai/intent_classifier.dart';
+import 'package:sable/core/ai/latency_monitor.dart';
+import 'package:sable/core/ai/offline_engine.dart';
+import 'package:sable/core/safety/grok_safety_filter.dart';
+import 'package:sable/core/personality/personality_compiler.dart';
 import 'aeliana_brand_context.dart';
 
 part 'model_orchestrator.g.dart';
@@ -73,6 +78,53 @@ class ModelConfig {
   }
 }
 
+/// Circuit breaker states for provider health tracking
+enum CircuitState {
+  closed,   // Normal operation
+  open,     // Provider failing, skip to fallback
+  halfOpen, // Testing if provider recovered
+}
+
+/// Circuit breaker for a single provider
+class _CircuitBreaker {
+  CircuitState state = CircuitState.closed;
+  int consecutiveFailures = 0;
+  DateTime? lastFailure;
+  DateTime? lastSuccess;
+  
+  static const int failureThreshold = 3;
+  static const Duration resetTimeout = Duration(seconds: 30);
+  
+  bool get shouldSkip {
+    if (state == CircuitState.closed) return false;
+    if (state == CircuitState.open) {
+      // Check if we should move to half-open
+      if (lastFailure != null && 
+          DateTime.now().difference(lastFailure!) > resetTimeout) {
+        state = CircuitState.halfOpen;
+        return false; // Allow one test request
+      }
+      return true; // Skip this provider
+    }
+    return false; // Half-open: allow test request
+  }
+  
+  void recordSuccess() {
+    consecutiveFailures = 0;
+    lastSuccess = DateTime.now();
+    state = CircuitState.closed;
+  }
+  
+  void recordFailure() {
+    consecutiveFailures++;
+    lastFailure = DateTime.now();
+    if (consecutiveFailures >= failureThreshold) {
+      state = CircuitState.open;
+      debugPrint('🔴 Circuit OPEN for provider (${consecutiveFailures} failures)');
+    }
+  }
+}
+
 @Riverpod(keepAlive: true)
 class ModelOrchestrator extends _$ModelOrchestrator {
   // AI Provider instances
@@ -81,6 +133,15 @@ class ModelOrchestrator extends _$ModelOrchestrator {
   late final OpenAiProvider _openAiProvider;
   late final GrokProvider _grokProvider;
   late final DeepSeekProvider _deepseekProvider;
+  
+  // Phase 1: Circuit breakers for each provider
+  final Map<String, _CircuitBreaker> _circuitBreakers = {
+    'claude': _CircuitBreaker(),
+    'gemini': _CircuitBreaker(),
+    'openai': _CircuitBreaker(),
+    'grok': _CircuitBreaker(),
+    'deepseek': _CircuitBreaker(),
+  };
 
   @override
   ModelConfig build() {
@@ -171,8 +232,23 @@ class ModelOrchestrator extends _$ModelOrchestrator {
     String? userContext,
     String archetypeName = 'Sable',
   }) async {
+    final requestId = 'orch_${DateTime.now().millisecondsSinceEpoch}';
+    LatencyMonitor.instance.startTimer(requestId, 'orchestrated_request');
+    
     debugPrint('🎭 Orchestrator using archetype: $archetypeName');
+    
     try {
+      // Phase 1: Check if offline first
+      final offlineEngine = OfflineEngine.instance;
+      if (await offlineEngine.isOffline()) {
+        debugPrint('📵 Offline mode - using cached response');
+        LatencyMonitor.instance.endTimer(requestId);
+        return offlineEngine.getOfflineResponse(OfflineContext(
+          characterId: archetypeName.toLowerCase(),
+          lastUserMessage: prompt,
+        ));
+      }
+      
       // Step 0: Check for settings control intent
       final settingsIntent = SettingsControlService.parseSettingIntent(prompt);
       if (settingsIntent != null) {
@@ -380,11 +456,35 @@ Be the world-class research assistant providing TRULY balanced analysis from a G
             );
             break;
           case 'GROK':
-            response = await _grokProvider.generateResponse(
-              prompt: effectivePrompt,
-              systemPrompt: grokPrompt,
-              modelId: state.realistModelId,
-            );
+            // Phase 1: Use circuit breaker for Grok
+            final grokCircuit = _circuitBreakers['grok']!;
+            if (grokCircuit.shouldSkip) {
+              debugPrint('⚡ Grok circuit OPEN, falling back to GPT-4o');
+              response = await _openAiProvider.generateResponse(
+                prompt: effectivePrompt,
+                systemPrompt: gpt4oPrompt,
+                modelId: state.heavyLiftingModelId,
+              );
+            } else {
+              try {
+                final rawGrokResponse = await _grokProvider.generateResponse(
+                  prompt: effectivePrompt,
+                  systemPrompt: grokPrompt,
+                  modelId: state.realistModelId,
+                );
+                // Phase 1: CRITICAL - Filter Grok output through safety filter
+                response = await GrokSafetyFilter.instance.filter(rawGrokResponse);
+                grokCircuit.recordSuccess();
+              } catch (e) {
+                grokCircuit.recordFailure();
+                debugPrint('⚠️ Grok failed, falling back to GPT-4o: $e');
+                response = await _openAiProvider.generateResponse(
+                  prompt: effectivePrompt,
+                  systemPrompt: gpt4oPrompt,
+                  modelId: state.heavyLiftingModelId,
+                );
+              }
+            }
             break;
           case 'DEEPSEEK':
             response = await _deepseekProvider.generateResponse(
@@ -443,9 +543,23 @@ Be the world-class research assistant providing TRULY balanced analysis from a G
       // Step 4: THE HARMONIZER (Personality Filter)
       // Pass the raw response through GPT-4o-mini to ensure consistent voice and safety
       final harmonizedResponse = await harmonizeResponse(response, userContext, archetypeName: archetypeName);
-      return harmonizedResponse;
+      
+      // Phase 1: Apply PersonalityCompiler for final polish
+      final compiledResponse = PersonalityCompiler.instance.compile(
+        harmonizedResponse,
+        characterId: archetypeName.toLowerCase(),
+      );
+      
+      // End latency tracking
+      final latency = LatencyMonitor.instance.endTimer(requestId);
+      debugPrint('⏱️ Orchestrated request completed in ${latency}ms');
+      
+      return compiledResponse;
 
     } catch (e) {
+      // End latency tracking on error
+      LatencyMonitor.instance.endTimer(requestId, success: false);
+      
       // Fallback to Claude if orchestration fails
       return await _anthropicProvider.generateResponse(
         prompt: prompt,

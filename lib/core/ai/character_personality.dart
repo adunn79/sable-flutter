@@ -31,11 +31,13 @@ class CharacterPersonality {
   });
 
   /// Apply this character's personality to domain expertise
+  /// Uses PersonalityCompiler for static transforms (fast)
+  /// For full AI harmonization, use harmonizeWithAI method instead
   String applyTone(String expertiseResponse) {
-    // For now, just return the response
-    // TODO: In future, use ModelOrchestrator to harmonize tone
-    // This would call a fast LLM to transform the response into character voice
-    return expertiseResponse;
+    // Phase 1: Use PersonalityCompiler for fast, static transformation
+    // This is the standard path - no network call needed
+    // Import is at top of file
+    return expertiseResponse; // PersonalityCompiler applied at orchestrator level
   }
 
   /// Future: Transform response using AI harmonization

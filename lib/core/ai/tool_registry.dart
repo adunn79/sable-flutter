@@ -133,15 +133,15 @@ class ToolRegistry {
   /// Get list of all tool names
   List<String> getAllToolNames() => _tools.keys.toList();
 
-  // Basic parameter validation
+  // Comprehensive parameter validation
   _ValidationResult _validateParams(
     Map<String, dynamic> params,
     Map<String, dynamic> schema,
   ) {
-    // Check required fields
+    // Check required fields first
     final required = schema['required'] as List<dynamic>? ?? [];
     for (final field in required) {
-      if (!params.containsKey(field)) {
+      if (!params.containsKey(field) || params[field] == null) {
         return _ValidationResult(
           false,
           'Missing required field: $field',
@@ -149,8 +149,96 @@ class ToolRegistry {
       }
     }
 
-    // TODO: Add type validation, format validation, etc.
+    // Phase 1: Type validation for each parameter
+    for (final entry in params.entries) {
+      final fieldName = entry.key;
+      final fieldValue = entry.value;
+      final fieldSchema = schema[fieldName] as Map<String, dynamic>?;
+      
+      if (fieldSchema == null) continue; // Skip unknown fields
+      
+      final expectedType = fieldSchema['type'] as String?;
+      final format = fieldSchema['format'] as String?;
+      final enumValues = fieldSchema['enum'] as List<dynamic>?;
+      
+      // Type checking
+      if (expectedType != null && !_validateType(fieldValue, expectedType)) {
+        return _ValidationResult(
+          false,
+          'Invalid type for $fieldName: expected $expectedType, got ${fieldValue.runtimeType}',
+        );
+      }
+      
+      // Format checking
+      if (format != null && !_validateFormat(fieldValue, format)) {
+        return _ValidationResult(
+          false,
+          'Invalid format for $fieldName: expected $format',
+        );
+      }
+      
+      // Enum checking
+      if (enumValues != null && !enumValues.contains(fieldValue)) {
+        return _ValidationResult(
+          false,
+          'Invalid value for $fieldName: must be one of $enumValues',
+        );
+      }
+    }
+
     return _ValidationResult(true, null);
+  }
+  
+  /// Validate value matches expected type
+  bool _validateType(dynamic value, String expectedType) {
+    if (value == null) return true; // Null handled by required check
+    
+    switch (expectedType) {
+      case 'string':
+        return value is String;
+      case 'number':
+      case 'integer':
+        return value is num;
+      case 'boolean':
+        return value is bool;
+      case 'array':
+        return value is List;
+      case 'object':
+        return value is Map;
+      default:
+        return true; // Unknown types pass
+    }
+  }
+  
+  /// Validate value matches expected format
+  bool _validateFormat(dynamic value, String format) {
+    if (value == null || value is! String) return true;
+    
+    switch (format) {
+      case 'iso8601':
+      case 'date-time':
+        try {
+          DateTime.parse(value);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      case 'email':
+        return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value);
+      case 'url':
+      case 'uri':
+        try {
+          final uri = Uri.parse(value);
+          return uri.hasScheme && uri.hasAuthority;
+        } catch (e) {
+          return false;
+        }
+      case 'uuid':
+        return RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', 
+            caseSensitive: false).hasMatch(value);
+      default:
+        return true; // Unknown formats pass
+    }
   }
 }
 

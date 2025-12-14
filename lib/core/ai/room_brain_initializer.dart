@@ -6,6 +6,7 @@ import 'package:sable/core/ai/room_brain/chat_brain.dart';
 import 'package:sable/core/ai/room_brain/journal_brain.dart';
 import 'package:sable/core/ai/room_brain/vital_balance_brain.dart';
 import 'package:sable/core/ai/room_brain/settings_brain.dart';
+import 'package:sable/core/safety/safety_audit_log.dart';
 
 /// Initializes the Room Brain system
 /// Call this once during app startup
@@ -47,12 +48,69 @@ class RoomBrainInitializer {
         ),
       );
 
-      debugPrint('✅ Calendar tools registered');
+      debugPrint('✅ Calendar create tool registered');
 
-      // TODO: Register more tools as we build them
-      // - Journal tools (mood tracking, prompts)
-      // - Health tools (biometrics, goals)
-      // - Settings tools (toggle features, export)
+      // Phase 1: Register additional calendar tools
+      _toolRegistry!.register(
+        createTool(
+          name: 'get_calendar_events',
+          description: 'Gets calendar events in a date range',
+          schema: {
+            'startDate': {'type': 'string', 'format': 'iso8601', 'required': false},
+            'endDate': {'type': 'string', 'format': 'iso8601', 'required': false},
+          },
+          allowedBrains: ['chat', 'orchestrator'],
+          function: CalendarTools.getCalendarEvents,
+        ),
+      );
+
+      _toolRegistry!.register(
+        createTool(
+          name: 'update_calendar_event',
+          description: 'Updates an existing calendar event',
+          schema: {
+            'eventId': {'type': 'string', 'required': true},
+            'title': {'type': 'string', 'required': false},
+            'startTime': {'type': 'string', 'format': 'iso8601', 'required': false},
+            'endTime': {'type': 'string', 'format': 'iso8601', 'required': false},
+            'location': {'type': 'string', 'required': false},
+            'description': {'type': 'string', 'required': false},
+          },
+          allowedBrains: ['chat', 'orchestrator'],
+          function: CalendarTools.updateCalendarEvent,
+        ),
+      );
+
+      _toolRegistry!.register(
+        createTool(
+          name: 'delete_calendar_event',
+          description: 'Deletes a calendar event',
+          schema: {
+            'eventId': {'type': 'string', 'required': true},
+          },
+          allowedBrains: ['chat', 'orchestrator'],
+          function: CalendarTools.deleteCalendarEvent,
+        ),
+      );
+
+      _toolRegistry!.register(
+        createTool(
+          name: 'check_calendar_conflicts',
+          description: 'Checks if a time slot has conflicts with existing events',
+          schema: {
+            'startTime': {'type': 'string', 'format': 'iso8601', 'required': true},
+            'endTime': {'type': 'string', 'format': 'iso8601', 'required': false},
+          },
+          allowedBrains: ['chat', 'orchestrator'],
+          function: CalendarTools.getCalendarConflicts,
+        ),
+      );
+
+      debugPrint('✅ All calendar tools registered (create, get, update, delete, conflicts)');
+
+      // Phase 1: Initialize Safety Audit Log
+      // This runs in background, doesn't block initialization
+      _initializeSafetyLog();
 
       _initialized = true;
       debugPrint('🎉 Room Brain System ready!');
@@ -108,5 +166,14 @@ class RoomBrainInitializer {
       memorySpine: getMemorySpine(),
       tools: getToolRegistry(),
     );
+  }
+  
+  /// Phase 1: Initialize Safety Audit Log in background
+  static void _initializeSafetyLog() {
+    SafetyAuditLog.instance.initialize().then((_) {
+      debugPrint('✅ Safety Audit Log initialized');
+    }).catchError((e) {
+      debugPrint('⚠️ Safety Audit Log initialization failed: $e');
+    });
   }
 }

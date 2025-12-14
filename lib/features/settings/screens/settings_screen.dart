@@ -47,6 +47,7 @@ import 'package:sable/core/services/idle_detection_service.dart';
 import 'package:sable/features/settings/widgets/music_settings_widget.dart';
 import 'package:sable/features/settings/widgets/apple_intelligence_settings_widget.dart';
 import 'package:sable/features/settings/widgets/privacy_management_dialog.dart';
+import 'package:sable/features/subscription/services/iap_service.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -432,7 +433,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     
     setState(() {
       _userName = prefs.getString('user_name') ?? '';
-      _isPremium = prefs.getBool('is_premium') ?? false; 
+      // Check premium state from IAP service or cached prefs
+      final iapService = IAPService();
+      final activeSubscription = iapService.getActiveSubscription();
+      _isPremium = activeSubscription != null || (prefs.getBool('is_premium') ?? false); 
       _manualLocation = stateService.userCurrentLocation ?? '';
       _voiceEngine = prefs.getString('voice_engine') ?? 'eleven_labs';
       _apiKeyController.text = prefs.getString('eleven_labs_api_key') ?? '';
@@ -3209,37 +3213,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _confirmDeleteAccount() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AelianaColors.carbon,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Are you absolutely sure?',
-          style: GoogleFonts.spaceGrotesk(color: Colors.red[400], fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Type "DELETE" to confirm permanent account deletion.',
-          style: GoogleFonts.inter(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white70)),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              // TODO: Implement actual account deletion
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Account deletion is not yet implemented.')),
-              );
-            },
-            child: Text('DELETE MY ACCOUNT', style: GoogleFonts.inter(color: Colors.red[400], fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
+    // Use the full GDPR-compliant Privacy Management Dialog
+    // which has two-step confirmation and type-to-confirm
+    Navigator.pop(context); // Close the first dialog
+    PrivacyManagementDialog.show(context);
   }
 
   Widget _buildSettingRow({

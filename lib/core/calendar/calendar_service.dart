@@ -170,6 +170,82 @@ class CalendarService {
     }
   }
   
+  /// Get events in a specified date range, filtered by user's calendar preferences
+  static Future<List<Event>> getFilteredEventsInRange(DateTime start, DateTime end) async {
+    try {
+      if (!await hasPermission()) return [];
+      
+      final calendars = await getCalendars();
+      final allEvents = <Event>[];
+      
+      // Get filter preferences
+      final prefs = await SharedPreferences.getInstance();
+      final enabledList = prefs.getStringList('enabled_calendar_ids');
+      
+      for (final calendar in calendars) {
+        if (calendar.id == null) continue;
+        
+        // Skip if not in enabled list (unless no filter is set)
+        if (enabledList != null && !enabledList.contains(calendar.id)) {
+          continue;
+        }
+        
+        final eventsResult = await _deviceCalendarPlugin.retrieveEvents(
+          calendar.id!,
+          RetrieveEventsParams(startDate: start, endDate: end),
+        );
+        
+        if (eventsResult.isSuccess && eventsResult.data != null) {
+          allEvents.addAll(eventsResult.data!);
+        }
+      }
+      
+      // Sort by start time
+      allEvents.sort((a, b) {
+        if (a.start == null && b.start == null) return 0;
+        if (a.start == null) return 1;
+        if (b.start == null) return -1;
+        return a.start!.compareTo(b.start!);
+      });
+      
+      return allEvents;
+    } catch (e) {
+      debugPrint('❌ Failed to get filtered events in range: $e');
+      return [];
+    }
+  }
+  
+  /// Get today's events filtered by user preferences
+  static Future<List<Event>> getTodayEventsFiltered() async {
+    try {
+      if (!await hasPermission()) return [];
+      
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+      
+      return await getFilteredEventsInRange(startOfDay, endOfDay);
+    } catch (e) {
+      debugPrint('❌ Failed to get filtered today\'s events: $e');
+      return [];
+    }
+  }
+  
+  /// Get upcoming events filtered by user preferences
+  static Future<List<Event>> getUpcomingEventsFiltered({int days = 7}) async {
+    try {
+      if (!await hasPermission()) return [];
+      
+      final now = DateTime.now();
+      final endDate = now.add(Duration(days: days));
+      
+      return await getFilteredEventsInRange(now, endDate);
+    } catch (e) {
+      debugPrint('❌ Failed to get filtered upcoming events: $e');
+      return [];
+    }
+  }
+  
   /// Create a new calendar event with optional invitees, recurrence, and reminders
   static Future<Event?> createEvent({
     required String title,

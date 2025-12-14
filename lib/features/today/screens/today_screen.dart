@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:sable/core/calendar/calendar_service.dart';
+import 'package:sable/core/calendar/widgets/calendar_filter_sheet.dart';
 import 'package:sable/core/calendar/moon_phase_service.dart';
 import 'package:sable/core/calendar/ical_subscription_service.dart';
 import 'package:sable/core/calendar/sports_schedule_service.dart';
@@ -26,7 +27,7 @@ import 'package:sable/core/ai/model_orchestrator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sable/features/today/widgets/comprehensive_event_dialog.dart';
 import 'package:sable/core/emotion/weather_service.dart';
-import 'package:sable/features/today/services/daily_briefing_service.dart'; // IMPORTED
+import 'package:sable/features/today/services/daily_briefing_service.dart';
 
 class TodayScreen extends StatefulWidget {
   const TodayScreen({super.key});
@@ -120,8 +121,9 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
     setState(() => _isLoading = true);
     
     try {
-      final todayEvents = await CalendarService.getTodayEvents();
-      final upcomingEvents = await CalendarService.getUpcomingEvents(days: 7);
+      // Use filtered events to respect user's calendar filter preferences
+      final todayEvents = await CalendarService.getTodayEventsFiltered();
+      final upcomingEvents = await CalendarService.getUpcomingEventsFiltered(days: 7);
       
       if (mounted) {
         setState(() {
@@ -542,13 +544,35 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
               ],
             ),
           ),
-          // Right side: Avatar (56px unified widget)
-          UnifiedAvatarWidget(
-            size: 56,
-            showStatus: true,
-            statusText: 'Observing',
-            onTap: _showAiScheduleHelp,
-            margin: const EdgeInsets.only(top: 0, right: 0),
+          // Filter button and Avatar
+          Column(
+            children: [
+              // Filter button
+              GestureDetector(
+                onTap: _showCalendarFilter,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AelianaColors.carbon,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    LucideIcons.filter,
+                    size: 20,
+                    color: AelianaColors.ghost,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Avatar (56px unified widget)
+              UnifiedAvatarWidget(
+                size: 56,
+                showStatus: true,
+                statusText: 'Observing',
+                onTap: _showAiScheduleHelp,
+                margin: const EdgeInsets.only(top: 0, right: 0),
+              ),
+            ],
           ),
         ],
       ),
@@ -563,6 +587,20 @@ class _TodayScreenState extends State<TodayScreen> with SingleTickerProviderStat
       builder: (context) => _AgenticScheduleChat(
         onEventCreated: () {
           // Refresh the calendar after event creation
+          _loadEvents();
+        },
+      ),
+    );
+  }
+  
+  void _showCalendarFilter() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CalendarFilterSheet(
+        onFilterChanged: () {
+          // Refresh events when filter changes
           _loadEvents();
         },
       ),

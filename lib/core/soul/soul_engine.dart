@@ -6,6 +6,7 @@ import 'boundary_service.dart';
 import 'grounding_service.dart';
 import 'speed_optimizer.dart';
 import '../emotion/emotional_state_service.dart';
+import '../emotion/emotional_pattern_tracker.dart';
 import '../memory/unified_memory_service.dart';
 import '../personality/personality_service.dart';
 
@@ -31,6 +32,7 @@ class SoulEngine {
   late final BoundaryService boundaries;
   late final GroundingService grounder;
   late final SpeedOptimizer speedOpt;
+  late final EmotionalPatternTracker emotionalPatterns;
   
   // Cached context for speed
   String? _cachedPersonalityPrompt;
@@ -52,6 +54,7 @@ class SoulEngine {
     boundaries = BoundaryService();
     grounder = GroundingService(memoryService: memoryService);
     speedOpt = SpeedOptimizer();
+    emotionalPatterns = EmotionalPatternTracker();
   }
   
   /// Process an incoming user message and prepare the AI context

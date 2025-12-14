@@ -248,23 +248,69 @@ class JournalAnalysisService {
       }
     }
     
-    // Convert to insights
+    // Convert to insights with trend calculation
     final insights = themeCounts.entries.map((e) {
       final avgSentiment = themeSentiments[e.key]?.isEmpty ?? true
           ? 0.0
           : themeSentiments[e.key]!.reduce((a, b) => a + b) / themeSentiments[e.key]!.length;
+      
+      // Calculate trend by comparing first half vs second half
+      final trend = _calculateThemeTrend(entries, themeKeywords[e.key]!);
       
       return ThemeInsight(
         theme: e.key,
         count: e.value,
         sentimentScore: avgSentiment,
         relatedWords: themeKeywords[e.key]!.take(3).toList(),
-        trend: 'stable', // TODO: Calculate trend by comparing first half vs second half
+        trend: trend,
       );
     }).toList()
       ..sort((a, b) => b.count.compareTo(a.count));
     
     return insights.take(8).toList();
+  }
+
+  /// Calculate trend for a specific theme by comparing first half vs second half of entries
+  static String _calculateThemeTrend(List<JournalEntry> entries, List<String> keywords) {
+    if (entries.length < 4) return 'stable'; // Need minimum entries for meaningful trend
+    
+    final halfPoint = entries.length ~/ 2;
+    final firstHalf = entries.sublist(0, halfPoint);
+    final secondHalf = entries.sublist(halfPoint);
+    
+    int firstHalfCount = 0;
+    int secondHalfCount = 0;
+    
+    // Count keyword occurrences in first half
+    for (final entry in firstHalf) {
+      final text = entry.plainText.toLowerCase();
+      for (final keyword in keywords) {
+        firstHalfCount += keyword.allMatches(text).length;
+      }
+    }
+    
+    // Count keyword occurrences in second half
+    for (final entry in secondHalf) {
+      final text = entry.plainText.toLowerCase();
+      for (final keyword in keywords) {
+        secondHalfCount += keyword.allMatches(text).length;
+      }
+    }
+    
+    // Normalize by entry count
+    final firstHalfAvg = firstHalf.isNotEmpty ? firstHalfCount / firstHalf.length : 0;
+    final secondHalfAvg = secondHalf.isNotEmpty ? secondHalfCount / secondHalf.length : 0;
+    
+    // Calculate percentage change
+    if (firstHalfAvg == 0) {
+      return secondHalfAvg > 0 ? 'increasing' : 'stable';
+    }
+    
+    final percentChange = ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100;
+    
+    if (percentChange > 20) return 'increasing';
+    if (percentChange < -20) return 'decreasing';
+    return 'stable';
   }
   
   /// Analyze word frequency for word cloud

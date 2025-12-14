@@ -168,6 +168,156 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
       }
     }
   }
+
+  /// Forget memories from the last hour
+  Future<void> _forgetLastHour() async {
+    await _forgetTimeSlice(
+      const Duration(hours: 1),
+      'last hour',
+    );
+  }
+
+  /// Forget memories from the last 24 hours
+  Future<void> _forgetLast24Hours() async {
+    await _forgetTimeSlice(
+      const Duration(hours: 24),
+      'last 24 hours',
+    );
+  }
+
+  /// Forget memories after a custom date
+  Future<void> _forgetCustomRange() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: now.subtract(const Duration(days: 1)),
+      firstDate: now.subtract(const Duration(days: 365)),
+      lastDate: now,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: AelianaColors.hyperGold,
+              onPrimary: Colors.black,
+              surface: AelianaColors.carbon,
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AelianaColors.carbon,
+          title: Row(
+            children: [
+              Icon(LucideIcons.alertTriangle, color: Colors.orange, size: 24),
+              const SizedBox(width: 12),
+              Text('Forget Memories?', style: GoogleFonts.inter(color: Colors.white)),
+            ],
+          ),
+          content: Text(
+            'This will permanently delete all memories created after ${DateFormat('MMM d, yyyy').format(picked)}. This cannot be undone.',
+            style: GoogleFonts.inter(color: AelianaColors.ghost),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Cancel', style: TextStyle(color: AelianaColors.ghost)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Forget', style: TextStyle(color: Colors.orange)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        // Delete from both local and cloud storage
+        final localDeleted = await _memoryService.deleteMemoriesAfter(picked);
+        
+        await _loadData();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Deleted $localDeleted memories since ${DateFormat('MMM d').format(picked)}'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// Generic time-slice deletion with confirmation
+  Future<void> _forgetTimeSlice(Duration duration, String label) async {
+    final cutoff = DateTime.now().subtract(duration);
+    
+    // Count how many memories will be affected
+    final affectedCount = _allMemories.where((m) => m.extractedAt.isAfter(cutoff)).length;
+    
+    if (affectedCount == 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No memories from the $label to forget'),
+            backgroundColor: AelianaColors.ghost,
+          ),
+        );
+      }
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AelianaColors.carbon,
+        title: Row(
+          children: [
+            Icon(LucideIcons.alertTriangle, color: Colors.orange, size: 24),
+            const SizedBox(width: 12),
+            Text('Forget $label?', style: GoogleFonts.inter(color: Colors.white)),
+          ],
+        ),
+        content: Text(
+          'This will permanently delete $affectedCount ${affectedCount == 1 ? 'memory' : 'memories'} from the $label. This cannot be undone.',
+          style: GoogleFonts.inter(color: AelianaColors.ghost),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: TextStyle(color: AelianaColors.ghost)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Forget', style: TextStyle(color: Colors.orange)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // Delete from unified memory service (handles both local and cloud)
+      final deleted = await _memoryService.deleteMemoriesAfter(cutoff);
+      
+      await _loadData();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deleted $deleted ${deleted == 1 ? 'memory' : 'memories'} from the $label'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
   
   Future<void> _addManualMemory() async {
     final contentController = TextEditingController();
@@ -882,6 +1032,15 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                     case 'export':
                       _exportMemories();
                       break;
+                    case 'forget_hour':
+                      _forgetLastHour();
+                      break;
+                    case 'forget_24h':
+                      _forgetLast24Hours();
+                      break;
+                    case 'forget_custom':
+                      _forgetCustomRange();
+                      break;
                     case 'clear':
                       _clearAllMemories();
                       break;
@@ -898,6 +1057,38 @@ class _KnowledgeCenterScreenState extends State<KnowledgeCenterScreen> {
                       ],
                     ),
                   ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'forget_hour',
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.clock, size: 18, color: Colors.orange),
+                        const SizedBox(width: 12),
+                        Text('Forget Last Hour', style: GoogleFonts.inter(color: Colors.orange)),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'forget_24h',
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.calendar, size: 18, color: Colors.orange),
+                        const SizedBox(width: 12),
+                        Text('Forget Last 24 Hours', style: GoogleFonts.inter(color: Colors.orange)),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'forget_custom',
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.calendarRange, size: 18, color: Colors.orange),
+                        const SizedBox(width: 12),
+                        Text('Forget Since Date...', style: GoogleFonts.inter(color: Colors.orange)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
                   PopupMenuItem(
                     value: 'clear',
                     child: Row(

@@ -116,6 +116,21 @@ class StructuredMemoryService {
     _memories.removeWhere((m) => m.id == id);
     await _saveMemories();
   }
+
+  /// Delete memories after a specific cutoff time (for time-slice deletion)
+  Future<int> deleteAfter(DateTime cutoff) async {
+    final beforeCount = _memories.length;
+    _memories.removeWhere((m) => m.timestamp.isAfter(cutoff));
+    await _saveMemories();
+    final deletedCount = beforeCount - _memories.length;
+    return deletedCount;
+  }
+
+  /// Delete all memories (use with caution!)
+  Future<void> deleteAll() async {
+    _memories.clear();
+    await _saveMemories();
+  }
   
   /// Get formatted context string for AI
   String getMemoryContext() {

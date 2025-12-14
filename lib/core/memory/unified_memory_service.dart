@@ -355,6 +355,41 @@ class UnifiedMemoryService {
   /// Clear all extracted memories
   Future<void> clearMemories() async {
     await _memoryBox?.clear();
+    // Also clear from vector storage
+    await _vectorService.deleteAll();
+  }
+
+  /// Delete all memories created after a specific date/time
+  /// Returns the count of deleted memories
+  Future<int> deleteMemoriesAfter(DateTime cutoff) async {
+    if (_memoryBox == null) await initialize();
+    
+    int deletedCount = 0;
+    final memoryIdsToDelete = <String>[];
+    final keysToDelete = <dynamic>[];
+    
+    // Find memories after cutoff
+    for (var i = 0; i < _memoryBox!.length; i++) {
+      final mem = _memoryBox!.getAt(i);
+      if (mem != null && mem.extractedAt.isAfter(cutoff)) {
+        keysToDelete.add(_memoryBox!.keyAt(i));
+        memoryIdsToDelete.add(mem.id);
+      }
+    }
+    
+    // Delete from local storage
+    for (var key in keysToDelete) {
+      await _memoryBox!.delete(key);
+      deletedCount++;
+    }
+    
+    // Delete from vector storage (cloud)
+    if (memoryIdsToDelete.isNotEmpty && _vectorService.hasPinecone) {
+      await _vectorService.deleteByIds(memoryIdsToDelete);
+    }
+    
+    debugPrint('🗑️ Deleted $deletedCount memories after ${cutoff.toIso8601String()}');
+    return deletedCount;
   }
   
   /// Update an existing memory

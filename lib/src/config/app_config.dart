@@ -37,6 +37,7 @@ class AppConfig {
 
   // Pinecone
   static String get pineconeKey => _safeGet('PINECONE_API_KEY') ?? '';
+  static String get pineconeHost => _safeGet('PINECONE_INDEX_HOST') ?? '';
 
   // ElevenLabs (Voice)
   static String get elevenLabsKey => _safeGet('ELEVEN_LABS_API_KEY') ?? '';

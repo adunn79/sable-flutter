@@ -271,6 +271,7 @@ class _Screen3ArchetypeState extends State<Screen3Archetype> {
     final isSelected = _selectedArchetype == archetype;
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => _handleSelection(archetype),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
@@ -386,9 +387,9 @@ class _HighFrictionScrollPhysics extends ScrollPhysics {
     return _HighFrictionScrollPhysics(parent: buildParent(ancestor));
   }
 
-  /// Much higher friction = slower scroll deceleration
+  /// Low threshold to allow taps to register (default ~3.5)
   @override
-  double get dragStartDistanceMotionThreshold => 18.0; // Default is ~3.5
+  double get dragStartDistanceMotionThreshold => 3.5;
 
   /// Reduce velocity significantly on fling
   @override

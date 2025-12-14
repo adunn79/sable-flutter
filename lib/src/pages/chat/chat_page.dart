@@ -62,6 +62,8 @@ import 'package:sable/core/widgets/mini_player_widget.dart';
 import 'package:sable/core/media/unified_music_service.dart';
 // Full-screen News Viewer
 import 'package:sable/features/news/screens/news_detail_screen.dart';
+// Deep Dive Full-Screen Mode
+import 'package:sable/features/chat/widgets/deep_dive_screen.dart';
 // Help & State Persistence
 import 'package:sable/core/widgets/floating_help_button.dart';
 import 'package:sable/core/services/app_state_persistence.dart';
@@ -569,6 +571,52 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         .replaceAll('*', '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
+  }
+
+  /// Check if user query should trigger deep dive full-screen mode
+  bool _isDeepDiveQuery(String query) {
+    final lowerQuery = query.toLowerCase();
+    // Trigger on news, briefing, explain, or "tell me about" queries
+    final triggers = [
+      'news', 'briefing', 'update on', 'what happened', 'what\'s happening',
+      'tell me about', 'explain', 'deep dive', 'in depth', 'analysis',
+      'ukraine', 'russia', 'war', 'conflict', 'politics', 'election',
+      'breaking', 'latest', 'today\'s news', 'current events',
+    ];
+    return triggers.any((trigger) => lowerQuery.contains(trigger));
+  }
+
+  /// Extract title for deep dive screen from query
+  String _extractDeepDiveTitle(String query) {
+    // Remove common prefixes to get the topic
+    var title = query
+        .replaceAll(RegExp(r'^(tell me about|what happened|explain|give me|show me)\s*', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\?$'), '')
+        .trim();
+    
+    // Capitalize first letter
+    if (title.isNotEmpty) {
+      title = title[0].toUpperCase() + title.substring(1);
+    }
+    return title.isEmpty ? 'Analysis' : title;
+  }
+
+  /// Extract source references from AI response text
+  List<SourceReference> _extractSources(String response) {
+    final sources = <SourceReference>[];
+    // Look for patterns like (Reuters), (AP News), [BBC], etc.
+    final sourcePattern = RegExp(r'[\(\[]([A-Za-z\s+]+)[\)\]]');
+    final matches = sourcePattern.allMatches(response);
+    final seen = <String>{};
+    
+    for (final match in matches) {
+      final source = match.group(1)?.trim() ?? '';
+      if (source.isNotEmpty && !seen.contains(source.toLowerCase())) {
+        seen.add(source.toLowerCase());
+        sources.add(SourceReference(name: source));
+      }
+    }
+    return sources;
   }
 
   /// Map archetype ID to display name
@@ -1346,6 +1394,22 @@ Example: "Hey ${name ?? "there"}! What's going on today?"
           _isTyping = false;
         });
         _scrollToBottom();
+        
+        // Check if this should trigger deep dive full-screen mode
+        if (_isDeepDiveQuery(text) && sanitizedResponse.length > 500) {
+          // Show deep dive after a short delay for smooth transition
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              DeepDiveScreen.show(
+                context,
+                title: _extractDeepDiveTitle(text),
+                content: sanitizedResponse,
+                sources: _extractSources(sanitizedResponse),
+                articles: const [], // TODO: Add article fetching
+              );
+            }
+          });
+        }
         
         // Auto-speak AI response if not muted and has voice credits
         debugPrint('🔊 Voice debug: _isMuted=$_isMuted, voiceService=${_voiceService != null}');
